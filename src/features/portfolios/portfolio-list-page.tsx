@@ -132,7 +132,7 @@ export function PortfolioListPage() {
             Portfele
           </div>
           <div style={{ fontSize: 12, color: MUTED, marginTop: 2 }}>
-            {snapshot ? `${snapshot.portfolios.length} portfeli · dane na ${new Date(snapshot.asOf).toLocaleDateString("pl-PL")}` : "Odblokuj dane na dashboardzie"}
+            {snapshot ? `${snapshot.portfolios.length} portfeli · dane na ${new Date(snapshot.asOf).toLocaleDateString("pl-PL")}` : "Odblokuj dane w panelu synchronizacji"}
           </div>
         </div>
         <button
@@ -229,10 +229,7 @@ export function PortfolioListPage() {
           <div style={{ padding: "48px 22px", textAlign: "center" }}>
             <div style={{ fontSize: 32, opacity: 0.12, marginBottom: 12 }}>◎</div>
             <div style={{ fontSize: 14, color: SUBTLE }}>
-              Odblokuj dane na{" "}
-              <Link href="/dashboard" style={{ color: INK, fontWeight: 600 }}>
-                dashboardzie
-              </Link>
+              Odblokuj dane w panelu synchronizacji
             </div>
           </div>
         )}

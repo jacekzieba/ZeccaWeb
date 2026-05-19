@@ -38,6 +38,21 @@ export async function fetchEncryptedKeyBackup(
   return data;
 }
 
+export async function refreshEncryptedKeyBackup(
+  supabase: BrowserSupabaseClient,
+): Promise<EncryptedKeyBackup | null> {
+  const { data, error } = await supabase
+    .from("encrypted_key_backups")
+    .select("encrypted_user_data_key, nonce, salt, kdf, kdf_iterations")
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
 export async function fetchActiveEncryptedRecords(
   supabase: BrowserSupabaseClient,
 ): Promise<EncryptedRecord[]> {

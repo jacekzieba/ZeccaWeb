@@ -76,4 +76,24 @@ describe("supabase sync store", () => {
       fetchActiveEncryptedRecords(asSupabaseClient({ data: [record], error: null })),
     ).resolves.toEqual([record]);
   });
+
+  it("accepts Postgres timestamptz strings returned by Supabase", async () => {
+    const record = {
+      id: "b8805a78-b5a5-4fe7-a83f-716117184d25",
+      user_id: "11111111-1111-4111-8111-111111111111",
+      record_type: "transaction",
+      encrypted_payload: "ciphertext",
+      nonce: "nonce",
+      payload_version: 1,
+      schema_version: 1,
+      device_id: "web",
+      created_at: "2026-05-07 17:01:31.761561+00",
+      updated_at: "2026-05-07 16:43:36.55+00",
+      deleted_at: null,
+    };
+
+    await expect(
+      fetchActiveEncryptedRecords(asSupabaseClient({ data: [record], error: null })),
+    ).resolves.toEqual([record]);
+  });
 });

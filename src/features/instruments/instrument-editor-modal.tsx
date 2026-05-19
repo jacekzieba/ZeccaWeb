@@ -114,7 +114,7 @@ export function InstrumentEditorModal({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!userDataKey || !supabase) {
-      setError("Odblokuj dane na dashboardzie, żeby zapisywać instrumenty.");
+      setError("Odblokuj dane w panelu synchronizacji, żeby zapisywać instrumenty.");
       return;
     }
 
@@ -239,7 +239,7 @@ export function InstrumentEditorModal({
             }}
           >
             <div style={{ fontSize: 12, color: AMBER, fontWeight: 600 }}>
-              Odblokuj dane na dashboardzie, żeby zapisywać instrumenty.
+              Odblokuj dane w panelu synchronizacji, żeby zapisywać instrumenty.
             </div>
           </div>
         )}

@@ -9,6 +9,11 @@ import type {
   PortfolioSummary,
   TransactionRow,
 } from "@/domain/models/investor-data";
+import {
+  resolveFxRate,
+  resolveInstrumentPrice,
+  type FxRateInput,
+} from "@/domain/valuation/price-resolver";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
 
 const APPLE_REFERENCE_DATE_UNIX_MS = Date.UTC(2001, 0, 1);
@@ -94,6 +99,11 @@ type ParsedDataset = {
   transactions: TransactionPayload[];
   manualValuations: ManualValuationPayload[];
   settings: SettingsPayload[];
+  fxRates: FxRateInput[];
+};
+
+export type SnapshotBuildOptions = {
+  fxRates?: FxRateInput[];
 };
 
 type PortfolioValuation = {
@@ -103,16 +113,11 @@ type PortfolioValuation = {
   allocationValues: Map<string, number>;
 };
 
-type InstrumentPrice = {
-  value: number;
-  currency: string;
-  date: Date | null;
-};
-
 export function buildInvestorDataSnapshot(
   records: DecryptedRecord[],
+  options: SnapshotBuildOptions = {},
 ): InvestorDataSnapshot {
-  const dataset = parseDataset(records);
+  const dataset = parseDataset(records, options);
   const baseCurrency = getBaseCurrency(dataset);
   const asOf = getAsOf(records, dataset);
   const accounts = getAccounts(dataset, baseCurrency);
@@ -126,7 +131,7 @@ export function buildInvestorDataSnapshot(
   const cash = accounts.reduce((sum, account) => {
     const transactions = transactionsForPortfolio(dataset.transactions, account.id);
     const ledger = computeLedger(transactions, asOf);
-    return sum + valueCash(ledger, dataset.transactions, asOf);
+    return sum + valueCash(ledger, dataset, asOf);
   }, 0);
   const valuationSeries = buildValuationSeries(accounts, dataset, asOf);
   const monthlyChange = calculateMonthlyChange(valuationSeries);
@@ -142,13 +147,17 @@ export function buildInvestorDataSnapshot(
   };
 }
 
-function parseDataset(records: DecryptedRecord[]): ParsedDataset {
+function parseDataset(
+  records: DecryptedRecord[],
+  options: SnapshotBuildOptions = {},
+): ParsedDataset {
   const dataset: ParsedDataset = {
     accounts: [],
     assets: [],
     transactions: [],
     manualValuations: [],
     settings: [],
+    fxRates: options.fxRates ?? [],
   };
 
   for (const record of records) {
@@ -427,7 +436,7 @@ function valuePortfolio(
     );
   }
 
-  const cashValue = valueCash(ledger, dataset.transactions, asOf);
+  const cashValue = valueCash(ledger, dataset, asOf);
 
   if (cashValue > EPSILON) {
     allocationValues.set(
@@ -446,13 +455,13 @@ function valuePortfolio(
 
 function valueCash(
   ledger: Ledger,
-  transactions: TransactionPayload[],
+  dataset: Pick<ParsedDataset, "transactions" | "fxRates">,
   asOf: Date,
 ) {
   let value = 0;
 
   for (const [currency, balance] of ledger.cashBalances) {
-    value += balance * fxRateForCurrency(currency, { transactions } as ParsedDataset, asOf);
+    value += balance * fxRateForCurrency(currency, dataset, asOf);
   }
 
   return value;
@@ -464,102 +473,46 @@ function latestPriceForInstrument(
   asOf: Date,
 ) {
   const asset = dataset.assets.find((candidate) => candidate.id === instrumentID);
-  const manualValuation = dataset.manualValuations
-    .filter((valuation) => {
-      const date = toDate(valuation.date);
-      return (
-        valuation.instrumentID === instrumentID &&
-        valuation.value > 0 &&
-        date.getTime() <= asOf.getTime()
-      );
-    })
-    .at(-1);
-
-  if (manualValuation) {
-    return {
-      value: manualValuation.value,
-      currency: manualValuation.currency,
-      date: toDate(manualValuation.date),
-    } satisfies InstrumentPrice;
-  }
-
-  const pricedTransaction = dataset.transactions
-    .filter((transaction) => {
-      const date = toDate(transaction.date);
-      return (
-        transaction.instrumentID === instrumentID &&
-        (transaction.price ?? 0) > 0 &&
-        date.getTime() <= asOf.getTime()
-      );
-    })
-    .at(-1);
-
-  return {
-    value: pricedTransaction?.price ?? 0,
-    currency: pricedTransaction?.currency ?? asset?.currency ?? "PLN",
-    date: pricedTransaction ? toDate(pricedTransaction.date) : null,
-  } satisfies InstrumentPrice;
+  return resolveInstrumentPrice(
+    instrumentID,
+    {
+      assetCurrency: asset?.currency,
+      manualValuations: dataset.manualValuations.map((valuation) => ({
+        instrumentID: valuation.instrumentID,
+        value: valuation.value,
+        currency: valuation.currency,
+        date: toDate(valuation.date),
+      })),
+      transactions: dataset.transactions.map((transaction) => ({
+        instrumentID: transaction.instrumentID,
+        price: transaction.price,
+        currency: transaction.currency,
+        date: toDate(transaction.date),
+      })),
+    },
+    asOf,
+  );
 }
 
 function fxRateForCurrency(
   currency: string,
-  dataset: Pick<ParsedDataset, "transactions">,
+  dataset: Pick<ParsedDataset, "transactions" | "fxRates">,
   asOf: Date,
 ) {
-  if (currency === "PLN") {
-    return 1;
-  }
-
-  const directRate = dataset.transactions
-    .filter(
-      (transaction) =>
-        transaction.currency === currency &&
-        (transaction.fxRateToBase ?? 0) > 0 &&
-        toDate(transaction.date).getTime() <= asOf.getTime(),
-    )
-    .at(-1)?.fxRateToBase;
-
-  if (directRate && directRate > 0) {
-    return directRate;
-  }
-
-  const conversionRate = dataset.transactions
-    .filter((transaction) => {
-      const date = toDate(transaction.date);
-      return (
-        transaction.transactionType === "fxConversion" &&
-        transaction.currency === currency &&
-        transaction.targetCurrency === "PLN" &&
-        transaction.grossAmount > 0 &&
-        (transaction.targetGrossAmount ?? 0) > 0 &&
-        date.getTime() <= asOf.getTime()
-      );
-    })
-    .at(-1);
-
-  if (conversionRate?.targetGrossAmount) {
-    return conversionRate.targetGrossAmount / conversionRate.grossAmount;
-  }
-
-  const inverseConversionRate = dataset.transactions
-    .filter((transaction) => {
-      const date = toDate(transaction.date);
-      return (
-        transaction.transactionType === "fxConversion" &&
-        transaction.currency === "PLN" &&
-        transaction.targetCurrency === currency &&
-        transaction.grossAmount > 0 &&
-        (transaction.targetGrossAmount ?? 0) > 0 &&
-        date.getTime() <= asOf.getTime()
-      );
-    })
-    .at(-1);
-
-  if (inverseConversionRate?.targetGrossAmount) {
-    return inverseConversionRate.grossAmount / inverseConversionRate.targetGrossAmount;
-  }
-
-  return 1;
+  return resolveFxRate(
+    currency,
+    dataset.transactions.map((transaction) => ({
+      transactionType: transaction.transactionType,
+      currency: transaction.currency,
+      grossAmount: transaction.grossAmount,
+      fxRateToBase: transaction.fxRateToBase,
+      targetCurrency: transaction.targetCurrency,
+      targetGrossAmount: transaction.targetGrossAmount,
+      date: toDate(transaction.date),
+    })),
+    asOf,
+    dataset.fxRates,
+  ).rate;
 }
 
 function buildAllocation(
@@ -696,8 +649,9 @@ function toDate(value: z.infer<typeof swiftDateSchema>) {
 export function buildPortfolioDetail(
   records: DecryptedRecord[],
   portfolioId: string,
+  options: SnapshotBuildOptions = {},
 ): PortfolioDetail | null {
-  const dataset = parseDataset(records);
+  const dataset = parseDataset(records, options);
   const account = dataset.accounts.find((a) => a.id === portfolioId);
   if (!account) return null;
 
@@ -733,7 +687,7 @@ export function buildPortfolioDetail(
     });
   }
 
-  const cashValue = valueCash(ledger, dataset.transactions, asOf);
+  const cashValue = valueCash(ledger, dataset, asOf);
   const totalValue = holdingsValue + cashValue;
 
   for (const h of holdings) {
@@ -790,8 +744,11 @@ export function buildTransactionList(records: DecryptedRecord[]): TransactionRow
     .sort((a, b) => b.date.localeCompare(a.date));
 }
 
-export function buildInstrumentList(records: DecryptedRecord[]): InstrumentRow[] {
-  const dataset = parseDataset(records);
+export function buildInstrumentList(
+  records: DecryptedRecord[],
+  options: SnapshotBuildOptions = {},
+): InstrumentRow[] {
+  const dataset = parseDataset(records, options);
   const asOf = getAsOf(records, dataset);
 
   // Aggregate quantity held per instrument across all portfolios

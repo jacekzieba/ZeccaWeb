@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect, type CSSProperties } from "react";
+import { useCallback, useState, useEffect, type CSSProperties } from "react";
 import type { Route } from "next";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { AddTransactionModal } from "@/features/transactions/add-transaction-modal";
 import { PendingSyncStatus } from "@/features/sync/pending-sync-status";
+import { SyncUnlockPanel, type SyncLoadResult } from "@/features/sync/sync-unlock-panel";
 import { COLORS, SHADOWS, SURFACES, TYPOGRAPHY } from "@/lib/design-tokens";
 
 const glassSurface: CSSProperties = {
@@ -216,6 +217,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const isDesktop = useIsDesktop();
   const openAddTransaction = useSyncStore((s) => s.openAddTransaction);
+  const records = useSyncStore((s) => s.records);
+  const setSync = useSyncStore((s) => s.setSync);
+  const clearSync = useSyncStore((s) => s.clearSync);
+
+  const handleSyncLoaded = useCallback((result: SyncLoadResult | null) => {
+    if (result) {
+      setSync(result.records, result.snapshot);
+      return;
+    }
+
+    clearSync();
+  }, [clearSync, setSync]);
 
   const activeId = pathname === "/dashboard"
     ? "dashboard"
@@ -416,6 +429,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* Main content */}
         <main style={{ flex: 1, minWidth: 0, paddingBottom: 4 }}>
+          {!records && (
+            <GlobalSyncPanel onSyncLoaded={handleSyncLoaded} />
+          )}
           {children}
         </main>
       </div>
@@ -423,5 +439,42 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Global modal */}
       <AddTransactionModal />
     </div>
+  );
+}
+
+function GlobalSyncPanel({
+  onSyncLoaded,
+}: {
+  onSyncLoaded(result: SyncLoadResult | null): void;
+}) {
+  return (
+    <section
+      style={{
+        ...glassSurface,
+        borderRadius: 14,
+        overflow: "hidden",
+        marginBottom: 12,
+      }}
+    >
+      <div
+        style={{
+          padding: "14px 22px",
+          borderBottom: `0.5px solid ${COLORS.lineSoft}`,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 10.5,
+            fontWeight: 700,
+            color: COLORS.subtle,
+            textTransform: "uppercase",
+            letterSpacing: ".10em",
+          }}
+        >
+          Synchronizacja danych
+        </div>
+      </div>
+      <SyncUnlockPanel onSyncLoaded={onSyncLoaded} />
+    </section>
   );
 }

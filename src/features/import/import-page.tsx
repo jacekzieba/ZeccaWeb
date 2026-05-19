@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState, type CSSProperties } from "react";
-import Link from "next/link";
 import { COLORS, SHADOWS, SURFACES } from "@/lib/design-tokens";
 import {
   buildImportReferenceData,
@@ -81,7 +80,7 @@ export function ImportPage() {
 
   async function handleImport() {
     if (!preview || !supabase || !userDataKey) {
-      setError("Odblokuj dane na dashboardzie przed importem.");
+      setError("Odblokuj dane w panelu synchronizacji przed importem.");
       return;
     }
 
@@ -158,11 +157,7 @@ export function ImportPage() {
       {!records && (
         <div style={{ ...cardStyle, padding: "34px 22px", textAlign: "center" }}>
           <div style={{ color: COLORS.subtle, fontSize: 14 }}>
-            Odblokuj dane na{" "}
-            <Link href="/dashboard" style={{ color: COLORS.text, fontWeight: 700 }}>
-              dashboardzie
-            </Link>
-            , żeby zaimportować transakcje.
+            Odblokuj dane w panelu synchronizacji, żeby zaimportować transakcje.
           </div>
         </div>
       )}

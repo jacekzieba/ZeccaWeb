@@ -49,3 +49,16 @@
 4. UX importu: dry run, ostrzezenia, duplikaty w pliku i raport po imporcie - gotowe jako 5B.
 5. Proxy providerow market data przez route handlers - gotowe jako 5C: NBP FX i Stooq EOD.
 6. Cache cen i kursow - gotowe jako 5C: procesowy cache TTL bez zapisu danych portfela do Supabase.
+
+## Etap 6 - historia cen i wyceny
+
+Cel: przejsc od ostatnich cen i wycen manualnych do deterministycznej historii wartosci portfela opartej o jawnie zaakceptowane ceny, bez wysylania pelnego portfela poza przegladarke.
+
+1. Decyzja architektoniczna dla historii cen - opisac w `docs/VALUATION_DECISION.md`.
+2. Wydzielic price resolver z domeny snapshotu: ledger ma liczyc ilosci i gotowke, a osobna warstwa ma dobierac ceny oraz kursy FX dla daty.
+3. Rozszerzyc serie wycen portfela tak, zeby dla kazdej daty uzywala najlepszej dostepnej ceny `<= date`, a nie tylko ostatniej ceny transakcyjnej.
+4. Dodac pobieranie pojedynczej ceny rynkowej dla instrumentu z UI, z podgladem przed zapisem.
+5. Zapisywac zaakceptowana cene jako zaszyfrowany `manualValuation`; cache providerow pozostaje odtwarzalny i nie jest zrodlem prawdy.
+6. Rozszerzyc FX o kursy dla konkretnej daty i fallback do kursow zapisanych przy transakcjach.
+7. Dodac testy price resolvera, historycznych valuation series i route handlerow market data na mockach.
+8. Bramka domkniecia: `npm run typecheck`, `npm test`, `npm run lint` i `npm run build` przechodza.

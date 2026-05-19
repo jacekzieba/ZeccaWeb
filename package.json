@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:fake-sync": "playwright test --config playwright.fake-sync.config.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",

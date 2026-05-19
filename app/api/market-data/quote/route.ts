@@ -41,8 +41,19 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Market data error.";
+    if (message.includes("STOOQ_API_KEY")) {
+      return NextResponse.json(
+        {
+          error: "Stooq nie jest skonfigurowany. Ustaw STOOQ_API_KEY w środowisku serwera.",
+          code: "STOOQ_API_KEY_MISSING",
+        },
+        { status: 502 },
+      );
+    }
+
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Market data error." },
+      { error: message },
       { status: 502 },
     );
   }

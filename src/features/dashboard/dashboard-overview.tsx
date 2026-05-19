@@ -4,9 +4,9 @@ import { useState, type CSSProperties } from "react";
 import { AreaChart } from "@/components/charts/area-chart";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
 import { StatCard } from "@/components/ui/stat-card";
-import { SyncUnlockPanel, type SyncLoadResult } from "@/features/sync/sync-unlock-panel";
 import { sampleSnapshot, SAMPLE_HISTORY } from "./sample-data";
 import { useSyncStore } from "@/sync/store/sync-store";
+import { summarizeDecryptedRecords } from "@/sync/records/sync-summary";
 import { CHART_COLORS, COLORS, SURFACES } from "@/lib/design-tokens";
 
 const glassCard: CSSProperties = {
@@ -75,21 +75,16 @@ const PORTFOLIO_COLORS: Record<string, string> = {
 
 // ── Main dashboard ───────────────────────────────────────────────
 export function DashboardOverview() {
-  const setSync = useSyncStore((s) => s.setSync);
-  const [syncResult, setSyncResult] = useState<SyncLoadResult | null>(null);
+  const storeSnapshot = useSyncStore((s) => s.snapshot);
+  const records = useSyncStore((s) => s.records);
   const [period, setPeriod] = useState<Period>("1Y");
 
-  function handleSyncLoaded(result: SyncLoadResult | null) {
-    setSyncResult(result);
-    if (result) setSync(result.records, result.snapshot);
-  }
-
-  const snapshot = syncResult?.snapshot ?? sampleSnapshot;
-  const syncSummary = syncResult?.summary ?? null;
+  const snapshot = storeSnapshot ?? sampleSnapshot;
+  const syncSummary = records ? summarizeDecryptedRecords(records) : null;
   const isDemo = !syncSummary;
 
   // Full history for the area chart
-  const historySource = syncResult ? snapshot.valuationSeries : SAMPLE_HISTORY;
+  const historySource = storeSnapshot ? snapshot.valuationSeries : SAMPLE_HISTORY;
   const chartData = historySource.slice(-PERIOD_MONTHS[period]);
   const sparkData = historySource.slice(-12).map((h) => h.value);
 
@@ -302,9 +297,6 @@ export function DashboardOverview() {
         </div>
       </div>
 
-      {/* ── Sync unlock panel ────────────────────────────────── */}
-      <SyncUnlockPanelStyled onSyncLoaded={handleSyncLoaded} />
-
       {/* ── Portfolios + sync summary ─────────────────────────── */}
       <div className="grid-holdings-sync">
         {/* Portfolios table */}
@@ -493,37 +485,6 @@ export function DashboardOverview() {
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-// ── Styled wrapper for SyncUnlockPanel ───────────────────────────
-function SyncUnlockPanelStyled({
-  onSyncLoaded,
-}: {
-  onSyncLoaded: (result: SyncLoadResult | null) => void;
-}) {
-  return (
-    <div style={{ ...glassCard, padding: 0, overflow: "hidden" }}>
-      <div
-        style={{
-          padding: "14px 22px",
-          borderBottom: `0.5px solid ${COLORS.lineSoft}`,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 10.5,
-            fontWeight: 700,
-            color: COLORS.subtle,
-            textTransform: "uppercase",
-            letterSpacing: ".10em",
-          }}
-        >
-          Synchronizacja
-        </div>
-      </div>
-      <SyncUnlockPanel onSyncLoaded={onSyncLoaded} />
     </div>
   );
 }

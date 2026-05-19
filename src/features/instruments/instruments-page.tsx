@@ -1,17 +1,22 @@
 "use client";
 
-import Link from "next/link";
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { Check, RefreshCw, X } from "lucide-react";
 import { InstrumentEditorModal } from "@/features/instruments/instrument-editor-modal";
-import { deleteRecord, refreshSyncStore } from "@/sync/records/record-writer";
+import { deleteRecord, refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { buildInstrumentList } from "@/sync/records/investor-snapshot";
+import type { MarketQuote } from "@/market-data/types";
+import { isFakeSyncEnabled } from "@/lib/env";
+import { buildFakeManualValuationRecord } from "@/sync/dev/fake-sync";
+import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 
 const INK = "#1C3144";
 const MUTED = "rgba(28,49,68,0.58)";
 const SUBTLE = "rgba(28,49,68,0.38)";
 const LINE_SOFT = "rgba(28,49,68,0.06)";
 const PROFIT = "#2D9C6B";
+const LOSS = "#B85042";
 
 const glassCard: CSSProperties = {
   background: "rgba(255,253,249,0.82)",
@@ -61,16 +66,63 @@ function fmtDate(iso: string) {
 
 type KindFilter = typeof KIND_ALL | string;
 type HeldFilter = "all" | "held" | "closed";
+type QuotePreview = {
+  instrumentId: string;
+  requestSymbol: string;
+  quote: MarketQuote;
+};
+type MarketDataStatus = {
+  providers: {
+    stooq: {
+      configured: boolean;
+      requiredEnv: string;
+    };
+    nbp: {
+      configured: boolean;
+    };
+  };
+};
+
+function stooqSymbolForInstrument(symbol: string, currency: string) {
+  const normalized = symbol.trim().toLowerCase();
+  if (!normalized || normalized.includes(".")) {
+    return normalized;
+  }
+
+  if (currency === "USD") return `${normalized}.us`;
+  if (currency === "GBP") return `${normalized}.uk`;
+  if (currency === "PLN") return `${normalized}.pl`;
+  return normalized;
+}
+
+function quoteCurrencyForInstrument(quote: MarketQuote, fallbackCurrency: string) {
+  return quote.currency ?? fallbackCurrency;
+}
+
+function buildFakeQuote(inst: { symbol: string; currency: string }): MarketQuote {
+  return {
+    provider: "stooq",
+    symbol: stooqSymbolForInstrument(inst.symbol, inst.currency),
+    currency: inst.currency,
+    date: "2026-05-18",
+    open: 136,
+    high: 142,
+    low: 135,
+    close: 140,
+    volume: 123456,
+  };
+}
 
 export function InstrumentsPage() {
   const records = useSyncStore((s) => s.records);
+  const marketFxRates = useSyncStore((s) => s.marketFxRates);
   const userDataKey = useSyncStore((s) => s.userDataKey);
   const supabase = useSyncStore((s) => s.supabase);
   const setSync = useSyncStore((s) => s.setSync);
 
   const allInstruments = useMemo(
-    () => (records ? buildInstrumentList(records) : []),
-    [records],
+    () => (records ? buildInstrumentList(records, { fxRates: marketFxRates }) : []),
+    [marketFxRates, records],
   );
 
   const [search, setSearch] = useState("");
@@ -79,6 +131,50 @@ export function InstrumentsPage() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingInstrumentId, setEditingInstrumentId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [quoteLoadingId, setQuoteLoadingId] = useState<string | null>(null);
+  const [quoteSavingId, setQuoteSavingId] = useState<string | null>(null);
+  const [quotePreview, setQuotePreview] = useState<QuotePreview | null>(null);
+  const [quoteMessage, setQuoteMessage] = useState<string | null>(null);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [marketDataStatus, setMarketDataStatus] = useState<MarketDataStatus | null>(null);
+  const [marketDataStatusError, setMarketDataStatusError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!records) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function fetchMarketDataStatus() {
+      try {
+        const response = await fetch("/api/market-data/status");
+        const body = await response.json() as MarketDataStatus;
+        if (!response.ok) {
+          throw new Error("Nie udało się sprawdzić konfiguracji market data.");
+        }
+        if (!cancelled) {
+          setMarketDataStatus(body);
+          setMarketDataStatusError(null);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setMarketDataStatus(null);
+          setMarketDataStatusError(
+            error instanceof Error
+              ? error.message
+              : "Nie udało się sprawdzić konfiguracji market data.",
+          );
+        }
+      }
+    }
+
+    void fetchMarketDataStatus();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [records]);
 
   const kinds = useMemo(() => {
     const seen = new Set<string>();
@@ -195,6 +291,126 @@ export function InstrumentsPage() {
     }
   }
 
+  async function handleFetchQuote(inst: (typeof allInstruments)[number]) {
+    const requestSymbol = stooqSymbolForInstrument(inst.symbol, inst.currency);
+    if (!requestSymbol) {
+      setQuoteError("Instrument nie ma symbolu do pobrania ceny.");
+      return;
+    }
+
+    setQuoteLoadingId(inst.id);
+    setQuotePreview(null);
+    setQuoteMessage(null);
+    setQuoteError(null);
+
+    try {
+      if (isFakeSyncEnabled()) {
+        setQuotePreview({
+          instrumentId: inst.id,
+          requestSymbol,
+          quote: buildFakeQuote(inst),
+        });
+        return;
+      }
+
+      const response = await fetch(
+        `/api/market-data/quote?symbol=${encodeURIComponent(requestSymbol)}`,
+      );
+      const body = await response.json() as { data?: MarketQuote; error?: string };
+
+      if (!response.ok || !body.data) {
+        throw new Error(body.error ?? "Nie udało się pobrać ceny.");
+      }
+
+      setQuotePreview({
+        instrumentId: inst.id,
+        requestSymbol,
+        quote: body.data,
+      });
+    } catch (fetchError) {
+      setQuoteError(
+        fetchError instanceof Error
+          ? fetchError.message
+          : "Nie udało się pobrać ceny.",
+      );
+    } finally {
+      setQuoteLoadingId(null);
+    }
+  }
+
+  async function handleAcceptQuote(inst: (typeof allInstruments)[number]) {
+    if (!quotePreview || quotePreview.instrumentId !== inst.id) {
+      return;
+    }
+
+    if (isFakeSyncEnabled() && records) {
+      const quote = quotePreview.quote;
+      const nextRecords = [
+        ...records,
+        buildFakeManualValuationRecord({
+          instrumentID: inst.id,
+          date: `${quote.date}T00:00:00.000Z`,
+          value: quote.close,
+          currency: quoteCurrencyForInstrument(quote, inst.currency),
+        }),
+      ];
+      setSync(nextRecords, buildInvestorDataSnapshot(nextRecords));
+      setQuotePreview(null);
+      setQuoteMessage("Cena została zapisana lokalnie w fake sync.");
+      return;
+    }
+
+    if (!supabase || !userDataKey) {
+      setQuoteError("Odblokuj dane w panelu synchronizacji przed zapisem ceny.");
+      return;
+    }
+
+    setQuoteSavingId(inst.id);
+    setQuoteMessage(null);
+    setQuoteError(null);
+
+    try {
+      const quote = quotePreview.quote;
+      const result = await saveRecord(
+        supabase,
+        userDataKey,
+        "manualValuation",
+        {
+          id: crypto.randomUUID(),
+          recordType: "manualValuation",
+          instrumentID: inst.id,
+          date: `${quote.date}T00:00:00.000Z`,
+          value: quote.close,
+          currency: quoteCurrencyForInstrument(quote, inst.currency),
+        },
+        { baseUpdatedAt: null },
+      );
+
+      if (!result.queued) {
+        const { records: nextRecords, snapshot: nextSnapshot } = await refreshSyncStore(
+          supabase,
+          userDataKey,
+        );
+        setSync(nextRecords, nextSnapshot);
+      }
+
+      setQuotePreview(null);
+      setQuoteMessage(
+        result.queued
+          ? "Cena czeka w kolejce sync."
+          : "Cena została zapisana jako wycena manualna.",
+      );
+    } catch (saveError) {
+      setQuoteError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Nie udało się zapisać ceny.",
+      );
+    } finally {
+      setQuoteSavingId(null);
+    }
+  }
+
   const selectStyle: CSSProperties = {
     padding: "7px 12px",
     borderRadius: 9,
@@ -228,7 +444,7 @@ export function InstrumentsPage() {
           <div style={{ fontSize: 12, color: MUTED, marginTop: 2 }}>
             {records
               ? `${allInstruments.length} instrumentów · ${heldCount} w portfelu`
-              : "Odblokuj dane na dashboardzie"}
+              : "Odblokuj dane w panelu synchronizacji"}
           </div>
         </div>
         <button
@@ -283,6 +499,62 @@ export function InstrumentsPage() {
               {label}
             </button>
           ))}
+        </div>
+      )}
+
+      {records && (
+        <div
+          style={{
+            ...glassCard,
+            padding: "13px 16px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+            borderColor:
+              marketDataStatus?.providers.stooq.configured === false
+                ? "rgba(184,120,48,0.28)"
+                : "rgba(255,255,255,0.7)",
+          }}
+        >
+          <div>
+            <div style={{ color: INK, fontSize: 13, fontWeight: 800 }}>
+              Diagnostyka market data
+            </div>
+            <div style={{ color: MUTED, fontSize: 12, marginTop: 3, lineHeight: 1.45 }}>
+              {marketDataStatusError
+                ? marketDataStatusError
+                : marketDataStatus?.providers.stooq.configured === false
+                  ? "Stooq nie jest skonfigurowany. Pobieranie realnych cen wymaga STOOQ_API_KEY w środowisku serwera."
+                  : marketDataStatus?.providers.stooq.configured
+                    ? "Stooq jest skonfigurowany. Ceny EOD można pobierać dla pojedynczych symboli."
+                    : "Sprawdzam konfigurację providerów..."}
+            </div>
+          </div>
+          <div
+            style={{
+              borderRadius: 99,
+              background:
+                marketDataStatus?.providers.stooq.configured === false
+                  ? "rgba(184,120,48,0.12)"
+                  : "rgba(45,156,107,0.12)",
+              color:
+                marketDataStatus?.providers.stooq.configured === false
+                  ? "#B87830"
+                  : PROFIT,
+              fontSize: 11,
+              fontWeight: 800,
+              padding: "6px 10px",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Stooq · {marketDataStatus
+              ? marketDataStatus.providers.stooq.configured
+                ? "OK"
+                : "brak klucza"
+              : "sprawdzam"}
+          </div>
         </div>
       )}
 
@@ -366,13 +638,27 @@ export function InstrumentsPage() {
         </div>
       )}
 
+      {records && (quoteMessage || quoteError) && (
+        <div
+          style={{
+            ...glassCard,
+            padding: "10px 14px",
+            color: quoteError ? LOSS : PROFIT,
+            fontSize: 12,
+            fontWeight: 700,
+          }}
+        >
+          {quoteError ?? quoteMessage}
+        </div>
+      )}
+
       {/* Table */}
       <div style={{ ...glassCard, padding: 0 }}>
         {/* Header */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "minmax(0,2.5fr) 80px minmax(0,0.8fr) minmax(0,0.8fr) minmax(0,1.1fr) minmax(0,1fr) 130px",
+            gridTemplateColumns: "minmax(0,2.5fr) 80px minmax(0,0.8fr) minmax(0,0.8fr) minmax(0,1.1fr) minmax(0,1fr) 220px",
             padding: "10px 22px",
             background: "rgba(28,49,68,0.025)",
             borderBottom: `0.5px solid ${LINE_SOFT}`,
@@ -400,10 +686,7 @@ export function InstrumentsPage() {
           <div style={{ padding: "48px 22px", textAlign: "center" }}>
             <div style={{ fontSize: 32, opacity: 0.12, marginBottom: 12 }}>◈</div>
             <div style={{ fontSize: 14, color: SUBTLE }}>
-              Odblokuj dane na{" "}
-              <Link href="/dashboard" style={{ color: INK, fontWeight: 600 }}>
-                dashboardzie
-              </Link>
+              Odblokuj dane w panelu synchronizacji
             </div>
           </div>
         )}
@@ -418,156 +701,248 @@ export function InstrumentsPage() {
           const color = KIND_COLORS[inst.kind] ?? SUBTLE;
           const kindLabel = KIND_LABELS[inst.kind] ?? inst.kind;
           const isHeld = inst.totalQuantity > 0;
+          const preview = quotePreview?.instrumentId === inst.id ? quotePreview : null;
+          const isLoadingQuote = quoteLoadingId === inst.id;
+          const isSavingQuote = quoteSavingId === inst.id;
 
           return (
-            <div
-              key={inst.id}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "minmax(0,2.5fr) 80px minmax(0,0.8fr) minmax(0,0.8fr) minmax(0,1.1fr) minmax(0,1fr) 130px",
-                padding: "14px 22px",
-                borderTop: `0.5px solid ${LINE_SOFT}`,
-                alignItems: "center",
-                opacity: isHeld ? 1 : 0.5,
-                transition: "background .12s",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(28,49,68,0.025)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-            >
-              {/* Name + symbol */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span
+            <div key={inst.id}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0,2.5fr) 80px minmax(0,0.8fr) minmax(0,0.8fr) minmax(0,1.1fr) minmax(0,1fr) 220px",
+                  padding: "14px 22px",
+                  borderTop: `0.5px solid ${LINE_SOFT}`,
+                  alignItems: "center",
+                  opacity: isHeld ? 1 : 0.5,
+                  transition: "background .12s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(28,49,68,0.025)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+              >
+                {/* Name + symbol */}
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: 9,
+                      background: `${color}14`,
+                      border: `1.5px solid ${color}${isHeld ? "40" : "20"}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 10,
+                      fontWeight: 800,
+                      color: isHeld ? color : `${color}80`,
+                      flexShrink: 0,
+                      letterSpacing: "-0.03em",
+                    }}
+                  >
+                    {inst.symbol.slice(0, 4).toUpperCase()}
+                  </span>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: INK }}>{inst.name}</div>
+                    <div style={{ fontSize: 11, color: SUBTLE }}>{inst.symbol} · {inst.currency}</div>
+                  </div>
+                </div>
+
+                {/* Kind badge */}
+                <div>
+                  <span
+                    style={{
+                      display: "inline-block",
+                      padding: "3px 7px",
+                      borderRadius: 6,
+                      background: `${color}12`,
+                      color,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {kindLabel}
+                  </span>
+                </div>
+
+                {/* Quantity */}
+                <div style={{ textAlign: "right", fontSize: 13, color: isHeld ? INK : SUBTLE, fontVariantNumeric: "tabular-nums" }}>
+                  {fmtQty(inst.totalQuantity)}
+                </div>
+
+                {/* Last price */}
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 13, color: INK, fontVariantNumeric: "tabular-nums" }}>
+                    {inst.lastPrice > 0 ? fmt(inst.lastPrice, 2) : "—"}
+                  </div>
+                  {inst.lastPriceDate && (
+                    <div style={{ fontSize: 10, color: SUBTLE }}>{fmtDate(inst.lastPriceDate)}</div>
+                  )}
+                </div>
+
+                {/* Market value */}
+                <div style={{ textAlign: "right" }}>
+                  {isHeld ? (
+                    <div style={{ fontSize: 14, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
+                      {fmt(inst.marketValue)}{" "}
+                      <span style={{ fontSize: 10, opacity: 0.5 }}>PLN</span>
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 13, color: SUBTLE }}>—</div>
+                  )}
+                </div>
+
+                {/* Portfolios */}
+                <div style={{ textAlign: "right" }}>
+                  {inst.portfolios.length > 0 ? (
+                    <div style={{ display: "flex", gap: 4, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                      {inst.portfolios.map((pf) => (
+                        <span
+                          key={pf}
+                          style={{
+                            fontSize: 10,
+                            padding: "2px 7px",
+                            borderRadius: 5,
+                            background: `${PROFIT}14`,
+                            color: PROFIT,
+                            fontWeight: 600,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {pf}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: 12, color: SUBTLE }}>—</span>
+                  )}
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, flexWrap: "wrap" }}>
+                  <button
+                    onClick={() => void handleFetchQuote(inst)}
+                    disabled={!userDataKey || isLoadingQuote || isSavingQuote}
+                    title="Pobierz cenę Stooq"
+                    style={{
+                      padding: "6px 9px",
+                      borderRadius: 8,
+                      border: "0.5px solid rgba(45,156,107,0.2)",
+                      background: isLoadingQuote ? "rgba(45,156,107,0.08)" : "rgba(255,255,255,0.7)",
+                      color: userDataKey ? PROFIT : SUBTLE,
+                      fontSize: 12,
+                      cursor: !userDataKey || isLoadingQuote || isSavingQuote ? "not-allowed" : "pointer",
+                      fontFamily: "inherit",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 5,
+                    }}
+                  >
+                    <RefreshCw size={13} />
+                    {isLoadingQuote ? "Pobieram" : "Cena"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingInstrumentId(inst.id);
+                      setEditorOpen(true);
+                    }}
+                    style={{
+                      padding: "6px 10px",
+                      borderRadius: 8,
+                      border: "0.5px solid rgba(28,49,68,0.12)",
+                      background: "rgba(255,255,255,0.7)",
+                      color: MUTED,
+                      fontSize: 12,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    Edytuj
+                  </button>
+                  <button
+                    onClick={() => void handleDeleteInstrument(inst.id)}
+                    disabled={!userDataKey || deletingId === inst.id}
+                    style={{
+                      padding: "6px 10px",
+                      borderRadius: 8,
+                      border: "0.5px solid rgba(184,80,66,0.18)",
+                      background: deletingId === inst.id ? "rgba(184,80,66,0.08)" : "transparent",
+                      color: deletingId === inst.id ? "#B85042" : SUBTLE,
+                      fontSize: 12,
+                      cursor: !userDataKey || deletingId === inst.id ? "not-allowed" : "pointer",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    {deletingId === inst.id ? "Usuwam…" : "Usuń"}
+                  </button>
+                </div>
+              </div>
+
+              {preview && (
+                <div
                   style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: 9,
-                    background: `${color}14`,
-                    border: `1.5px solid ${color}${isHeld ? "40" : "20"}`,
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 10,
-                    fontWeight: 800,
-                    color: isHeld ? color : `${color}80`,
-                    flexShrink: 0,
-                    letterSpacing: "-0.03em",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    flexWrap: "wrap",
+                    padding: "12px 22px 14px 66px",
+                    borderTop: `0.5px solid ${LINE_SOFT}`,
+                    background: "rgba(45,156,107,0.045)",
                   }}
                 >
-                  {inst.symbol.slice(0, 4).toUpperCase()}
-                </span>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: INK }}>{inst.name}</div>
-                  <div style={{ fontSize: 11, color: SUBTLE }}>{inst.symbol} · {inst.currency}</div>
-                </div>
-              </div>
-
-              {/* Kind badge */}
-              <div>
-                <span
-                  style={{
-                    display: "inline-block",
-                    padding: "3px 7px",
-                    borderRadius: 6,
-                    background: `${color}12`,
-                    color,
-                    fontSize: 10,
-                    fontWeight: 700,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {kindLabel}
-                </span>
-              </div>
-
-              {/* Quantity */}
-              <div style={{ textAlign: "right", fontSize: 13, color: isHeld ? INK : SUBTLE, fontVariantNumeric: "tabular-nums" }}>
-                {fmtQty(inst.totalQuantity)}
-              </div>
-
-              {/* Last price */}
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 13, color: INK, fontVariantNumeric: "tabular-nums" }}>
-                  {inst.lastPrice > 0 ? fmt(inst.lastPrice, 2) : "—"}
-                </div>
-                {inst.lastPriceDate && (
-                  <div style={{ fontSize: 10, color: SUBTLE }}>{fmtDate(inst.lastPriceDate)}</div>
-                )}
-              </div>
-
-              {/* Market value */}
-              <div style={{ textAlign: "right" }}>
-                {isHeld ? (
-                  <div style={{ fontSize: 14, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
-                    {fmt(inst.marketValue)}{" "}
-                    <span style={{ fontSize: 10, opacity: 0.5 }}>PLN</span>
+                  <div>
+                    <div style={{ color: INK, fontSize: 13, fontWeight: 800 }}>
+                      {fmt(preview.quote.close, 2)} {quoteCurrencyForInstrument(preview.quote, inst.currency)}
+                    </div>
+                    <div style={{ color: MUTED, fontSize: 11, marginTop: 2 }}>
+                      Stooq {preview.requestSymbol} · {preview.quote.date} · zapisze jako wycenę manualną
+                    </div>
                   </div>
-                ) : (
-                  <div style={{ fontSize: 13, color: SUBTLE }}>—</div>
-                )}
-              </div>
-
-              {/* Portfolios */}
-              <div style={{ textAlign: "right" }}>
-                {inst.portfolios.length > 0 ? (
-                  <div style={{ display: "flex", gap: 4, justifyContent: "flex-end", flexWrap: "wrap" }}>
-                    {inst.portfolios.map((pf) => (
-                      <span
-                        key={pf}
-                        style={{
-                          fontSize: 10,
-                          padding: "2px 7px",
-                          borderRadius: 5,
-                          background: `${PROFIT}14`,
-                          color: PROFIT,
-                          fontWeight: 600,
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {pf}
-                      </span>
-                    ))}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <button
+                      onClick={() => void handleAcceptQuote(inst)}
+                      disabled={isSavingQuote}
+                      style={{
+                        padding: "7px 11px",
+                        borderRadius: 8,
+                        border: "none",
+                        background: PROFIT,
+                        color: "#fff",
+                        fontSize: 12,
+                        fontWeight: 800,
+                        cursor: isSavingQuote ? "not-allowed" : "pointer",
+                        fontFamily: "inherit",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 5,
+                      }}
+                    >
+                      <Check size={13} />
+                      {isSavingQuote ? "Zapisuję" : "Zapisz"}
+                    </button>
+                    <button
+                      onClick={() => setQuotePreview(null)}
+                      disabled={isSavingQuote}
+                      title="Odrzuć cenę"
+                      aria-label="Odrzuć cenę"
+                      style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: 8,
+                        border: "0.5px solid rgba(28,49,68,0.12)",
+                        background: "rgba(255,255,255,0.7)",
+                        color: MUTED,
+                        cursor: isSavingQuote ? "not-allowed" : "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
                   </div>
-                ) : (
-                  <span style={{ fontSize: 12, color: SUBTLE }}>—</span>
-                )}
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-                <button
-                  onClick={() => {
-                    setEditingInstrumentId(inst.id);
-                    setEditorOpen(true);
-                  }}
-                  style={{
-                    padding: "6px 10px",
-                    borderRadius: 8,
-                    border: "0.5px solid rgba(28,49,68,0.12)",
-                    background: "rgba(255,255,255,0.7)",
-                    color: MUTED,
-                    fontSize: 12,
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                  }}
-                >
-                  Edytuj
-                </button>
-                <button
-                  onClick={() => void handleDeleteInstrument(inst.id)}
-                  disabled={!userDataKey || deletingId === inst.id}
-                  style={{
-                    padding: "6px 10px",
-                    borderRadius: 8,
-                    border: "0.5px solid rgba(184,80,66,0.18)",
-                    background: deletingId === inst.id ? "rgba(184,80,66,0.08)" : "transparent",
-                    color: deletingId === inst.id ? "#B85042" : SUBTLE,
-                    fontSize: 12,
-                    cursor: !userDataKey || deletingId === inst.id ? "not-allowed" : "pointer",
-                    fontFamily: "inherit",
-                  }}
-                >
-                  {deletingId === inst.id ? "Usuwam…" : "Usuń"}
-                </button>
-              </div>
+                </div>
+              )}
             </div>
           );
         })}

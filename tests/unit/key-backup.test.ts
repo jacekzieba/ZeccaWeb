@@ -9,6 +9,7 @@ import {
 } from "@/sync/encryption/aes-gcm";
 import { base64ToBytes, bytesToBase64 } from "@/sync/encryption/base64";
 import { unlockUserDataKey } from "@/sync/encryption/key-backup";
+import swiftFixture from "../fixtures/crypto/aes-gcm-swift.transaction.json";
 
 async function deriveTestKeyEncryptionKey(
   passphrase: string,
@@ -94,5 +95,34 @@ describe("encrypted key backups", () => {
       ),
     ).resolves.toEqual(userDataKeyBytes);
     expect(base64ToBytes(encryptedBackup.nonce)).toHaveLength(12);
+  });
+
+  it("unlocks a Swift CryptoKit generated key backup", async () => {
+    const backup = swiftFixture.keyBackup;
+    const unlockedKey = await unlockUserDataKey(
+      {
+        encrypted_user_data_key: backup.encrypted_user_data_key,
+        nonce: backup.nonce,
+        salt: backup.salt,
+        kdf: backup.kdf,
+        kdf_iterations: backup.kdf_iterations,
+      },
+      backup.passphrase,
+    );
+
+    const payload = { ok: true, source: "swift-key-backup-test" };
+    const encryptedPayload = await encryptJsonPayloadWithNonce(
+      unlockedKey,
+      payload,
+      Uint8Array.from(Array.from({ length: 12 }, (_, index) => index + 100)),
+    );
+
+    await expect(
+      decryptJsonPayload<typeof payload>(
+        unlockedKey,
+        encryptedPayload.encryptedPayload,
+        encryptedPayload.nonce,
+      ),
+    ).resolves.toEqual(payload);
   });
 });

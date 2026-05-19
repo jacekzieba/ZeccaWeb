@@ -45,4 +45,20 @@ describe("parseStooqCsv", () => {
       volume: 12345,
     });
   });
+
+  it("uses the latest row from a daily OHLCV history", () => {
+    expect(
+      parseStooqCsv(
+        [
+          "Date,Open,High,Low,Close,Volume",
+          "2026-05-14,185,190,184,189,10000",
+          "2026-05-15,190,195,188,193.25,12345",
+        ].join("\n"),
+        "aapl.us",
+      ),
+    ).toMatchObject({
+      date: "2026-05-15",
+      close: 193.25,
+    });
+  });
 });

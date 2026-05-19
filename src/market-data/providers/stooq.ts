@@ -12,7 +12,12 @@ const stooqRowSchema = z.object({
 
 export async function fetchStooqQuote(symbol: string): Promise<MarketQuote> {
   const normalizedSymbol = normalizeStooqSymbol(symbol);
-  const url = `https://stooq.com/q/d/l/?s=${encodeURIComponent(normalizedSymbol)}&i=d`;
+  const apiKey = process.env.STOOQ_API_KEY?.trim();
+  if (!apiKey) {
+    throw new Error("STOOQ_API_KEY is required for Stooq CSV downloads.");
+  }
+
+  const url = `https://stooq.com/q/d/l/?s=${encodeURIComponent(normalizedSymbol)}&i=d&apikey=${encodeURIComponent(apiKey)}`;
   const response = await fetch(url, {
     headers: { accept: "text/csv" },
     next: { revalidate: 15 * 60 },
@@ -26,10 +31,13 @@ export async function fetchStooqQuote(symbol: string): Promise<MarketQuote> {
 }
 
 export function parseStooqCsv(csv: string, symbol: string): MarketQuote {
-  const [headerLine, rowLine] = csv
+  const lines = csv
     .trim()
     .split(/\r?\n/)
     .filter(Boolean);
+
+  const [headerLine, ...rowLines] = lines;
+  const rowLine = rowLines.at(-1);
   if (!headerLine || !rowLine || rowLine.toLowerCase().includes("no data")) {
     throw new Error("Stooq returned no quote data.");
   }

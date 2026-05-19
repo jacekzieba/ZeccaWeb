@@ -208,7 +208,7 @@ export function AddTransactionModal({
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!userDataKey || !supabase) {
-      setError("Brak klucza danych — odblokuj dane na dashboardzie.");
+      setError("Brak klucza danych. Odblokuj dane w panelu synchronizacji.");
       return;
     }
     if (!portfolioId) {
@@ -344,7 +344,7 @@ export function AddTransactionModal({
         {!userDataKey && (
           <div style={{ padding: "16px 22px", background: `${AMBER}12`, borderBottom: `0.5px solid ${LINE_SOFT}` }}>
             <div style={{ fontSize: 12, color: AMBER, fontWeight: 600 }}>
-              Odblokuj dane na dashboardzie, żeby zapisywać transakcje.
+              Odblokuj dane w panelu synchronizacji, żeby zapisywać transakcje.
             </div>
           </div>
         )}

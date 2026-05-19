@@ -10,6 +10,11 @@ export const recordTypeSchema = z.enum([
   "settings",
 ]);
 
+const timestampSchema = z.string().refine(
+  (value) => !Number.isNaN(Date.parse(value)),
+  "Invalid timestamp",
+);
+
 export const encryptedRecordSchema = z.object({
   id: z.string().uuid(),
   user_id: z.string().uuid(),
@@ -19,9 +24,9 @@ export const encryptedRecordSchema = z.object({
   payload_version: z.number().int().positive(),
   schema_version: z.number().int().positive(),
   device_id: z.string().min(1).nullable(),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
-  deleted_at: z.string().datetime().nullable(),
+  created_at: timestampSchema,
+  updated_at: timestampSchema,
+  deleted_at: timestampSchema.nullable(),
 });
 
 export const wrappedPayloadEnvelopeSchema = z.object({

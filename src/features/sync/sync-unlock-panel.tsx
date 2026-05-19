@@ -11,6 +11,7 @@ import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import {
   fetchActiveEncryptedRecords,
   fetchEncryptedKeyBackup,
+  refreshEncryptedKeyBackup,
 } from "@/sync/records/supabase-sync-store";
 import { flushPendingSyncOperations } from "@/sync/records/record-writer";
 import {
@@ -37,6 +38,30 @@ type SessionStatus =
   | "authenticated";
 
 type UnlockStatus = "idle" | "unlocking" | "ready" | "error";
+
+function getUnlockErrorMessage(error: unknown) {
+  if (error instanceof DOMException) {
+    if (error.name === "OperationError") {
+      return "Nie udało się odszyfrować backupu klucza. Sprawdź passphrase.";
+    }
+
+    return error.message || `Nie udało się odblokować danych (${error.name}).`;
+  }
+
+  if (error instanceof Error) {
+    return error.message || "Nie udało się odblokować danych.";
+  }
+
+  return "Nie udało się odblokować danych.";
+}
+
+function getRecordDecryptErrorMessage(error: unknown) {
+  if (error instanceof DOMException && error.name === "OperationError") {
+    return "Backup klucza został odblokowany, ale rekordy w Supabase są zaszyfrowane innym kluczem. W aplikacji natywnej uruchom naprawę danych weba i spróbuj ponownie.";
+  }
+
+  return getUnlockErrorMessage(error);
+}
 
 export type SyncLoadResult = {
   records: DecryptedRecord[];
@@ -101,15 +126,38 @@ export function SyncUnlockPanel({
     },
   });
 
-  async function handleUnlock(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!supabase || !keyBackupQuery.data) return;
+  async function unlockSync() {
+    if (unlockStatus === "unlocking" || passphrase.length === 0) {
+      return;
+    }
+
+    if (!supabase) {
+      setUnlockStatus("error");
+      setUnlockError("Supabase client is not configured.");
+      return;
+    }
+
+    const keyBackup = await refreshEncryptedKeyBackup(supabase);
+
+    if (!keyBackup) {
+      setUnlockStatus("error");
+      setUnlockError("Nie znaleziono backupu klucza dla tego konta.");
+      return;
+    }
 
     setUnlockStatus("unlocking");
     setUnlockError(null);
 
+    let userDataKey: CryptoKey;
     try {
-      const userDataKey = await unlockUserDataKey(keyBackupQuery.data, passphrase);
+      userDataKey = await unlockUserDataKey(keyBackup, passphrase);
+    } catch (error) {
+      setUnlockStatus("error");
+      setUnlockError(getUnlockErrorMessage(error));
+      return;
+    }
+
+    try {
       await flushPendingSyncOperations(supabase);
       const encryptedRecords = await fetchActiveEncryptedRecords(supabase);
       const decryptedRecords = await decryptEncryptedRecords(userDataKey, encryptedRecords);
@@ -123,10 +171,18 @@ export function SyncUnlockPanel({
       setUnlockStatus("ready");
     } catch (error) {
       setUnlockStatus("error");
-      setUnlockError(
-        error instanceof Error ? error.message : "Nie udało się odblokować danych."
-      );
+      setUnlockError(getRecordDecryptErrorMessage(error));
     }
+  }
+
+  function handleUnlock(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void unlockSync();
+  }
+
+  function handleUnlockPointer(event: React.MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    void unlockSync();
   }
 
   async function handleSignOut() {
@@ -286,6 +342,7 @@ export function SyncUnlockPanel({
       {hasBackup && unlockStatus !== "ready" && (
         <form
           onSubmit={handleUnlock}
+          onSubmitCapture={handleUnlock}
           style={{
             display: "grid",
             gap: 10,
@@ -328,7 +385,9 @@ export function SyncUnlockPanel({
             />
           </div>
           <button
-            type="submit"
+            type="button"
+            onMouseDown={handleUnlockPointer}
+            onClick={() => void unlockSync()}
             disabled={isBusy || passphrase.length === 0}
             style={{
               padding: "9px 16px",

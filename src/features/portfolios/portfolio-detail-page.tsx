@@ -54,10 +54,11 @@ const KIND_COLORS: Record<string, string> = {
 export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const records = useSyncStore((s) => s.records);
+  const marketFxRates = useSyncStore((s) => s.marketFxRates);
 
   const detail = useMemo(
-    () => (records ? buildPortfolioDetail(records, id) : null),
-    [records, id],
+    () => (records ? buildPortfolioDetail(records, id, { fxRates: marketFxRates }) : null),
+    [records, id, marketFxRates],
   );
 
   if (!records) {
@@ -67,10 +68,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
         <div style={{ ...glassCard, padding: "48px 22px", textAlign: "center" }}>
           <div style={{ fontSize: 32, opacity: 0.12, marginBottom: 12 }}>◎</div>
           <div style={{ fontSize: 14, color: SUBTLE }}>
-            Odblokuj dane na{" "}
-            <Link href="/dashboard" style={{ color: INK, fontWeight: 600 }}>
-              dashboardzie
-            </Link>
+            Odblokuj dane w panelu synchronizacji
           </div>
         </div>
       </div>

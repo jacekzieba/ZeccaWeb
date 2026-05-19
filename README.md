@@ -50,4 +50,5 @@ npm run test:e2e
 - [docs/CRYPTO_FIXTURES.md](docs/CRYPTO_FIXTURES.md)
 - [docs/CHARTING_DECISION.md](docs/CHARTING_DECISION.md)
 - [docs/MARKET_DATA_DECISION.md](docs/MARKET_DATA_DECISION.md)
+- [docs/VALUATION_DECISION.md](docs/VALUATION_DECISION.md)
 - [docs/ROADMAP.md](docs/ROADMAP.md)

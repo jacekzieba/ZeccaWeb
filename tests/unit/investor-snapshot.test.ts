@@ -113,6 +113,11 @@ describe("InvestorDataSnapshot mapper", () => {
       date: "2026-05-15T10:00:00.000Z",
       value: 10_195,
     });
+    expect(snapshot.valuationSeries).toContainEqual({
+      label: "kwi",
+      date: "2026-04-30T00:00:00.000Z",
+      value: 9_995,
+    });
   });
 
   it("supports Swift JSONEncoder numeric dates", () => {
@@ -291,5 +296,96 @@ describe("InvestorDataSnapshot mapper", () => {
       instrumentSymbol: "AAPL",
       transactionType: "dividend",
     });
+  });
+
+  it("can revalue foreign currency positions with historical FX context", () => {
+    const records = [
+      record("account", accountID, {
+        recordType: "account",
+        id: accountID,
+        name: "Global",
+        baseCurrency: "PLN",
+      }),
+      record("asset", usdInstrumentID, {
+        recordType: "asset",
+        id: usdInstrumentID,
+        kind: "stock",
+        symbol: "AAPL",
+        name: "Apple",
+        currency: "USD",
+      }),
+      record("transaction", "99999999-9999-4999-8999-999999999991", {
+        recordType: "transaction",
+        id: "99999999-9999-4999-8999-999999999991",
+        date: "2026-04-01T10:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID: null,
+        transactionType: "cashDeposit",
+        quantity: null,
+        price: null,
+        grossAmount: 10_000,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+      record("transaction", "99999999-9999-4999-8999-999999999992", {
+        recordType: "transaction",
+        id: "99999999-9999-4999-8999-999999999992",
+        date: "2026-04-02T10:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID: null,
+        transactionType: "fxConversion",
+        quantity: null,
+        price: null,
+        grossAmount: 4_000,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+        targetCurrency: "USD",
+        targetGrossAmount: 1_000,
+      }),
+      record("transaction", "99999999-9999-4999-8999-999999999993", {
+        recordType: "transaction",
+        id: "99999999-9999-4999-8999-999999999993",
+        date: "2026-04-03T10:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID: usdInstrumentID,
+        transactionType: "buy",
+        quantity: 5,
+        price: 100,
+        grossAmount: 500,
+        currency: "USD",
+        fees: 2,
+        taxes: 0,
+        fxRateToBase: 4,
+      }),
+      record("manualValuation", "99999999-9999-4999-8999-999999999995", {
+        recordType: "manualValuation",
+        id: "99999999-9999-4999-8999-999999999995",
+        instrumentID: usdInstrumentID,
+        date: "2026-05-01T10:00:00.000Z",
+        value: 120,
+        currency: "USD",
+      }),
+    ];
+
+    const options = {
+      fxRates: [
+        {
+          currency: "USD",
+          rate: 4.2,
+          date: new Date("2026-05-15T00:00:00.000Z"),
+        },
+      ],
+    };
+
+    const snapshot = buildInvestorDataSnapshot(records, options);
+    const detail = buildPortfolioDetail(records, accountID, options);
+    const instruments = buildInstrumentList(records, options);
+
+    expect(snapshot.totalValue).toBeCloseTo(10_611.6, 5);
+    expect(snapshot.cash).toBeCloseTo(8_091.6, 5);
+    expect(detail?.holdings[0]?.marketValue).toBeCloseTo(2_520, 5);
+    expect(instruments[0]?.marketValue).toBeCloseTo(2_520, 5);
   });
 });

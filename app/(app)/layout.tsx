@@ -7,6 +7,14 @@ export default async function AuthenticatedLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const fakeSyncEnabled =
+    process.env.NEXT_PUBLIC_FAKE_SYNC === "1" &&
+    process.env.NODE_ENV !== "production";
+
+  if (fakeSyncEnabled) {
+    return <AppShell>{children}</AppShell>;
+  }
+
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },

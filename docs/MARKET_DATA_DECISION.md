@@ -15,6 +15,7 @@ Etap 5 domyka tylko proxy i cache danych rynkowych. Nie aktualizuje automatyczni
    - Obslugiwany zakres w aplikacji: ostatni dzienny wiersz OHLCV dla symbolu Stooq.
    - Endpoint web: `/api/market-data/quote?symbol=aapl.us`.
    - Stooq jest traktowany jako opcjonalny provider EOD, nie jako zrodlo gwarantowane dla wszystkich instrumentow.
+   - Od 2026 Stooq CSV download wymaga klucza API; lokalnie ustawic `STOOQ_API_KEY`.
 
 ## Prywatnosc
 

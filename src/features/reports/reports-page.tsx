@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, type CSSProperties } from "react";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
@@ -142,7 +141,7 @@ export function ReportsPage() {
           Raporty
         </div>
         <div style={{ fontSize: 12, color: MUTED, marginTop: 2 }}>
-          {asOfLabel ? `Dane na ${asOfLabel}` : "Odblokuj dane na dashboardzie"}
+          {asOfLabel ? `Dane na ${asOfLabel}` : "Odblokuj dane w panelu synchronizacji"}
         </div>
       </div>
 
@@ -150,10 +149,7 @@ export function ReportsPage() {
         <div style={{ ...glassCard, padding: "48px 22px", textAlign: "center" }}>
           <div style={{ fontSize: 32, opacity: 0.12, marginBottom: 12 }}>≋</div>
           <div style={{ fontSize: 14, color: SUBTLE }}>
-            Odblokuj dane na{" "}
-            <Link href="/dashboard" style={{ color: INK, fontWeight: 600 }}>
-              dashboardzie
-            </Link>
+            Odblokuj dane w panelu synchronizacji
           </div>
         </div>
       )}

@@ -21,3 +21,22 @@ test("keeps public market data routes outside the auth gate", async ({ request }
     },
   });
 });
+
+test("exposes market data provider status without auth", async ({ request }) => {
+  const response = await request.get("/api/market-data/status");
+
+  expect(response.ok()).toBe(true);
+  expect(response.headers()["content-type"]).toContain("application/json");
+  const body = await response.json();
+  expect(body).toMatchObject({
+    providers: {
+      stooq: {
+        requiredEnv: "STOOQ_API_KEY",
+      },
+      nbp: {
+        configured: true,
+      },
+    },
+  });
+  expect(typeof body.providers.stooq.configured).toBe("boolean");
+});

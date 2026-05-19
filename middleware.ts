@@ -2,6 +2,9 @@ import { createServerClient, type SetAllCookies } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
+  const fakeSyncEnabled =
+    process.env.NEXT_PUBLIC_FAKE_SYNC === "1" &&
+    process.env.NODE_ENV !== "production";
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -45,7 +48,7 @@ export async function middleware(request: NextRequest) {
     !pathname.startsWith("/_next") &&
     pathname !== "/favicon.ico";
 
-  if (!user && isAppRoute) {
+  if (!user && isAppRoute && !fakeSyncEnabled) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
