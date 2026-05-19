@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearMarketDataCache } from "@/market-data/cache";
 import { fetchNbpFxRate } from "@/market-data/providers/nbp";
 import { fetchStooqQuote } from "@/market-data/providers/stooq";
+import { fetchYahooQuote } from "@/market-data/providers/yahoo";
 import { GET as getFxRate } from "../../app/api/market-data/fx/route";
 import { GET as getQuote } from "../../app/api/market-data/quote/route";
 import { GET as getMarketDataStatus } from "../../app/api/market-data/status/route";
@@ -11,11 +12,16 @@ vi.mock("@/market-data/providers/nbp", () => ({
   fetchNbpFxRate: vi.fn(),
 }));
 
+vi.mock("@/market-data/providers/yahoo", () => ({
+  fetchYahooQuote: vi.fn(),
+}));
+
 vi.mock("@/market-data/providers/stooq", () => ({
   fetchStooqQuote: vi.fn(),
 }));
 
 const mockedFetchNbpFxRate = vi.mocked(fetchNbpFxRate);
+const mockedFetchYahooQuote = vi.mocked(fetchYahooQuote);
 const mockedFetchStooqQuote = vi.mocked(fetchStooqQuote);
 
 function request(url: string) {
@@ -29,10 +35,10 @@ afterEach(() => {
 });
 
 describe("GET /api/market-data/quote", () => {
-  it("fetches a Stooq quote once and then serves the cached value", async () => {
-    mockedFetchStooqQuote.mockResolvedValue({
-      provider: "stooq",
-      symbol: "aapl.us",
+  it("fetches a Yahoo quote once and then serves the cached value", async () => {
+    mockedFetchYahooQuote.mockResolvedValue({
+      provider: "yahoo",
+      symbol: "AAPL",
       currency: "USD",
       date: "2026-05-15",
       open: 190,
@@ -42,12 +48,12 @@ describe("GET /api/market-data/quote", () => {
       volume: 12345,
     });
 
-    const first = await getQuote(request("http://localhost/api/market-data/quote?symbol=AAPL.US"));
-    const second = await getQuote(request("http://localhost/api/market-data/quote?symbol=aapl.us"));
+    const first = await getQuote(request("http://localhost/api/market-data/quote?symbol=AAPL"));
+    const second = await getQuote(request("http://localhost/api/market-data/quote?symbol=aapl"));
 
     await expect(first.json()).resolves.toMatchObject({
       data: {
-        symbol: "aapl.us",
+        symbol: "AAPL",
         close: 193.25,
       },
       cache: {
@@ -56,7 +62,7 @@ describe("GET /api/market-data/quote", () => {
     });
     await expect(second.json()).resolves.toMatchObject({
       data: {
-        symbol: "aapl.us",
+        symbol: "AAPL",
         close: 193.25,
       },
       cache: {
@@ -65,8 +71,75 @@ describe("GET /api/market-data/quote", () => {
     });
     expect(first.status).toBe(200);
     expect(second.status).toBe(200);
-    expect(mockedFetchStooqQuote).toHaveBeenCalledTimes(1);
-    expect(mockedFetchStooqQuote).toHaveBeenCalledWith("aapl.us");
+    expect(mockedFetchYahooQuote).toHaveBeenCalledTimes(1);
+    expect(mockedFetchYahooQuote).toHaveBeenCalledWith("AAPL");
+  });
+
+  it("normalizes legacy Stooq suffixes before calling Yahoo", async () => {
+    mockedFetchYahooQuote.mockResolvedValue({
+      provider: "yahoo",
+      symbol: "CDR.WA",
+      currency: "PLN",
+      date: "2026-05-15",
+      open: 320,
+      high: 330,
+      low: 318,
+      close: 325,
+      volume: 1000,
+    });
+
+    const response = await getQuote(request("http://localhost/api/market-data/quote?symbol=cdr.pl"));
+
+    await expect(response.json()).resolves.toMatchObject({
+      data: {
+        symbol: "CDR.WA",
+        close: 325,
+      },
+    });
+    expect(response.status).toBe(200);
+    expect(mockedFetchYahooQuote).toHaveBeenCalledWith("CDR.WA");
+  });
+
+  it("falls back to Stooq when Yahoo fails and Stooq is configured", async () => {
+    process.env.STOOQ_API_KEY = "test-key";
+    mockedFetchYahooQuote.mockRejectedValue(new Error("Yahoo Finance returned no quote data."));
+    mockedFetchStooqQuote.mockResolvedValue({
+      provider: "stooq",
+      symbol: "cdr.pl",
+      currency: "PLN",
+      date: "2026-05-15",
+      open: 320,
+      high: 330,
+      low: 318,
+      close: 325,
+      volume: 1000,
+    });
+
+    const response = await getQuote(request("http://localhost/api/market-data/quote?symbol=CDR&currency=PLN"));
+
+    await expect(response.json()).resolves.toMatchObject({
+      data: {
+        provider: "stooq",
+        symbol: "cdr.pl",
+        close: 325,
+      },
+      fallback: {
+        from: "yahoo",
+      },
+    });
+    expect(response.status).toBe(200);
+    expect(mockedFetchYahooQuote).toHaveBeenCalledWith("CDR.WA");
+    expect(mockedFetchStooqQuote).toHaveBeenCalledWith("cdr.pl");
+  });
+
+  it("does not call Stooq fallback when it is not configured", async () => {
+    mockedFetchYahooQuote.mockRejectedValue(new Error("Yahoo failed."));
+
+    const response = await getQuote(request("http://localhost/api/market-data/quote?symbol=CDR&currency=PLN"));
+
+    await expect(response.json()).resolves.toEqual({ error: "Yahoo failed." });
+    expect(response.status).toBe(502);
+    expect(mockedFetchStooqQuote).not.toHaveBeenCalled();
   });
 
   it("returns a validation error when symbol is missing", async () => {
@@ -74,7 +147,7 @@ describe("GET /api/market-data/quote", () => {
 
     await expect(response.json()).resolves.toEqual({ error: "Missing symbol." });
     expect(response.status).toBe(400);
-    expect(mockedFetchStooqQuote).not.toHaveBeenCalled();
+    expect(mockedFetchYahooQuote).not.toHaveBeenCalled();
   });
 });
 
@@ -128,13 +201,15 @@ describe("GET /api/market-data/fx", () => {
 });
 
 describe("GET /api/market-data/status", () => {
-  it("reports whether Stooq is configured", async () => {
+  it("reports whether Yahoo and Stooq are configured", async () => {
     process.env.STOOQ_API_KEY = "test-key";
-
     const response = await getMarketDataStatus();
 
     await expect(response.json()).resolves.toEqual({
       providers: {
+        yahoo: {
+          configured: true,
+        },
         stooq: {
           configured: true,
           requiredEnv: "STOOQ_API_KEY",

@@ -5,6 +5,9 @@ export async function GET() {
 
   return NextResponse.json({
     providers: {
+      yahoo: {
+        configured: true,
+      },
       stooq: {
         configured: stooqConfigured,
         requiredEnv: "STOOQ_API_KEY",

@@ -47,7 +47,7 @@
 2. Preview importu - gotowe jako 5A: walidacja wierszy, bledy, ostrzezenia i zapis tylko poprawnych rekordow.
 3. Import XLSX w przegladarce - gotowe jako 5B.
 4. UX importu: dry run, ostrzezenia, duplikaty w pliku i raport po imporcie - gotowe jako 5B.
-5. Proxy providerow market data przez route handlers - gotowe jako 5C: NBP FX i Stooq EOD.
+5. Proxy providerow market data przez route handlers - gotowe jako 5C: NBP FX i Yahoo quote.
 6. Cache cen i kursow - gotowe jako 5C: procesowy cache TTL bez zapisu danych portfela do Supabase.
 
 ## Etap 6 - historia cen i wyceny

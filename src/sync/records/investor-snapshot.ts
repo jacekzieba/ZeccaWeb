@@ -10,10 +10,12 @@ import type {
   TransactionRow,
 } from "@/domain/models/investor-data";
 import {
-  resolveFxRate,
-  resolveInstrumentPrice,
+  valueCashBalances,
+  valueInstrumentPosition,
+  type PositionAssetInput,
+  type PositionValuationDataset,
   type FxRateInput,
-} from "@/domain/valuation/price-resolver";
+} from "@/domain/valuation/position-valuator";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
 
 const APPLE_REFERENCE_DATE_UNIX_MS = Date.UTC(2001, 0, 1);
@@ -36,6 +38,16 @@ const assetPayloadSchema = z.object({
   name: z.string(),
   currency: z.string().min(1),
   category: z.string().nullable().optional(),
+  bondParams: z.object({
+    issueDate: swiftDateSchema,
+    maturityDate: swiftDateSchema,
+    nominalValue: z.number(),
+    firstPeriodRate: z.number(),
+    subsequentBase: z.string(),
+    marginOverBase: z.number(),
+    capitalization: z.string(),
+    interestPayment: z.string(),
+  }).nullable().optional(),
 });
 
 const transferLotSchema = z.object({
@@ -91,6 +103,14 @@ type SettingsPayload = z.infer<typeof settingsPayloadSchema>;
 type Ledger = {
   positions: Map<string, number>;
   cashBalances: Map<string, number>;
+  openLots: Map<string, OpenLot[]>;
+};
+
+type OpenLot = {
+  purchaseDate: Date;
+  quantity: number;
+  costPerUnit: number;
+  currency: string;
 };
 
 type ParsedDataset = {
@@ -277,6 +297,7 @@ function computeLedger(transactions: TransactionPayload[], asOf: Date): Ledger {
   const ledger: Ledger = {
     positions: new Map(),
     cashBalances: new Map(),
+    openLots: new Map(),
   };
 
   for (const transaction of transactions) {
@@ -317,10 +338,12 @@ function applyTransaction(ledger: Ledger, transaction: TransactionPayload) {
     case "buy":
       addCashForTrade(ledger, transaction, -(grossAmount + fees));
       addPosition(ledger, transaction.instrumentID, transaction.quantity ?? 0);
+      addLot(ledger, transaction);
       break;
     case "sell":
       addCashForTrade(ledger, transaction, grossAmount - fees - taxes);
       addPosition(ledger, transaction.instrumentID, -(transaction.quantity ?? 0));
+      consumeLots(ledger, transaction.instrumentID, transaction.quantity ?? 0);
       break;
     case "dividend":
     case "interest":
@@ -330,14 +353,21 @@ function applyTransaction(ledger: Ledger, transaction: TransactionPayload) {
     case "bondRedemption":
       addCash(ledger, currency, grossAmount - fees - taxes);
       addPosition(ledger, transaction.instrumentID, -(transaction.quantity ?? 0));
+      consumeLots(ledger, transaction.instrumentID, transaction.quantity ?? 0);
       break;
     case "depositOpen":
       addCash(ledger, currency, -grossAmount);
       addPosition(ledger, transaction.instrumentID, 1);
+      addLot(ledger, {
+        ...transaction,
+        quantity: 1,
+        price: grossAmount,
+      });
       break;
     case "depositClose":
       addCash(ledger, currency, grossAmount - fees - taxes);
       addPosition(ledger, transaction.instrumentID, -(transaction.quantity ?? 1));
+      consumeLots(ledger, transaction.instrumentID, transaction.quantity ?? 1);
       break;
     case "fee":
     case "tax":
@@ -374,6 +404,22 @@ function addAssetTransfer(ledger: Ledger, transaction: TransactionPayload) {
       : transaction.quantity ?? 0;
 
   addPosition(ledger, instrumentID, quantity);
+
+  if (lots.length > 0) {
+    const openLots = ledger.openLots.get(instrumentID) ?? [];
+    openLots.push(
+      ...lots.map((lot) => ({
+        purchaseDate: toDate(lot.acquisitionDate),
+        quantity: lot.quantity,
+        costPerUnit: lot.unitCost,
+        currency: lot.currency,
+      })),
+    );
+    ledger.openLots.set(instrumentID, openLots);
+    return;
+  }
+
+  addLot(ledger, transaction);
 }
 
 function addCashForTrade(
@@ -381,6 +427,11 @@ function addCashForTrade(
   transaction: TransactionPayload,
   amount: number,
 ) {
+  if (transaction.currency !== "PLN" && transaction.fxRateToBase) {
+    addCash(ledger, "PLN", amount * transaction.fxRateToBase);
+    return;
+  }
+
   addCash(ledger, transaction.currency, amount);
 }
 
@@ -403,12 +454,58 @@ function addPosition(
   );
 }
 
+function addLot(ledger: Ledger, transaction: TransactionPayload) {
+  const instrumentID = transaction.instrumentID;
+  const quantity = transaction.quantity ?? 0;
+  if (!instrumentID || quantity <= EPSILON) {
+    return;
+  }
+
+  const costPerUnit =
+    transaction.price ??
+    (transaction.grossAmount > EPSILON ? transaction.grossAmount / quantity : 0);
+  const lots = ledger.openLots.get(instrumentID) ?? [];
+  lots.push({
+    purchaseDate: toDate(transaction.date),
+    quantity,
+    costPerUnit,
+    currency: transaction.currency,
+  });
+  ledger.openLots.set(instrumentID, lots);
+}
+
+function consumeLots(
+  ledger: Ledger,
+  instrumentID: string | null | undefined,
+  quantity: number,
+) {
+  if (!instrumentID || quantity <= EPSILON) {
+    return;
+  }
+
+  const lots = ledger.openLots.get(instrumentID) ?? [];
+  let remaining = quantity;
+
+  while (remaining > EPSILON && lots.length > 0) {
+    const lot = lots[0];
+    const consumed = Math.min(lot.quantity, remaining);
+    lot.quantity -= consumed;
+    remaining -= consumed;
+    if (lot.quantity <= EPSILON) {
+      lots.shift();
+    }
+  }
+
+  ledger.openLots.set(instrumentID, lots);
+}
+
 function valuePortfolio(
   ledger: Ledger,
   dataset: ParsedDataset,
   asOf: Date,
 ): PortfolioValuation {
   const assetsByID = new Map(dataset.assets.map((asset) => [asset.id, asset]));
+  const valuationDataset = toPositionValuationDataset(dataset);
   const allocationValues = new Map<string, number>();
   let holdingsValue = 0;
   let positionCount = 0;
@@ -419,9 +516,17 @@ function valuePortfolio(
     }
 
     const asset = assetsByID.get(instrumentID);
-    const price = latestPriceForInstrument(instrumentID, dataset, asOf);
-    const marketValue =
-      quantity * price.value * fxRateForCurrency(price.currency, dataset, asOf);
+    const valuation = valueInstrumentPosition(
+      {
+        instrumentID,
+        quantity,
+        asset: toPositionAssetInput(asset),
+        lots: ledger.openLots.get(instrumentID) ?? [],
+        dataset: valuationDataset,
+        asOf,
+      },
+    );
+    const marketValue = valuation.marketValue;
 
     if (marketValue <= EPSILON) {
       continue;
@@ -455,53 +560,29 @@ function valuePortfolio(
 
 function valueCash(
   ledger: Ledger,
-  dataset: Pick<ParsedDataset, "transactions" | "fxRates">,
+  dataset: Pick<ParsedDataset, "manualValuations" | "transactions" | "fxRates">,
   asOf: Date,
 ) {
-  let value = 0;
-
-  for (const [currency, balance] of ledger.cashBalances) {
-    value += balance * fxRateForCurrency(currency, dataset, asOf);
-  }
-
-  return value;
-}
-
-function latestPriceForInstrument(
-  instrumentID: string,
-  dataset: ParsedDataset,
-  asOf: Date,
-) {
-  const asset = dataset.assets.find((candidate) => candidate.id === instrumentID);
-  return resolveInstrumentPrice(
-    instrumentID,
-    {
-      assetCurrency: asset?.currency,
-      manualValuations: dataset.manualValuations.map((valuation) => ({
-        instrumentID: valuation.instrumentID,
-        value: valuation.value,
-        currency: valuation.currency,
-        date: toDate(valuation.date),
-      })),
-      transactions: dataset.transactions.map((transaction) => ({
-        instrumentID: transaction.instrumentID,
-        price: transaction.price,
-        currency: transaction.currency,
-        date: toDate(transaction.date),
-      })),
-    },
+  return valueCashBalances(
+    ledger.cashBalances,
+    toPositionValuationDataset(dataset),
     asOf,
   );
 }
 
-function fxRateForCurrency(
-  currency: string,
-  dataset: Pick<ParsedDataset, "transactions" | "fxRates">,
-  asOf: Date,
-) {
-  return resolveFxRate(
-    currency,
-    dataset.transactions.map((transaction) => ({
+function toPositionValuationDataset(
+  dataset: Pick<ParsedDataset, "manualValuations" | "transactions" | "fxRates">,
+): PositionValuationDataset {
+  return {
+    manualValuations: dataset.manualValuations.map((valuation) => ({
+      instrumentID: valuation.instrumentID,
+      value: valuation.value,
+      currency: valuation.currency,
+      date: toDate(valuation.date),
+    })),
+    transactions: dataset.transactions.map((transaction) => ({
+      instrumentID: transaction.instrumentID,
+      price: transaction.price,
       transactionType: transaction.transactionType,
       currency: transaction.currency,
       grossAmount: transaction.grossAmount,
@@ -510,9 +591,32 @@ function fxRateForCurrency(
       targetGrossAmount: transaction.targetGrossAmount,
       date: toDate(transaction.date),
     })),
-    asOf,
-    dataset.fxRates,
-  ).rate;
+    fxRates: dataset.fxRates,
+  };
+}
+
+function toPositionAssetInput(
+  asset: AssetPayload | undefined,
+): PositionAssetInput | undefined {
+  if (!asset) {
+    return undefined;
+  }
+
+  return {
+    kind: asset.kind,
+    currency: asset.currency,
+    bondParams: asset.bondParams
+      ? {
+          maturityDate: toDate(asset.bondParams.maturityDate),
+          nominalValue: asset.bondParams.nominalValue,
+          firstPeriodRate: asset.bondParams.firstPeriodRate,
+          subsequentBase: asset.bondParams.subsequentBase,
+          marginOverBase: asset.bondParams.marginOverBase,
+          capitalization: asset.bondParams.capitalization,
+          interestPayment: asset.bondParams.interestPayment,
+        }
+      : null,
+  };
 }
 
 function buildAllocation(
@@ -659,6 +763,7 @@ export function buildPortfolioDetail(
   const transactions = transactionsForPortfolio(dataset.transactions, portfolioId);
   const ledger = computeLedger(transactions, asOf);
   const assetsByID = new Map(dataset.assets.map((a) => [a.id, a]));
+  const valuationDataset = toPositionValuationDataset(dataset);
 
   const holdings: HoldingRow[] = [];
   let holdingsValue = 0;
@@ -667,9 +772,17 @@ export function buildPortfolioDetail(
     if (quantity <= EPSILON) continue;
 
     const asset = assetsByID.get(instrumentId);
-    const price = latestPriceForInstrument(instrumentId, dataset, asOf);
-    const marketValue =
-      quantity * price.value * fxRateForCurrency(price.currency, dataset, asOf);
+    const valuation = valueInstrumentPosition(
+      {
+        instrumentID: instrumentId,
+        quantity,
+        asset: toPositionAssetInput(asset),
+        lots: ledger.openLots.get(instrumentId) ?? [],
+        dataset: valuationDataset,
+        asOf,
+      },
+    );
+    const marketValue = valuation.marketValue;
 
     if (marketValue <= EPSILON) continue;
 
@@ -680,8 +793,8 @@ export function buildPortfolioDetail(
       name: asset?.name ?? asset?.symbol ?? instrumentId.slice(0, 8),
       kind: asset?.kind ?? "unknown",
       quantity,
-      lastPrice: price.value,
-      currency: price.currency,
+      lastPrice: valuation.price,
+      currency: valuation.currency,
       marketValue,
       portfolioPercent: 0,
     });
@@ -750,9 +863,15 @@ export function buildInstrumentList(
 ): InstrumentRow[] {
   const dataset = parseDataset(records, options);
   const asOf = getAsOf(records, dataset);
+  const valuationDataset = toPositionValuationDataset(dataset);
 
   // Aggregate quantity held per instrument across all portfolios
   const quantityByInstrument = new Map<string, number>();
+  const aggregateLedger: Ledger = {
+    positions: new Map(),
+    cashBalances: new Map(),
+    openLots: new Map(),
+  };
   const portfoliosByInstrument = new Map<string, Set<string>>();
 
   for (const account of dataset.accounts) {
@@ -761,6 +880,17 @@ export function buildInstrumentList(
     for (const [instrumentId, qty] of ledger.positions) {
       if (qty <= EPSILON) continue;
       quantityByInstrument.set(instrumentId, (quantityByInstrument.get(instrumentId) ?? 0) + qty);
+      aggregateLedger.positions.set(
+        instrumentId,
+        (aggregateLedger.positions.get(instrumentId) ?? 0) + qty,
+      );
+      aggregateLedger.openLots.set(
+        instrumentId,
+        [
+          ...(aggregateLedger.openLots.get(instrumentId) ?? []),
+          ...(ledger.openLots.get(instrumentId) ?? []),
+        ],
+      );
       const pfSet = portfoliosByInstrument.get(instrumentId) ?? new Set();
       pfSet.add(account.name);
       portfoliosByInstrument.set(instrumentId, pfSet);
@@ -771,20 +901,27 @@ export function buildInstrumentList(
 
   for (const asset of dataset.assets) {
     const totalQuantity = quantityByInstrument.get(asset.id) ?? 0;
-    const price = latestPriceForInstrument(asset.id, dataset, asOf);
-    const marketValue =
-      totalQuantity * price.value * fxRateForCurrency(price.currency, dataset, asOf);
+    const valuation = valueInstrumentPosition(
+      {
+        instrumentID: asset.id,
+        quantity: totalQuantity,
+        asset: toPositionAssetInput(asset),
+        lots: aggregateLedger.openLots.get(asset.id) ?? [],
+        dataset: valuationDataset,
+        asOf,
+      },
+    );
 
     rows.push({
       id: asset.id,
       symbol: asset.symbol,
       name: asset.name,
       kind: asset.kind,
-      currency: price.currency,
-      lastPrice: price.value,
-      lastPriceDate: price.date?.toISOString() ?? null,
+      currency: valuation.currency,
+      lastPrice: valuation.price,
+      lastPriceDate: valuation.priceDate?.toISOString() ?? null,
       totalQuantity,
-      marketValue,
+      marketValue: valuation.marketValue,
       portfolios: [...(portfoliosByInstrument.get(asset.id) ?? [])],
     });
   }

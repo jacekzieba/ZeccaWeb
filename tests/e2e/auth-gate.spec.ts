@@ -30,13 +30,16 @@ test("exposes market data provider status without auth", async ({ request }) => 
   const body = await response.json();
   expect(body).toMatchObject({
     providers: {
-      stooq: {
-        requiredEnv: "STOOQ_API_KEY",
+      yahoo: {
+        configured: true,
       },
       nbp: {
         configured: true,
       },
     },
+  });
+  expect(body.providers.stooq).toMatchObject({
+    requiredEnv: "STOOQ_API_KEY",
   });
   expect(typeof body.providers.stooq.configured).toBe("boolean");
 });

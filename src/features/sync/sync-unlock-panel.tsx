@@ -2,9 +2,14 @@
 
 import type { Session } from "@supabase/supabase-js";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
+import {
+  clearCachedUserDataKey,
+  loadCachedUserDataKey,
+  saveCachedUserDataKey,
+} from "@/sync/encryption/key-cache";
 import { unlockUserDataKey } from "@/sync/encryption/key-backup";
 import { decryptEncryptedRecords } from "@/sync/records/encrypted-records";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
@@ -76,6 +81,7 @@ export function SyncUnlockPanel({
 }) {
   const supabase = useMemo(() => createBrowserSupabaseClientOrNull(), []);
   const setCredentials = useSyncStore((s) => s.setCredentials);
+  const records = useSyncStore((s) => s.records);
   const [sessionStatus, setSessionStatus] = useState<SessionStatus>("checking");
   const [session, setSession] = useState<Session | null>(null);
   const [passphrase, setPassphrase] = useState("");
@@ -126,6 +132,62 @@ export function SyncUnlockPanel({
     },
   });
 
+  const loadSyncWithKey = useCallback(async (userDataKey: CryptoKey, cacheUserId?: string) => {
+    if (!supabase) {
+      throw new Error("Supabase client is not configured.");
+    }
+
+    await flushPendingSyncOperations(supabase);
+    const encryptedRecords = await fetchActiveEncryptedRecords(supabase);
+    const decryptedRecords = await decryptEncryptedRecords(userDataKey, encryptedRecords);
+    const summary = summarizeDecryptedRecords(decryptedRecords);
+    const snapshot = buildInvestorDataSnapshot(decryptedRecords);
+
+    setCredentials(userDataKey, supabase);
+    setLastSummary(summary);
+    onSyncLoaded({ records: decryptedRecords, summary, snapshot });
+    if (cacheUserId) {
+      await saveCachedUserDataKey(cacheUserId, userDataKey);
+    }
+    setUnlockStatus("ready");
+  }, [onSyncLoaded, setCredentials, supabase]);
+
+  useEffect(() => {
+    if (!supabase || !session || records || unlockStatus !== "idle") {
+      return;
+    }
+
+    const userId = session.user.id;
+    let cancelled = false;
+
+    async function loadCachedSync() {
+      setUnlockStatus("unlocking");
+      setUnlockError(null);
+
+      try {
+        const cachedKey = await loadCachedUserDataKey(userId);
+        if (!cachedKey || cancelled) {
+          if (!cancelled) setUnlockStatus("idle");
+          return;
+        }
+
+        await loadSyncWithKey(cachedKey);
+      } catch (error) {
+        await clearCachedUserDataKey(userId);
+        if (!cancelled) {
+          setUnlockStatus("idle");
+          setUnlockError(getRecordDecryptErrorMessage(error));
+        }
+      }
+    }
+
+    void loadCachedSync();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loadSyncWithKey, records, session, supabase, unlockStatus]);
+
   async function unlockSync() {
     if (unlockStatus === "unlocking" || passphrase.length === 0) {
       return;
@@ -158,17 +220,8 @@ export function SyncUnlockPanel({
     }
 
     try {
-      await flushPendingSyncOperations(supabase);
-      const encryptedRecords = await fetchActiveEncryptedRecords(supabase);
-      const decryptedRecords = await decryptEncryptedRecords(userDataKey, encryptedRecords);
-      const summary = summarizeDecryptedRecords(decryptedRecords);
-      const snapshot = buildInvestorDataSnapshot(decryptedRecords);
-
-      setCredentials(userDataKey, supabase);
-      setLastSummary(summary);
-      onSyncLoaded({ records: decryptedRecords, summary, snapshot });
+      await loadSyncWithKey(userDataKey, session?.user.id);
       setPassphrase("");
-      setUnlockStatus("ready");
     } catch (error) {
       setUnlockStatus("error");
       setUnlockError(getRecordDecryptErrorMessage(error));
@@ -187,6 +240,9 @@ export function SyncUnlockPanel({
 
   async function handleSignOut() {
     if (!supabase) return;
+    if (session) {
+      await clearCachedUserDataKey(session.user.id);
+    }
     await supabase.auth.signOut();
   }
 

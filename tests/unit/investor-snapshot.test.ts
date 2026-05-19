@@ -152,6 +152,75 @@ describe("InvestorDataSnapshot mapper", () => {
     expect(snapshot.totalValue).toBe(500);
   });
 
+  it("values treasury bonds with accrued dirty price from synced bond params", () => {
+    const bondID = "12121212-1212-4212-8212-121212121212";
+    const records = [
+      record("account", accountID, {
+        recordType: "account",
+        id: accountID,
+        name: "Obligacje",
+        baseCurrency: "PLN",
+      }),
+      record("asset", bondID, {
+        recordType: "asset",
+        id: bondID,
+        kind: "treasuryBond",
+        symbol: "ROD0338",
+        name: "ROD0338",
+        currency: "PLN",
+        bondParams: {
+          series: "ROD",
+          fullCode: "ROD0338",
+          issueDate: "2026-03-01T00:00:00.000Z",
+          maturityDate: "2038-03-01T00:00:00.000Z",
+          nominalValue: 100,
+          firstPeriodRate: 6,
+          subsequentBase: "inflacja",
+          marginOverBase: 1.5,
+          capitalization: "roczna",
+          interestPayment: "przy wykupie",
+        },
+      }),
+      record("transaction", "34343434-3434-4434-8434-343434343434", {
+        recordType: "transaction",
+        id: "34343434-3434-4434-8434-343434343434",
+        date: "2026-04-01T10:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID: null,
+        transactionType: "cashDeposit",
+        quantity: null,
+        price: null,
+        grossAmount: 6_000,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+      record("transaction", "45454545-4545-4454-8454-454545454545", {
+        recordType: "transaction",
+        id: "45454545-4545-4454-8454-454545454545",
+        date: "2026-04-01T10:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID: bondID,
+        transactionType: "buy",
+        quantity: 50,
+        price: 100,
+        grossAmount: 5_000,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+    ];
+
+    const instruments = buildInstrumentList(records);
+
+    expect(instruments[0]).toMatchObject({
+      id: bondID,
+      totalQuantity: 50,
+    });
+    expect(instruments[0]?.lastPrice).toBeCloseTo(100.7233, 4);
+    expect(instruments[0]?.marketValue).toBeCloseTo(5_036.16, 2);
+  });
+
   it("values foreign currency cash and manual valuations in base currency", () => {
     const records = [
       record("settings", "88888888-8888-4888-8888-888888888888", {
@@ -263,8 +332,8 @@ describe("InvestorDataSnapshot mapper", () => {
     expect(detail?.totalValue).toBe(10_428);
     expect(detail?.cashValue).toBe(8_028);
     expect(detail?.cashBalances).toEqual([
-      { currency: "PLN", amount: 6_000 },
-      { currency: "USD", amount: 507 },
+      { currency: "PLN", amount: 3_992 },
+      { currency: "USD", amount: 1_009 },
     ]);
     expect(detail?.holdings).toEqual([
       {
@@ -383,8 +452,8 @@ describe("InvestorDataSnapshot mapper", () => {
     const detail = buildPortfolioDetail(records, accountID, options);
     const instruments = buildInstrumentList(records, options);
 
-    expect(snapshot.totalValue).toBeCloseTo(10_611.6, 5);
-    expect(snapshot.cash).toBeCloseTo(8_091.6, 5);
+    expect(snapshot.totalValue).toBeCloseTo(10_712, 5);
+    expect(snapshot.cash).toBeCloseTo(8_192, 5);
     expect(detail?.holdings[0]?.marketValue).toBeCloseTo(2_520, 5);
     expect(instruments[0]?.marketValue).toBeCloseTo(2_520, 5);
   });

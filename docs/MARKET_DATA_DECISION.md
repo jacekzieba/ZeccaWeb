@@ -11,11 +11,17 @@ Etap 5 domyka tylko proxy i cache danych rynkowych. Nie aktualizuje automatyczni
    - Obslugiwany zakres w aplikacji: pojedynczy kurs `A/{code}` jako `code -> PLN`.
    - Endpoint web: `/api/market-data/fx?code=USD` albo `/api/market-data/fx?code=USD&date=2026-05-15`.
 
-2. Quote EOD: Stooq CSV download.
-   - Obslugiwany zakres w aplikacji: ostatni dzienny wiersz OHLCV dla symbolu Stooq.
-   - Endpoint web: `/api/market-data/quote?symbol=aapl.us`.
-   - Stooq jest traktowany jako opcjonalny provider EOD, nie jako zrodlo gwarantowane dla wszystkich instrumentow.
-   - Od 2026 Stooq CSV download wymaga klucza API; lokalnie ustawic `STOOQ_API_KEY`.
+2. Quote: Yahoo Finance chart API.
+   - Obslugiwany zakres w aplikacji: ostatni dostepny dzienny punkt OHLCV dla symbolu Yahoo.
+   - Endpoint web: `/api/market-data/quote?symbol=AAPL`.
+   - Yahoo jest traktowany jako podstawowy provider propozycji ceny dla pojedynczego symbolu, nie jako zrodlo gwarantowane dla wszystkich instrumentow.
+   - Endpoint nie wymaga klucza API w konfiguracji serwera.
+   - Legacy symbole Stooq sa mapowane przed requestem: `.us` znika, `.pl` przechodzi na `.WA`, `.uk` na `.L`.
+
+3. Quote fallback: Stooq CSV download.
+   - Stooq pozostaje druga opcja, zgodnie z klientami macOS/iOS.
+   - Fallback dziala tylko przy ustawionym `STOOQ_API_KEY`.
+   - Endpoint web probuje Yahoo jako pierwsze, a po bledzie przechodzi na Stooq z symbolem Stooq, np. `CDR` + `PLN` -> Yahoo `CDR.WA`, fallback Stooq `cdr.pl`.
 
 ## Prywatnosc
 
@@ -29,7 +35,7 @@ Zapytanie o symbol lub walute ujawnia backendowi/proxy intencje uzytkownika. Dla
 ## Cache
 
 - FX NBP: TTL 60 minut.
-- Quote Stooq: TTL 15 minut.
+- Quote Yahoo: TTL 15 minut.
 - Cache ma sluzyc do ograniczenia powtarzanych requestow z UI i testow, a nie jako historia cen.
 
 Historia cen i automatyczne manual valuations powinny byc osobnym etapem, bo wymagaja decyzji czy dane cenowe maja trafiać do szyfrowanych rekordow, czy pozostac odtwarzalnym cachem.

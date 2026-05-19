@@ -7,6 +7,7 @@ import { deleteRecord, refreshSyncStore, saveRecord } from "@/sync/records/recor
 import { useSyncStore } from "@/sync/store/sync-store";
 import { buildInstrumentList } from "@/sync/records/investor-snapshot";
 import type { MarketQuote } from "@/market-data/types";
+import { yahooSymbolForInstrument } from "@/market-data/symbols";
 import { isFakeSyncEnabled } from "@/lib/env";
 import { buildFakeManualValuationRecord } from "@/sync/dev/fake-sync";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
@@ -73,6 +74,9 @@ type QuotePreview = {
 };
 type MarketDataStatus = {
   providers: {
+    yahoo: {
+      configured: boolean;
+    };
     stooq: {
       configured: boolean;
       requiredEnv: string;
@@ -83,26 +87,14 @@ type MarketDataStatus = {
   };
 };
 
-function stooqSymbolForInstrument(symbol: string, currency: string) {
-  const normalized = symbol.trim().toLowerCase();
-  if (!normalized || normalized.includes(".")) {
-    return normalized;
-  }
-
-  if (currency === "USD") return `${normalized}.us`;
-  if (currency === "GBP") return `${normalized}.uk`;
-  if (currency === "PLN") return `${normalized}.pl`;
-  return normalized;
-}
-
 function quoteCurrencyForInstrument(quote: MarketQuote, fallbackCurrency: string) {
   return quote.currency ?? fallbackCurrency;
 }
 
 function buildFakeQuote(inst: { symbol: string; currency: string }): MarketQuote {
   return {
-    provider: "stooq",
-    symbol: stooqSymbolForInstrument(inst.symbol, inst.currency),
+    provider: "yahoo",
+    symbol: yahooSymbolForInstrument(inst.symbol, inst.currency),
     currency: inst.currency,
     date: "2026-05-18",
     open: 136,
@@ -292,7 +284,7 @@ export function InstrumentsPage() {
   }
 
   async function handleFetchQuote(inst: (typeof allInstruments)[number]) {
-    const requestSymbol = stooqSymbolForInstrument(inst.symbol, inst.currency);
+    const requestSymbol = yahooSymbolForInstrument(inst.symbol, inst.currency);
     if (!requestSymbol) {
       setQuoteError("Instrument nie ma symbolu do pobrania ceny.");
       return;
@@ -314,7 +306,7 @@ export function InstrumentsPage() {
       }
 
       const response = await fetch(
-        `/api/market-data/quote?symbol=${encodeURIComponent(requestSymbol)}`,
+        `/api/market-data/quote?symbol=${encodeURIComponent(inst.symbol)}&currency=${encodeURIComponent(inst.currency)}`,
       );
       const body = await response.json() as { data?: MarketQuote; error?: string };
 
@@ -513,7 +505,7 @@ export function InstrumentsPage() {
             gap: 12,
             flexWrap: "wrap",
             borderColor:
-              marketDataStatus?.providers.stooq.configured === false
+              marketDataStatus?.providers.yahoo.configured === false
                 ? "rgba(184,120,48,0.28)"
                 : "rgba(255,255,255,0.7)",
           }}
@@ -525,22 +517,22 @@ export function InstrumentsPage() {
             <div style={{ color: MUTED, fontSize: 12, marginTop: 3, lineHeight: 1.45 }}>
               {marketDataStatusError
                 ? marketDataStatusError
-                : marketDataStatus?.providers.stooq.configured === false
-                  ? "Stooq nie jest skonfigurowany. Pobieranie realnych cen wymaga STOOQ_API_KEY w środowisku serwera."
-                  : marketDataStatus?.providers.stooq.configured
-                    ? "Stooq jest skonfigurowany. Ceny EOD można pobierać dla pojedynczych symboli."
-                    : "Sprawdzam konfigurację providerów..."}
+                : marketDataStatus?.providers.yahoo.configured
+                  ? marketDataStatus.providers.stooq.configured
+                    ? "Yahoo Finance jest skonfigurowany, a Stooq działa jako druga opcja."
+                    : "Yahoo Finance jest skonfigurowany. Stooq jako druga opcja wymaga STOOQ_API_KEY."
+                  : "Sprawdzam konfigurację providerów..."}
             </div>
           </div>
           <div
             style={{
               borderRadius: 99,
               background:
-                marketDataStatus?.providers.stooq.configured === false
+                marketDataStatus?.providers.yahoo.configured === false
                   ? "rgba(184,120,48,0.12)"
                   : "rgba(45,156,107,0.12)",
               color:
-                marketDataStatus?.providers.stooq.configured === false
+                marketDataStatus?.providers.yahoo.configured === false
                   ? "#B87830"
                   : PROFIT,
               fontSize: 11,
@@ -549,11 +541,14 @@ export function InstrumentsPage() {
               whiteSpace: "nowrap",
             }}
           >
-            Stooq · {marketDataStatus
-              ? marketDataStatus.providers.stooq.configured
+            Yahoo · {marketDataStatus
+              ? marketDataStatus.providers.yahoo.configured
                 ? "OK"
-                : "brak klucza"
+                : "niedostępny"
               : "sprawdzam"}
+            {marketDataStatus
+              ? ` · Stooq ${marketDataStatus.providers.stooq.configured ? "OK" : "brak klucza"}`
+              : ""}
           </div>
         </div>
       )}
@@ -822,7 +817,7 @@ export function InstrumentsPage() {
                   <button
                     onClick={() => void handleFetchQuote(inst)}
                     disabled={!userDataKey || isLoadingQuote || isSavingQuote}
-                    title="Pobierz cenę Stooq"
+                    title="Pobierz cenę Yahoo Finance"
                     style={{
                       padding: "6px 9px",
                       borderRadius: 8,
@@ -895,7 +890,7 @@ export function InstrumentsPage() {
                       {fmt(preview.quote.close, 2)} {quoteCurrencyForInstrument(preview.quote, inst.currency)}
                     </div>
                     <div style={{ color: MUTED, fontSize: 11, marginTop: 2 }}>
-                      Stooq {preview.requestSymbol} · {preview.quote.date} · zapisze jako wycenę manualną
+                      {preview.quote.provider === "stooq" ? "Stooq" : "Yahoo"} {preview.quote.symbol || preview.requestSymbol} · {preview.quote.date} · zapisze jako wycenę manualną
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
