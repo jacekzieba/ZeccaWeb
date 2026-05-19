@@ -230,7 +230,9 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
                 <div style={{ fontSize: 13, color: INK, fontVariantNumeric: "tabular-nums" }}>
                   {h.lastPrice > 0 ? fmt(h.lastPrice, 2) : "—"}
                 </div>
-                <div style={{ fontSize: 10, color: SUBTLE }}>{h.currency}</div>
+                <div style={{ fontSize: 10, color: SUBTLE }}>
+                  {h.currency} · {h.valuationSourceLabel}
+                </div>
               </div>
 
               {/* Market value */}

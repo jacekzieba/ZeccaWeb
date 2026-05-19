@@ -67,6 +67,8 @@ Minimalny zakres UI:
 4. Po zatwierdzeniu zapisac `manualValuation` przez istniejacy szyfrowany writer.
 5. Po zapisie odswiezyc snapshot i raporty.
 
+Snapshot zwraca jawne zrodlo wyceny (`manual`, `transaction`, `treasuryBond`, `missing`), zeby UI moglo pokazac diagnostyke zamiast cichego `0`.
+
 ## Testy
 
 Wymagane testy:

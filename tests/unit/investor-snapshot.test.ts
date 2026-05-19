@@ -219,6 +219,10 @@ describe("InvestorDataSnapshot mapper", () => {
     });
     expect(instruments[0]?.lastPrice).toBeCloseTo(100.7233, 4);
     expect(instruments[0]?.marketValue).toBeCloseTo(5_036.16, 2);
+    expect(instruments[0]).toMatchObject({
+      valuationSource: "treasuryBond",
+      valuationSourceLabel: "Obligacja skarbowa",
+    });
   });
 
   it("values foreign currency cash and manual valuations in base currency", () => {
@@ -344,6 +348,8 @@ describe("InvestorDataSnapshot mapper", () => {
         quantity: 5,
         lastPrice: 120,
         currency: "USD",
+        valuationSource: "manual",
+        valuationSourceLabel: "Wycena ręczna",
         marketValue: 2_400,
         portfolioPercent: expect.closeTo(23.01496, 5),
       },
@@ -355,6 +361,8 @@ describe("InvestorDataSnapshot mapper", () => {
       currency: "USD",
       lastPrice: 120,
       lastPriceDate: "2026-05-01T10:00:00.000Z",
+      valuationSource: "manual",
+      valuationSourceLabel: "Wycena ręczna",
       totalQuantity: 5,
       marketValue: 2_400,
       portfolios: ["Global"],
@@ -456,5 +464,79 @@ describe("InvestorDataSnapshot mapper", () => {
     expect(snapshot.cash).toBeCloseTo(8_192, 5);
     expect(detail?.holdings[0]?.marketValue).toBeCloseTo(2_520, 5);
     expect(instruments[0]?.marketValue).toBeCloseTo(2_520, 5);
+  });
+
+  it("reports transaction and missing valuation sources for instrument diagnostics", () => {
+    const missingInstrumentID = "88888888-8888-4888-8888-888888888881";
+    const records = [
+      record("account", accountID, {
+        recordType: "account",
+        id: accountID,
+        name: "Diagnostyka",
+        baseCurrency: "PLN",
+      }),
+      record("asset", instrumentID, {
+        recordType: "asset",
+        id: instrumentID,
+        kind: "stock",
+        symbol: "PKN",
+        name: "PKN",
+        currency: "PLN",
+      }),
+      record("asset", missingInstrumentID, {
+        recordType: "asset",
+        id: missingInstrumentID,
+        kind: "stock",
+        symbol: "BRAK",
+        name: "Bez ceny",
+        currency: "PLN",
+      }),
+      record("transaction", "99999999-9999-4999-8999-999999999996", {
+        recordType: "transaction",
+        id: "99999999-9999-4999-8999-999999999996",
+        date: "2026-04-01T10:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID,
+        transactionType: "buy",
+        quantity: 2,
+        price: 50,
+        grossAmount: 100,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+      record("transaction", "99999999-9999-4999-8999-999999999997", {
+        recordType: "transaction",
+        id: "99999999-9999-4999-8999-999999999997",
+        date: "2026-04-02T10:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID: missingInstrumentID,
+        transactionType: "buy",
+        quantity: 1,
+        price: null,
+        grossAmount: 0,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+    ];
+
+    const instruments = buildInstrumentList(records);
+    const priced = instruments.find((instrument) => instrument.id === instrumentID);
+    const missing = instruments.find((instrument) => instrument.id === missingInstrumentID);
+
+    expect(priced).toMatchObject({
+      lastPrice: 50,
+      valuationSource: "transaction",
+      valuationSourceLabel: "Cena transakcyjna",
+      marketValue: 100,
+    });
+    expect(missing).toMatchObject({
+      lastPrice: 0,
+      lastPriceDate: null,
+      valuationSource: "missing",
+      valuationSourceLabel: "Brak ceny",
+      marketValue: 0,
+    });
   });
 });

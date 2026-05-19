@@ -795,6 +795,8 @@ export function buildPortfolioDetail(
       quantity,
       lastPrice: valuation.price,
       currency: valuation.currency,
+      valuationSource: valuation.source,
+      valuationSourceLabel: valuation.sourceLabel,
       marketValue,
       portfolioPercent: 0,
     });
@@ -920,6 +922,8 @@ export function buildInstrumentList(
       currency: valuation.currency,
       lastPrice: valuation.price,
       lastPriceDate: valuation.priceDate?.toISOString() ?? null,
+      valuationSource: valuation.source,
+      valuationSourceLabel: valuation.sourceLabel,
       totalQuantity,
       marketValue: valuation.marketValue,
       portfolios: [...(portfoliosByInstrument.get(asset.id) ?? [])],

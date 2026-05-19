@@ -44,6 +44,8 @@ export type HoldingRow = {
   quantity: number;
   lastPrice: number;
   currency: string;
+  valuationSource: "manual" | "transaction" | "treasuryBond" | "missing";
+  valuationSourceLabel: string;
   marketValue: number;
   portfolioPercent: number;
 };
@@ -89,6 +91,8 @@ export type InstrumentRow = {
   currency: string;
   lastPrice: number;
   lastPriceDate: string | null;
+  valuationSource: "manual" | "transaction" | "treasuryBond" | "missing";
+  valuationSourceLabel: string;
   totalQuantity: number;
   marketValue: number;
   portfolios: string[];

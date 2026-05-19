@@ -770,9 +770,16 @@ export function InstrumentsPage() {
                   <div style={{ fontSize: 13, color: INK, fontVariantNumeric: "tabular-nums" }}>
                     {inst.lastPrice > 0 ? fmt(inst.lastPrice, 2) : "—"}
                   </div>
-                  {inst.lastPriceDate && (
-                    <div style={{ fontSize: 10, color: SUBTLE }}>{fmtDate(inst.lastPriceDate)}</div>
-                  )}
+                  <div
+                    style={{
+                      fontSize: 10,
+                      color: inst.valuationSource === "missing" ? LOSS : SUBTLE,
+                      marginTop: 2,
+                    }}
+                  >
+                    {inst.valuationSourceLabel}
+                    {inst.lastPriceDate ? ` · ${fmtDate(inst.lastPriceDate)}` : ""}
+                  </div>
                 </div>
 
                 {/* Market value */}

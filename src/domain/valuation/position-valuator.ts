@@ -44,6 +44,8 @@ export type PositionValuation = {
   price: number;
   currency: string;
   priceDate: Date | null;
+  source: "manual" | "transaction" | "treasuryBond" | "missing";
+  sourceLabel: string;
   marketValue: number;
 };
 
@@ -85,6 +87,8 @@ export function valueInstrumentPosition(input: {
       price,
       currency: asset.currency,
       priceDate: asOf,
+      source: "treasuryBond",
+      sourceLabel: "Obligacja skarbowa",
       marketValue: marketValue * fxRateForCurrency(asset.currency, dataset, asOf),
     };
   }
@@ -103,9 +107,24 @@ export function valueInstrumentPosition(input: {
     price: price.value,
     currency: price.currency,
     priceDate: price.date,
+    source: price.source,
+    sourceLabel: priceSourceLabel(price.source),
     marketValue:
       quantity * price.value * fxRateForCurrency(price.currency, dataset, asOf),
   };
+}
+
+function priceSourceLabel(source: PositionValuation["source"]) {
+  switch (source) {
+    case "manual":
+      return "Wycena ręczna";
+    case "transaction":
+      return "Cena transakcyjna";
+    case "treasuryBond":
+      return "Obligacja skarbowa";
+    case "missing":
+      return "Brak ceny";
+  }
 }
 
 function fxRateForCurrency(
