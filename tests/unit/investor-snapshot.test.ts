@@ -462,6 +462,16 @@ describe("InvestorDataSnapshot mapper", () => {
 
     expect(snapshot.totalValue).toBeCloseTo(10_712, 5);
     expect(snapshot.cash).toBeCloseTo(8_192, 5);
+    expect(snapshot.valuationSeries).toContainEqual({
+      label: "kwi",
+      date: "2026-04-30T00:00:00.000Z",
+      value: 9_992,
+    });
+    expect(snapshot.valuationSeries.at(-1)).toEqual({
+      label: "maj",
+      date: "2026-05-15T10:00:00.000Z",
+      value: 10_712,
+    });
     expect(detail?.holdings[0]?.marketValue).toBeCloseTo(2_520, 5);
     expect(instruments[0]?.marketValue).toBeCloseTo(2_520, 5);
   });

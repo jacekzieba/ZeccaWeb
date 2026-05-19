@@ -69,6 +69,8 @@ Minimalny zakres UI:
 
 Snapshot zwraca jawne zrodlo wyceny (`manual`, `transaction`, `treasuryBond`, `missing`), zeby UI moglo pokazac diagnostyke zamiast cichego `0`.
 
+Serie historyczne licza ledger, cene i FX osobno dla kazdej daty punktu. Resolver ceny i FX moze uzyc tylko danych z data `<= valuationDate`, wiec przyszla wycena manualna albo przyszly kurs rynkowy nie zmienia wartosci starszych punktow serii.
+
 ## Testy
 
 Wymagane testy:
