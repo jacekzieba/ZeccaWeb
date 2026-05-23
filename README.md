@@ -4,17 +4,21 @@ Webowa wersja Investora. Projekt jest osobnym klientem Next.js dla tego samego p
 
 ## Status
 
-Pierwszy szkielet zawiera:
+Etap 6 jest domknięty lokalnie. Aplikacja zawiera:
 
 - Next.js App Router + TypeScript.
 - Tailwind CSS + daisyUI z motywem `investor`.
-- Shell aplikacji i read-only dashboard na przykładowym snapshotcie.
+- Shell aplikacji, dashboard, portfele, instrumenty, transakcje, raporty i import.
 - Supabase browser/server clients i typy minimalnego kontraktu DB.
 - Klientowy panel sesji Supabase, pobrania `encrypted_key_backups` i odblokowania rekordów sync passphrase.
 - Migrację Supabase dla `profiles`, `user_devices`, `encrypted_records` i `encrypted_key_backups` z RLS.
 - Web Crypto AES-GCM helpers zgodne z założeniem `ciphertext || auth_tag` w Base64.
 - Zod schemas dla sync envelope.
-- Vitest i Playwright jako fundament testów.
+- CRUD portfeli, instrumentów i transakcji na zaszyfrowanych rekordach sync.
+- Import CSV/XLSX transakcji z preview, walidacją i raportem.
+- Route handlery market data dla NBP FX i Yahoo quote z cache TTL.
+- Historyczną wycenę portfela przez price resolver, manual valuations i FX dla daty.
+- Vitest i Playwright, w tym fake-sync E2E dla pobrania ceny i zapisu `manualValuation`.
 
 ## Uruchomienie lokalne
 
@@ -33,6 +37,13 @@ npm run typecheck
 npm run lint
 npm test
 npm run build
+npm run test:e2e:fake-sync
+```
+
+Przed walidacją staging dodatkowo sprawdź konfigurację Supabase:
+
+```bash
+npm run check:staging-env
 ```
 
 Testy E2E wymagają lokalnej przeglądarki Playwright:
@@ -51,4 +62,6 @@ npm run test:e2e
 - [docs/CHARTING_DECISION.md](docs/CHARTING_DECISION.md)
 - [docs/MARKET_DATA_DECISION.md](docs/MARKET_DATA_DECISION.md)
 - [docs/VALUATION_DECISION.md](docs/VALUATION_DECISION.md)
+- [docs/STAGING_VALIDATION.md](docs/STAGING_VALIDATION.md)
+- [docs/STAGING_VALIDATION_REPORT.md](docs/STAGING_VALIDATION_REPORT.md)
 - [docs/ROADMAP.md](docs/ROADMAP.md)

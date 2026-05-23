@@ -52,13 +52,26 @@
 
 ## Etap 6 - historia cen i wyceny
 
-Cel: przejsc od ostatnich cen i wycen manualnych do deterministycznej historii wartosci portfela opartej o jawnie zaakceptowane ceny, bez wysylania pelnego portfela poza przegladarke.
+Cel: przejsc od ostatnich cen i wycen manualnych do deterministycznej historii wartosci portfela opartej o jawnie zaakceptowane ceny, bez wysylania pelnego portfela poza przegladarke. Etap domkniety lokalnie.
 
-1. Decyzja architektoniczna dla historii cen - opisac w `docs/VALUATION_DECISION.md`.
-2. Wydzielic price resolver z domeny snapshotu: ledger ma liczyc ilosci i gotowke, a osobna warstwa ma dobierac ceny oraz kursy FX dla daty.
-3. Rozszerzyc serie wycen portfela tak, zeby dla kazdej daty uzywala najlepszej dostepnej ceny `<= date`, a nie tylko ostatniej ceny transakcyjnej.
-4. Dodac pobieranie pojedynczej ceny rynkowej dla instrumentu z UI, z podgladem przed zapisem.
-5. Zapisywac zaakceptowana cene jako zaszyfrowany `manualValuation`; cache providerow pozostaje odtwarzalny i nie jest zrodlem prawdy.
-6. Rozszerzyc FX o kursy dla konkretnej daty i fallback do kursow zapisanych przy transakcjach.
-7. Dodac testy price resolvera, historycznych valuation series i route handlerow market data na mockach.
-8. Bramka domkniecia: `npm run typecheck`, `npm test`, `npm run lint` i `npm run build` przechodza.
+1. Decyzja architektoniczna dla historii cen - gotowe w `docs/VALUATION_DECISION.md`.
+2. Wydzielic price resolver z domeny snapshotu: gotowe, ledger liczy ilosci i gotowke, a osobna warstwa dobiera ceny oraz kursy FX dla daty.
+3. Rozszerzyc serie wycen portfela tak, zeby dla kazdej daty uzywala najlepszej dostepnej ceny `<= date`, a nie tylko ostatniej ceny transakcyjnej - gotowe.
+4. Dodac pobieranie pojedynczej ceny rynkowej dla instrumentu z UI, z podgladem przed zapisem - gotowe.
+5. Zapisywac zaakceptowana cene jako zaszyfrowany `manualValuation`; cache providerow pozostaje odtwarzalny i nie jest zrodlem prawdy - gotowe.
+6. Rozszerzyc FX o kursy dla konkretnej daty i fallback do kursow zapisanych przy transakcjach - gotowe.
+7. Dodac testy price resolvera, historycznych valuation series i route handlerow market data na mockach - gotowe.
+8. Bramka domkniecia: `npm run typecheck`, `npm test`, `npm run lint`, `npm run build` i `npm run test:e2e:fake-sync` przechodza lokalnie.
+
+## Etap 7 - walidacja staging i kompatybilnosc natywna
+
+Cel: potwierdzic, ze webowy klient czyta i zapisuje ten sam prywatny model synchronizacji co aplikacja natywna, na realnym projekcie Supabase i realnych zaszyfrowanych rekordach.
+
+Procedura walidacji: `docs/STAGING_VALIDATION.md`.
+
+1. Uruchomic web przeciwko staging Supabase z kopia lub testowym zestawem rekordow z natywnego Investora.
+2. Potwierdzic odczyt: logowanie, pobranie `encrypted_key_backups`, odblokowanie `userDataKey`, odszyfrowanie rekordow i zgodnosc dashboardu z klientem natywnym.
+3. Potwierdzic zapis: dodanie portfela, instrumentu, transakcji i zaakceptowanej wyceny `manualValuation` w webie, a potem odczyt tych rekordow w aplikacji natywnej.
+4. Potwierdzic konflikt i tombstone: zmiana tego samego rekordu po obu stronach, soft delete i wymuszenie lokalnej zmiany nie moga prowadzic do cichej utraty danych.
+5. Sprawdzic granice prywatnosci providerow: endpointy market data dostaja tylko pojedynczy symbol albo walute i date, bez listy pozycji, ilosci ani identyfikatorow uzytkownika.
+6. Bramka domkniecia: snapshot web i snapshot natywny zgadzaja sie na tym samym zestawie rekordow, a zapisane przez web rekordy przechodza natywne dekodowanie.
