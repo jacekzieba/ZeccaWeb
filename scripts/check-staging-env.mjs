@@ -69,6 +69,64 @@ if (fakeSync && fakeSync !== "0" && fakeSync.toLowerCase() !== "false") {
   fail("NEXT_PUBLIC_FAKE_SYNC must be empty, 0, or false for staging validation.");
 }
 
+async function checkJsonEndpoint(baseUrl, path, validate) {
+  const url = new URL(path, baseUrl);
+
+  try {
+    const response = await fetch(url);
+    const contentType = response.headers.get("content-type") ?? "";
+
+    if (!response.ok) {
+      fail(`${url.toString()} returned HTTP ${response.status}.`);
+      return;
+    }
+
+    if (!contentType.includes("application/json")) {
+      fail(`${url.toString()} did not return JSON.`);
+      return;
+    }
+
+    const body = await response.json();
+    validate(body, url);
+  } catch (error) {
+    fail(`${url.toString()} is not reachable. Start the app first or set STAGING_PREFLIGHT_URL to a running instance. ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+const preflightUrl = process.env.STAGING_PREFLIGHT_URL;
+
+if (preflightUrl) {
+  let baseUrl;
+
+  try {
+    baseUrl = new URL(preflightUrl);
+  } catch {
+    fail("STAGING_PREFLIGHT_URL must be a valid URL.");
+  }
+
+  if (baseUrl) {
+    await checkJsonEndpoint(baseUrl, "/api/health", (body, url) => {
+      if (body?.ok !== true || body?.service !== "InvestorWeb") {
+        fail(`${url.toString()} returned an unexpected health payload.`);
+      }
+    });
+
+    await checkJsonEndpoint(baseUrl, "/api/market-data/status", (body, url) => {
+      if (body?.providers?.yahoo?.configured !== true) {
+        fail(`${url.toString()} reports Yahoo as unavailable.`);
+      }
+
+      if (body?.providers?.nbp?.configured !== true) {
+        fail(`${url.toString()} reports NBP as unavailable.`);
+      }
+
+      if (!("stooq" in (body?.providers ?? {}))) {
+        fail(`${url.toString()} is missing Stooq provider status.`);
+      }
+    });
+  }
+}
+
 if (!process.exitCode) {
-  console.log("Staging env check passed.");
+  console.log(preflightUrl ? "Staging env and endpoint check passed." : "Staging env check passed.");
 }

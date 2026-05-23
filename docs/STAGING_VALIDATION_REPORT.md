@@ -17,7 +17,7 @@ Dataset source:
 ## Local gate
 
 ```text
-npm run check:staging-env:
+npm run preflight:staging:
 npm run typecheck:
 npm test:
 npm run lint:

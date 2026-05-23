@@ -58,7 +58,7 @@ NEXT_PUBLIC_FAKE_SYNC=
 Przed podpieciem realnego staging uruchomic:
 
 ```bash
-npm run check:staging-env
+npm run preflight:staging
 npm run typecheck
 npm test
 npm run lint
@@ -176,7 +176,7 @@ Web commit:
 Test account:
 
 Local gate:
-- staging env:
+- staging preflight:
 - typecheck:
 - unit tests:
 - lint:

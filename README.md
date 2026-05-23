@@ -43,7 +43,7 @@ npm run test:e2e:fake-sync
 Przed walidacją staging dodatkowo sprawdź konfigurację Supabase:
 
 ```bash
-npm run check:staging-env
+npm run preflight:staging
 ```
 
 Testy E2E wymagają lokalnej przeglądarki Playwright:
@@ -64,4 +64,6 @@ npm run test:e2e
 - [docs/VALUATION_DECISION.md](docs/VALUATION_DECISION.md)
 - [docs/STAGING_VALIDATION.md](docs/STAGING_VALIDATION.md)
 - [docs/STAGING_VALIDATION_REPORT.md](docs/STAGING_VALIDATION_REPORT.md)
+- [docs/STAGING_RUNBOOK.md](docs/STAGING_RUNBOOK.md)
+- [docs/STAGING_RISKS.md](docs/STAGING_RISKS.md)
 - [docs/ROADMAP.md](docs/ROADMAP.md)

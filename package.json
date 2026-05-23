@@ -8,11 +8,14 @@
     "start": "next start",
     "lint": "eslint .",
     "check:staging-env": "node scripts/check-staging-env.mjs",
+    "check:sync-compat": "node scripts/check-sync-compat.mjs",
+    "preflight:staging": "npm run check:staging-env && npm run check:sync-compat && npm run test:e2e:staging-smoke",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:e2e:fake-sync": "playwright test --config playwright.fake-sync.config.ts"
+    "test:e2e:fake-sync": "playwright test --config playwright.fake-sync.config.ts",
+    "test:e2e:staging-smoke": "playwright test --config playwright.staging-smoke.config.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
