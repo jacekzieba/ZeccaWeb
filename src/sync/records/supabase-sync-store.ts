@@ -2,6 +2,11 @@ import type { BrowserSupabaseClient } from "@/supabase/client";
 import type { EncryptedKeyBackup } from "@/sync/encryption/key-backup";
 import { encryptedRecordSchema } from "@/sync/envelopes/envelope";
 import type { EncryptedRecord } from "./encrypted-records";
+import {
+  getWebDeviceId,
+  getWebDeviceName,
+  getWebDevicePlatform,
+} from "@/sync/records/web-device";
 
 export type UpsertPayload = {
   id: string;
@@ -22,6 +27,35 @@ export type EncryptedRecordMetadata = {
   updated_at: string;
   deleted_at: string | null;
 };
+
+export type UserDevicePayload = {
+  user_id: string;
+  device_id: string;
+  device_name: string;
+  platform: string;
+  last_seen_at: string;
+};
+
+export async function registerWebDevice(
+  supabase: BrowserSupabaseClient,
+  userId: string,
+): Promise<UserDevicePayload> {
+  const payload: UserDevicePayload = {
+    user_id: userId,
+    device_id: getWebDeviceId(),
+    device_name: getWebDeviceName(),
+    platform: getWebDevicePlatform(),
+    last_seen_at: new Date().toISOString(),
+  };
+
+  const { error } = await supabase
+    .from("user_devices")
+    .upsert([payload] as never[], { onConflict: "user_id,device_id" });
+
+  if (error) throw error;
+
+  return payload;
+}
 
 export async function fetchEncryptedKeyBackup(
   supabase: BrowserSupabaseClient,

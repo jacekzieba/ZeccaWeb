@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
+import { makeAssetPayload } from "@/sync/records/macos-payloads";
 
 const INK = "#1C3144";
 const MUTED = "rgba(28,49,68,0.58)";
@@ -134,15 +135,14 @@ export function InstrumentEditorModal({
         supabase,
         userDataKey,
         "asset",
-        {
+        makeAssetPayload({
           id,
-          recordType: "asset",
           kind,
           symbol: trimmedSymbol,
           name: trimmedName,
           currency,
           category: category.trim() || null,
-        },
+        }),
         { baseUpdatedAt: initialValue?.updatedAt ?? null },
       );
       if (!result.queued) {

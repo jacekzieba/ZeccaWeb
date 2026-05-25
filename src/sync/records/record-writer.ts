@@ -9,21 +9,11 @@ import {
   type UpsertPayload,
 } from "@/sync/records/supabase-sync-store";
 import { summarizeDecryptedRecords } from "@/sync/records/sync-summary";
+import { getWebDeviceId } from "@/sync/records/web-device";
 import type { BrowserSupabaseClient } from "@/supabase/client";
 
-const WEB_DEVICE_ID_KEY = "investor-web-device-id";
 const PENDING_SYNC_KEY = "investor-web-pending-sync-v1";
 export const PENDING_SYNC_CHANGED_EVENT = "investor-web-pending-sync-changed";
-
-function getWebDeviceId(): string {
-  if (typeof localStorage === "undefined") return "web-ssr";
-  let id = localStorage.getItem(WEB_DEVICE_ID_KEY);
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem(WEB_DEVICE_ID_KEY, id);
-  }
-  return id;
-}
 
 export type WriteRecordPayload = {
   id: string;

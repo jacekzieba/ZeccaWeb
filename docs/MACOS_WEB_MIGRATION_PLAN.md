@@ -34,6 +34,8 @@ Refactor macOS rozszerza kontrakt wzgledem obecnego web MVP:
 
 ## Priorytet 1 - zgodnosc payloadow
 
+Status lokalny: zrobione dla web read compatibility i podstawowego web write compatibility. Do potwierdzenia fixtures/staging.
+
 1. Zaktualizowac webowe schematy payloadow w `src/sync/records/investor-snapshot.ts`:
    - `accountPayloadSchema`: dodac opcjonalne `accountType`, `colorHex`, `targetAllocation`.
    - `assetPayloadSchema`: dodac opcjonalne `exchange`, `country`, `isin`, `marketDataID`, `listedBondParams`, `depositParams`.
@@ -47,6 +49,8 @@ Refactor macOS rozszerza kontrakt wzgledem obecnego web MVP:
 3. Dodac testy unit, ktore parsują payloady w ksztalcie macOS dla wszystkich typow rekordow.
 
 ## Priorytet 2 - `income`
+
+Status lokalny: zrobione minimalnie. Web parsuje `income` i wystawia `snapshot.income` z licznikami oraz sumami PLN. Nie miesza `income` automatycznie z gotowka portfela.
 
 macOS zapisuje:
 
@@ -83,6 +87,8 @@ Do zrobienia w web:
 6. Dopiero po parity z macOS zdecydowac, czy `income` ma wejsc do dashboard/report UI web, czy tylko do zgodnego sync read/write.
 
 ## Priorytet 3 - `user_devices`
+
+Status lokalny: zrobione. Web ma stabilny `device_id`, upsertuje `user_devices` i uzywa tego samego `device_id` przy `encrypted_records`.
 
 macOS ma `registerDevice(userID:)` i upsertuje:
 
@@ -154,13 +160,13 @@ npm run test:e2e:fake-sync
 
 ## Kolejnosc implementacji
 
-1. Web read compatibility dla rozszerzonych payloadow macOS.
-2. Web write compatibility dla wymaganych pol macOS.
-3. `income` parser i minimalny model raportowy.
-4. `user_devices` heartbeat.
-5. Generator/eksport fixtures z macOS refactor branch.
-6. Web tests na fixtures.
-7. Staging validation.
+1. Web read compatibility dla rozszerzonych payloadow macOS - zrobione lokalnie.
+2. Web write compatibility dla wymaganych pol macOS - zrobione lokalnie dla UI writes.
+3. `income` parser i minimalny model raportowy - zrobione lokalnie.
+4. `user_devices` heartbeat - zrobione lokalnie.
+5. Generator/eksport fixtures z macOS refactor branch - do zrobienia.
+6. Web tests na fixtures - do zrobienia.
+7. Staging validation - do zrobienia.
 
 ## Ryzyko glowne
 

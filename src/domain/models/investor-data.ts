@@ -26,11 +26,20 @@ export type PortfolioSummary = {
   positions: number;
 };
 
+export type IncomeSummary = {
+  earningCount: number;
+  burdenCount: number;
+  earningsPLN: number;
+  burdensPLN: number;
+  netPLN: number;
+};
+
 export type InvestorDataSnapshot = {
   asOf: string;
   totalValue: number;
   monthlyChange: number;
   cash: number;
+  income: IncomeSummary;
   portfolios: PortfolioSummary[];
   valuationSeries: ValuationPoint[];
   allocation: AllocationSlice[];

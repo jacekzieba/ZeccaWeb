@@ -35,8 +35,8 @@ Status ryzyk:
 
 | Ryzyko | Status | Dowod lokalny | Co zostaje do staging |
 | --- | --- | --- | --- |
-| `income` ignorowane przez snapshot | Potwierdzone | `check:sync-compat` oznacza `income` jako jawny read gap; `investor-snapshot.ts` ma `case "income"` bez wplywu na snapshot | Sprawdzic, czy refactor macOS zapisuje osobne rekordy `income`; jesli tak, dodac parser i modelowanie w web |
-| Brak `user_devices` heartbeat | Potwierdzone | Schemat i typy zawieraja `user_devices`, ale kod web zapisuje tylko `device_id` na `encrypted_records` | Zdecydowac, czy heartbeat urzadzenia jest wymagany przed produkcja |
+| `income` ignorowane przez snapshot | Zamkniete lokalnie | Web parsuje `income` i buduje `snapshot.income`; testy pokrywaja earning, burden i tombstone | Potwierdzic parity z macOS fixtures/staging |
+| Brak `user_devices` heartbeat | Zamkniete lokalnie | Web upsertuje `user_devices` przez `registerWebDevice`; `check:sync-compat` ma PASS | Potwierdzic wpis `user_devices` na staging |
 | RLS wymaga live testu | Niezweryfikowane lokalnie | Migracja ma RLS i polityki `auth.uid()`, ale brak realnych dwoch kont Auth w lokalnym tescie | Uruchomic RLS smoke test na staging z dwoma kontami |
 | Stooq fallback zalezy od `STOOQ_API_KEY` | Zabezpieczone testami, nadal konfiguracyjne | `market-data-routes.test.ts` testuje brak klucza i fallback z kluczem | Zweryfikowac faktyczny klucz na staging, jesli fallback Stooq ma byc czescia testu |
 | Market data jako propozycja ceny | Zabezpieczone testami i architektura | Endpointy przyjmuja pojedynczy symbol/walute; fake-sync E2E pokrywa zapis `manualValuation` po akceptacji | W Network/logach staging potwierdzic brak snapshotu, `user_id` i ciphertext w requestach providerow |
@@ -47,3 +47,22 @@ Blokery produkcyjne pozostaja zalezne od realnej walidacji web-native na staging
 ## Weryfikacja refactoru macOS
 
 Branch remote `origin/claude/hungry-goodall-1227f7` z repo `jacekzieba/Investor` potwierdza, ze `income` jest realnym rekordem sync po stronie macOS, a nie przyszlym placeholderem. Szczegolowy plan domkniecia kompatybilnosci jest w `docs/MACOS_WEB_MIGRATION_PLAN.md`.
+
+## Weryfikacja implementacji web 2026-05-25
+
+Po analizie refactorowanego macOS web domknal lokalnie:
+
+- rozszerzony odczyt payloadow `account`, `asset`, `transaction`, `manualValuation`, `settings`;
+- helpery zapisu web generujace pola wymagane przez macOS `Codable`;
+- parser i minimalny `snapshot.income` dla `income` earning/burden;
+- webowy heartbeat `user_devices`.
+
+Uruchomione:
+
+```bash
+npm run typecheck
+npm test -- tests/unit/supabase-sync-store.test.ts tests/unit/record-writer.test.ts tests/unit/macos-payloads.test.ts tests/unit/investor-snapshot.test.ts
+npm run check:sync-compat
+```
+
+Wynik: PASS, `check:sync-compat` zostawia tylko staging RLS live check.

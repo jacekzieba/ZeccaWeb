@@ -16,6 +16,7 @@ import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import {
   fetchActiveEncryptedRecords,
   fetchEncryptedKeyBackup,
+  registerWebDevice,
   refreshEncryptedKeyBackup,
 } from "@/sync/records/supabase-sync-store";
 import { flushPendingSyncOperations } from "@/sync/records/record-writer";
@@ -137,6 +138,9 @@ export function SyncUnlockPanel({
       throw new Error("Supabase client is not configured.");
     }
 
+    if (session?.user.id) {
+      await registerWebDevice(supabase, session.user.id);
+    }
     await flushPendingSyncOperations(supabase);
     const encryptedRecords = await fetchActiveEncryptedRecords(supabase);
     const decryptedRecords = await decryptEncryptedRecords(userDataKey, encryptedRecords);
@@ -150,7 +154,7 @@ export function SyncUnlockPanel({
       await saveCachedUserDataKey(cacheUserId, userDataKey);
     }
     setUnlockStatus("ready");
-  }, [onSyncLoaded, setCredentials, supabase]);
+  }, [onSyncLoaded, session?.user.id, setCredentials, supabase]);
 
   useEffect(() => {
     if (!supabase || !session || records || unlockStatus !== "idle") {

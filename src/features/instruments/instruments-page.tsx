@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Check, RefreshCw, X } from "lucide-react";
 import { InstrumentEditorModal } from "@/features/instruments/instrument-editor-modal";
 import { deleteRecord, refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
+import { makeManualValuationPayload } from "@/sync/records/macos-payloads";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { buildInstrumentList } from "@/sync/records/investor-snapshot";
 import type { MarketQuote } from "@/market-data/types";
@@ -367,14 +368,13 @@ export function InstrumentsPage() {
         supabase,
         userDataKey,
         "manualValuation",
-        {
+        makeManualValuationPayload({
           id: crypto.randomUUID(),
-          recordType: "manualValuation",
           instrumentID: inst.id,
           date: `${quote.date}T00:00:00.000Z`,
           value: quote.close,
           currency: quoteCurrencyForInstrument(quote, inst.currency),
-        },
+        }),
         { baseUpdatedAt: null },
       );
 

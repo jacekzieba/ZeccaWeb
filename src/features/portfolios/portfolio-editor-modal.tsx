@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
+import { makeAccountPayload } from "@/sync/records/macos-payloads";
 
 const INK = "#1C3144";
 const MUTED = "rgba(28,49,68,0.58)";
@@ -114,12 +115,11 @@ export function PortfolioEditorModal({
         supabase,
         userDataKey,
         "account",
-        {
+        makeAccountPayload({
           id,
-          recordType: "account",
           name: trimmedName,
           baseCurrency,
-        },
+        }),
         { baseUpdatedAt: initialValue?.updatedAt ?? null },
       );
       if (!result.queued) {

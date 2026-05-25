@@ -24,6 +24,13 @@ export const sampleSnapshot: InvestorDataSnapshot = {
   totalValue: 428_940,
   monthlyChange: 3.38,
   cash: 2,
+  income: {
+    earningCount: 0,
+    burdenCount: 0,
+    earningsPLN: 0,
+    burdensPLN: 0,
+    netPLN: 0,
+  },
   portfolios: [
     {
       id: "ike",

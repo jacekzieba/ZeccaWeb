@@ -3,6 +3,7 @@ import type {
   AllocationSlice,
   CashBalance,
   HoldingRow,
+  IncomeSummary,
   InstrumentRow,
   InvestorDataSnapshot,
   PortfolioDetail,
@@ -27,7 +28,10 @@ const accountPayloadSchema = z.object({
   recordType: z.literal("account"),
   id: z.string().uuid(),
   name: z.string(),
+  accountType: z.string().optional(),
   baseCurrency: z.string().min(1),
+  colorHex: z.string().optional(),
+  targetAllocation: z.record(z.number()).optional(),
 });
 
 const assetPayloadSchema = z.object({
@@ -37,7 +41,11 @@ const assetPayloadSchema = z.object({
   symbol: z.string(),
   name: z.string(),
   currency: z.string().min(1),
+  exchange: z.string().nullable().optional(),
+  country: z.string().nullable().optional(),
+  isin: z.string().nullable().optional(),
   category: z.string().nullable().optional(),
+  marketDataID: z.string().nullable().optional(),
   bondParams: z.object({
     issueDate: swiftDateSchema,
     maturityDate: swiftDateSchema,
@@ -48,6 +56,8 @@ const assetPayloadSchema = z.object({
     capitalization: z.string(),
     interestPayment: z.string(),
   }).nullable().optional(),
+  listedBondParams: z.unknown().nullable().optional(),
+  depositParams: z.unknown().nullable().optional(),
 });
 
 const transferLotSchema = z.object({
@@ -62,6 +72,7 @@ const transactionPayloadSchema = z.object({
   recordType: z.literal("transaction"),
   id: z.string().uuid(),
   date: swiftDateSchema,
+  bookingDate: swiftDateSchema.nullable().optional(),
   portfolioID: z.string().uuid(),
   instrumentID: z.string().uuid().nullable().optional(),
   transactionType: z.string(),
@@ -74,8 +85,16 @@ const transactionPayloadSchema = z.object({
   fxRateToBase: z.number().nullable().optional(),
   targetCurrency: z.string().nullable().optional(),
   targetGrossAmount: z.number().nullable().optional(),
+  notes: z.string().optional(),
+  externalImportID: z.string().nullable().optional(),
+  sourcePortfolioID: z.string().uuid().nullable().optional(),
   transferKind: z.string().nullable().optional(),
+  transferSourceKind: z.string().nullable().optional(),
+  contributionTreatment: z.string().nullable().optional(),
+  transferCostBasisMode: z.string().nullable().optional(),
   transferLots: z.array(transferLotSchema).nullable().optional(),
+  createdAt: swiftDateSchema.optional(),
+  updatedAt: swiftDateSchema.optional(),
 });
 
 const manualValuationPayloadSchema = z.object({
@@ -85,12 +104,44 @@ const manualValuationPayloadSchema = z.object({
   date: swiftDateSchema,
   value: z.number(),
   currency: z.string().min(1),
+  note: z.string().optional(),
+  createdAt: swiftDateSchema.optional(),
+  updatedAt: swiftDateSchema.optional(),
+});
+
+const incomePayloadSchema = z.object({
+  recordType: z.literal("income"),
+  id: z.string().uuid(),
+  entryKind: z.enum(["earning", "burden"]),
+  year: z.number().int(),
+  month: z.number().int().min(1).max(12),
+  employmentType: z.string().nullable().optional(),
+  enteredAmount: z.number().nullable().optional(),
+  currency: z.string().nullable().optional(),
+  fxRateToPLN: z.number().nullable().optional(),
+  plnAmount: z.number().nullable().optional(),
+  source: z.string().nullable().optional(),
+  burdenCategory: z.string().nullable().optional(),
+  amountPLN: z.number().nullable().optional(),
+  note: z.string().nullable().optional(),
 });
 
 const settingsPayloadSchema = z.object({
   recordType: z.literal("settings"),
   id: z.string().uuid().optional(),
+  syncMode: z.string().optional(),
+  accountProvider: z.string().optional(),
+  telemetryEnabled: z.boolean().optional(),
+  hasAcknowledgedPrivacyDisclosure: z.boolean().optional(),
   baseCurrency: z.string().min(1).optional(),
+  showBelkaTax: z.boolean().optional(),
+  useFIFO: z.boolean().optional(),
+  showRealReturns: z.boolean().optional(),
+  autoRefreshEnabled: z.boolean().optional(),
+  selectedProvider: z.string().optional(),
+  fxProvider: z.string().optional(),
+  inflationRegion: z.string().optional(),
+  appLanguage: z.string().optional(),
   updatedAt: swiftDateSchema.optional(),
 });
 
@@ -98,6 +149,7 @@ type AccountPayload = z.infer<typeof accountPayloadSchema>;
 type AssetPayload = z.infer<typeof assetPayloadSchema>;
 type TransactionPayload = z.infer<typeof transactionPayloadSchema>;
 type ManualValuationPayload = z.infer<typeof manualValuationPayloadSchema>;
+type IncomePayload = z.infer<typeof incomePayloadSchema>;
 type SettingsPayload = z.infer<typeof settingsPayloadSchema>;
 
 type Ledger = {
@@ -118,6 +170,7 @@ type ParsedDataset = {
   assets: AssetPayload[];
   transactions: TransactionPayload[];
   manualValuations: ManualValuationPayload[];
+  income: IncomePayload[];
   settings: SettingsPayload[];
   fxRates: FxRateInput[];
 };
@@ -155,12 +208,14 @@ export function buildInvestorDataSnapshot(
   }, 0);
   const valuationSeries = buildValuationSeries(accounts, dataset, asOf);
   const monthlyChange = calculateMonthlyChange(valuationSeries);
+  const income = buildIncomeSummary(dataset.income);
 
   return {
     asOf: asOf.toISOString(),
     totalValue,
     monthlyChange,
     cash,
+    income,
     portfolios,
     valuationSeries,
     allocation: buildAllocation(accounts, dataset, asOf, totalValue),
@@ -176,6 +231,7 @@ function parseDataset(
     assets: [],
     transactions: [],
     manualValuations: [],
+    income: [],
     settings: [],
     fxRates: options.fxRates ?? [],
   };
@@ -206,6 +262,7 @@ function parseDataset(
         dataset.settings.push(settingsPayloadSchema.parse(record.envelope.payload));
         break;
       case "income":
+        dataset.income.push(incomePayloadSchema.parse(record.envelope.payload));
         break;
     }
   }
@@ -220,6 +277,31 @@ function parseDataset(
   );
 
   return dataset;
+}
+
+function buildIncomeSummary(income: IncomePayload[]): IncomeSummary {
+  let earningCount = 0;
+  let burdenCount = 0;
+  let earningsPLN = 0;
+  let burdensPLN = 0;
+
+  for (const item of income) {
+    if (item.entryKind === "earning") {
+      earningCount += 1;
+      earningsPLN += item.plnAmount ?? 0;
+    } else {
+      burdenCount += 1;
+      burdensPLN += item.amountPLN ?? 0;
+    }
+  }
+
+  return {
+    earningCount,
+    burdenCount,
+    earningsPLN,
+    burdensPLN,
+    netPLN: earningsPLN - burdensPLN,
+  };
 }
 
 function getBaseCurrency(dataset: ParsedDataset) {

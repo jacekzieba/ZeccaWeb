@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
   fetchActiveEncryptedRecords,
   fetchEncryptedKeyBackup,
+  registerWebDevice,
 } from "@/sync/records/supabase-sync-store";
 import type { BrowserSupabaseClient } from "@/supabase/client";
 
@@ -11,6 +12,8 @@ type QueryResult<T> = {
 };
 
 class QueryBuilder<T> {
+  upserts: unknown[] = [];
+
   constructor(private readonly result: QueryResult<T>) {}
 
   select() {
@@ -28,12 +31,21 @@ class QueryBuilder<T> {
   order() {
     return Promise.resolve(this.result);
   }
+
+  upsert(payload: unknown) {
+    this.upserts.push(payload);
+    return Promise.resolve({ error: this.result.error });
+  }
 }
 
 function createSupabaseMock<T>(result: QueryResult<T>) {
+  const builders: QueryBuilder<T>[] = [];
   return {
+    builders,
     from() {
-      return new QueryBuilder(result);
+      const builder = new QueryBuilder(result);
+      builders.push(builder);
+      return builder;
     },
   };
 }
@@ -43,6 +55,27 @@ function asSupabaseClient<T>(result: QueryResult<T>) {
 }
 
 describe("supabase sync store", () => {
+  beforeEach(() => {
+    const storage = new Map<string, string>();
+    const localStorageMock = {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        storage.set(key, value);
+      },
+      removeItem: (key: string) => {
+        storage.delete(key);
+      },
+      clear: () => {
+        storage.clear();
+      },
+    };
+
+    Object.defineProperty(globalThis, "localStorage", {
+      value: localStorageMock,
+      configurable: true,
+    });
+  });
+
   it("fetches an encrypted key backup without domain payload fields", async () => {
     const backup = {
       encrypted_user_data_key: "ciphertext",
@@ -95,5 +128,24 @@ describe("supabase sync store", () => {
     await expect(
       fetchActiveEncryptedRecords(asSupabaseClient({ data: [record], error: null })),
     ).resolves.toEqual([record]);
+  });
+
+  it("upserts a web device heartbeat compatible with macOS user_devices", async () => {
+    const mock = createSupabaseMock({ data: null, error: null });
+
+    const payload = await registerWebDevice(
+      mock as unknown as BrowserSupabaseClient,
+      "11111111-1111-4111-8111-111111111111",
+    );
+
+    expect(payload).toMatchObject({
+      user_id: "11111111-1111-4111-8111-111111111111",
+      device_name: "Web Browser",
+      platform: "web",
+    });
+    expect(payload.device_id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
+    expect(mock.builders[0]?.upserts).toEqual([[payload]]);
   });
 });

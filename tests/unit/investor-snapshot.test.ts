@@ -120,6 +120,177 @@ describe("InvestorDataSnapshot mapper", () => {
     });
   });
 
+  it("accepts macOS refactor payload fields without changing portfolio values", () => {
+    const snapshot = buildInvestorDataSnapshot([
+      record("account", accountID, {
+        recordType: "account",
+        id: accountID,
+        name: "Refactor Account",
+        accountType: "custom",
+        baseCurrency: "PLN",
+        colorHex: "#7EA16B",
+        targetAllocation: { equity: 80, cash: 20 },
+      }),
+      record("asset", instrumentID, {
+        recordType: "asset",
+        id: instrumentID,
+        kind: "stock",
+        symbol: "AAPL",
+        name: "Apple",
+        currency: "USD",
+        exchange: "NASDAQ",
+        country: "US",
+        isin: null,
+        category: "equity",
+        marketDataID: "AAPL",
+        bondParams: null,
+        listedBondParams: null,
+        depositParams: null,
+      }),
+      record("transaction", "33333333-3333-4333-8333-333333333333", {
+        recordType: "transaction",
+        id: "33333333-3333-4333-8333-333333333333",
+        date: "2026-05-20T00:00:00.000Z",
+        bookingDate: null,
+        portfolioID: accountID,
+        instrumentID,
+        transactionType: "buy",
+        quantity: 2,
+        price: 100,
+        grossAmount: 200,
+        currency: "USD",
+        fees: 0,
+        taxes: 0,
+        fxRateToBase: 4,
+        targetCurrency: null,
+        targetGrossAmount: null,
+        notes: "macOS refactor payload",
+        externalImportID: null,
+        sourcePortfolioID: null,
+        transferKind: null,
+        transferSourceKind: null,
+        contributionTreatment: null,
+        transferCostBasisMode: null,
+        transferLots: null,
+        createdAt: "2026-05-20T00:00:00.000Z",
+        updatedAt: "2026-05-20T00:00:00.000Z",
+      }),
+      record("manualValuation", "55555555-5555-4555-8555-555555555555", {
+        recordType: "manualValuation",
+        id: "55555555-5555-4555-8555-555555555555",
+        instrumentID,
+        date: "2026-05-21T00:00:00.000Z",
+        value: 110,
+        currency: "USD",
+        note: "close",
+        createdAt: "2026-05-21T00:00:00.000Z",
+        updatedAt: "2026-05-21T00:00:00.000Z",
+      }),
+      record("settings", "88888888-8888-4888-8888-888888888888", {
+        recordType: "settings",
+        id: "B2AA7BD4-A95D-4D80-90F9-787B8A1EC401",
+        syncMode: "cloud",
+        accountProvider: "none",
+        telemetryEnabled: true,
+        hasAcknowledgedPrivacyDisclosure: true,
+        baseCurrency: "PLN",
+        showBelkaTax: true,
+        useFIFO: true,
+        showRealReturns: true,
+        autoRefreshEnabled: true,
+        selectedProvider: "Yahoo Finance",
+        fxProvider: "NBP",
+        inflationRegion: "PL",
+        appLanguage: "pl",
+        updatedAt: "2026-05-21T00:00:00.000Z",
+      }),
+    ]);
+
+    expect(snapshot.totalValue).toBe(80);
+    expect(snapshot.portfolios[0]).toMatchObject({
+      id: accountID,
+      name: "Refactor Account",
+      baseCurrency: "PLN",
+      value: 80,
+      positions: 1,
+    });
+  });
+
+  it("summarizes macOS income records without mixing them into portfolio cash", () => {
+    const snapshot = buildInvestorDataSnapshot([
+      record("account", accountID, {
+        recordType: "account",
+        id: accountID,
+        name: "Core",
+        baseCurrency: "PLN",
+      }),
+      record("transaction", "33333333-3333-4333-8333-333333333333", {
+        recordType: "transaction",
+        id: "33333333-3333-4333-8333-333333333333",
+        date: "2026-05-01T00:00:00.000Z",
+        portfolioID: accountID,
+        transactionType: "cashDeposit",
+        grossAmount: 1000,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+      record("income", "66666666-6666-4666-8666-666666666666", {
+        recordType: "income",
+        id: "66666666-6666-4666-8666-666666666666",
+        entryKind: "earning",
+        year: 2026,
+        month: 5,
+        employmentType: "employment",
+        enteredAmount: 5000,
+        currency: "PLN",
+        fxRateToPLN: 1,
+        plnAmount: 5000,
+        source: "Salary",
+        burdenCategory: null,
+        amountPLN: null,
+        note: "macOS earning",
+      }),
+      record("income", "77777777-7777-4777-8777-777777777777", {
+        recordType: "income",
+        id: "77777777-7777-4777-8777-777777777777",
+        entryKind: "burden",
+        year: 2026,
+        month: 5,
+        employmentType: null,
+        enteredAmount: null,
+        currency: null,
+        fxRateToPLN: null,
+        plnAmount: null,
+        source: null,
+        burdenCategory: "incomeTax",
+        amountPLN: 1200,
+        note: "macOS burden",
+      }),
+      record("income", "88888888-8888-4888-8888-888888888888", {
+        recordType: "income",
+        id: "88888888-8888-4888-8888-888888888888",
+        entryKind: "earning",
+        year: 2026,
+        month: 5,
+        plnAmount: 999,
+      }, "2026-05-01T00:00:00.000Z"),
+    ].map((item) =>
+      item.id === "88888888-8888-4888-8888-888888888888"
+        ? { ...item, deletedAt: "2026-05-02T00:00:00.000Z" }
+        : item,
+    ));
+
+    expect(snapshot.cash).toBe(1000);
+    expect(snapshot.income).toEqual({
+      earningCount: 1,
+      burdenCount: 1,
+      earningsPLN: 5000,
+      burdensPLN: 1200,
+      netPLN: 3800,
+    });
+  });
+
   it("supports Swift JSONEncoder numeric dates", () => {
     const snapshot = buildInvestorDataSnapshot([
       record("account", accountID, {

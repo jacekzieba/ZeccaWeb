@@ -4,6 +4,10 @@ import { createPortal } from "react-dom";
 import { useState, useEffect, useMemo, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
+import {
+  makeTransactionPayload,
+  swiftReferenceSeconds,
+} from "@/sync/records/macos-payloads";
 
 const INK = "#1C3144";
 const MUTED = "rgba(28,49,68,0.58)";
@@ -221,12 +225,9 @@ export function AddTransactionModal({
 
     try {
       const id = initialValue?.id ?? crypto.randomUUID();
-      // Convert date to Swift reference date (seconds since 2001-01-01)
-      const SWIFT_REF = Date.UTC(2001, 0, 1);
-      const dateSeconds = (new Date(date).getTime() - SWIFT_REF) / 1000;
+      const dateSeconds = swiftReferenceSeconds(new Date(date));
 
-      const payload: Record<string, unknown> = {
-        recordType: "transaction",
+      const payload = makeTransactionPayload({
         id,
         date: dateSeconds,
         portfolioID: portfolioId,
@@ -235,23 +236,16 @@ export function AddTransactionModal({
         currency,
         fees: parseFloat(fees) || 0,
         taxes: parseFloat(taxes) || 0,
-      };
-
-      if (txDef.needsInstrument && instrumentId) {
-        payload.instrumentID = instrumentId;
-      }
-      if (txDef.needsQty && quantity) {
-        payload.quantity = parseFloat(quantity);
-      }
-      if (price) {
-        payload.price = parseFloat(price);
-      }
+        instrumentID: txDef.needsInstrument && instrumentId ? instrumentId : null,
+        quantity: txDef.needsQty && quantity ? parseFloat(quantity) : null,
+        price: price ? parseFloat(price) : null,
+      });
 
       const result = await saveRecord(
         supabase,
         userDataKey,
         "transaction",
-        { id, recordType: "transaction", ...payload },
+        payload,
         { baseUpdatedAt: initialValue?.updatedAt ?? null },
       );
 
