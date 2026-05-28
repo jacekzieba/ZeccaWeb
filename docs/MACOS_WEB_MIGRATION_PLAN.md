@@ -110,6 +110,8 @@ Do zrobienia w web:
 
 ## Priorytet 4 - fixtures z macOS
 
+Status lokalny: zrobione dla deterministycznego datasetu z refactor branch. Fixture jest w `tests/fixtures/macos-refactor/sync-fixture.json`, test w `tests/unit/macos-refactor-fixtures.test.ts`.
+
 Bez fixtures nie ma dowodu kompatybilnosci. Potrzebne sa fixtures wygenerowane z `origin/claude/hungry-goodall-1227f7`:
 
 1. Plain JSON payload dla:
@@ -164,8 +166,8 @@ npm run test:e2e:fake-sync
 2. Web write compatibility dla wymaganych pol macOS - zrobione lokalnie dla UI writes.
 3. `income` parser i minimalny model raportowy - zrobione lokalnie.
 4. `user_devices` heartbeat - zrobione lokalnie.
-5. Generator/eksport fixtures z macOS refactor branch - do zrobienia.
-6. Web tests na fixtures - do zrobienia.
+5. Generator/eksport fixtures z macOS refactor branch - zrobione lokalnie dla datasetu kompatybilnosci.
+6. Web tests na fixtures - zrobione lokalnie.
 7. Staging validation - do zrobienia.
 
 ## Ryzyko glowne

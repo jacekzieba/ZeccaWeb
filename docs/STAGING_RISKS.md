@@ -2,8 +2,8 @@
 
 ## Znane ograniczenia przed Etapem 7
 
-1. `income` jest czescia kontraktu sync i jest akceptowane przez envelope oraz schemat tabeli, ale snapshot builder obecnie je ignoruje. Jesli natywny dataset uzywa osobnych rekordow `income`, parity raportow moze sie roznic.
-2. `user_devices` istnieje w migracji, ale web nie zapisuje jeszcze device heartbeat. Kompatybilnosc danych portfela nie zalezy od tego, ale diagnostyka urzadzen w staging moze byc niepelna.
+1. `income` jest czescia kontraktu sync i jest akceptowane przez envelope oraz schemat tabeli. Web parsuje je do `snapshot.income`; staging musi potwierdzic semantyczna parity z native.
+2. `user_devices` istnieje w migracji i web zapisuje device heartbeat lokalnie. Staging musi potwierdzic faktyczny wpis `user_devices` w realnym projekcie Supabase.
 3. RLS jest zdefiniowane w migracji, ale wymaga live smoke testu na dwoch kontach Auth w realnym projekcie Supabase.
 4. Stooq fallback zalezy od `STOOQ_API_KEY`. Bez klucza Yahoo i NBP powinny dzialac, ale fallback quote nie zostanie zweryfikowany.
 5. Market data jest propozycja ceny. Trwaly zapis do sync następuje tylko po zaakceptowaniu preview i zapisaniu `manualValuation`.
@@ -40,7 +40,7 @@ Status ryzyk:
 | RLS wymaga live testu | Niezweryfikowane lokalnie | Migracja ma RLS i polityki `auth.uid()`, ale brak realnych dwoch kont Auth w lokalnym tescie | Uruchomic RLS smoke test na staging z dwoma kontami |
 | Stooq fallback zalezy od `STOOQ_API_KEY` | Zabezpieczone testami, nadal konfiguracyjne | `market-data-routes.test.ts` testuje brak klucza i fallback z kluczem | Zweryfikowac faktyczny klucz na staging, jesli fallback Stooq ma byc czescia testu |
 | Market data jako propozycja ceny | Zabezpieczone testami i architektura | Endpointy przyjmuja pojedynczy symbol/walute; fake-sync E2E pokrywa zapis `manualValuation` po akceptacji | W Network/logach staging potwierdzic brak snapshotu, `user_id` i ciphertext w requestach providerow |
-| Brak automatycznego diffu snapshot web-native | Potwierdzone | Istnieje reczny raport i testy domeny, ale brak eksportu/diffu z natywnym snapshotem | Przy danych z refactorowanego macOS dodac fixtures albo maszynowy diff |
+| Brak automatycznego diffu snapshot web-native | Czesciowo zamkniete lokalnie | `tests/unit/macos-refactor-fixtures.test.ts` odszyfrowuje natywne `encrypted_records`, porownuje plaintext i buduje snapshot web; ksztalt snapshotu UI nadal rozni sie od natywnego raw snapshotu | Rozszerzyc staging o realny snapshot diff web-native dla danych z aplikacji, nie tylko deterministyczny fixture |
 
 Blokery produkcyjne pozostaja zalezne od realnej walidacji web-native na staging. Lokalnie nie da sie potwierdzic natywnego dekodowania rekordow web ani izolacji RLS miedzy realnymi uzytkownikami.
 
@@ -66,3 +66,20 @@ npm run check:sync-compat
 ```
 
 Wynik: PASS, `check:sync-compat` zostawia tylko staging RLS live check.
+
+## Weryfikacja fixtures macOS 2026-05-28
+
+Dodano deterministyczny fixture z refactor branch `origin/claude/hungry-goodall-1227f7`:
+
+- `tests/fixtures/macos-refactor/sync-fixture.json`;
+- payloady `account`, `asset`, `transaction`, `manualValuation`, `income`, `settings`;
+- zaszyfrowane `encrypted_records` w formacie CryptoKit AES-GCM (`ciphertext + tag`, nonce osobno);
+- raw `nativeSnapshot` dla tego samego datasetu.
+
+Uruchomione:
+
+```bash
+npm test -- tests/unit/macos-refactor-fixtures.test.ts
+```
+
+Wynik: PASS. Test potwierdza odszyfrowanie, zgodnosc plaintext payloadow, pokrycie typow rekordow i zbudowanie web snapshotu z `income`.
