@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fixture from "../fixtures/macos-refactor/sync-fixture.json";
 import { buildInvestorDataSnapshot, buildInstrumentList, buildPortfolioDetail, buildTransactionList } from "@/sync/records/investor-snapshot";
+import { buildParitySnapshot } from "@/sync/records/parity-snapshot";
 import { base64ToBytes } from "@/sync/encryption/base64";
 import { decryptEncryptedRecords } from "@/sync/records/encrypted-records";
 import { importAesGcmKey } from "@/sync/encryption/aes-gcm";
@@ -29,12 +30,19 @@ describe("macOS refactor sync fixtures", () => {
     const transactions = buildTransactionList(records);
     const instruments = buildInstrumentList(records);
     const portfolio = buildPortfolioDetail(records, native.portfolios[0].id);
+    const paritySnapshot = buildParitySnapshot(records);
 
     expect(records).toHaveLength(fixture.encryptedRecords.length);
     expect(snapshot.portfolios).toHaveLength(native.portfolios.length);
     expect(transactions).toHaveLength(native.transactions.length);
     expect(instruments).toHaveLength(native.instruments.length);
     expect(portfolio?.name).toBe(native.portfolios[0].name);
+    expect(paritySnapshot.schema).toBe("investor-web-parity-snapshot/v1");
+    expect(paritySnapshot.recordSummary.byType.income).toBe(2);
+    expect(paritySnapshot.totals.income.netPLN).toBe(9_600);
+    expect(paritySnapshot.portfolios.map((item) => item.id)).toEqual(
+      [...paritySnapshot.portfolios.map((item) => item.id)].sort(),
+    );
 
     expect(snapshot.income).toEqual({
       earningCount: native.earnings.length,

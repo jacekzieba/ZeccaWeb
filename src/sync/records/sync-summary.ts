@@ -8,6 +8,7 @@ const recordTypes: RecordType[] = [
   "manualValuation",
   "income",
   "settings",
+  "marketQuote",
 ];
 
 export type SyncRecordSummary = {

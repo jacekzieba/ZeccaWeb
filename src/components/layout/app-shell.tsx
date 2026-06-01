@@ -2,14 +2,26 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useState, useEffect, type CSSProperties } from "react";
+import { useCallback, useState, useEffect, useMemo, type CSSProperties } from "react";
 import type { Route } from "next";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
+import { buildParitySnapshot } from "@/sync/records/parity-snapshot";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { AddTransactionModal } from "@/features/transactions/add-transaction-modal";
 import { PendingSyncStatus } from "@/features/sync/pending-sync-status";
-import { SyncUnlockPanel, type SyncLoadResult } from "@/features/sync/sync-unlock-panel";
+import {
+  SyncUnlockPanel,
+  type InitialSyncUser,
+  type SyncLoadResult,
+} from "@/features/sync/sync-unlock-panel";
 import { COLORS, SHADOWS, SURFACES, TYPOGRAPHY } from "@/lib/design-tokens";
+
+declare global {
+  interface Window {
+    __investorWebParitySnapshot?: ReturnType<typeof buildParitySnapshot>;
+    __investorWebExportParitySnapshot?: () => string;
+  }
+}
 
 const glassSurface: CSSProperties = {
   ...SURFACES.glassPanel,
@@ -212,7 +224,13 @@ function SidebarContent({ activeId, onNav }: { activeId: string; onNav?: () => v
 }
 
 // ── Main AppShell ────────────────────────────────────────────────
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  initialUser = null,
+}: {
+  children: React.ReactNode;
+  initialUser?: InitialSyncUser | null;
+}) {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const isDesktop = useIsDesktop();
@@ -220,6 +238,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const records = useSyncStore((s) => s.records);
   const setSync = useSyncStore((s) => s.setSync);
   const clearSync = useSyncStore((s) => s.clearSync);
+  const paritySnapshot = useMemo(
+    () =>
+      records
+        ? buildParitySnapshot(records, {
+            asOf: new Date(),
+            historyGranularity: "daily",
+            useLatestTransactionFxRate: true,
+          })
+        : null,
+    [records],
+  );
+
+  useEffect(() => {
+    if (!paritySnapshot) {
+      delete window.__investorWebParitySnapshot;
+      delete window.__investorWebExportParitySnapshot;
+      return;
+    }
+
+    window.__investorWebParitySnapshot = paritySnapshot;
+    window.__investorWebExportParitySnapshot = () =>
+      JSON.stringify(window.__investorWebParitySnapshot, null, 2);
+  }, [paritySnapshot]);
 
   const handleSyncLoaded = useCallback((result: SyncLoadResult | null) => {
     if (result) {
@@ -430,7 +471,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {/* Main content */}
         <main style={{ flex: 1, minWidth: 0, paddingBottom: 4 }}>
           {!records && (
-            <GlobalSyncPanel onSyncLoaded={handleSyncLoaded} />
+            <GlobalSyncPanel
+              initialUser={initialUser}
+              onSyncLoaded={handleSyncLoaded}
+            />
           )}
           {children}
         </main>
@@ -438,13 +482,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Global modal */}
       <AddTransactionModal />
+      {paritySnapshot && (
+        <script
+          id="investor-web-parity-snapshot"
+          type="application/json"
+          suppressHydrationWarning
+        >
+          {JSON.stringify(paritySnapshot)}
+        </script>
+      )}
     </div>
   );
 }
 
 function GlobalSyncPanel({
+  initialUser,
   onSyncLoaded,
 }: {
+  initialUser?: InitialSyncUser | null;
   onSyncLoaded(result: SyncLoadResult | null): void;
 }) {
   return (
@@ -474,7 +529,7 @@ function GlobalSyncPanel({
           Synchronizacja danych
         </div>
       </div>
-      <SyncUnlockPanel onSyncLoaded={onSyncLoaded} />
+      <SyncUnlockPanel initialUser={initialUser} onSyncLoaded={onSyncLoaded} />
     </section>
   );
 }

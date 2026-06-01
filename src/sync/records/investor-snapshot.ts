@@ -109,6 +109,19 @@ const manualValuationPayloadSchema = z.object({
   updatedAt: swiftDateSchema.optional(),
 });
 
+const marketQuotePayloadSchema = z.object({
+  recordType: z.literal("marketQuote"),
+  id: z.string().uuid(),
+  instrumentID: z.string().uuid(),
+  date: swiftDateSchema,
+  price: z.number(),
+  currency: z.string().min(1),
+  source: z.string().optional(),
+  previousClose: z.number().nullable().optional(),
+  createdAt: swiftDateSchema.optional(),
+  updatedAt: swiftDateSchema.optional(),
+});
+
 const incomePayloadSchema = z.object({
   recordType: z.literal("income"),
   id: z.string().uuid(),
@@ -149,6 +162,7 @@ type AccountPayload = z.infer<typeof accountPayloadSchema>;
 type AssetPayload = z.infer<typeof assetPayloadSchema>;
 type TransactionPayload = z.infer<typeof transactionPayloadSchema>;
 type ManualValuationPayload = z.infer<typeof manualValuationPayloadSchema>;
+type MarketQuotePayload = z.infer<typeof marketQuotePayloadSchema>;
 type IncomePayload = z.infer<typeof incomePayloadSchema>;
 type SettingsPayload = z.infer<typeof settingsPayloadSchema>;
 
@@ -170,13 +184,18 @@ type ParsedDataset = {
   assets: AssetPayload[];
   transactions: TransactionPayload[];
   manualValuations: ManualValuationPayload[];
+  marketQuotes: MarketQuotePayload[];
   income: IncomePayload[];
   settings: SettingsPayload[];
   fxRates: FxRateInput[];
+  useLatestTransactionFxRate: boolean;
 };
 
 export type SnapshotBuildOptions = {
   fxRates?: FxRateInput[];
+  asOf?: Date;
+  historyGranularity?: "monthly" | "daily";
+  useLatestTransactionFxRate?: boolean;
 };
 
 type PortfolioValuation = {
@@ -192,7 +211,7 @@ export function buildInvestorDataSnapshot(
 ): InvestorDataSnapshot {
   const dataset = parseDataset(records, options);
   const baseCurrency = getBaseCurrency(dataset);
-  const asOf = getAsOf(records, dataset);
+  const asOf = getAsOf(records, dataset, options);
   const accounts = getAccounts(dataset, baseCurrency);
   const portfolios = accounts.map((account) =>
     buildPortfolioSummary(account, dataset, asOf),
@@ -206,7 +225,7 @@ export function buildInvestorDataSnapshot(
     const ledger = computeLedger(transactions, asOf);
     return sum + valueCash(ledger, dataset, asOf);
   }, 0);
-  const valuationSeries = buildValuationSeries(accounts, dataset, asOf);
+  const valuationSeries = buildValuationSeries(accounts, dataset, asOf, options);
   const monthlyChange = calculateMonthlyChange(valuationSeries);
   const income = buildIncomeSummary(dataset.income);
 
@@ -231,9 +250,11 @@ function parseDataset(
     assets: [],
     transactions: [],
     manualValuations: [],
+    marketQuotes: [],
     income: [],
     settings: [],
     fxRates: options.fxRates ?? [],
+    useLatestTransactionFxRate: options.useLatestTransactionFxRate ?? false,
   };
 
   for (const record of records) {
@@ -258,6 +279,11 @@ function parseDataset(
           manualValuationPayloadSchema.parse(record.envelope.payload),
         );
         break;
+      case "marketQuote":
+        dataset.marketQuotes.push(
+          marketQuotePayloadSchema.parse(record.envelope.payload),
+        );
+        break;
       case "settings":
         dataset.settings.push(settingsPayloadSchema.parse(record.envelope.payload));
         break;
@@ -272,6 +298,10 @@ function parseDataset(
       toDate(left.date).getTime() - toDate(right.date).getTime(),
   );
   dataset.manualValuations.sort(
+    (left, right) =>
+      toDate(left.date).getTime() - toDate(right.date).getTime(),
+  );
+  dataset.marketQuotes.sort(
     (left, right) =>
       toDate(left.date).getTime() - toDate(right.date).getTime(),
   );
@@ -319,11 +349,20 @@ function getBaseCurrency(dataset: ParsedDataset) {
   );
 }
 
-function getAsOf(records: DecryptedRecord[], dataset: ParsedDataset) {
+function getAsOf(
+  records: DecryptedRecord[],
+  dataset: ParsedDataset,
+  options: SnapshotBuildOptions = {},
+) {
+  if (options.asOf) {
+    return options.asOf;
+  }
+
   const dates = [
     ...records.map((record) => new Date(record.updatedAt)),
     ...dataset.transactions.map((transaction) => toDate(transaction.date)),
     ...dataset.manualValuations.map((valuation) => toDate(valuation.date)),
+    ...dataset.marketQuotes.map((quote) => toDate(quote.date)),
   ].filter((date) => !Number.isNaN(date.getTime()));
 
   if (dates.length === 0) {
@@ -642,7 +681,14 @@ function valuePortfolio(
 
 function valueCash(
   ledger: Ledger,
-  dataset: Pick<ParsedDataset, "manualValuations" | "transactions" | "fxRates">,
+  dataset: Pick<
+    ParsedDataset,
+    | "manualValuations"
+    | "marketQuotes"
+    | "transactions"
+    | "fxRates"
+    | "useLatestTransactionFxRate"
+  >,
   asOf: Date,
 ) {
   return valueCashBalances(
@@ -653,7 +699,14 @@ function valueCash(
 }
 
 function toPositionValuationDataset(
-  dataset: Pick<ParsedDataset, "manualValuations" | "transactions" | "fxRates">,
+  dataset: Pick<
+    ParsedDataset,
+    | "manualValuations"
+    | "marketQuotes"
+    | "transactions"
+    | "fxRates"
+    | "useLatestTransactionFxRate"
+  >,
 ): PositionValuationDataset {
   return {
     manualValuations: dataset.manualValuations.map((valuation) => ({
@@ -661,6 +714,12 @@ function toPositionValuationDataset(
       value: valuation.value,
       currency: valuation.currency,
       date: toDate(valuation.date),
+    })),
+    marketQuotes: dataset.marketQuotes.map((quote) => ({
+      instrumentID: quote.instrumentID,
+      price: quote.price,
+      currency: quote.currency,
+      date: toDate(quote.date),
     })),
     transactions: dataset.transactions.map((transaction) => ({
       instrumentID: transaction.instrumentID,
@@ -674,6 +733,7 @@ function toPositionValuationDataset(
       date: toDate(transaction.date),
     })),
     fxRates: dataset.fxRates,
+    useLatestTransactionFxRate: dataset.useLatestTransactionFxRate,
   };
 }
 
@@ -738,16 +798,21 @@ function buildValuationSeries(
   accounts: AccountPayload[],
   dataset: ParsedDataset,
   asOf: Date,
+  options: SnapshotBuildOptions = {},
 ) {
-  const dates = fullMonthEndDates(dataset, asOf);
+  const dates =
+    options.historyGranularity === "daily"
+      ? fullDailyDates(dataset, asOf)
+      : fullMonthEndDates(dataset, asOf);
 
   return dates.map((date) => {
+    const dayEnd = endOfLocalDay(date);
     const value = accounts.reduce((sum, account) => {
       const ledger = computeLedger(
         transactionsForPortfolio(dataset.transactions, account.id),
-        date,
+        dayEnd,
       );
-      return sum + valuePortfolio(ledger, dataset, date).totalValue;
+      return sum + valuePortfolio(ledger, dataset, dayEnd).totalValue;
     }, 0);
 
     return {
@@ -758,10 +823,37 @@ function buildValuationSeries(
   });
 }
 
+function fullDailyDates(dataset: ParsedDataset, asOf: Date): Date[] {
+  const allDates = [
+    ...dataset.transactions.map((t) => toDate(t.date)),
+    ...dataset.manualValuations.map((v) => toDate(v.date)),
+    ...dataset.marketQuotes.map((q) => toDate(q.date)),
+  ].filter((d) => !Number.isNaN(d.getTime()));
+
+  if (allDates.length === 0) {
+    return [startOfLocalDay(asOf)];
+  }
+
+  const earliest = startOfLocalDay(
+    new Date(Math.min(...allDates.map((d) => d.getTime()))),
+  );
+  const end = startOfLocalDay(asOf);
+  const dates: Date[] = [];
+  let current = earliest;
+
+  while (current.getTime() <= end.getTime()) {
+    dates.push(current);
+    current = addLocalDays(current, 1);
+  }
+
+  return dates;
+}
+
 function fullMonthEndDates(dataset: ParsedDataset, asOf: Date): Date[] {
   const allDates = [
     ...dataset.transactions.map((t) => toDate(t.date)),
     ...dataset.manualValuations.map((v) => toDate(v.date)),
+    ...dataset.marketQuotes.map((q) => toDate(q.date)),
   ].filter((d) => !Number.isNaN(d.getTime()));
 
   if (allDates.length === 0) {
@@ -772,7 +864,7 @@ function fullMonthEndDates(dataset: ParsedDataset, asOf: Date): Date[] {
   const dates: Date[] = [];
 
   let year = earliest.getUTCFullYear();
-  let month = earliest.getUTCMonth(); // month-end of earliest month
+  let month = earliest.getUTCMonth();
 
   while (true) {
     const monthEnd = new Date(Date.UTC(year, month + 1, 0));
@@ -782,7 +874,10 @@ function fullMonthEndDates(dataset: ParsedDataset, asOf: Date): Date[] {
     }
     dates.push(monthEnd);
     month += 1;
-    if (month > 11) { month = 0; year += 1; }
+    if (month > 11) {
+      month = 0;
+      year += 1;
+    }
   }
 
   return dates;
@@ -799,6 +894,26 @@ function calculateMonthlyChange(
   }
 
   return ((current - previous) / previous) * 100;
+}
+
+function startOfLocalDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function endOfLocalDay(date: Date) {
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    23,
+    59,
+    59,
+    999,
+  );
+}
+
+function addLocalDays(date: Date, days: number) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
 }
 
 function assetClassLabel(kind: string | undefined) {
@@ -841,7 +956,7 @@ export function buildPortfolioDetail(
   const account = dataset.accounts.find((a) => a.id === portfolioId);
   if (!account) return null;
 
-  const asOf = getAsOf(records, dataset);
+  const asOf = getAsOf(records, dataset, options);
   const transactions = transactionsForPortfolio(dataset.transactions, portfolioId);
   const ledger = computeLedger(transactions, asOf);
   const assetsByID = new Map(dataset.assets.map((a) => [a.id, a]));
@@ -898,7 +1013,7 @@ export function buildPortfolioDetail(
     .map(([currency, amount]) => ({ currency, amount }))
     .sort((a, b) => b.amount - a.amount);
 
-  const valuationSeries = buildValuationSeries([account], dataset, asOf);
+  const valuationSeries = buildValuationSeries([account], dataset, asOf, options);
 
   return {
     id: account.id,
@@ -946,7 +1061,7 @@ export function buildInstrumentList(
   options: SnapshotBuildOptions = {},
 ): InstrumentRow[] {
   const dataset = parseDataset(records, options);
-  const asOf = getAsOf(records, dataset);
+  const asOf = getAsOf(records, dataset, options);
   const valuationDataset = toPositionValuationDataset(dataset);
 
   // Aggregate quantity held per instrument across all portfolios

@@ -216,6 +216,119 @@ describe("InvestorDataSnapshot mapper", () => {
     });
   });
 
+  it("uses synced market quotes for current instrument valuation", () => {
+    const snapshot = buildInvestorDataSnapshot([
+      record("account", accountID, {
+        recordType: "account",
+        id: accountID,
+        name: "Market Account",
+        accountType: "custom",
+        baseCurrency: "PLN",
+        colorHex: "#7EA16B",
+        targetAllocation: {},
+      }),
+      record("asset", instrumentID, {
+        recordType: "asset",
+        id: instrumentID,
+        kind: "etf",
+        symbol: "VWRL.NL",
+        name: "Vanguard FTSE All-World",
+        currency: "EUR",
+      }),
+      record("transaction", "77777777-7777-4777-8777-777777777771", {
+        recordType: "transaction",
+        id: "77777777-7777-4777-8777-777777777771",
+        date: "2026-04-30T00:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID: null,
+        transactionType: "cashDeposit",
+        quantity: null,
+        price: null,
+        grossAmount: 200,
+        currency: "EUR",
+        fees: 0,
+        taxes: 0,
+        fxRateToBase: 4,
+      }),
+      record("transaction", "33333333-3333-4333-8333-333333333333", {
+        recordType: "transaction",
+        id: "33333333-3333-4333-8333-333333333333",
+        date: "2026-05-01T00:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID,
+        transactionType: "buy",
+        quantity: 2,
+        price: 100,
+        grossAmount: 200,
+        currency: "EUR",
+        fees: 0,
+        taxes: 0,
+        fxRateToBase: 4,
+      }),
+      record("marketQuote", "66666666-6666-4666-8666-666666666666", {
+        recordType: "marketQuote",
+        id: "66666666-6666-4666-8666-666666666666",
+        instrumentID,
+        date: "2026-05-15T00:00:00.000Z",
+        price: 130,
+        currency: "EUR",
+        source: "native-cache",
+      }),
+    ]);
+
+    expect(snapshot.totalValue).toBe(1_040);
+
+    const instruments = buildInstrumentList([
+      record("account", accountID, {
+        recordType: "account",
+        id: accountID,
+        name: "Market Account",
+        accountType: "custom",
+        baseCurrency: "PLN",
+        colorHex: "#7EA16B",
+        targetAllocation: {},
+      }),
+      record("asset", instrumentID, {
+        recordType: "asset",
+        id: instrumentID,
+        kind: "etf",
+        symbol: "VWRL.NL",
+        name: "Vanguard FTSE All-World",
+        currency: "EUR",
+      }),
+      record("transaction", "33333333-3333-4333-8333-333333333333", {
+        recordType: "transaction",
+        id: "33333333-3333-4333-8333-333333333333",
+        date: "2026-05-01T00:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID,
+        transactionType: "buy",
+        quantity: 2,
+        price: 100,
+        grossAmount: 200,
+        currency: "EUR",
+        fees: 0,
+        taxes: 0,
+        fxRateToBase: 4,
+      }),
+      record("marketQuote", "66666666-6666-4666-8666-666666666666", {
+        recordType: "marketQuote",
+        id: "66666666-6666-4666-8666-666666666666",
+        instrumentID,
+        date: "2026-05-15T00:00:00.000Z",
+        price: 130,
+        currency: "EUR",
+      }),
+    ]);
+
+    expect(instruments[0]).toMatchObject({
+      lastPrice: 130,
+      valuationSource: "market",
+      valuationSourceLabel: "Cena rynkowa",
+      marketValue: 1_040,
+    });
+  });
+
   it("summarizes macOS income records without mixing them into portfolio cash", () => {
     const snapshot = buildInvestorDataSnapshot([
       record("account", accountID, {

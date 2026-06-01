@@ -8,6 +8,7 @@ export const recordTypeSchema = z.enum([
   "manualValuation",
   "income",
   "settings",
+  "marketQuote",
 ]);
 
 const timestampSchema = z.string().refine(

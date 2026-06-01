@@ -2,13 +2,17 @@
 
 import type { Session } from "@supabase/supabase-js";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { clearCachedUserDataKey } from "@/sync/encryption/key-cache";
-import { unlockUserDataKey } from "@/sync/encryption/key-backup";
+import {
+  unlockUserDataKey,
+  type EncryptedKeyBackup,
+} from "@/sync/encryption/key-backup";
 import { decryptEncryptedRecords } from "@/sync/records/encrypted-records";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
+import { buildParitySnapshot } from "@/sync/records/parity-snapshot";
 import {
   fetchActiveEncryptedRecords,
   fetchEncryptedKeyBackup,
@@ -21,8 +25,18 @@ import {
   type SyncRecordSummary,
 } from "@/sync/records/sync-summary";
 import type { InvestorDataSnapshot } from "@/domain/models/investor-data";
-import type { DecryptedRecord } from "@/sync/records/encrypted-records";
+import type {
+  DecryptedRecord,
+  EncryptedRecord,
+} from "@/sync/records/encrypted-records";
 import { useSyncStore } from "@/sync/store/sync-store";
+
+declare global {
+  interface Window {
+    __investorWebParitySnapshot?: ReturnType<typeof buildParitySnapshot>;
+    __investorWebExportParitySnapshot?: () => string;
+  }
+}
 
 // ── Design tokens ────────────────────────────────────────────────
 const INK = "#1C3144";
@@ -92,26 +106,61 @@ function getRecordDecryptErrorMessage(error: unknown) {
   return getUnlockErrorMessage(error);
 }
 
+type SyncBootstrapResponse = {
+  keyBackup: EncryptedKeyBackup | null;
+  encryptedRecords: EncryptedRecord[];
+};
+
+async function fetchSyncBootstrap(): Promise<SyncBootstrapResponse> {
+  const response = await fetch("/api/sync/bootstrap", { cache: "no-store" });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    const message =
+      body && typeof body.error === "string"
+        ? body.error
+        : `HTTP ${response.status}`;
+    throw new Error(`Nie udało się pobrać danych sync: ${message}`);
+  }
+
+  return response.json() as Promise<SyncBootstrapResponse>;
+}
+
 export type SyncLoadResult = {
   records: DecryptedRecord[];
   summary: SyncRecordSummary;
   snapshot: InvestorDataSnapshot;
 };
 
+export type InitialSyncUser = {
+  id: string;
+  email?: string | null;
+};
+
 export function SyncUnlockPanel({
+  initialUser = null,
   onSyncLoaded,
 }: {
+  initialUser?: InitialSyncUser | null;
   onSyncLoaded(result: SyncLoadResult | null): void;
 }) {
   const supabase = useMemo(() => createBrowserSupabaseClientOrNull(), []);
   const setCredentials = useSyncStore((s) => s.setCredentials);
-  const [sessionStatus, setSessionStatus] = useState<SessionStatus>("checking");
+  const [sessionStatus, setSessionStatus] = useState<SessionStatus>(
+    initialUser ? "authenticated" : "checking",
+  );
   const [session, setSession] = useState<Session | null>(null);
   const [passphrase, setPassphrase] = useState("");
   const [unlockStatus, setUnlockStatus] = useState<UnlockStatus>("idle");
   const [unlockStep, setUnlockStep] = useState<UnlockStep | null>(null);
   const [unlockError, setUnlockError] = useState<string | null>(null);
+  const [sessionError, setSessionError] = useState<string | null>(null);
   const [lastSummary, setLastSummary] = useState<SyncRecordSummary | null>(null);
+  const onSyncLoadedRef = useRef(onSyncLoaded);
+
+  useEffect(() => {
+    onSyncLoadedRef.current = onSyncLoaded;
+  }, [onSyncLoaded]);
 
   useEffect(() => {
     if (!supabase) {
@@ -119,67 +168,117 @@ export function SyncUnlockPanel({
       return;
     }
 
-    let mounted = true;
+    if (initialUser) {
+      setSessionStatus("authenticated");
+      return;
+    }
 
-    supabase.auth.getSession().then(({ data, error }) => {
+    let mounted = true;
+    let sessionCheckSettled = false;
+
+    const finishSessionCheck = (
+      nextSession: Session | null,
+      nextError?: string | null,
+    ) => {
       if (!mounted) return;
-      if (error) {
-        setSession(null);
-        setSessionStatus("unauthenticated");
-        return;
-      }
-      setSession(data.session);
-      setSessionStatus(data.session ? "authenticated" : "unauthenticated");
-    });
+      sessionCheckSettled = true;
+      window.clearTimeout(sessionCheckTimeout);
+      setSession(nextSession);
+      setSessionStatus(nextSession ? "authenticated" : "unauthenticated");
+      setSessionError(nextError ?? null);
+    };
+
+    const sessionCheckTimeout = window.setTimeout(() => {
+      if (sessionCheckSettled) return;
+      finishSessionCheck(
+        null,
+        "Sprawdzanie sesji Supabase przekroczyło limit 8s. Odśwież sesję albo zaloguj się ponownie.",
+      );
+    }, 8_000);
+
+    setSessionError(null);
+    void supabase.auth.getSession()
+      .then(({ data, error }) => {
+        if (error) {
+          finishSessionCheck(null, error.message);
+          return;
+        }
+        finishSessionCheck(data.session, null);
+      })
+      .catch((error) => {
+        finishSessionCheck(null, getUnlockErrorMessage(error));
+      });
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, nextSession) => {
-        setSession(nextSession);
-        setSessionStatus(nextSession ? "authenticated" : "unauthenticated");
+        finishSessionCheck(nextSession, null);
         setLastSummary(null);
-        onSyncLoaded(null);
+        onSyncLoadedRef.current(null);
       }
     );
 
     return () => {
       mounted = false;
+      window.clearTimeout(sessionCheckTimeout);
       authListener.subscription.unsubscribe();
     };
-  }, [onSyncLoaded, supabase]);
+  }, [initialUser, supabase]);
+
+  const userId = session?.user.id ?? initialUser?.id ?? null;
+  const userLabel = session?.user.email ?? initialUser?.email ?? userId;
 
   const keyBackupQuery = useQuery({
-    queryKey: ["encrypted-key-backup", session?.user.id],
-    enabled: Boolean(supabase && session),
-    queryFn: () => {
+    queryKey: ["encrypted-key-backup", userId],
+    enabled: Boolean(supabase && userId && sessionStatus === "authenticated"),
+    queryFn: async (): Promise<SyncBootstrapResponse> => {
       if (!supabase) throw new Error("Supabase client is not configured.");
-      return fetchEncryptedKeyBackup(supabase);
+      if (initialUser) {
+        return withTimeout(
+          fetchSyncBootstrap(),
+          "Pobieranie danych sync z serwera",
+        );
+      }
+      return {
+        keyBackup: await withTimeout(
+          fetchEncryptedKeyBackup(supabase),
+          "Pobieranie backupu klucza",
+        ),
+        encryptedRecords: [],
+      };
     },
   });
 
-  const loadSyncWithKey = useCallback(async (userDataKey: CryptoKey) => {
+  const loadSyncWithKey = useCallback(async (
+    userDataKey: CryptoKey,
+    bootstrapEncryptedRecords: EncryptedRecord[] | null,
+  ) => {
     if (!supabase) {
       throw new Error("Supabase client is not configured.");
     }
 
-    if (session?.user.id) {
-      setUnlockStep("user-device");
+    let encryptedRecords = bootstrapEncryptedRecords;
+
+    if (!encryptedRecords) {
+      if (userId) {
+        setUnlockStep("user-device");
+        await withTimeout(
+          registerWebDevice(supabase, userId),
+          "Rejestracja urządzenia sync",
+        );
+      }
+
+      setUnlockStep("pending-sync");
       await withTimeout(
-        registerWebDevice(supabase, session.user.id),
-        "Rejestracja urządzenia sync",
+        flushPendingSyncOperations(supabase),
+        "Wysyłanie oczekujących zmian sync",
+      );
+
+      setUnlockStep("fetch-records");
+      encryptedRecords = await withTimeout(
+        fetchActiveEncryptedRecords(supabase),
+        "Pobieranie rekordów sync",
       );
     }
-
-    setUnlockStep("pending-sync");
-    await withTimeout(
-      flushPendingSyncOperations(supabase),
-      "Wysyłanie oczekujących zmian sync",
-    );
-
-    setUnlockStep("fetch-records");
-    const encryptedRecords = await withTimeout(
-      fetchActiveEncryptedRecords(supabase),
-      "Pobieranie rekordów sync",
-    );
 
     setUnlockStep("decrypt-records");
     const decryptedRecords = await decryptEncryptedRecords(userDataKey, encryptedRecords);
@@ -187,13 +286,22 @@ export function SyncUnlockPanel({
     setUnlockStep("build-snapshot");
     const summary = summarizeDecryptedRecords(decryptedRecords);
     const snapshot = buildInvestorDataSnapshot(decryptedRecords);
+    const paritySnapshot = buildParitySnapshot(decryptedRecords, {
+      asOf: new Date(),
+      historyGranularity: "daily",
+      useLatestTransactionFxRate: true,
+    });
+
+    window.__investorWebParitySnapshot = paritySnapshot;
+    window.__investorWebExportParitySnapshot = () =>
+      JSON.stringify(window.__investorWebParitySnapshot, null, 2);
 
     setCredentials(userDataKey, supabase);
     setLastSummary(summary);
     onSyncLoaded({ records: decryptedRecords, summary, snapshot });
     setUnlockStep(null);
     setUnlockStatus("ready");
-  }, [onSyncLoaded, session?.user.id, setCredentials, supabase]);
+  }, [onSyncLoaded, setCredentials, supabase, userId]);
 
   async function unlockSync() {
     if (unlockStatus === "unlocking" || passphrase.length === 0) {
@@ -211,12 +319,14 @@ export function SyncUnlockPanel({
     setUnlockStep("key-backup");
     setUnlockError(null);
 
-    let keyBackup: Awaited<ReturnType<typeof refreshEncryptedKeyBackup>>;
+    let keyBackup = keyBackupQuery.data?.keyBackup ?? null;
     try {
-      keyBackup = await withTimeout(
-        refreshEncryptedKeyBackup(supabase),
-        "Pobieranie backupu klucza",
-      );
+      if (!initialUser) {
+        keyBackup = await withTimeout(
+          refreshEncryptedKeyBackup(supabase),
+          "Pobieranie backupu klucza",
+        );
+      }
     } catch (error) {
       setUnlockStatus("error");
       setUnlockStep(null);
@@ -242,7 +352,10 @@ export function SyncUnlockPanel({
     }
 
     try {
-      await loadSyncWithKey(userDataKey);
+      await loadSyncWithKey(
+        userDataKey,
+        initialUser ? keyBackupQuery.data?.encryptedRecords ?? null : null,
+      );
       setPassphrase("");
     } catch (error) {
       setUnlockStatus("error");
@@ -258,10 +371,11 @@ export function SyncUnlockPanel({
 
   async function handleSignOut() {
     if (!supabase) return;
-    if (session) {
-      await clearCachedUserDataKey(session.user.id);
+    if (userId) {
+      await clearCachedUserDataKey(userId);
     }
     await supabase.auth.signOut();
+    window.location.assign("/login");
   }
 
   // ── State: config missing ─────────────────────────────────────
@@ -305,34 +419,59 @@ export function SyncUnlockPanel({
             Zaloguj się, żeby pobrać sync
           </div>
           <div style={{ fontSize: 12, color: MUTED, marginTop: 3 }}>
-            Po zalogowaniu web odszyfruje rekordy lokalnie w przeglądarce.
+            {sessionError ??
+              "Po zalogowaniu web odszyfruje rekordy lokalnie w przeglądarce."}
           </div>
         </div>
-        <Link
-          href="/login"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            padding: "8px 16px",
-            borderRadius: 9,
-            background: INK,
-            color: "#fff",
-            fontSize: 13,
-            fontWeight: 600,
-            textDecoration: "none",
-            boxShadow: "0 3px 10px rgba(28,49,68,0.22), inset 0 0.5px 0 rgba(255,255,255,0.18)",
-            whiteSpace: "nowrap",
-          }}
-        >
-          Zaloguj się →
-        </Link>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {sessionError && (
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "8px 14px",
+                borderRadius: 9,
+                border: "0.5px solid rgba(28,49,68,0.14)",
+                background: PAPER,
+                color: INK,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Odśwież sesję
+            </button>
+          )}
+          <Link
+            href="/login"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 16px",
+              borderRadius: 9,
+              background: INK,
+              color: "#fff",
+              fontSize: 13,
+              fontWeight: 600,
+              textDecoration: "none",
+              boxShadow: "0 3px 10px rgba(28,49,68,0.22), inset 0 0.5px 0 rgba(255,255,255,0.18)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Zaloguj się →
+          </Link>
+        </div>
       </div>
     );
   }
 
   // ── State: authenticated ──────────────────────────────────────
-  const hasBackup = Boolean(keyBackupQuery.data);
+  const hasBackup = Boolean(keyBackupQuery.data?.keyBackup);
   const isBusy = unlockStatus === "unlocking";
 
   return (
@@ -353,10 +492,10 @@ export function SyncUnlockPanel({
             {lastSummary ? (
               <span>
                 <span style={{ color: PROFIT }}>✓</span>{" "}
-                {session?.user.email ?? session?.user.id}
+                {userLabel}
               </span>
             ) : (
-              session?.user.email ?? session?.user.id
+              userLabel
             )}
           </div>
           {lastSummary ? (

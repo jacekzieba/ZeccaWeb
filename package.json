@@ -9,6 +9,8 @@
     "lint": "eslint .",
     "check:staging-env": "node scripts/check-staging-env.mjs",
     "check:sync-compat": "node scripts/check-sync-compat.mjs",
+    "check:rls-smoke": "node scripts/check-rls-smoke.mjs",
+    "compare:parity": "node scripts/compare-parity-snapshot.mjs",
     "preflight:staging": "npm run check:staging-env && npm run check:sync-compat && npm run test:e2e:staging-smoke",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

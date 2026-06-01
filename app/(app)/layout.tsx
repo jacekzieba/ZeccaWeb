@@ -24,5 +24,9 @@ export default async function AuthenticatedLayout({
     redirect("/login");
   }
 
-  return <AppShell>{children}</AppShell>;
+  return (
+    <AppShell initialUser={{ id: user.id, email: user.email }}>
+      {children}
+    </AppShell>
+  );
 }

@@ -3,6 +3,7 @@ import {
   resolveInstrumentPrice,
   type FxRateInput,
   type FxTransactionInput,
+  type MarketQuoteInput,
   type ManualValuationInput,
   type PriceTransactionInput,
 } from "@/domain/valuation/price-resolver";
@@ -36,15 +37,17 @@ export type ValuationTransactionInput = PriceTransactionInput & FxTransactionInp
 
 export type PositionValuationDataset = {
   manualValuations: ManualValuationInput[];
+  marketQuotes: MarketQuoteInput[];
   transactions: ValuationTransactionInput[];
   fxRates: FxRateInput[];
+  useLatestTransactionFxRate?: boolean;
 };
 
 export type PositionValuation = {
   price: number;
   currency: string;
   priceDate: Date | null;
-  source: "manual" | "transaction" | "treasuryBond" | "missing";
+  source: "manual" | "market" | "transaction" | "treasuryBond" | "missing";
   sourceLabel: string;
   marketValue: number;
 };
@@ -98,6 +101,7 @@ export function valueInstrumentPosition(input: {
     {
       assetCurrency: asset?.currency,
       manualValuations: dataset.manualValuations,
+      marketQuotes: dataset.marketQuotes,
       transactions: dataset.transactions,
     },
     asOf,
@@ -118,6 +122,8 @@ function priceSourceLabel(source: PositionValuation["source"]) {
   switch (source) {
     case "manual":
       return "Wycena ręczna";
+    case "market":
+      return "Cena rynkowa";
     case "transaction":
       return "Cena transakcyjna";
     case "treasuryBond":
@@ -129,10 +135,15 @@ function priceSourceLabel(source: PositionValuation["source"]) {
 
 function fxRateForCurrency(
   currency: string,
-  dataset: Pick<PositionValuationDataset, "transactions" | "fxRates">,
+  dataset: Pick<
+    PositionValuationDataset,
+    "transactions" | "fxRates" | "useLatestTransactionFxRate"
+  >,
   asOf: Date,
 ) {
-  return resolveFxRate(currency, dataset.transactions, asOf, dataset.fxRates).rate;
+  return resolveFxRate(currency, dataset.transactions, asOf, dataset.fxRates, {
+    latestTransactionRate: dataset.useLatestTransactionFxRate,
+  }).rate;
 }
 
 function dirtyTreasuryBondPrice(

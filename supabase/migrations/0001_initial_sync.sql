@@ -22,7 +22,8 @@ create table if not exists public.encrypted_records (
       'transaction',
       'manualValuation',
       'income',
-      'settings'
+      'settings',
+      'marketQuote'
     )
   ),
   id uuid not null,

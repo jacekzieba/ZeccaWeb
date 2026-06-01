@@ -12,6 +12,7 @@ describe("resolveInstrumentPrice", () => {
       instrumentID,
       {
         assetCurrency: "USD",
+        marketQuotes: [],
         manualValuations: [
           {
             instrumentID,
@@ -46,11 +47,53 @@ describe("resolveInstrumentPrice", () => {
     });
   });
 
+  it("uses the latest market quote before manual and transaction prices", () => {
+    const price = resolveInstrumentPrice(
+      instrumentID,
+      {
+        assetCurrency: "USD",
+        marketQuotes: [
+          {
+            instrumentID,
+            price: 125,
+            currency: "USD",
+            date: new Date("2026-05-10T00:00:00.000Z"),
+          },
+        ],
+        manualValuations: [
+          {
+            instrumentID,
+            value: 110,
+            currency: "USD",
+            date: new Date("2026-05-09T00:00:00.000Z"),
+          },
+        ],
+        transactions: [
+          {
+            instrumentID,
+            price: 90,
+            currency: "USD",
+            date: new Date("2026-05-08T00:00:00.000Z"),
+          },
+        ],
+      },
+      new Date("2026-05-15T00:00:00.000Z"),
+    );
+
+    expect(price).toEqual({
+      value: 125,
+      currency: "USD",
+      date: new Date("2026-05-10T00:00:00.000Z"),
+      source: "market",
+    });
+  });
+
   it("falls back to the latest priced transaction before or on the valuation date", () => {
     const price = resolveInstrumentPrice(
       instrumentID,
       {
         assetCurrency: "USD",
+        marketQuotes: [],
         manualValuations: [],
         transactions: [
           {
@@ -83,6 +126,7 @@ describe("resolveInstrumentPrice", () => {
         instrumentID,
         {
           assetCurrency: "EUR",
+          marketQuotes: [],
           manualValuations: [],
           transactions: [],
         },

@@ -1,4 +1,4 @@
-export type PriceSource = "manual" | "transaction" | "missing";
+export type PriceSource = "manual" | "market" | "transaction" | "missing";
 
 export type FxRateSource = "pln" | "history" | "transaction" | "fxConversion" | "missing";
 
@@ -9,6 +9,12 @@ export type DatedValue = {
 export type ManualValuationInput = DatedValue & {
   instrumentID: string;
   value: number;
+  currency: string;
+};
+
+export type MarketQuoteInput = DatedValue & {
+  instrumentID: string;
+  price: number;
   currency: string;
 };
 
@@ -52,10 +58,29 @@ export function resolveInstrumentPrice(
   input: {
     assetCurrency?: string | null;
     manualValuations: ManualValuationInput[];
+    marketQuotes: MarketQuoteInput[];
     transactions: PriceTransactionInput[];
   },
   valuationDate: Date,
 ): InstrumentPrice {
+  const marketQuote = latestBeforeOrOn(
+    input.marketQuotes.filter(
+      (quote) =>
+        quote.instrumentID === instrumentID &&
+        quote.price > EPSILON &&
+        quote.date.getTime() <= valuationDate.getTime(),
+    ),
+  );
+
+  if (marketQuote) {
+    return {
+      value: marketQuote.price,
+      currency: marketQuote.currency,
+      date: marketQuote.date,
+      source: "market",
+    };
+  }
+
   const manualValuation = latestBeforeOrOn(
     input.manualValuations.filter(
       (valuation) =>
@@ -105,6 +130,7 @@ export function resolveFxRate(
   transactions: FxTransactionInput[],
   valuationDate: Date,
   history: FxRateInput[] = [],
+  options: { latestTransactionRate?: boolean } = {},
 ): FxRateResolution {
   if (currency === "PLN") {
     return { rate: 1, date: valuationDate, source: "pln" };
@@ -128,12 +154,18 @@ export function resolveFxRate(
   }
 
   const directRate = latestBeforeOrOn(
-    transactions.filter(
-      (transaction) =>
-        transaction.currency === currency &&
-        (transaction.fxRateToBase ?? 0) > EPSILON &&
-        transaction.date.getTime() <= valuationDate.getTime(),
-    ),
+    transactions.filter((transaction) => {
+      if (
+        transaction.currency !== currency ||
+        (transaction.fxRateToBase ?? 0) <= EPSILON
+      ) {
+        return false;
+      }
+
+      return options.latestTransactionRate
+        ? true
+        : transaction.date.getTime() <= valuationDate.getTime();
+    }),
   );
 
   if (directRate?.fxRateToBase) {
@@ -145,15 +177,21 @@ export function resolveFxRate(
   }
 
   const conversionRate = latestBeforeOrOn(
-    transactions.filter(
-      (transaction) =>
-        transaction.transactionType === "fxConversion" &&
-        transaction.currency === currency &&
-        transaction.targetCurrency === "PLN" &&
-        transaction.grossAmount > EPSILON &&
-        (transaction.targetGrossAmount ?? 0) > EPSILON &&
-        transaction.date.getTime() <= valuationDate.getTime(),
-    ),
+    transactions.filter((transaction) => {
+      if (
+        transaction.transactionType !== "fxConversion" ||
+        transaction.currency !== currency ||
+        transaction.targetCurrency !== "PLN" ||
+        transaction.grossAmount <= EPSILON ||
+        (transaction.targetGrossAmount ?? 0) <= EPSILON
+      ) {
+        return false;
+      }
+
+      return options.latestTransactionRate
+        ? true
+        : transaction.date.getTime() <= valuationDate.getTime();
+    }),
   );
 
   if (conversionRate?.targetGrossAmount) {
@@ -165,15 +203,21 @@ export function resolveFxRate(
   }
 
   const inverseConversionRate = latestBeforeOrOn(
-    transactions.filter(
-      (transaction) =>
-        transaction.transactionType === "fxConversion" &&
-        transaction.currency === "PLN" &&
-        transaction.targetCurrency === currency &&
-        transaction.grossAmount > EPSILON &&
-        (transaction.targetGrossAmount ?? 0) > EPSILON &&
-        transaction.date.getTime() <= valuationDate.getTime(),
-    ),
+    transactions.filter((transaction) => {
+      if (
+        transaction.transactionType !== "fxConversion" ||
+        transaction.currency !== "PLN" ||
+        transaction.targetCurrency !== currency ||
+        transaction.grossAmount <= EPSILON ||
+        (transaction.targetGrossAmount ?? 0) <= EPSILON
+      ) {
+        return false;
+      }
+
+      return options.latestTransactionRate
+        ? true
+        : transaction.date.getTime() <= valuationDate.getTime();
+    }),
   );
 
   if (inverseConversionRate?.targetGrossAmount) {

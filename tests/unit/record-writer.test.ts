@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   clearPendingSyncOperations,
+  deleteRecord,
   flushPendingSyncOperations,
   forcePendingSyncOperation,
   getPendingSyncOperations,
@@ -20,13 +21,16 @@ type StoreOptions = {
     deleted_at: string | null;
   } | null;
   upsertError?: Error | null;
+  updateError?: Error | null;
 };
 
 function createSupabaseStore(options: StoreOptions = {}) {
   const store = {
     metadata: options.metadata ?? null,
     upsertError: options.upsertError ?? null,
+    updateError: options.updateError ?? null,
     upserts: [] as unknown[],
+    updates: [] as unknown[],
   };
 
   const client = {
@@ -50,6 +54,14 @@ function createSupabaseStore(options: StoreOptions = {}) {
         upsert: vi.fn(async (payload: unknown) => {
           store.upserts.push(payload);
           return { error: store.upsertError };
+        }),
+        update: vi.fn((payload: unknown) => {
+          store.updates.push(payload);
+          const updateBuilder = {
+            error: store.updateError,
+            eq: vi.fn(() => updateBuilder),
+          };
+          return updateBuilder;
         }),
       };
     },
@@ -173,5 +185,101 @@ describe("record writer", () => {
 
     expect(result.forced).toBe(true);
     expect(getPendingSyncOperations()).toHaveLength(0);
+  });
+
+  it("soft-deletes a record when the remote version still matches", async () => {
+    const { client, store } = createSupabaseStore({
+      metadata: {
+        id: recordId,
+        record_type: "asset",
+        updated_at: "2026-05-17T10:00:00.000Z",
+        deleted_at: null,
+      },
+    });
+
+    const result = await deleteRecord(client, "asset", recordId, {
+      baseUpdatedAt: "2026-05-17T10:00:00.000Z",
+    });
+
+    expect(result.queued).toBe(false);
+    expect(store.updates).toHaveLength(1);
+    expect(store.updates[0]).toMatchObject({
+      deleted_at: expect.any(String),
+      updated_at: expect.any(String),
+    });
+    expect(getPendingSyncOperations()).toHaveLength(0);
+  });
+
+  it("rejects stale soft-deletes as conflicts", async () => {
+    const { client, store } = createSupabaseStore({
+      metadata: {
+        id: recordId,
+        record_type: "asset",
+        updated_at: "2026-05-17T10:30:00.000Z",
+        deleted_at: null,
+      },
+    });
+
+    await expect(
+      deleteRecord(client, "asset", recordId, {
+        baseUpdatedAt: "2026-05-17T10:00:00.000Z",
+      }),
+    ).rejects.toBeInstanceOf(SyncConflictError);
+
+    expect(store.updates).toHaveLength(0);
+    expect(getPendingSyncOperations()).toHaveLength(0);
+  });
+
+  it("queues failed soft-deletes and flushes them later", async () => {
+    const { client, store } = createSupabaseStore({
+      metadata: {
+        id: recordId,
+        record_type: "asset",
+        updated_at: "2026-05-17T10:00:00.000Z",
+        deleted_at: null,
+      },
+      updateError: new Error("offline"),
+    });
+
+    const result = await deleteRecord(client, "asset", recordId, {
+      baseUpdatedAt: "2026-05-17T10:00:00.000Z",
+    });
+
+    expect(result.queued).toBe(true);
+    expect(getPendingSyncOperations()).toHaveLength(1);
+
+    store.updateError = null;
+    const flushResult = await flushPendingSyncOperations(client);
+
+    expect(flushResult.sent).toBe(1);
+    expect(flushResult.remaining).toHaveLength(0);
+    expect(getPendingSyncOperations()).toHaveLength(0);
+    expect(store.updates).toHaveLength(2);
+  });
+
+  it("can force a queued soft-delete after the user chooses to override", async () => {
+    const { client, store } = createSupabaseStore({
+      metadata: {
+        id: recordId,
+        record_type: "asset",
+        updated_at: "2026-05-17T10:00:00.000Z",
+        deleted_at: null,
+      },
+      updateError: new Error("offline"),
+    });
+
+    await deleteRecord(client, "asset", recordId, {
+      baseUpdatedAt: "2026-05-17T10:00:00.000Z",
+    });
+
+    const operationId = getPendingSyncOperations()[0]?.operationId;
+    expect(operationId).toBeTruthy();
+
+    store.updateError = null;
+    const result = await forcePendingSyncOperation(client, operationId!);
+
+    expect(result.forced).toBe(true);
+    expect(getPendingSyncOperations()).toHaveLength(0);
+    expect(store.updates).toHaveLength(2);
   });
 });
