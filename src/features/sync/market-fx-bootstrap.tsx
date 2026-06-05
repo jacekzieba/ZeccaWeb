@@ -73,7 +73,7 @@ export function MarketFxBootstrap() {
 
     appliedKey.current = key;
     setMarketFxRates(rates);
-    setSync(records, buildInvestorDataSnapshot(records, { fxRates: rates }));
+    setSync(records, buildInvestorDataSnapshot(records, { fxRates: rates, historyGranularity: "daily" }));
   }, [currencies.length, queries, records, setMarketFxRates, setSync]);
 
   return null;

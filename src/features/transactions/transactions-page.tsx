@@ -8,24 +8,34 @@ import {
   type TransactionEditorDraft,
 } from "@/features/transactions/add-transaction-modal";
 import { deleteRecord, refreshSyncStore } from "@/sync/records/record-writer";
+import {
+  V2,
+  V2Badge,
+  V2Button,
+  V2Card,
+  V2Kpi,
+  V2ScreenHead,
+  V2_TYPE,
+  v2InputStyle,
+  v2Mix,
+  v2SelectStyle,
+} from "@/lib/v2-design";
 
-const INK = "#1C3144";
-const MUTED = "rgba(28,49,68,0.58)";
-const SUBTLE = "rgba(28,49,68,0.38)";
-const LINE_SOFT = "rgba(28,49,68,0.06)";
-const PROFIT = "#2D9C6B";
-const LOSS = "#B85042";
-const AMBER = "#B87830";
-const BLUE = "#0A84FF";
+const MUTED = V2.muted;
+const SUBTLE = V2.subtle;
+const LINE_SOFT = V2.line2;
+const PROFIT = V2.profit;
+const LOSS = V2.loss;
+const AMBER = V2.bonds;
+const BLUE = V2.equity;
 
 const glassCard: CSSProperties = {
-  background: "rgba(255,253,249,0.82)",
+  background: V2.card,
   backdropFilter: "blur(30px) saturate(160%)",
   WebkitBackdropFilter: "blur(30px) saturate(160%)",
   borderRadius: 16,
-  border: "0.5px solid rgba(255,255,255,0.7)",
-  boxShadow:
-    "inset 0 1px 0 rgba(255,255,255,0.9), 0 1px 0 rgba(28,49,68,0.04), 0 4px 16px rgba(28,49,68,0.05)",
+  border: `0.5px solid ${V2.line}`,
+  boxShadow: `0 1px 0 ${v2Mix(V2.ink, 0.03)}, 0 6px 20px ${v2Mix(V2.ink, 0.05)}`,
 };
 
 const TX_LABELS: Record<string, string> = {
@@ -85,6 +95,7 @@ export function TransactionsPage() {
   const userDataKey = useSyncStore((s) => s.userDataKey);
   const supabase = useSyncStore((s) => s.supabase);
   const setSync = useSyncStore((s) => s.setSync);
+  const openAddTransaction = useSyncStore((s) => s.openAddTransaction);
 
   const allTransactions = useMemo(
     () => (records ? buildTransactionList(records) : []),
@@ -211,39 +222,38 @@ export function TransactionsPage() {
     });
   }, [allTransactions, portfolioFilter, typeFilter, search]);
 
-  const selectStyle: CSSProperties = {
-    padding: "7px 12px",
-    borderRadius: 9,
-    border: "0.5px solid rgba(28,49,68,0.12)",
-    background: "rgba(255,255,255,0.7)",
-    color: INK,
-    fontSize: 12,
-    fontWeight: 500,
-    cursor: "pointer",
-    fontFamily: "inherit",
-    appearance: "none" as const,
-  };
+  const selectStyle: CSSProperties = v2SelectStyle;
+  const deposits = allTransactions.filter((tx) => tx.transactionType === "cashDeposit").reduce((sum, tx) => sum + tx.grossAmount, 0);
+  const dividends = allTransactions.filter((tx) => tx.transactionType === "dividend").reduce((sum, tx) => sum + tx.grossAmount, 0);
+  const interest = allTransactions.filter((tx) => ["interest", "bondCoupon"].includes(tx.transactionType)).reduce((sum, tx) => sum + tx.grossAmount, 0);
+  const fees = allTransactions.filter((tx) => ["fee", "tax"].includes(tx.transactionType)).reduce((sum, tx) => sum + tx.grossAmount, 0);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      {/* Header */}
-      <div style={{ padding: "0 2px 4px" }}>
-        <div style={{ fontSize: 22, fontWeight: 700, color: INK, letterSpacing: "-0.01em" }}>
-          Transakcje
-        </div>
-        <div style={{ fontSize: 12, color: MUTED, marginTop: 2 }}>
-          {records
-            ? `${allTransactions.length} transakcji · ${filtered.length} widocznych`
-            : "Odblokuj dane w panelu synchronizacji"}
-        </div>
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: V2_TYPE.ui, color: V2.ink }}>
+      <V2ScreenHead
+        eyebrow="Analiza"
+        title="Transakcje"
+        sub={records ? `${allTransactions.length} operacji · ${filtered.length} widocznych` : "Odblokuj dane w panelu synchronizacji"}
+        action={<V2Button onClick={openAddTransaction}><span style={{ fontSize: 16, lineHeight: 1 }}>+</span>Dodaj transakcję</V2Button>}
+      />
+
+      {records && (
+        <V2Card pad={20}>
+          <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+            <V2Kpi label="Wpłaty" value={`+${fmt(deposits)} zł`} />
+            <div style={{ width: "0.5px", background: V2.line, alignSelf: "stretch" }} />
+            <V2Kpi label="Dywidendy" value={`+${fmt(dividends)} zł`} accent={V2.profit} />
+            <V2Kpi label="Odsetki" value={`+${fmt(interest)} zł`} accent={V2.bonds} />
+            <V2Kpi label="Prowizje" value={`−${fmt(fees)} zł`} accent={V2.loss} />
+          </div>
+        </V2Card>
+      )}
 
       {/* Filters */}
       {records && (
         <div
           style={{
-            ...glassCard,
-            padding: "14px 18px",
+            padding: "0",
             display: "flex",
             gap: 10,
             flexWrap: "wrap",
@@ -259,7 +269,7 @@ export function TransactionsPage() {
                 top: "50%",
                 transform: "translateY(-50%)",
                 fontSize: 13,
-                color: SUBTLE,
+                color: V2.subtle,
                 pointerEvents: "none",
               }}
             >
@@ -272,15 +282,7 @@ export function TransactionsPage() {
               onChange={(e) => setSearch(e.target.value)}
               style={{
                 width: "100%",
-                padding: "7px 12px 7px 30px",
-                borderRadius: 9,
-                border: "0.5px solid rgba(28,49,68,0.12)",
-                background: "rgba(255,255,255,0.7)",
-                color: INK,
-                fontSize: 12,
-                fontFamily: "inherit",
-                outline: "none",
-                boxSizing: "border-box",
+                ...v2InputStyle,
               }}
             />
           </div>
@@ -316,12 +318,12 @@ export function TransactionsPage() {
               style={{
                 padding: "7px 12px",
                 borderRadius: 9,
-                border: "0.5px solid rgba(28,49,68,0.12)",
+                border: `0.5px solid ${V2.line}`,
                 background: "transparent",
-                color: MUTED,
+                color: V2.muted,
                 fontSize: 12,
                 cursor: "pointer",
-                fontFamily: "inherit",
+                fontFamily: V2_TYPE.ui,
               }}
             >
               Wyczyść ×
@@ -338,7 +340,7 @@ export function TransactionsPage() {
             display: "grid",
             gridTemplateColumns: "100px minmax(0,1.5fr) minmax(0,1.2fr) 90px minmax(0,1fr) 90px 126px",
             padding: "10px 22px",
-            background: "rgba(28,49,68,0.025)",
+            background: v2Mix(V2.ink, 0.022),
             borderBottom: `0.5px solid ${LINE_SOFT}`,
             borderRadius: "16px 16px 0 0",
           }}
@@ -349,7 +351,7 @@ export function TransactionsPage() {
               style={{
                 fontSize: 10,
                 fontWeight: 700,
-                color: SUBTLE,
+                color: V2.subtle,
                 textTransform: "uppercase",
                 letterSpacing: ".08em",
                 textAlign: i >= 3 ? "right" : "left",
@@ -391,56 +393,44 @@ export function TransactionsPage() {
                 alignItems: "center",
                 transition: "background .12s",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(28,49,68,0.025)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                onMouseEnter={(e) => (e.currentTarget.style.background = v2Mix(V2.ink, 0.022))}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
               {/* Date */}
-              <div style={{ fontSize: 12, color: MUTED }}>{fmtDate(tx.date)}</div>
+              <div style={{ fontFamily: V2_TYPE.mono, fontSize: 11.5, color: V2.muted }}>{fmtDate(tx.date)}</div>
 
               {/* Instrument */}
               <div>
                 {tx.instrumentName ? (
                   <>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: INK }}>{tx.instrumentName}</div>
-                    <div style={{ fontSize: 11, color: SUBTLE }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 700, color: V2.ink }}>{tx.instrumentName}</div>
+                    <div style={{ fontSize: 11.5, color: V2.subtle, marginTop: 1 }}>
                       {tx.instrumentSymbol}
                       {tx.quantity != null && ` · ${tx.quantity.toLocaleString("pl-PL", { maximumFractionDigits: 6 })} szt.`}
                     </div>
                   </>
                 ) : (
-                  <div style={{ fontSize: 13, color: MUTED }}>—</div>
+                  <div style={{ fontSize: 13, color: V2.muted }}>—</div>
                 )}
               </div>
 
               {/* Portfolio */}
-              <div style={{ fontSize: 12, color: MUTED, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <div style={{ fontFamily: V2_TYPE.mono, fontSize: 11.5, color: V2.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {tx.portfolioName}
               </div>
 
               {/* Type badge */}
               <div style={{ textAlign: "right" }}>
-                <span
-                  style={{
-                    display: "inline-block",
-                    padding: "3px 8px",
-                    borderRadius: 6,
-                    background: `${color}14`,
-                    color,
-                    fontSize: 10.5,
-                    fontWeight: 700,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {label}
-                </span>
+                <V2Badge label={label} color={color} />
               </div>
 
               {/* Amount */}
               <div style={{ textAlign: "right" }}>
                 <div
                   style={{
-                    fontSize: 14,
-                    fontWeight: 700,
+                    fontFamily: V2_TYPE.serif,
+                    fontSize: 16,
+                    fontWeight: 500,
                     color: isInflow ? PROFIT : tx.transactionType === "buy" ? BLUE : LOSS,
                     fontVariantNumeric: "tabular-nums",
                   }}
@@ -448,14 +438,14 @@ export function TransactionsPage() {
                   {isInflow ? "+" : "−"}{fmt(tx.grossAmount, 2)}
                 </div>
                 {(tx.fees > 0 || tx.taxes > 0) && (
-                  <div style={{ fontSize: 10, color: SUBTLE }}>
+                  <div style={{ fontFamily: V2_TYPE.mono, fontSize: 10.5, color: V2.subtle }}>
                     prowizja {fmt(tx.fees + tx.taxes, 2)}
                   </div>
                 )}
               </div>
 
               {/* Currency */}
-              <div style={{ textAlign: "right", fontSize: 12, color: MUTED, fontWeight: 500 }}>
+              <div style={{ textAlign: "right", fontFamily: V2_TYPE.mono, fontSize: 11.5, color: V2.muted, fontWeight: 500 }}>
                 {tx.currency}
               </div>
 
@@ -466,12 +456,12 @@ export function TransactionsPage() {
                   style={{
                     padding: "6px 10px",
                     borderRadius: 8,
-                    border: "0.5px solid rgba(28,49,68,0.12)",
-                    background: "rgba(255,255,255,0.7)",
-                    color: userDataKey ? MUTED : SUBTLE,
+                    border: `0.5px solid ${V2.line}`,
+                    background: v2Mix(V2.card, 0.72),
+                    color: userDataKey ? V2.muted : V2.subtle,
                     fontSize: 12,
                     cursor: userDataKey ? "pointer" : "not-allowed",
-                    fontFamily: "inherit",
+                    fontFamily: V2_TYPE.ui,
                   }}
                 >
                   Edytuj
@@ -482,12 +472,12 @@ export function TransactionsPage() {
                   style={{
                     padding: "6px 10px",
                     borderRadius: 8,
-                    border: "0.5px solid rgba(184,80,66,0.18)",
-                    background: deletingId === tx.id ? "rgba(184,80,66,0.08)" : "transparent",
+                    border: `0.5px solid ${v2Mix(V2.loss, 0.18)}`,
+                    background: deletingId === tx.id ? v2Mix(V2.loss, 0.08) : "transparent",
                     color: deletingId === tx.id ? LOSS : MUTED,
                     fontSize: 12,
                     cursor: !userDataKey || deletingId === tx.id ? "not-allowed" : "pointer",
-                    fontFamily: "inherit",
+                    fontFamily: V2_TYPE.ui,
                   }}
                 >
                   {deletingId === tx.id ? "Usuwam…" : "Usuń"}

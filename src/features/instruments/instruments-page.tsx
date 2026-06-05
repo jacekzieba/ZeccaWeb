@@ -12,22 +12,33 @@ import { yahooSymbolForInstrument } from "@/market-data/symbols";
 import { isFakeSyncEnabled } from "@/lib/env";
 import { buildFakeManualValuationRecord } from "@/sync/dev/fake-sync";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
+import {
+  V2,
+  V2Badge,
+  V2Button,
+  V2Card,
+  V2Kpi,
+  V2ScreenHead,
+  V2_TYPE,
+  v2InputStyle,
+  v2Mix,
+  v2SelectStyle,
+} from "@/lib/v2-design";
 
-const INK = "#1C3144";
-const MUTED = "rgba(28,49,68,0.58)";
-const SUBTLE = "rgba(28,49,68,0.38)";
-const LINE_SOFT = "rgba(28,49,68,0.06)";
-const PROFIT = "#2D9C6B";
-const LOSS = "#B85042";
+const INK = V2.ink;
+const MUTED = V2.muted;
+const SUBTLE = V2.subtle;
+const LINE_SOFT = V2.line2;
+const PROFIT = V2.profit;
+const LOSS = V2.loss;
 
 const glassCard: CSSProperties = {
-  background: "rgba(255,253,249,0.82)",
+  background: V2.card,
   backdropFilter: "blur(30px) saturate(160%)",
   WebkitBackdropFilter: "blur(30px) saturate(160%)",
   borderRadius: 16,
-  border: "0.5px solid rgba(255,255,255,0.7)",
-  boxShadow:
-    "inset 0 1px 0 rgba(255,255,255,0.9), 0 1px 0 rgba(28,49,68,0.04), 0 4px 16px rgba(28,49,68,0.05)",
+  border: `0.5px solid ${V2.line}`,
+  boxShadow: `0 1px 0 ${v2Mix(V2.ink, 0.03)}, 0 6px 20px ${v2Mix(V2.ink, 0.05)}`,
 };
 
 const KIND_LABELS: Record<string, string> = {
@@ -41,13 +52,13 @@ const KIND_LABELS: Record<string, string> = {
 };
 
 const KIND_COLORS: Record<string, string> = {
-  stock: "#34699A",
-  etf: "#2D9C6B",
-  treasuryBond: "#8A7A3C",
-  listedBond: "#7EA16B",
-  crypto: "#9B6BC4",
-  deposit: "#C97B30",
-  cash: "#5E6C84",
+  stock: V2.equity,
+  etf: V2.equity,
+  treasuryBond: V2.bonds,
+  listedBond: V2.bonds,
+  crypto: "#7E5AA5",
+  deposit: V2.deposit,
+  cash: V2.cash,
 };
 
 const KIND_ALL = "all";
@@ -347,7 +358,7 @@ export function InstrumentsPage() {
           currency: quoteCurrencyForInstrument(quote, inst.currency),
         }),
       ];
-      setSync(nextRecords, buildInvestorDataSnapshot(nextRecords));
+      setSync(nextRecords, buildInvestorDataSnapshot(nextRecords, { historyGranularity: "daily" }));
       setQuotePreview(null);
       setQuoteMessage("Cena została zapisana lokalnie w fake sync.");
       return;
@@ -403,63 +414,38 @@ export function InstrumentsPage() {
     }
   }
 
-  const selectStyle: CSSProperties = {
-    padding: "7px 12px",
-    borderRadius: 9,
-    border: "0.5px solid rgba(28,49,68,0.12)",
-    background: "rgba(255,255,255,0.7)",
-    color: INK,
-    fontSize: 12,
-    fontWeight: 500,
-    cursor: "pointer",
-    fontFamily: "inherit",
-    appearance: "none" as const,
-  };
+  const selectStyle: CSSProperties = v2SelectStyle;
+  const best = [...allInstruments]
+    .filter((instrument) => instrument.totalQuantity > 0)
+    .sort((a, b) => b.marketValue - a.marketValue)[0];
+  const pricedCount = allInstruments.filter((instrument) => instrument.lastPrice > 0).length;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      {/* Header */}
-      <div
-        style={{
-          padding: "0 2px 4px",
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          gap: 12,
-          flexWrap: "wrap",
-        }}
-      >
-        <div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: INK, letterSpacing: "-0.01em" }}>
-            Instrumenty
-          </div>
-          <div style={{ fontSize: 12, color: MUTED, marginTop: 2 }}>
-            {records
-              ? `${allInstruments.length} instrumentów · ${heldCount} w portfelu`
-              : "Odblokuj dane w panelu synchronizacji"}
-          </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: V2_TYPE.ui, color: V2.ink }}>
+      <V2ScreenHead
+        eyebrow="Analiza"
+        title="Instrumenty"
+        sub={records ? `${allInstruments.length} pozycji · ${heldCount} w portfelu` : "Odblokuj dane w panelu synchronizacji"}
+        action={(
+          <V2Button
+            onClick={() => {
+              setEditingInstrumentId(null);
+              setEditorOpen(true);
+            }}
+            disabled={!userDataKey}
+          >
+            <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>Dodaj instrument
+          </V2Button>
+        )}
+      />
+
+      {records && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14 }}>
+          <V2Card pad={20}><V2Kpi label="Wartość rynkowa" value={`${fmt(totalValue)} zł`} sub={`${heldCount} aktywnych pozycji`} /></V2Card>
+          <V2Card pad={20}><V2Kpi label="Największa pozycja" value={best?.symbol ?? "—"} accent={V2.profit} sub={best ? `${fmt(best.marketValue)} PLN` : "Brak aktywów"} /></V2Card>
+          <V2Card pad={20}><V2Kpi label="Wyceny" value={`${pricedCount}/${allInstruments.length}`} accent={V2.bonds} sub="instrumenty z ceną" /></V2Card>
         </div>
-        <button
-          onClick={() => {
-            setEditingInstrumentId(null);
-            setEditorOpen(true);
-          }}
-          disabled={!userDataKey}
-          style={{
-            padding: "8px 14px",
-            borderRadius: 9,
-            border: "none",
-            background: userDataKey ? INK : "rgba(28,49,68,0.12)",
-            color: userDataKey ? "#fff" : SUBTLE,
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: userDataKey ? "pointer" : "not-allowed",
-            fontFamily: "inherit",
-          }}
-        >
-          + Dodaj instrument
-        </button>
-      </div>
+      )}
 
       {/* Summary chips */}
       {records && (
@@ -475,15 +461,15 @@ export function InstrumentsPage() {
               style={{
                 padding: "7px 14px",
                 borderRadius: 99,
-                border: "0.5px solid rgba(28,49,68,0.12)",
-                background: heldFilter === value ? INK : "rgba(255,255,255,0.7)",
-                color: heldFilter === value ? "#fff" : MUTED,
+                border: `0.5px solid ${heldFilter === value ? "transparent" : V2.line}`,
+                background: heldFilter === value ? V2.ink : V2.card,
+                color: heldFilter === value ? V2.card : V2.muted,
                 fontSize: 12,
                 fontWeight: 600,
                 cursor: "pointer",
                 fontFamily: "inherit",
                 boxShadow: heldFilter === value
-                  ? "0 2px 8px rgba(28,49,68,0.18)"
+                  ? `0 2px 8px ${v2Mix(V2.ink, 0.18)}`
                   : "none",
                 transition: "all .15s",
               }}
@@ -497,24 +483,27 @@ export function InstrumentsPage() {
       {records && (
         <div
           style={{
-            ...glassCard,
             padding: "13px 16px",
+            background: V2.card,
+            borderRadius: 16,
+            border: `0.5px solid ${
+              marketDataStatus?.providers.yahoo.configured === false
+                ? v2Mix(V2.bonds, 0.28)
+                : V2.line
+            }`,
+            boxShadow: `0 1px 0 ${v2Mix(V2.ink, 0.03)}, 0 6px 20px ${v2Mix(V2.ink, 0.05)}`,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             gap: 12,
             flexWrap: "wrap",
-            borderColor:
-              marketDataStatus?.providers.yahoo.configured === false
-                ? "rgba(184,120,48,0.28)"
-                : "rgba(255,255,255,0.7)",
           }}
         >
           <div>
-            <div style={{ color: INK, fontSize: 13, fontWeight: 800 }}>
+            <div style={{ color: V2.ink, fontSize: 13.5, fontWeight: 800 }}>
               Diagnostyka market data
             </div>
-            <div style={{ color: MUTED, fontSize: 12, marginTop: 3, lineHeight: 1.45 }}>
+            <div style={{ color: V2.muted, fontSize: 12, marginTop: 3, lineHeight: 1.45 }}>
               {marketDataStatusError
                 ? marketDataStatusError
                 : marketDataStatus?.providers.yahoo.configured
@@ -529,12 +518,12 @@ export function InstrumentsPage() {
               borderRadius: 99,
               background:
                 marketDataStatus?.providers.yahoo.configured === false
-                  ? "rgba(184,120,48,0.12)"
-                  : "rgba(45,156,107,0.12)",
+                  ? v2Mix(V2.bonds, 0.12)
+                  : v2Mix(V2.profit, 0.12),
               color:
                 marketDataStatus?.providers.yahoo.configured === false
-                  ? "#B87830"
-                  : PROFIT,
+                  ? V2.bonds
+                  : V2.profit,
               fontSize: 11,
               fontWeight: 800,
               padding: "6px 10px",
@@ -557,8 +546,7 @@ export function InstrumentsPage() {
       {records && (
         <div
           style={{
-            ...glassCard,
-            padding: "14px 18px",
+            padding: "0",
             display: "flex",
             gap: 10,
             flexWrap: "wrap",
@@ -573,7 +561,7 @@ export function InstrumentsPage() {
                 top: "50%",
                 transform: "translateY(-50%)",
                 fontSize: 13,
-                color: SUBTLE,
+                color: V2.subtle,
                 pointerEvents: "none",
               }}
             >
@@ -585,16 +573,7 @@ export function InstrumentsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{
-                width: "100%",
-                padding: "7px 12px 7px 30px",
-                borderRadius: 9,
-                border: "0.5px solid rgba(28,49,68,0.12)",
-                background: "rgba(255,255,255,0.7)",
-                color: INK,
-                fontSize: 12,
-                fontFamily: "inherit",
-                outline: "none",
-                boxSizing: "border-box",
+                ...v2InputStyle,
               }}
             />
           </div>
@@ -612,22 +591,22 @@ export function InstrumentsPage() {
               style={{
                 padding: "7px 12px",
                 borderRadius: 9,
-                border: "0.5px solid rgba(28,49,68,0.12)",
+                border: `0.5px solid ${V2.line}`,
                 background: "transparent",
-                color: MUTED,
+                color: V2.muted,
                 fontSize: 12,
                 cursor: "pointer",
-                fontFamily: "inherit",
+                fontFamily: V2_TYPE.ui,
               }}
             >
               Wyczyść ×
             </button>
           )}
 
-          <div style={{ marginLeft: "auto", fontSize: 12, color: SUBTLE }}>
+          <div style={{ marginLeft: "auto", fontFamily: V2_TYPE.mono, fontSize: 11.5, color: V2.subtle }}>
             {filtered.length} wyników
             {totalValue > 0 && (
-              <> · <strong style={{ color: INK }}>{fmt(totalValue)} PLN</strong></>
+              <> · <strong style={{ color: V2.ink }}>{fmt(totalValue)} PLN</strong></>
             )}
           </div>
         </div>
@@ -636,8 +615,10 @@ export function InstrumentsPage() {
       {records && (quoteMessage || quoteError) && (
         <div
           style={{
-            ...glassCard,
             padding: "10px 14px",
+            background: V2.card,
+            borderRadius: 14,
+            border: `0.5px solid ${quoteError ? v2Mix(V2.loss, 0.18) : v2Mix(V2.profit, 0.18)}`,
             color: quoteError ? LOSS : PROFIT,
             fontSize: 12,
             fontWeight: 700,
@@ -655,7 +636,7 @@ export function InstrumentsPage() {
             display: "grid",
             gridTemplateColumns: "minmax(0,2.5fr) 80px minmax(0,0.8fr) minmax(0,0.8fr) minmax(0,1.1fr) minmax(0,1fr) 220px",
             padding: "10px 22px",
-            background: "rgba(28,49,68,0.025)",
+            background: v2Mix(V2.ink, 0.022),
             borderBottom: `0.5px solid ${LINE_SOFT}`,
             borderRadius: "16px 16px 0 0",
           }}
@@ -666,7 +647,7 @@ export function InstrumentsPage() {
               style={{
                 fontSize: 10,
                 fontWeight: 700,
-                color: SUBTLE,
+                color: V2.subtle,
                 textTransform: "uppercase",
                 letterSpacing: ".08em",
                 textAlign: i <= 1 ? "left" : "right",
@@ -712,7 +693,7 @@ export function InstrumentsPage() {
                   opacity: isHeld ? 1 : 0.5,
                   transition: "background .12s",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(28,49,68,0.025)")}
+                onMouseEnter={(e) => (e.currentTarget.style.background = v2Mix(V2.ink, 0.022))}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
               >
                 {/* Name + symbol */}
@@ -737,43 +718,31 @@ export function InstrumentsPage() {
                     {inst.symbol.slice(0, 4).toUpperCase()}
                   </span>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: INK }}>{inst.name}</div>
-                    <div style={{ fontSize: 11, color: SUBTLE }}>{inst.symbol} · {inst.currency}</div>
+                    <div style={{ fontSize: 13.5, fontWeight: 700, color: V2.ink }}>{inst.name}</div>
+                    <div style={{ fontFamily: V2_TYPE.mono, fontSize: 11, color: V2.subtle }}>{inst.symbol} · {inst.currency}</div>
                   </div>
                 </div>
 
                 {/* Kind badge */}
                 <div>
-                  <span
-                    style={{
-                      display: "inline-block",
-                      padding: "3px 7px",
-                      borderRadius: 6,
-                      background: `${color}12`,
-                      color,
-                      fontSize: 10,
-                      fontWeight: 700,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {kindLabel}
-                  </span>
+                  <V2Badge label={kindLabel} color={color} />
                 </div>
 
                 {/* Quantity */}
-                <div style={{ textAlign: "right", fontSize: 13, color: isHeld ? INK : SUBTLE, fontVariantNumeric: "tabular-nums" }}>
+                <div style={{ textAlign: "right", fontFamily: V2_TYPE.mono, fontSize: 12.5, color: isHeld ? V2.ink : V2.subtle, fontVariantNumeric: "tabular-nums" }}>
                   {fmtQty(inst.totalQuantity)}
                 </div>
 
                 {/* Last price */}
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 13, color: INK, fontVariantNumeric: "tabular-nums" }}>
+                  <div style={{ fontFamily: V2_TYPE.mono, fontSize: 12.5, color: V2.ink, fontVariantNumeric: "tabular-nums" }}>
                     {inst.lastPrice > 0 ? fmt(inst.lastPrice, 2) : "—"}
                   </div>
                   <div
                     style={{
-                      fontSize: 10,
-                      color: inst.valuationSource === "missing" ? LOSS : SUBTLE,
+                      fontFamily: V2_TYPE.mono,
+                      fontSize: 10.5,
+                      color: inst.valuationSource === "missing" ? LOSS : V2.subtle,
                       marginTop: 2,
                     }}
                   >
@@ -785,12 +754,12 @@ export function InstrumentsPage() {
                 {/* Market value */}
                 <div style={{ textAlign: "right" }}>
                   {isHeld ? (
-                    <div style={{ fontSize: 14, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
+                    <div style={{ fontFamily: V2_TYPE.serif, fontSize: 16, fontWeight: 500, color: V2.ink, fontVariantNumeric: "tabular-nums" }}>
                       {fmt(inst.marketValue)}{" "}
                       <span style={{ fontSize: 10, opacity: 0.5 }}>PLN</span>
                     </div>
                   ) : (
-                    <div style={{ fontSize: 13, color: SUBTLE }}>—</div>
+                    <div style={{ fontSize: 13, color: V2.subtle }}>—</div>
                   )}
                 </div>
 
@@ -805,7 +774,7 @@ export function InstrumentsPage() {
                             fontSize: 10,
                             padding: "2px 7px",
                             borderRadius: 5,
-                            background: `${PROFIT}14`,
+                            background: v2Mix(V2.profit, 0.12),
                             color: PROFIT,
                             fontWeight: 600,
                             whiteSpace: "nowrap",
@@ -816,7 +785,7 @@ export function InstrumentsPage() {
                       ))}
                     </div>
                   ) : (
-                    <span style={{ fontSize: 12, color: SUBTLE }}>—</span>
+                    <span style={{ fontSize: 12, color: V2.subtle }}>—</span>
                   )}
                 </div>
 
@@ -828,12 +797,12 @@ export function InstrumentsPage() {
                     style={{
                       padding: "6px 9px",
                       borderRadius: 8,
-                      border: "0.5px solid rgba(45,156,107,0.2)",
-                      background: isLoadingQuote ? "rgba(45,156,107,0.08)" : "rgba(255,255,255,0.7)",
+                      border: `0.5px solid ${v2Mix(V2.profit, 0.2)}`,
+                      background: isLoadingQuote ? v2Mix(V2.profit, 0.08) : v2Mix(V2.card, 0.72),
                       color: userDataKey ? PROFIT : SUBTLE,
                       fontSize: 12,
                       cursor: !userDataKey || isLoadingQuote || isSavingQuote ? "not-allowed" : "pointer",
-                      fontFamily: "inherit",
+                      fontFamily: V2_TYPE.ui,
                       display: "inline-flex",
                       alignItems: "center",
                       gap: 5,
@@ -850,12 +819,12 @@ export function InstrumentsPage() {
                     style={{
                       padding: "6px 10px",
                       borderRadius: 8,
-                      border: "0.5px solid rgba(28,49,68,0.12)",
-                      background: "rgba(255,255,255,0.7)",
-                      color: MUTED,
+                      border: `0.5px solid ${V2.line}`,
+                      background: v2Mix(V2.card, 0.72),
+                      color: V2.muted,
                       fontSize: 12,
                       cursor: "pointer",
-                      fontFamily: "inherit",
+                      fontFamily: V2_TYPE.ui,
                     }}
                   >
                     Edytuj
@@ -866,12 +835,12 @@ export function InstrumentsPage() {
                     style={{
                       padding: "6px 10px",
                       borderRadius: 8,
-                      border: "0.5px solid rgba(184,80,66,0.18)",
-                      background: deletingId === inst.id ? "rgba(184,80,66,0.08)" : "transparent",
-                      color: deletingId === inst.id ? "#B85042" : SUBTLE,
+                      border: `0.5px solid ${v2Mix(V2.loss, 0.18)}`,
+                      background: deletingId === inst.id ? v2Mix(V2.loss, 0.08) : "transparent",
+                      color: deletingId === inst.id ? V2.loss : V2.subtle,
                       fontSize: 12,
                       cursor: !userDataKey || deletingId === inst.id ? "not-allowed" : "pointer",
-                      fontFamily: "inherit",
+                      fontFamily: V2_TYPE.ui,
                     }}
                   >
                     {deletingId === inst.id ? "Usuwam…" : "Usuń"}

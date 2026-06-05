@@ -8,6 +8,7 @@ import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { buildParitySnapshot } from "@/sync/records/parity-snapshot";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { AddTransactionModal } from "@/features/transactions/add-transaction-modal";
+import { CommandPalette } from "@/features/search/command-palette";
 import { PendingSyncStatus } from "@/features/sync/pending-sync-status";
 import {
   SyncUnlockPanel,
@@ -15,7 +16,9 @@ import {
   type SyncLoadResult,
 } from "@/features/sync/sync-unlock-panel";
 import { COLORS, SHADOWS, SURFACES, TYPOGRAPHY } from "@/lib/design-tokens";
+import { V2, v2Glass, v2Mix } from "@/lib/v2-design";
 import { clearCachedUserDataKey } from "@/sync/encryption/key-cache";
+import { initials, useProfile } from "@/features/profile/profile-store";
 
 declare global {
   interface Window {
@@ -26,6 +29,7 @@ declare global {
 
 const glassSurface: CSSProperties = {
   ...SURFACES.glassPanel,
+  ...v2Glass,
 };
 
 // ── useMedia hook (SSR-safe, defaults to desktop to avoid shift) ──
@@ -41,6 +45,38 @@ function useIsDesktop() {
   return isDesktop;
 }
 
+// Hide the floating topbar when scrolling down, reveal it when scrolling up
+// (or near the top of the page).
+function useHideOnScroll(threshold = 80) {
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => {
+    let lastY = window.scrollY;
+    let frame = 0;
+    const onScroll = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        const y = window.scrollY;
+        const delta = y - lastY;
+        if (y < threshold) {
+          setHidden(false);
+        } else if (delta > 6) {
+          setHidden(true);
+        } else if (delta < -6) {
+          setHidden(false);
+        }
+        lastY = y;
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, [threshold]);
+  return hidden;
+}
+
 // ── Nav structure ────────────────────────────────────────────────
 type NavItem = {
   id: string;
@@ -48,6 +84,8 @@ type NavItem = {
   icon: string;
   href: Route;
   color?: string;
+  value?: number;
+  exact?: boolean;
 };
 type NavGroup = {
   sec: string | null;
@@ -57,27 +95,29 @@ type NavGroup = {
 const NAV_GROUPS: NavGroup[] = [
   {
     sec: null,
-    items: [{ id: "dashboard", label: "Dashboard", icon: "⬡", href: "/dashboard" }],
+    items: [{ id: "dashboard", label: "Dashboard", icon: "◧", href: "/dashboard" }],
   },
   {
     sec: "Portfele",
     items: [
-      { id: "portfolios", label: "Wszystkie portfele", icon: "◎", href: "/portfolios" },
+      { id: "portfolios", label: "Wszystkie portfele", icon: "◐", href: "/portfolios", exact: true },
     ],
   },
   {
     sec: "Analiza",
     items: [
-      { id: "transactions", label: "Transakcje", icon: "↕", href: "/transactions" },
+      { id: "transactions", label: "Transakcje", icon: "⇄", href: "/transactions" },
       { id: "instruments", label: "Instrumenty", icon: "◈", href: "/instruments" },
-      { id: "reports", label: "Raporty", icon: "≋", href: "/reports" },
+      { id: "earnings", label: "Zarobki", icon: "◇", href: "/earnings" },
+      { id: "benchmark", label: "Porównanie", icon: "◫", href: "/benchmark" },
+      { id: "reports", label: "Raporty", icon: "▤", href: "/reports" },
     ],
   },
   {
     sec: "System",
     items: [
-      { id: "import", label: "Import / Export", icon: "⇅", href: "/import" },
-      { id: "settings", label: "Ustawienia", icon: "⚙", href: "/dashboard" },
+      { id: "import", label: "Import / Eksport", icon: "⇅", href: "/import" },
+      { id: "settings", label: "Ustawienia", icon: "⚙", href: "/settings" },
     ],
   },
 ];
@@ -99,8 +139,49 @@ async function handleLogout() {
   window.location.assign("/login");
 }
 
+function fmtNavNumber(value: number, digits = 0) {
+  return value.toLocaleString("pl-PL", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+
+// Compact value shown next to each portfolio in the sidebar (matches the
+// design's `wFmtK`: e.g. "1,23 mln", "31,2 tys.", "950").
+function fmtNavCompact(value: number) {
+  const abs = Math.abs(value);
+  if (abs >= 1e6) return `${(value / 1e6).toFixed(2).replace(".", ",")} mln`;
+  if (abs >= 1e4) return `${(value / 1e3).toFixed(1).replace(".", ",")} tys.`;
+  return fmtNavNumber(value);
+}
+
+function isNavItemActive(item: NavItem, pathname: string) {
+  if (item.exact) return pathname === item.href;
+  return pathname === item.href || pathname.startsWith(`${item.href}/`);
+}
+
 // ── Sidebar content ──────────────────────────────────────────────
-function SidebarContent({ activeId, onNav }: { activeId: string; onNav?: () => void }) {
+function SidebarContent({ onNav }: { onNav?: () => void }) {
+  const pathname = usePathname();
+  const snapshot = useSyncStore((s) => s.snapshot);
+  const totalValue = snapshot?.totalValue ?? 49_752;
+  const changePct = snapshot?.monthlyChange ?? 2.54;
+  const changePLN = Math.round((totalValue * changePct) / 100);
+  const changeSign = changePLN >= 0 ? "+" : "";
+
+  // Design + native iOS/macOS list each portfolio directly under "Portfele".
+  // Build those entries dynamically from the synced snapshot.
+  const portfolioItems: NavItem[] = (snapshot?.portfolios ?? []).map((portfolio) => ({
+    id: `pf-${portfolio.id}`,
+    label: portfolio.name,
+    icon: "◑",
+    href: `/portfolios/${portfolio.id}` as Route,
+    value: portfolio.value,
+  }));
+
+  const navGroups: NavGroup[] = NAV_GROUPS.map((group) =>
+    group.sec === "Portfele"
+      ? { ...group, items: [...group.items, ...portfolioItems] }
+      : group,
+  );
+
   return (
     <>
       {/* Brand */}
@@ -110,23 +191,26 @@ function SidebarContent({ activeId, onNav }: { activeId: string; onNav?: () => v
             width: 30, height: 30, borderRadius: 8,
             background: COLORS.text, color: COLORS.white,
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 14, fontWeight: 800,
+            fontFamily: TYPOGRAPHY.serif,
+            fontSize: 18, fontWeight: 600,
             boxShadow: SHADOWS.button,
           }}
         >
           I
         </div>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.text, letterSpacing: ".02em" }}>Investor</div>
-          <div style={{ fontSize: 10, color: COLORS.subtle, letterSpacing: ".06em", textTransform: "uppercase" }}>
-            Web · v0.1
+          <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text, letterSpacing: ".01em" }}>Investor</div>
+          <div style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 9.5, color: COLORS.subtle, letterSpacing: ".10em", textTransform: "uppercase", marginTop: 1 }}>
+            Web · v2
           </div>
         </div>
       </div>
 
-      {/* Nav groups */}
-      <nav style={{ flex: 1, overflowY: "auto", padding: "6px 10px 12px" }}>
-        {NAV_GROUPS.map((group, gi) => (
+      {/* Scroll area: nav groups and the total-value card scroll together,
+          so the card sits directly under the menu rather than pinned. */}
+      <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+      <nav style={{ padding: "6px 10px 4px" }}>
+        {navGroups.map((group, gi) => (
           <div key={gi} style={{ marginBottom: 8 }}>
             {group.sec && (
               <div
@@ -141,7 +225,7 @@ function SidebarContent({ activeId, onNav }: { activeId: string; onNav?: () => v
               </div>
             )}
             {group.items.map((item) => {
-              const active = activeId === item.id;
+              const active = isNavItemActive(item, pathname);
               return (
                 <Link
                   key={item.id}
@@ -150,11 +234,11 @@ function SidebarContent({ activeId, onNav }: { activeId: string; onNav?: () => v
                   style={{
                     display: "flex", alignItems: "center", gap: 10,
                     width: "100%", padding: "8px 11px", borderRadius: 9,
-                    background: active ? COLORS.surfaceAlt : "transparent",
-                    color: active ? COLORS.text : COLORS.text,
+                    background: active ? COLORS.green : "transparent",
+                    color: active ? COLORS.white : COLORS.text,
                     textDecoration: "none", marginBottom: 1,
                     boxShadow: active
-                      ? `inset 0 0 0 1px ${COLORS.border}, ${SHADOWS.card}`
+                      ? `0 2px 8px rgba(33,74,53,0.35), inset 0 0.5px 0 rgba(255,255,255,0.22)`
                       : "none",
                     transition: "background .15s",
                   }}
@@ -167,18 +251,30 @@ function SidebarContent({ activeId, onNav }: { activeId: string; onNav?: () => v
                 >
                   <span
                     style={{
-                      width: 20, height: 20, borderRadius: 6,
+                      width: 20,
                       display: "inline-flex", alignItems: "center", justifyContent: "center",
-                      background: active ? COLORS.surface : COLORS.textSoft,
-                      color: active ? COLORS.accent : (item.color || COLORS.textMuted),
-                      fontSize: 11, flexShrink: 0,
+                      color: active ? COLORS.white : (item.color || COLORS.textMuted),
+                      opacity: active ? 1 : 0.8,
+                      fontSize: 14, flexShrink: 0,
                     }}
                   >
                     {item.icon}
                   </span>
-                  <span style={{ fontSize: 13, fontWeight: active ? 600 : 500, flex: 1, fontFamily: TYPOGRAPHY.system }}>
+                  <span style={{ fontSize: 13, fontWeight: active ? 600 : 500, flex: 1, fontFamily: TYPOGRAPHY.system, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {item.label}
                   </span>
+                  {item.value != null && (
+                    <span
+                      style={{
+                        fontFamily: TYPOGRAPHY.mono,
+                        fontSize: 10.5,
+                        color: active ? "rgba(255,255,255,0.8)" : COLORS.subtle,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {fmtNavCompact(item.value)}
+                    </span>
+                  )}
                 </Link>
               );
             })}
@@ -186,14 +282,14 @@ function SidebarContent({ activeId, onNav }: { activeId: string; onNav?: () => v
         ))}
       </nav>
 
-      {/* Bottom card */}
-      <div style={{ padding: "0 10px 12px" }}>
+      {/* Total-value card — directly under the menu items, scrolls with them */}
+      <div style={{ padding: "4px 10px 12px" }}>
         <div
           style={{
             padding: "14px", borderRadius: 12,
-            background: COLORS.surfaceAlt, color: COLORS.text,
+            background: COLORS.text, color: COLORS.white,
             border: `0.5px solid ${COLORS.border}`,
-            boxShadow: SHADOWS.card,
+            boxShadow: "0 10px 26px rgba(22,29,24,0.24)",
             position: "relative", overflow: "hidden",
           }}
         >
@@ -201,15 +297,28 @@ function SidebarContent({ activeId, onNav }: { activeId: string; onNav?: () => v
             style={{
               position: "absolute", right: -22, top: -22,
               width: 80, height: 80, borderRadius: "50%",
-              background: "rgba(44,76,107,0.14)", filter: "blur(20px)",
+              background: "rgba(33,74,53,0.55)", filter: "blur(20px)",
             }}
           />
-          <div style={{ fontSize: 9.5, fontWeight: 700, color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: ".12em" }}>
-            Tryb
+          <div
+            style={{
+              position: "absolute", left: -16, bottom: -28,
+              width: 70, height: 70, borderRadius: "50%",
+              background: v2Mix(COLORS.gold, 0.4), filter: "blur(26px)",
+            }}
+          />
+          <div style={{ fontSize: 9.5, fontWeight: 700, color: "rgba(244,242,230,0.62)", textTransform: "uppercase", letterSpacing: ".13em", position: "relative" }}>
+            Łączna wartość
           </div>
-          <div style={{ fontSize: 14, fontWeight: 700, marginTop: 4, position: "relative" }}>MVP</div>
-          <div style={{ fontSize: 10.5, color: COLORS.textMuted, marginTop: 1 }}>Dane odszyfrowywane lokalnie</div>
+          <div style={{ fontFamily: TYPOGRAPHY.serif, fontSize: 27, fontWeight: 500, marginTop: 5, position: "relative", fontVariantNumeric: "tabular-nums", letterSpacing: "-.01em" }}>
+            {fmtNavNumber(totalValue)}<span style={{ fontSize: 13, fontStyle: "italic", opacity: 0.6, marginLeft: 5 }}>PLN</span>
+          </div>
+          <div style={{ fontSize: 11.5, color: "#7FD9A8", fontWeight: 600, marginTop: 4, fontVariantNumeric: "tabular-nums", position: "relative" }}>
+            {changeSign}{fmtNavNumber(changePLN)} PLN ({changePct >= 0 ? "+" : ""}{fmtNavNumber(changePct, 2)}%)
+          </div>
+          <div style={{ fontSize: 10.5, color: "rgba(244,242,230,0.50)", marginTop: 1, position: "relative" }}>vs 30 dni temu</div>
         </div>
+      </div>
       </div>
 
       {/* Logout */}
@@ -243,9 +352,11 @@ export function AppShell({
   children: React.ReactNode;
   initialUser?: InitialSyncUser | null;
 }) {
-  const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const isDesktop = useIsDesktop();
+  const topbarHidden = useHideOnScroll();
+  const profile = useProfile();
   const openAddTransaction = useSyncStore((s) => s.openAddTransaction);
   const records = useSyncStore((s) => s.records);
   const setSync = useSyncStore((s) => s.setSync);
@@ -274,6 +385,17 @@ export function AppShell({
       JSON.stringify(window.__investorWebParitySnapshot, null, 2);
   }, [paritySnapshot]);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchOpen((open) => !open);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const handleSyncLoaded = useCallback((result: SyncLoadResult | null) => {
     if (result) {
       setSync(result.records, result.snapshot);
@@ -283,21 +405,10 @@ export function AppShell({
     clearSync();
   }, [clearSync, setSync]);
 
-  const activeId = pathname === "/dashboard"
-    ? "dashboard"
-    : pathname.startsWith("/portfolios")
-    ? "portfolios"
-    : pathname.startsWith("/transactions")
-    ? "transactions"
-    : pathname.startsWith("/instruments")
-    ? "instruments"
-    : pathname.startsWith("/reports")
-    ? "reports"
-    : pathname.replace("/", "");
   const PAD = 12;
 
   return (
-    <div style={{ minHeight: "100vh", background: COLORS.bg, padding: `${PAD}px ${PAD}px ${PAD + 8}px` }}>
+    <div style={{ minHeight: "100vh", background: V2.page, padding: `${PAD}px ${PAD}px ${PAD + 8}px` }}>
 
       {/* ── FLOATING TOPBAR ──────────────────────────────────── */}
       <header
@@ -306,6 +417,10 @@ export function AppShell({
           ...glassSurface,
           borderRadius: 14,
           marginBottom: PAD,
+          transform: topbarHidden ? `translateY(-${PAD * 2 + 56}px)` : "translateY(0)",
+          opacity: topbarHidden ? 0 : 1,
+          pointerEvents: topbarHidden ? "none" : "auto",
+          transition: "transform .28s ease, opacity .28s ease",
         }}
       >
         <div style={{ padding: "8px 16px", display: "flex", alignItems: "center", gap: 12 }}>
@@ -318,7 +433,7 @@ export function AppShell({
               style={{
                 width: 34, height: 34, borderRadius: 9, flexShrink: 0,
                 border: `0.5px solid ${COLORS.border}`,
-                background: COLORS.surface,
+                background: v2Mix(V2.card, 0.5),
                 cursor: "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 flexDirection: "column", gap: 3,
@@ -356,15 +471,17 @@ export function AppShell({
 
           <div style={{ flex: 1 }} />
 
-          {/* Desktop: search */}
+          {/* Desktop: search trigger */}
           {isDesktop && (
-            <div
+            <button
+              onClick={() => setSearchOpen(true)}
               style={{
                 display: "flex", alignItems: "center", gap: 8,
                 padding: "6px 12px 6px 10px", borderRadius: 10,
-                background: COLORS.surface,
-                border: `0.5px solid ${COLORS.border}`,
-                minWidth: 260, cursor: "text",
+                background: v2Mix(V2.card, 0.55),
+                border: `0.5px solid ${V2.spec}`,
+                minWidth: 300, cursor: "text",
+                fontFamily: "inherit",
               }}
             >
               <span style={{ fontSize: 13, color: COLORS.subtle }}>⌕</span>
@@ -373,13 +490,30 @@ export function AppShell({
                 style={{
                   marginLeft: "auto", fontSize: 10, color: COLORS.subtle,
                   padding: "2px 6px", borderRadius: 4,
-                  background: COLORS.surfaceAlt,
+                  background: v2Mix(V2.ink, 0.05),
                   fontFamily: TYPOGRAPHY.mono,
                 }}
               >
                 ⌘K
               </span>
-            </div>
+            </button>
+          )}
+
+          {/* Mobile: search icon */}
+          {!isDesktop && (
+            <button
+              onClick={() => setSearchOpen(true)}
+              aria-label="Szukaj"
+              style={{
+                width: 34, height: 34, borderRadius: 9, flexShrink: 0,
+                border: `0.5px solid ${COLORS.border}`,
+                background: v2Mix(V2.card, 0.5),
+                cursor: "pointer", color: COLORS.text, fontSize: 15,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >
+              ⌕
+            </button>
           )}
 
           <PendingSyncStatus />
@@ -390,7 +524,7 @@ export function AppShell({
             style={{
               display: "inline-flex", alignItems: "center", gap: 6,
               padding: "8px 14px", borderRadius: 9,
-              border: "none", background: COLORS.text, color: COLORS.white,
+              border: "none", background: V2.ink, color: V2.card,
               fontSize: 13, fontWeight: 600, cursor: "pointer",
               whiteSpace: "nowrap",
               boxShadow: SHADOWS.button,
@@ -402,18 +536,25 @@ export function AppShell({
           </button>
 
           {/* Avatar */}
-          <div
+          <Link
+            href={"/settings" as Route}
+            aria-label="Profil"
             style={{
-              width: 34, height: 34, borderRadius: "50%", flexShrink: 0,
-              background: COLORS.gold, color: COLORS.white,
+              width: 34, height: 34, borderRadius: "50%", flexShrink: 0, overflow: "hidden",
+              background: V2.brand, color: V2.onBrand,
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 12, fontWeight: 700,
               boxShadow: "inset 0 0.5px 0 rgba(255,255,255,0.3)",
-              cursor: "pointer",
+              cursor: "pointer", textDecoration: "none",
             }}
           >
-            P
-          </div>
+            {profile.avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={profile.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : (
+              initials(profile.name)
+            )}
+          </Link>
         </div>
       </header>
 
@@ -434,7 +575,7 @@ export function AppShell({
               borderRadius: 14, overflow: "hidden",
             }}
           >
-            <SidebarContent activeId={activeId} />
+            <SidebarContent />
           </aside>
         )}
 
@@ -455,7 +596,7 @@ export function AppShell({
                 position: "fixed", left: 10, top: 10, bottom: 10,
                 width: 268, zIndex: 90,
                 ...glassSurface,
-                background: "rgba(255,255,255,0.98)",
+                background: v2Mix(V2.card, 0.94),
                 borderRadius: 14,
                 display: "flex", flexDirection: "column",
                 boxShadow: SHADOWS.cardStrong,
@@ -475,13 +616,13 @@ export function AppShell({
               >
                 ×
               </button>
-              <SidebarContent activeId={activeId} onNav={() => setDrawerOpen(false)} />
+              <SidebarContent onNav={() => setDrawerOpen(false)} />
             </aside>
           </>
         )}
 
-        {/* Main content */}
-        <main style={{ flex: 1, minWidth: 0, paddingBottom: 4 }}>
+        {/* Main content — capped on very wide screens (topbar + sidebar stay full-bleed) */}
+        <main style={{ flex: 1, minWidth: 0, maxWidth: 1240, marginInline: "auto", width: "100%", paddingBottom: 4 }}>
           {!records && (
             <GlobalSyncPanel
               initialUser={initialUser}
@@ -494,6 +635,7 @@ export function AppShell({
 
       {/* Global modal */}
       <AddTransactionModal />
+      <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
       {paritySnapshot && (
         <script
           id="investor-web-parity-snapshot"

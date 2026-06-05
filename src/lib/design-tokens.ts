@@ -1,34 +1,34 @@
 import type { CSSProperties } from "react";
 
 export const COLORS = {
-  bg: "#F4F7F2",
-  surface: "#FFFFFF",
-  surfaceAlt: "#F0F3EE",
-  border: "#E3E7DF",
-  text: "#1C3144",
-  textMuted: "#6A7585",
-  green: "#5E7B4F",
-  profit: "#207A50",
-  loss: "#A9443C",
+  bg: "#E4E6E2",
+  surface: "#F7F8F4",
+  surfaceAlt: "#ECEEE7",
+  border: "rgba(22,29,24,0.13)",
+  text: "#161D18",
+  textMuted: "#4A544E",
+  green: "#214A35",
+  profit: "#23814F",
+  loss: "#A84432",
   cash: "#56677D",
-  bonds: "#766313",
-  equity: "#2F669C",
-  forest: "#4F6658",
-  accent: "#2C4C6B",
+  bonds: "#8C6F30",
+  equity: "#34699A",
+  forest: "#214A35",
+  accent: "#214A35",
   neutral: "#A0ADB8",
-  gold: "#B69A57",
+  gold: "#A2772E",
   crypto: "#7E5AA5",
   other: "#8E7A64",
   plum: "#9A6B83",
-  white: "#FFFFFF",
-  overlay: "rgba(28,49,68,0.32)",
-  subtle: "rgba(106,117,133,0.72)",
-  muted: "rgba(106,117,133,0.88)",
-  lineSoft: "rgba(227,231,223,0.9)",
-  lineSofter: "rgba(227,231,223,0.55)",
-  accentSoft: "rgba(44,76,107,0.10)",
-  textSoft: "rgba(28,49,68,0.05)",
-  textSofter: "rgba(28,49,68,0.03)",
+  white: "#F4F2E6",
+  overlay: "rgba(22,29,24,0.42)",
+  subtle: "#717870",
+  muted: "#4A544E",
+  lineSoft: "rgba(22,29,24,0.13)",
+  lineSofter: "rgba(22,29,24,0.07)",
+  accentSoft: "rgba(33,74,53,0.10)",
+  textSoft: "rgba(22,29,24,0.05)",
+  textSofter: "rgba(22,29,24,0.03)",
 } as const;
 
 export const CHART_COLORS = {
@@ -58,14 +58,15 @@ export const CHART_COLORS = {
 export const TYPOGRAPHY = {
   system:
     "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', system-ui, sans-serif",
-  mono: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+  serif: "'Newsreader', Georgia, 'Times New Roman', serif",
+  mono: "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
 } as const;
 
 export const SHADOWS = {
-  card: "0 1px 0 rgba(28,49,68,0.02), 0 6px 16px rgba(28,49,68,0.06)",
-  cardStrong: "0 10px 28px rgba(28,49,68,0.10)",
-  button: "0 3px 10px rgba(28,49,68,0.14), inset 0 0.5px 0 rgba(255,255,255,0.18)",
-  tooltip: "0 8px 20px rgba(28,49,68,0.14)",
+  card: "0 1px 0 rgba(22,29,24,0.03), 0 6px 20px rgba(22,29,24,0.05)",
+  cardStrong: "inset 0 1px 0 rgba(255,255,255,0.75), 0 14px 36px rgba(22,29,24,0.08)",
+  button: "0 3px 10px rgba(22,29,24,0.22), inset 0 0.5px 0 rgba(255,255,255,0.16)",
+  tooltip: "0 8px 22px rgba(0,0,0,0.22)",
 } as const;
 
 export const SURFACES = {
@@ -76,10 +77,10 @@ export const SURFACES = {
     boxShadow: SHADOWS.card,
   } satisfies CSSProperties,
   glassPanel: {
-    background: "rgba(255,255,255,0.94)",
-    backdropFilter: "blur(22px) saturate(140%)",
-    WebkitBackdropFilter: "blur(22px) saturate(140%)",
-    border: `0.5px solid ${COLORS.border}`,
+    background: "rgba(247,248,244,0.70)",
+    backdropFilter: "blur(38px) saturate(175%)",
+    WebkitBackdropFilter: "blur(38px) saturate(175%)",
+    border: "0.5px solid rgba(255,255,255,0.75)",
     boxShadow: SHADOWS.cardStrong,
   } satisfies CSSProperties,
 } as const;

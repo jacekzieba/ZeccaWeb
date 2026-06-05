@@ -7,9 +7,17 @@ import type {
   InstrumentRow,
   InvestorDataSnapshot,
   PortfolioDetail,
+  PortfolioMetrics,
   PortfolioSummary,
   TransactionRow,
 } from "@/domain/models/investor-data";
+import {
+  computeMaxDrawdownPct,
+  computeRealReturnPct,
+  computeTotalReturnPct,
+  computeXirr,
+  type CashflowPoint,
+} from "@/domain/metrics/portfolio-metrics";
 import {
   valueCashBalances,
   valueInstrumentPosition,
@@ -154,6 +162,7 @@ const settingsPayloadSchema = z.object({
   selectedProvider: z.string().optional(),
   fxProvider: z.string().optional(),
   inflationRegion: z.string().optional(),
+  inflationRate: z.number().optional(),
   appLanguage: z.string().optional(),
   updatedAt: swiftDateSchema.optional(),
 });
@@ -230,6 +239,9 @@ export function buildInvestorDataSnapshot(
   const valuationSeries = buildValuationSeries(accounts, dataset, asOf, options);
   const monthlyChange = calculateMonthlyChange(valuationSeries);
   const income = buildIncomeSummary(dataset.income);
+  const cashflows = buildCashflowSummary(accounts, dataset, asOf);
+  const metrics = buildMetrics(accounts, dataset, asOf, totalValue, valuationSeries);
+  const performanceSeries = buildPerformanceSeries(accounts, dataset, valuationSeries);
 
   return {
     asOf: asOf.toISOString(),
@@ -237,10 +249,177 @@ export function buildInvestorDataSnapshot(
     monthlyChange,
     cash,
     income,
+    cashflows,
     portfolios,
     valuationSeries,
+    performanceSeries,
     allocation: buildAllocation(accounts, dataset, asOf, totalValue),
+    metrics,
   };
+}
+
+/** Build a time-weighted-return index (growth of 100) from the valuation series,
+ * removing the effect of deposits/withdrawals so the line reflects real
+ * performance rather than how much capital was added. */
+function buildPerformanceSeries(
+  accounts: AccountPayload[],
+  dataset: ParsedDataset,
+  valuationSeries: InvestorDataSnapshot["valuationSeries"],
+): InvestorDataSnapshot["valuationSeries"] {
+  if (valuationSeries.length === 0) return [];
+
+  const accountIds = new Set(accounts.map((account) => account.id));
+  // Net capital flowing INTO the portfolio per calendar day (deposit +, withdrawal −).
+  const flowByDay = new Map<string, number>();
+  for (const transaction of dataset.transactions) {
+    if (!accountIds.has(transaction.portfolioID)) continue;
+    const external = externalCashflowBaseAmount(transaction);
+    if (external == null) continue;
+    const key = startOfLocalDay(toDate(transaction.date)).toISOString();
+    flowByDay.set(key, (flowByDay.get(key) ?? 0) - external); // −external = into portfolio
+  }
+
+  const dayKey = (iso: string) => startOfLocalDay(new Date(iso)).toISOString();
+  let index = 100;
+  let previousValue = valuationSeries[0].value;
+
+  return valuationSeries.map((point, i) => {
+    if (i > 0) {
+      const flow = flowByDay.get(dayKey(point.date)) ?? 0;
+      if (previousValue > EPSILON) {
+        const periodReturn = (point.value - flow - previousValue) / previousValue;
+        index *= 1 + periodReturn;
+      }
+      previousValue = point.value;
+    }
+    return { label: point.label, date: point.date, value: index };
+  });
+}
+
+/** Aggregate portfolio dividends / interest / fees / taxes from transactions,
+ * converted to the base currency. */
+function buildCashflowSummary(
+  accounts: AccountPayload[],
+  dataset: ParsedDataset,
+  asOf: Date,
+): InvestorDataSnapshot["cashflows"] {
+  const accountIds = new Set(accounts.map((account) => account.id));
+  let dividends = 0;
+  let interest = 0;
+  let fees = 0;
+  let taxes = 0;
+
+  for (const transaction of dataset.transactions) {
+    if (!accountIds.has(transaction.portfolioID)) continue;
+    if (toDate(transaction.date).getTime() > asOf.getTime()) continue;
+
+    const fxRate =
+      transaction.currency === "PLN" || !transaction.fxRateToBase
+        ? 1
+        : transaction.fxRateToBase;
+    const gross = transaction.grossAmount * fxRate;
+
+    fees += transaction.fees * fxRate;
+    taxes += transaction.taxes * fxRate;
+
+    switch (transaction.transactionType) {
+      case "dividend":
+        dividends += gross;
+        break;
+      case "interest":
+      case "bondCoupon":
+        interest += gross;
+        break;
+      case "fee":
+        fees += gross;
+        break;
+      case "tax":
+        taxes += gross;
+        break;
+    }
+  }
+
+  return { dividends, interest, fees, taxes };
+}
+
+/** Amount of an external (investor ⇄ portfolio) cashflow in the base currency,
+ * signed from the investor's perspective: contributions negative, distributions
+ * positive. Returns null for non-external (internal) transactions. */
+function externalCashflowBaseAmount(
+  transaction: TransactionPayload,
+): number | null {
+  const base = transactionBaseAmount(transaction);
+  switch (transaction.transactionType) {
+    case "cashDeposit":
+    case "transferIn":
+      return -base;
+    case "cashWithdrawal":
+    case "transferOut":
+      return base;
+    // Transfers between the user's own accounts net to zero at the total
+    // level, so they are not treated as external capital.
+    default:
+      return null;
+  }
+}
+
+function transactionBaseAmount(transaction: TransactionPayload): number {
+  if (transaction.currency === "PLN" || !transaction.fxRateToBase) {
+    return transaction.grossAmount;
+  }
+  return transaction.grossAmount * transaction.fxRateToBase;
+}
+
+function buildMetrics(
+  accounts: AccountPayload[],
+  dataset: ParsedDataset,
+  asOf: Date,
+  totalValue: number,
+  valuationSeries: InvestorDataSnapshot["valuationSeries"],
+): PortfolioMetrics {
+  const accountIds = new Set(accounts.map((account) => account.id));
+  const cashflows: CashflowPoint[] = [];
+  let netInvested = 0;
+
+  for (const transaction of dataset.transactions) {
+    if (!accountIds.has(transaction.portfolioID)) continue;
+    if (toDate(transaction.date).getTime() > asOf.getTime()) continue;
+    const amount = externalCashflowBaseAmount(transaction);
+    if (amount == null) continue;
+    cashflows.push({ date: toDate(transaction.date), amount });
+    netInvested -= amount; // contribution (negative cashflow) increases invested
+  }
+
+  if (totalValue > EPSILON) {
+    cashflows.push({ date: asOf, amount: totalValue });
+  }
+
+  const xirr = computeXirr(cashflows);
+  const inflationPct = getInflationPct(dataset);
+  const totalReturnPct = computeTotalReturnPct(totalValue, netInvested);
+  const realReturnPct = computeRealReturnPct(totalReturnPct, inflationPct);
+  const maxDrawdownPct = computeMaxDrawdownPct(
+    valuationSeries.map((point) => point.value),
+  );
+
+  return {
+    netInvested: Math.max(netInvested, 0),
+    totalReturnPct,
+    realReturnPct,
+    xirrPct: xirr == null ? null : xirr * 100,
+    maxDrawdownPct,
+    inflationPct,
+  };
+}
+
+function getInflationPct(dataset: ParsedDataset): number {
+  const fromSettings = dataset.settings
+    .map((settings) => settings.inflationRate)
+    .filter((value): value is number => typeof value === "number");
+  const latest = fromSettings.at(-1);
+  if (latest == null) return 0;
+  // Stored either as a fraction (0.035) or a percentage (3.5).
+  return Math.abs(latest) <= 1 ? latest * 100 : latest;
 }
 
 function parseDataset(
@@ -398,13 +577,31 @@ function buildPortfolioSummary(
   const transactions = transactionsForPortfolio(dataset.transactions, account.id);
   const valuation = valuePortfolio(computeLedger(transactions, asOf), dataset, asOf);
 
+  const previousDay = endOfLocalDay(addLocalDays(asOf, -1));
+  const previousValue = valuePortfolio(
+    computeLedger(transactions, previousDay),
+    dataset,
+    previousDay,
+  ).totalValue;
+  const dailyChange =
+    previousValue > EPSILON
+      ? ((valuation.totalValue - previousValue) / previousValue) * 100
+      : 0;
+
+  const sparkline = buildValuationSeries([account], dataset, asOf, {
+    historyGranularity: "daily",
+  })
+    .slice(-30)
+    .map((point) => point.value);
+
   return {
     id: account.id,
     name: account.name,
     baseCurrency: account.baseCurrency,
     value: valuation.totalValue,
-    dailyChange: 0,
+    dailyChange,
     positions: valuation.positionCount,
+    sparkline,
   };
 }
 
@@ -807,10 +1004,12 @@ function buildValuationSeries(
   asOf: Date,
   options: SnapshotBuildOptions = {},
 ) {
-  const dates =
-    options.historyGranularity === "daily"
-      ? fullDailyDates(dataset, asOf)
-      : fullMonthEndDates(dataset, asOf);
+  // Monthly is the default (kept for parity with the native app); the UI opts
+  // into a daily series so the period selector and chart show day-to-day moves.
+  const daily = options.historyGranularity === "daily";
+  const dates = daily
+    ? fullDailyDates(dataset, asOf)
+    : fullMonthEndDates(dataset, asOf);
 
   return dates.map((date) => {
     const dayEnd = endOfLocalDay(date);
@@ -823,7 +1022,7 @@ function buildValuationSeries(
     }, 0);
 
     return {
-      label: monthLabel(date),
+      label: daily ? dayLabel(date) : monthLabel(date),
       date: date.toISOString(),
       value,
     };
@@ -893,14 +1092,23 @@ function fullMonthEndDates(dataset: ParsedDataset, asOf: Date): Date[] {
 function calculateMonthlyChange(
   valuationSeries: InvestorDataSnapshot["valuationSeries"],
 ) {
-  const previous = valuationSeries.at(-2)?.value ?? 0;
-  const current = valuationSeries.at(-1)?.value ?? 0;
+  if (valuationSeries.length === 0) return 0;
+  const last = valuationSeries[valuationSeries.length - 1];
+  const cutoff = new Date(last.date);
+  cutoff.setMonth(cutoff.getMonth() - 1);
 
-  if (previous <= EPSILON) {
-    return 0;
+  // The most recent point at or before one month ago (series is chronological).
+  let previous = valuationSeries[0];
+  for (const point of valuationSeries) {
+    if (new Date(point.date).getTime() <= cutoff.getTime()) {
+      previous = point;
+    } else {
+      break;
+    }
   }
 
-  return ((current - previous) / previous) * 100;
+  if (previous.value <= EPSILON) return 0;
+  return ((last.value - previous.value) / previous.value) * 100;
 }
 
 function startOfLocalDay(date: Date) {
@@ -944,6 +1152,10 @@ function assetClassLabel(kind: string | undefined) {
 
 function monthLabel(date: Date) {
   return new Intl.DateTimeFormat("pl-PL", { month: "short" }).format(date);
+}
+
+function dayLabel(date: Date) {
+  return new Intl.DateTimeFormat("pl-PL", { day: "numeric", month: "short" }).format(date);
 }
 
 function toDate(value: z.infer<typeof swiftDateSchema>) {

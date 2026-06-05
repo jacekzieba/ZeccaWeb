@@ -100,6 +100,7 @@ describe("InvestorDataSnapshot mapper", () => {
         value: 10_195,
         dailyChange: 0,
         positions: 1,
+        sparkline: expect.any(Array),
       },
     ]);
     expect(snapshot.allocation.map((slice) => slice.label)).toEqual([

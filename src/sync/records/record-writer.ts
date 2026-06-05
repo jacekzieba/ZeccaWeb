@@ -364,6 +364,6 @@ export async function refreshSyncStore(
   const encryptedRecords = await fetchActiveEncryptedRecords(supabase);
   const decryptedRecords = await decryptEncryptedRecords(userDataKey, encryptedRecords);
   const summary = summarizeDecryptedRecords(decryptedRecords);
-  const snapshot = buildInvestorDataSnapshot(decryptedRecords);
+  const snapshot = buildInvestorDataSnapshot(decryptedRecords, { historyGranularity: "daily" });
   return { records: decryptedRecords, summary, snapshot };
 }

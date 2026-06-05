@@ -2,14 +2,9 @@
 
 import { useRef, useState, useEffect } from "react";
 import { COLORS, SHADOWS, TYPOGRAPHY } from "@/lib/design-tokens";
+import { formatAxisValue } from "@/lib/money";
 
 type Point = { label: string; value: number };
-
-function fmtValue(v: number) {
-  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000) return `${(v / 1_000).toFixed(0)}k`;
-  return v.toFixed(0);
-}
 
 export function AreaChart({
   data,
@@ -93,9 +88,9 @@ export function AreaChart({
               x={pl - 8} y={ty(v) + 4}
               textAnchor="end" fontSize="10.5"
               fill={COLORS.subtle}
-              fontFamily={TYPOGRAPHY.system}
+              fontFamily={TYPOGRAPHY.mono}
             >
-              {fmtValue(v)}
+              {formatAxisValue(v, rng)}
             </text>
           </g>
         ))}

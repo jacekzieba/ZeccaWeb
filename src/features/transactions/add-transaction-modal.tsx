@@ -8,31 +8,49 @@ import {
   makeTransactionPayload,
   swiftReferenceSeconds,
 } from "@/sync/records/macos-payloads";
+import { buildPortfolioDetail } from "@/sync/records/investor-snapshot";
+import { TYPOGRAPHY } from "@/lib/design-tokens";
+import { V2, v2Mix } from "@/lib/v2-design";
 
-const INK = "#1C3144";
-const MUTED = "rgba(28,49,68,0.58)";
-const SUBTLE = "rgba(28,49,68,0.38)";
-const LINE_SOFT = "rgba(28,49,68,0.06)";
-const LOSS = "#B85042";
-const AMBER = "#B87830";
-const PAPER = "#FBFAF6";
+const INK = V2.ink;
+const MUTED = v2Mix(V2.ink, 0.58);
+const SUBTLE = v2Mix(V2.ink, 0.4);
+const LINE_SOFT = V2.line2;
+const LOSS = V2.loss;
+const AMBER = V2.gold;
+const PAPER = V2.card;
+const SERIF = TYPOGRAPHY.serif;
 
+const APPLE_REFERENCE_DATE_UNIX_MS = Date.UTC(2001, 0, 1);
+
+// Which instrument kinds are valid for each transaction type. `null` = no
+// instrument picker. This drives the smart filtering (issues 20–23):
+//  · dywidenda → tylko akcje/ETF
+//  · kupon/wykup obligacji → tylko obligacje
+//  · otwarcie/zamknięcie lokaty → tylko lokaty
 const TX_TYPES = [
-  { value: "buy",           label: "Kupno",                  needsInstrument: true,  needsQty: true  },
-  { value: "sell",          label: "Sprzedaż",               needsInstrument: true,  needsQty: true  },
-  { value: "cashDeposit",   label: "Wpłata gotówki",         needsInstrument: false, needsQty: false },
-  { value: "cashWithdrawal",label: "Wypłata gotówki",        needsInstrument: false, needsQty: false },
-  { value: "dividend",      label: "Dywidenda",              needsInstrument: true,  needsQty: false },
-  { value: "interest",      label: "Odsetki",                needsInstrument: false, needsQty: false },
-  { value: "bondCoupon",    label: "Kupon obligacji",        needsInstrument: true,  needsQty: false },
-  { value: "bondRedemption",label: "Wykup obligacji",        needsInstrument: true,  needsQty: true  },
-  { value: "depositOpen",   label: "Otwarcie lokaty",        needsInstrument: true,  needsQty: false },
-  { value: "depositClose",  label: "Zamknięcie lokaty",      needsInstrument: true,  needsQty: false },
-  { value: "fee",           label: "Opłata",                 needsInstrument: false, needsQty: false },
-  { value: "tax",           label: "Podatek",                needsInstrument: false, needsQty: false },
+  { value: "buy",           label: "Kupno",                  needsInstrument: true,  needsQty: true,  kinds: ["stock", "etf", "treasuryBond", "listedBond", "crypto"], heldOnly: false },
+  { value: "sell",          label: "Sprzedaż",               needsInstrument: true,  needsQty: true,  kinds: ["stock", "etf", "treasuryBond", "listedBond", "crypto"], heldOnly: true  },
+  { value: "cashDeposit",   label: "Wpłata gotówki",         needsInstrument: false, needsQty: false, kinds: null, heldOnly: false },
+  { value: "cashWithdrawal",label: "Wypłata gotówki",        needsInstrument: false, needsQty: false, kinds: null, heldOnly: false },
+  { value: "dividend",      label: "Dywidenda",              needsInstrument: true,  needsQty: false, kinds: ["stock", "etf"], heldOnly: false },
+  { value: "interest",      label: "Odsetki",                needsInstrument: false, needsQty: false, kinds: null, heldOnly: false },
+  { value: "bondCoupon",    label: "Kupon obligacji",        needsInstrument: true,  needsQty: false, kinds: ["treasuryBond", "listedBond"], heldOnly: true  },
+  { value: "bondRedemption",label: "Wykup obligacji",        needsInstrument: true,  needsQty: true,  kinds: ["treasuryBond", "listedBond"], heldOnly: true  },
+  { value: "depositOpen",   label: "Otwarcie lokaty",        needsInstrument: true,  needsQty: false, kinds: ["deposit"], heldOnly: false },
+  { value: "depositClose",  label: "Zamknięcie lokaty",      needsInstrument: true,  needsQty: false, kinds: ["deposit"], heldOnly: true  },
+  { value: "fee",           label: "Opłata",                 needsInstrument: false, needsQty: false, kinds: null, heldOnly: false },
+  { value: "tax",           label: "Podatek",                needsInstrument: false, needsQty: false, kinds: null, heldOnly: false },
 ] as const;
 
 const CURRENCIES = ["PLN", "USD", "EUR", "GBP", "CHF", "CZK"];
+
+function swiftDateToMs(value: number | string | null | undefined): number | null {
+  if (value == null) return null;
+  if (typeof value === "number") return APPLE_REFERENCE_DATE_UNIX_MS + value * 1000;
+  const ms = new Date(value).getTime();
+  return Number.isNaN(ms) ? null : ms;
+}
 
 // ── Styles ───────────────────────────────────────────────────────
 const labelStyle: CSSProperties = {
@@ -49,14 +67,14 @@ const inputStyle: CSSProperties = {
   width: "100%",
   padding: "9px 12px",
   borderRadius: 9,
-  border: "0.5px solid rgba(28,49,68,0.14)",
+  border: "0.5px solid rgba(22,29,24,0.14)",
   background: PAPER,
   fontSize: 13,
   color: INK,
   fontFamily: "inherit",
   outline: "none",
   boxSizing: "border-box",
-  boxShadow: "inset 0 1px 3px rgba(28,49,68,0.05)",
+  boxShadow: "inset 0 1px 3px rgba(22,29,24,0.05)",
 };
 
 const selectStyle: CSSProperties = {
@@ -156,14 +174,36 @@ export function AddTransactionModal({
     return [...seen.entries()].map(([id, name]) => ({ id, name }));
   }, [records]);
 
-  const instruments = useMemo(() => {
+  type InstrumentOption = {
+    id: string;
+    symbol: string;
+    name: string;
+    kind: string;
+    maturityMs: number | null;
+    issueMs: number | null;
+  };
+
+  const instruments = useMemo<InstrumentOption[]>(() => {
     if (!records) return [];
-    const seen = new Map<string, { id: string; symbol: string; name: string }>();
+    const seen = new Map<string, InstrumentOption>();
     for (const r of records) {
       if (r.deletedAt) continue;
       if (r.envelope.type === "asset") {
-        const a = r.envelope.payload as { id: string; symbol: string; name: string };
-        seen.set(a.id, a);
+        const a = r.envelope.payload as {
+          id: string;
+          symbol: string;
+          name: string;
+          kind?: string;
+          bondParams?: { issueDate?: number | string; maturityDate?: number | string } | null;
+        };
+        seen.set(a.id, {
+          id: a.id,
+          symbol: a.symbol,
+          name: a.name,
+          kind: a.kind ?? "stock",
+          maturityMs: swiftDateToMs(a.bondParams?.maturityDate),
+          issueMs: swiftDateToMs(a.bondParams?.issueDate),
+        });
       }
     }
     return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name, "pl"));
@@ -177,6 +217,48 @@ export function AddTransactionModal({
   }, [portfolios, portfolioId]);
 
   const txDef = TX_TYPES.find((t) => t.value === txType) ?? TX_TYPES[0];
+
+  // Instruments currently held in the selected portfolio (for sell / redemption
+  // / deposit-close, where you can only act on something you actually hold).
+  const heldInstrumentIds = useMemo(() => {
+    if (!records || !portfolioId) return new Set<string>();
+    const detail = buildPortfolioDetail(records, portfolioId);
+    return new Set((detail?.holdings ?? []).filter((h) => h.quantity > 0).map((h) => h.instrumentId));
+  }, [records, portfolioId]);
+
+  // The instrument picker, narrowed to what makes sense for the chosen type.
+  const availableInstruments = useMemo<InstrumentOption[]>(() => {
+    if (!txDef.needsInstrument || txDef.kinds == null) return instruments;
+    const allowed = new Set<string>(txDef.kinds);
+    let list = instruments.filter((inst) => allowed.has(inst.kind));
+
+    if (txDef.heldOnly) {
+      list = list.filter((inst) => heldInstrumentIds.has(inst.id));
+    }
+
+    // Buying bonds: a treasury-bond emission is only open for ~a month, so
+    // matured series (and ones whose emission window closed well before the
+    // chosen date) can no longer be purchased — hide them (issue 20).
+    if (txType === "buy") {
+      const dateMs = new Date(date).getTime();
+      const EMISSION_WINDOW_MS = 45 * 24 * 60 * 60 * 1000;
+      list = list.filter((inst) => {
+        if (inst.kind !== "treasuryBond" && inst.kind !== "listedBond") return true;
+        if (inst.maturityMs != null && inst.maturityMs < dateMs) return false;
+        if (inst.issueMs != null && dateMs - inst.issueMs > EMISSION_WINDOW_MS) return false;
+        return true;
+      });
+    }
+
+    return list;
+  }, [instruments, txDef, txType, date, heldInstrumentIds]);
+
+  // Clear a selection that is no longer valid for the current filter.
+  useEffect(() => {
+    if (instrumentId && !availableInstruments.some((inst) => inst.id === instrumentId)) {
+      setInstrumentId("");
+    }
+  }, [availableInstruments, instrumentId]);
 
   // Auto-compute grossAmount from qty * price for buy/sell
   useEffect(() => {
@@ -281,7 +363,7 @@ export function AddTransactionModal({
         style={{
           position: "absolute",
           inset: 0,
-          background: "rgba(28,49,68,0.45)",
+          background: "rgba(22,29,24,0.45)",
           backdropFilter: "blur(8px)",
           WebkitBackdropFilter: "blur(8px)",
         }}
@@ -297,7 +379,7 @@ export function AddTransactionModal({
           overflowY: "auto",
           background: PAPER,
           borderRadius: 18,
-          boxShadow: "0 24px 64px rgba(28,49,68,0.22), inset 0 0.5px 0 rgba(255,255,255,0.8)",
+          boxShadow: "0 24px 64px rgba(22,29,24,0.22), inset 0 0.5px 0 rgba(255,255,255,0.8)",
           border: "0.5px solid rgba(255,255,255,0.7)",
         }}
       >
@@ -311,7 +393,7 @@ export function AddTransactionModal({
             borderBottom: `0.5px solid ${LINE_SOFT}`,
           }}
         >
-          <div style={{ fontSize: 16, fontWeight: 700, color: INK }}>
+          <div style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 500, color: INK, letterSpacing: "-.01em" }}>
             {isEditing ? "Edytuj transakcję" : "Dodaj transakcję"}
           </div>
           <button
@@ -321,7 +403,7 @@ export function AddTransactionModal({
               height: 28,
               borderRadius: "50%",
               border: "none",
-              background: "rgba(28,49,68,0.07)",
+              background: "rgba(22,29,24,0.07)",
               color: MUTED,
               fontSize: 16,
               cursor: "pointer",
@@ -376,12 +458,16 @@ export function AddTransactionModal({
             />
           </Field>
 
-          {/* Instrument (conditional) */}
+          {/* Instrument (conditional, filtered to relevant kinds) */}
           {txDef.needsInstrument && (
             <Field label="Instrument">
               <select value={instrumentId} onChange={(e) => setInstrumentId(e.target.value)} style={selectStyle}>
-                <option value="">— wybierz instrument —</option>
-                {instruments.map((inst) => (
+                <option value="">
+                  {availableInstruments.length === 0
+                    ? (txDef.heldOnly ? "— brak pozycji w tym portfelu —" : "— brak pasujących instrumentów —")
+                    : "— wybierz instrument —"}
+                </option>
+                {availableInstruments.map((inst) => (
                   <option key={inst.id} value={inst.id}>{inst.name} ({inst.symbol})</option>
                 ))}
               </select>
@@ -476,7 +562,7 @@ export function AddTransactionModal({
               style={{
                 padding: "9px 18px",
                 borderRadius: 9,
-                border: "0.5px solid rgba(28,49,68,0.14)",
+                border: "0.5px solid rgba(22,29,24,0.14)",
                 background: "transparent",
                 color: MUTED,
                 fontSize: 13,
@@ -494,7 +580,7 @@ export function AddTransactionModal({
                 padding: "9px 20px",
                 borderRadius: 9,
                 border: "none",
-                background: saving || !userDataKey ? "rgba(28,49,68,0.12)" : INK,
+                background: saving || !userDataKey ? "rgba(22,29,24,0.12)" : INK,
                 color: saving || !userDataKey ? SUBTLE : "#fff",
                 fontSize: 13,
                 fontWeight: 700,
@@ -502,7 +588,7 @@ export function AddTransactionModal({
                 fontFamily: "inherit",
                 boxShadow: saving || !userDataKey
                   ? "none"
-                  : "0 3px 10px rgba(28,49,68,0.18), inset 0 0.5px 0 rgba(255,255,255,0.18)",
+                  : "0 3px 10px rgba(22,29,24,0.18), inset 0 0.5px 0 rgba(255,255,255,0.18)",
                 transition: "all .15s",
                 display: "flex",
                 alignItems: "center",

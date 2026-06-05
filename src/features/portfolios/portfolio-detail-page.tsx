@@ -1,10 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { use, useMemo, type CSSProperties } from "react";
+import { use, useMemo, useState, type CSSProperties } from "react";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { buildPortfolioDetail } from "@/sync/records/investor-snapshot";
 import { AreaChart } from "@/components/charts/area-chart";
+import type { ValuationPoint } from "@/domain/models/investor-data";
+import { TYPOGRAPHY } from "@/lib/design-tokens";
+
+const PERIOD_OPTIONS = ["1M", "3M", "6M", "1Y", "2Y", "MAX"] as const;
+type Period = (typeof PERIOD_OPTIONS)[number];
+const PERIOD_MONTHS: Record<Period, number> = { "1M": 1, "3M": 3, "6M": 6, "1Y": 12, "2Y": 24, MAX: 0 };
+
+function filterSeriesByPeriod(series: ValuationPoint[], period: Period) {
+  if (period === "MAX" || series.length <= 2) return series;
+  const last = series[series.length - 1];
+  const cutoff = new Date(last.date);
+  cutoff.setMonth(cutoff.getMonth() - PERIOD_MONTHS[period]);
+  const filtered = series.filter((p) => new Date(p.date).getTime() >= cutoff.getTime());
+  return filtered.length >= 2 ? filtered : series.slice(-2);
+}
 
 const INK = "#1C3144";
 const MUTED = "rgba(28,49,68,0.58)";
@@ -59,6 +74,11 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
   const detail = useMemo(
     () => (records ? buildPortfolioDetail(records, id, { fxRates: marketFxRates }) : null),
     [records, id, marketFxRates],
+  );
+  const [period, setPeriod] = useState<Period>("1Y");
+  const chartSeries = useMemo(
+    () => (detail ? filterSeriesByPeriod(detail.valuationSeries, period) : []),
+    [detail, period],
   );
 
   if (!records) {
@@ -121,10 +141,35 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
       {/* Valuation chart */}
       {detail.valuationSeries.length > 1 && (
         <div style={{ ...glassCard, padding: "22px 22px 18px" }}>
-          <div style={{ fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 14 }}>
-            Historia wartości
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
+            <div style={{ fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>
+              Historia wartości · {period === "MAX" ? "maksimum" : period}
+            </div>
+            <div style={{ display: "inline-flex", background: "rgba(28,49,68,0.06)", borderRadius: 11, padding: 3 }}>
+              {PERIOD_OPTIONS.map((option) => (
+                <button
+                  key={option}
+                  onClick={() => setPeriod(option)}
+                  style={{
+                    padding: "5px 12px",
+                    borderRadius: 8,
+                    border: "none",
+                    cursor: "pointer",
+                    fontFamily: TYPOGRAPHY.system,
+                    fontSize: 11.5,
+                    fontWeight: period === option ? 700 : 500,
+                    background: period === option ? "#FFFDF9" : "transparent",
+                    color: period === option ? INK : MUTED,
+                    boxShadow: period === option ? "0 1px 4px rgba(28,49,68,0.12)" : "none",
+                    transition: "all .15s",
+                  }}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
           </div>
-          <AreaChart data={detail.valuationSeries} height={180} />
+          <AreaChart data={chartSeries} height={200} />
         </div>
       )}
 

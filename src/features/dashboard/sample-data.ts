@@ -31,6 +31,12 @@ export const sampleSnapshot: InvestorDataSnapshot = {
     burdensPLN: 0,
     netPLN: 0,
   },
+  cashflows: {
+    dividends: 1_840,
+    interest: 2_310,
+    fees: 612,
+    taxes: 980,
+  },
   portfolios: [
     {
       id: "ike",
@@ -39,6 +45,7 @@ export const sampleSnapshot: InvestorDataSnapshot = {
       value: 31_200,
       dailyChange: 0.7,
       positions: 3,
+      sparkline: [27_400, 27_900, 28_300, 28_100, 29_000, 29_600, 30_200, 30_050, 30_800, 31_200],
     },
     {
       id: "bond",
@@ -47,11 +54,24 @@ export const sampleSnapshot: InvestorDataSnapshot = {
       value: 18_760,
       dailyChange: 0.1,
       positions: 2,
+      sparkline: [17_900, 18_000, 18_120, 18_240, 18_300, 18_410, 18_520, 18_600, 18_700, 18_760],
     },
   ],
   valuationSeries: SAMPLE_HISTORY,
+  performanceSeries: SAMPLE_HISTORY.map((point) => ({
+    ...point,
+    value: (point.value / SAMPLE_HISTORY[0].value) * 100,
+  })),
   allocation: [
     { label: "Akcje zagraniczne", percent: 61.47 },
     { label: "Obligacje skarbowe PL", percent: 38.53 },
   ],
+  metrics: {
+    netInvested: 372_000,
+    totalReturnPct: 15.31,
+    realReturnPct: 11.42,
+    xirrPct: 8.74,
+    maxDrawdownPct: -6.94,
+    inflationPct: 3.5,
+  },
 };

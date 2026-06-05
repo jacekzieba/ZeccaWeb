@@ -9,3 +9,6 @@ tools/swift-fixture-generator/.build/
 .env*.local
 !.env.example
 .DS_Store
+
+# Local design reference (not committed)
+.design-ref/

@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "investor-web-preview",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "STOOQ_API_KEY= NEXT_PUBLIC_FAKE_SYNC=1 npx next dev --hostname 127.0.0.1 --port 3100"],
+      "port": 3100
     }
   ]
 }
