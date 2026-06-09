@@ -111,9 +111,35 @@ const KIND_LABELS: Record<string, string> = {
   crypto: "KRY",
 };
 
-const MONTH_LABELS = ["Gru", "Sty", "Lut", "Mar", "Kwi", "Maj"];
-const MONTHLY_PROFIT = [1180, 760, 1520, 640, 1980, 1634];
-const MONTHLY_LOSS = [180, 540, 120, 690, 240, 210];
+function computeMonthlyBars(series: ValuationPoint[]): { labels: string[]; profit: number[]; loss: number[] } {
+  if (series.length < 2) return { labels: [], profit: [], loss: [] };
+
+  // Group daily points by YYYY-MM key
+  const byMonth = new Map<string, number[]>();
+  for (const point of series) {
+    const key = point.date.slice(0, 7);
+    const arr = byMonth.get(key) ?? [];
+    arr.push(point.value);
+    byMonth.set(key, arr);
+  }
+
+  const months = [...byMonth.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-6);
+  const PL_MONTHS = ["Sty", "Lut", "Mar", "Kwi", "Maj", "Cze", "Lip", "Sie", "Wrz", "Paź", "Lis", "Gru"];
+
+  const labels: string[] = [];
+  const profit: number[] = [];
+  const loss: number[] = [];
+
+  for (const [key, values] of months) {
+    const monthIdx = parseInt(key.slice(5, 7), 10) - 1;
+    labels.push(PL_MONTHS[monthIdx] ?? key.slice(5, 7));
+    const change = values[values.length - 1] - values[0];
+    profit.push(change > 0 ? change : 0);
+    loss.push(change < 0 ? -change : 0);
+  }
+
+  return { labels, profit, loss };
+}
 const DASHBOARD_HEAD_PADDING = "22px 2px 0";
 
 function mix(hex: string, pct: number) {
@@ -423,7 +449,7 @@ function V2Spark({ data, color, width = 92, height = 30 }: { data: number[]; col
   );
 }
 
-function V2HatchBars({ solid = true, height = 150 }: { solid?: boolean; height?: number }) {
+function V2HatchBars({ solid = true, height = 150, labels, profit, loss }: { solid?: boolean; height?: number; labels: string[]; profit: number[]; loss: number[] }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(380);
   const profitPattern = useId().replace(/:/g, "");
@@ -444,10 +470,16 @@ function V2HatchBars({ solid = true, height = 150 }: { solid?: boolean; height?:
   const pb = 22;
   const innerWidth = width - pl - pr;
   const innerHeight = height - pt - pb;
-  const max = Math.max(...MONTHLY_PROFIT, ...MONTHLY_LOSS) * 1.12 || 1;
-  const slot = innerWidth / MONTH_LABELS.length;
+  const max = Math.max(...profit, ...loss) * 1.12 || 1;
+  const slot = labels.length > 0 ? innerWidth / labels.length : innerWidth;
   const barWidth = Math.min(13, slot / 2.6);
   const gap = 3;
+
+  if (labels.length === 0) {
+    return <div ref={wrapRef} style={{ width: "100%", height, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <span style={{ fontFamily: UI, fontSize: 12, color: PALETTE.subtle }}>Brak danych historycznych</span>
+    </div>;
+  }
 
   return (
     <div ref={wrapRef} style={{ width: "100%" }}>
@@ -466,10 +498,10 @@ function V2HatchBars({ solid = true, height = 150 }: { solid?: boolean; height?:
           const y = pt + innerHeight - factor * innerHeight;
           return <line key={index} x1={pl} x2={innerWidth + pl} y1={y} y2={y} stroke={PALETTE.line} strokeDasharray="2 5" />;
         })}
-        {MONTH_LABELS.map((month, index) => {
+        {labels.map((month, index) => {
           const centerX = pl + slot * index + slot / 2;
-          const profitHeight = (MONTHLY_PROFIT[index] / max) * innerHeight;
-          const lossHeight = (MONTHLY_LOSS[index] / max) * innerHeight;
+          const profitHeight = (profit[index] / max) * innerHeight;
+          const lossHeight = (loss[index] / max) * innerHeight;
           const profitX = centerX - barWidth - gap / 2;
           const lossX = centerX + gap / 2;
 
@@ -834,7 +866,7 @@ export function DashboardOverview() {
         <HoldingsCard holdings={holdings} isMobile={isMobile} />
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <AllocationCard allocation={allocation} />
-          <MonthlyCard />
+          <MonthlyCard valuationSeries={historySource} />
         </div>
       </div>
 
@@ -981,7 +1013,8 @@ function AllocationCard({ allocation }: { allocation: { id: string; label: strin
   );
 }
 
-function MonthlyCard() {
+function MonthlyCard({ valuationSeries }: { valuationSeries: ValuationPoint[] }) {
+  const bars = useMemo(() => computeMonthlyBars(valuationSeries), [valuationSeries]);
   return (
     <Card>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
@@ -1001,7 +1034,7 @@ function MonthlyCard() {
         </div>
       </div>
       <div style={{ marginTop: 10 }}>
-        <V2HatchBars />
+        <V2HatchBars labels={bars.labels} profit={bars.profit} loss={bars.loss} />
       </div>
     </Card>
   );

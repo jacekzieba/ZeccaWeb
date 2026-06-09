@@ -14,6 +14,7 @@ import {
   FolderOpen,
   Landmark,
   LayoutDashboard,
+  ListCollapse,
   LogOut,
   Settings,
   type LucideIcon,
@@ -33,6 +34,7 @@ import { COLORS, SHADOWS, SURFACES, TYPOGRAPHY } from "@/lib/design-tokens";
 import { V2, v2Glass, v2Mix } from "@/lib/v2-design";
 import { clearCachedUserDataKey } from "@/sync/encryption/key-cache";
 import { initials, useProfile } from "@/features/profile/profile-store";
+import { AppLock } from "@/features/auth/app-lock";
 
 declare global {
   interface Window {
@@ -126,6 +128,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     sec: "Analiza",
     items: [
+      { id: "positions", label: "Pozycje", icon: ListCollapse, href: "/positions" },
       { id: "transactions", label: "Transakcje", icon: ArrowLeftRight, href: "/transactions" },
       { id: "instruments", label: "Instrumenty", icon: Landmark, href: "/instruments" },
       { id: "earnings", label: "Zarobki", icon: Banknote, href: "/earnings" },
@@ -436,6 +439,7 @@ export function AppShell({
   const PAD = 12;
 
   return (
+    <AppLock>
     <div style={{ minHeight: "100vh", background: V2.page, padding: `${PAD}px ${PAD}px ${PAD + 8}px`, overflowX: "hidden" }}>
 
       {/* ── FLOATING TOPBAR ──────────────────────────────────── */}
@@ -674,6 +678,7 @@ export function AppShell({
         </script>
       )}
     </div>
+    </AppLock>
   );
 }
 
