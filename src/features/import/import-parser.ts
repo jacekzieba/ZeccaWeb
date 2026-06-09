@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AMOUNT_MAGNITUDE_CAP } from "@/lib/parse-amount";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
 import type { WriteRecordPayload } from "@/sync/records/record-writer";
 
@@ -538,7 +539,9 @@ function parseOptionalNumber(value: string) {
 
   if (!normalized) return null;
   const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : null;
+  if (!Number.isFinite(parsed)) return null;
+  if (Math.abs(parsed) > AMOUNT_MAGNITUDE_CAP) return null;
+  return parsed;
 }
 
 function resolvePortfolio(value: string, references: ImportReferenceData) {

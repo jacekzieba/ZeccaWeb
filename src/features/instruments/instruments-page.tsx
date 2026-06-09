@@ -56,7 +56,7 @@ const KIND_COLORS: Record<string, string> = {
   etf: V2.equity,
   treasuryBond: V2.bonds,
   listedBond: V2.bonds,
-  crypto: "#7E5AA5",
+  crypto: V2.crypto,
   deposit: V2.deposit,
   cash: V2.cash,
 };
