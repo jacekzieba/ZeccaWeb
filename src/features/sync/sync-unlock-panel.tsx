@@ -11,9 +11,12 @@ import {
   saveCachedUserDataKey,
 } from "@/sync/encryption/key-cache";
 import {
+  createEncryptedKeyBackup,
+  generateUserDataKeyBytes,
   unlockUserDataKey,
   type EncryptedKeyBackup,
 } from "@/sync/encryption/key-backup";
+import { importAesGcmKey } from "@/sync/encryption/aes-gcm";
 import { decryptEncryptedRecords } from "@/sync/records/encrypted-records";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import { buildParitySnapshot } from "@/sync/records/parity-snapshot";
@@ -22,6 +25,7 @@ import {
   fetchEncryptedKeyBackup,
   registerWebDevice,
   refreshEncryptedKeyBackup,
+  upsertEncryptedKeyBackup,
 } from "@/sync/records/supabase-sync-store";
 import { flushPendingSyncOperations } from "@/sync/records/record-writer";
 import {
@@ -167,6 +171,10 @@ export function SyncUnlockPanel({
   );
   const [session, setSession] = useState<Session | null>(null);
   const [passphrase, setPassphrase] = useState("");
+  const [createPassphrase, setCreatePassphrase] = useState("");
+  const [createConfirm, setCreateConfirm] = useState("");
+  const [createStatus, setCreateStatus] = useState<"idle" | "creating" | "error">("idle");
+  const [createError, setCreateError] = useState<string | null>(null);
   const [unlockStatus, setUnlockStatus] = useState<UnlockStatus>("idle");
   const [unlockStep, setUnlockStep] = useState<UnlockStep | null>(null);
   const [unlockError, setUnlockError] = useState<string | null>(null);
@@ -514,6 +522,60 @@ export function SyncUnlockPanel({
     }
   }
 
+  async function createBackupAndUnlock() {
+    if (createStatus === "creating") return;
+
+    if (!supabase || !userId) {
+      setCreateStatus("error");
+      setCreateError("Brak sesji użytkownika.");
+      return;
+    }
+    if (createPassphrase.length < 8) {
+      setCreateStatus("error");
+      setCreateError("Passphrase musi mieć co najmniej 8 znaków.");
+      return;
+    }
+    if (createPassphrase !== createConfirm) {
+      setCreateStatus("error");
+      setCreateError("Passphrase i potwierdzenie różnią się.");
+      return;
+    }
+
+    setCreateStatus("creating");
+    setCreateError(null);
+
+    // Bootstrap a web-only account: generate a fresh user data key, wrap it under
+    // the passphrase (PBKDF2-SHA256/600k) and upload — so a new device can later
+    // restore sync from this account. Parity with native KeyBackupService.makeBackup.
+    const rawUserDataKey = generateUserDataKeyBytes();
+    try {
+      const backup = await withTimeout(
+        createEncryptedKeyBackup({ rawUserDataKey, passphrase: createPassphrase }),
+        "Tworzenie backupu klucza",
+      );
+      await withTimeout(
+        upsertEncryptedKeyBackup(supabase, userId, backup),
+        "Zapis backupu klucza w Supabase",
+      );
+
+      const userDataKey = await importAesGcmKey(rawUserDataKey);
+      await loadSyncWithKey(userDataKey, null, { rememberTrustedKey: true });
+      await keyBackupQuery.refetch();
+
+      setCreatePassphrase("");
+      setCreateConfirm("");
+      setCreateStatus("idle");
+    } catch (error) {
+      setCreateStatus("error");
+      setCreateError(getUnlockErrorMessage(error));
+    }
+  }
+
+  function handleCreateBackup(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void createBackupAndUnlock();
+  }
+
   function handleUnlock(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void unlockSync();
@@ -722,9 +784,76 @@ export function SyncUnlockPanel({
         </div>
       )}
 
-      {!keyBackupQuery.isLoading && !hasBackup && (
-        <div style={{ fontSize: 12, color: AMBER, marginTop: 4 }}>
-          Konto nie ma jeszcze backupu klucza w <code>encrypted_key_backups</code>.
+      {!keyBackupQuery.isLoading && !hasBackup && unlockStatus !== "ready" && (
+        <div style={{ marginTop: 4 }}>
+          <div style={{ fontSize: 12, color: AMBER, marginBottom: 10 }}>
+            Konto nie ma jeszcze backupu klucza w <code>encrypted_key_backups</code>.
+            Utwórz go passphrase&apos;ą, żeby uruchomić sync na tym i kolejnych urządzeniach.
+          </div>
+          <form onSubmit={handleCreateBackup} style={{ display: "grid", gap: 8 }}>
+            <input
+              type="password"
+              value={createPassphrase}
+              onChange={(e) => setCreatePassphrase(e.target.value)}
+              autoComplete="new-password"
+              required
+              placeholder="Nowa passphrase (min. 8 znaków)…"
+              style={{
+                width: "100%",
+                padding: "9px 12px",
+                borderRadius: 9,
+                border: "0.5px solid rgba(28,49,68,0.15)",
+                background: PAPER,
+                fontSize: 13,
+                color: INK,
+                outline: "none",
+                boxShadow: "inset 0 1px 3px rgba(28,49,68,0.06)",
+              }}
+            />
+            <input
+              type="password"
+              value={createConfirm}
+              onChange={(e) => setCreateConfirm(e.target.value)}
+              autoComplete="new-password"
+              required
+              placeholder="Powtórz passphrase…"
+              style={{
+                width: "100%",
+                padding: "9px 12px",
+                borderRadius: 9,
+                border: "0.5px solid rgba(28,49,68,0.15)",
+                background: PAPER,
+                fontSize: 13,
+                color: INK,
+                outline: "none",
+                boxShadow: "inset 0 1px 3px rgba(28,49,68,0.06)",
+              }}
+            />
+            <button
+              type="submit"
+              disabled={createStatus === "creating"}
+              style={{
+                justifySelf: "start",
+                padding: "9px 16px",
+                borderRadius: 9,
+                border: "none",
+                background: createStatus === "creating" ? "rgba(28,49,68,0.12)" : INK,
+                color: createStatus === "creating" ? SUBTLE : "#fff",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: createStatus === "creating" ? "not-allowed" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              {createStatus === "creating" ? <SpinnerDot /> : "🔐"}
+              {createStatus === "creating" ? "Tworzę backup…" : "Utwórz backup klucza"}
+            </button>
+          </form>
+          {createStatus === "error" && createError && (
+            <div style={{ fontSize: 12, color: LOSS, marginTop: 8 }}>{createError}</div>
+          )}
         </div>
       )}
 

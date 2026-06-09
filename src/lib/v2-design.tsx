@@ -20,6 +20,7 @@ export const V2 = {
   bonds: "#8C6F30",
   deposit: "#5C6A60",
   cash: "#8C8E82",
+  crypto: "#7E5AA5",
   spec: "rgba(255,255,255,0.75)",
 } as const;
 

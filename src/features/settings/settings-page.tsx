@@ -17,6 +17,7 @@ import {
   useProfile,
   type NotificationPrefs,
 } from "@/features/profile/profile-store";
+import { AppLockSettingsRow } from "@/features/auth/app-lock";
 
 function Switch({ on, onChange }: { on: boolean; onChange: (value: boolean) => void }) {
   return (
@@ -196,6 +197,10 @@ export function SettingsPage() {
 
       <NotificationSection prefs={profile.notifications} />
 
+      <MarketDataSection />
+      <DisplaySection />
+      <PrivacySection />
+
       <V2Card style={{ borderColor: v2Mix(V2.loss, 0.3) }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
           <div>
@@ -209,6 +214,127 @@ export function SettingsPage() {
         </div>
       </V2Card>
     </div>
+  );
+}
+
+// ── Market data settings ─────────────────────────────────────────
+function MarketDataSection() {
+  const [autoRefresh, setAutoRefresh] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("investor-auto-refresh") !== "false";
+  });
+  const [coinGeckoKey, setCoinGeckoKey] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem("investor-coingecko-key") ?? "";
+  });
+  const [editingKey, setEditingKey] = useState(false);
+
+  function toggleRefresh(v: boolean) {
+    setAutoRefresh(v);
+    localStorage.setItem("investor-auto-refresh", String(v));
+  }
+
+  function saveKey(key: string) {
+    setCoinGeckoKey(key);
+    localStorage.setItem("investor-coingecko-key", key);
+    setEditingKey(false);
+  }
+
+  return (
+    <Section eyebrow="Dane rynkowe" title="Kursy i automatyczne odświeżanie">
+      <Row
+        label="Automatyczne odświeżanie kursów"
+        desc="Pobierz ceny FX i notowania przy każdym otwarciu aplikacji"
+        control={<Switch on={autoRefresh} onChange={toggleRefresh} />}
+      />
+      <Row
+        label="Klucz API CoinGecko"
+        desc="Opcjonalny klucz Pro/Demo do pobierania cen krypto bez limitu zapytań"
+        last
+        control={
+          editingKey ? (
+            <form onSubmit={(e) => { e.preventDefault(); saveKey(coinGeckoKey); }} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                autoFocus
+                type="text"
+                value={coinGeckoKey}
+                onChange={(e) => setCoinGeckoKey(e.target.value)}
+                placeholder="CG-xxxxxxxxxxxxxxxxxxxxxxxx"
+                style={{
+                  fontFamily: V2_TYPE.mono, fontSize: 12, padding: "7px 10px", borderRadius: 8,
+                  border: `0.5px solid ${V2.line}`, background: V2.card, color: V2.ink,
+                  width: 230, outline: "none",
+                }}
+              />
+              <button type="submit" style={{ padding: "7px 12px", borderRadius: 8, border: "none", background: V2.ink, color: V2.card, fontFamily: V2_TYPE.ui, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                Zapisz
+              </button>
+              <button type="button" onClick={() => setEditingKey(false)} style={{ padding: "7px 12px", borderRadius: 8, border: `0.5px solid ${V2.line}`, background: V2.card, color: V2.muted, fontFamily: V2_TYPE.ui, fontSize: 12, cursor: "pointer" }}>
+                Anuluj
+              </button>
+            </form>
+          ) : (
+            <button
+              onClick={() => setEditingKey(true)}
+              style={{ padding: "7px 12px", borderRadius: 8, border: `0.5px solid ${V2.line}`, background: V2.card, color: V2.ink, fontFamily: V2_TYPE.ui, fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
+            >
+              {coinGeckoKey ? "Zmień klucz" : "Ustaw klucz"}
+            </button>
+          )
+        }
+      />
+    </Section>
+  );
+}
+
+// ── Display settings ──────────────────────────────────────────────
+function DisplaySection() {
+  const [showRealReturn, setShowRealReturn] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("investor-show-real-return") === "true";
+  });
+
+  function toggle(v: boolean) {
+    setShowRealReturn(v);
+    localStorage.setItem("investor-show-real-return", String(v));
+  }
+
+  return (
+    <Section eyebrow="Wyświetlanie" title="Prezentacja wyników">
+      <Row
+        label="Wynik realny po inflacji"
+        desc="KPI i wykresy pokazują wynik nominalny pomniejszony o roczną inflację YOY (CPI). Wyłącz, aby widzieć wynik nominalny."
+        last
+        control={<Switch on={showRealReturn} onChange={toggle} />}
+      />
+    </Section>
+  );
+}
+
+// ── Privacy / diagnostics ─────────────────────────────────────────
+function PrivacySection() {
+  const [analytics, setAnalytics] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("investor-analytics-opt-out") !== "true";
+  });
+
+  function toggle(v: boolean) {
+    setAnalytics(v);
+    localStorage.setItem("investor-analytics-opt-out", String(!v));
+  }
+
+  return (
+    <Section eyebrow="Prywatność" title="Bezpieczeństwo i diagnostyka">
+      <div style={{ padding: "14px 24px", borderBottom: `0.5px solid ${V2.line2}` }}>
+        <AppLockSettingsRow />
+      </div>
+      <Row
+        label="Anonimowe raporty o błędach"
+        desc="Pomóż ulepszyć aplikację — wysyłaj anonimowe zdarzenia diagnostyczne. Żadne dane finansowe nie są przesyłane."
+        last
+        control={<Switch on={analytics} onChange={toggle} />}
+      />
+    </Section>
   );
 }
 

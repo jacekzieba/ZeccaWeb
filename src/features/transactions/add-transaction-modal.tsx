@@ -30,6 +30,7 @@ import {
 } from "@/sync/records/macos-payloads";
 import { buildPortfolioDetail } from "@/sync/records/investor-snapshot";
 import { TYPOGRAPHY } from "@/lib/design-tokens";
+import { parseAmount } from "@/lib/parse-amount";
 import { V2, v2Mix } from "@/lib/v2-design";
 
 const INK = V2.ink;
@@ -385,8 +386,12 @@ export function AddTransactionModal({
   // Auto-compute grossAmount from qty * price for buy/sell
   useEffect(() => {
     if (txDef.needsQty && quantity && price) {
-      const computed = parseFloat(quantity) * parseFloat(price);
-      if (!isNaN(computed)) setGrossAmount(computed.toFixed(2));
+      const qty = parseAmount(quantity);
+      const unit = parseAmount(price);
+      if (qty != null && unit != null) {
+        const computed = qty * unit;
+        if (Number.isFinite(computed)) setGrossAmount(computed.toFixed(2));
+      }
     }
   }, [quantity, price, txDef.needsQty]);
 
@@ -414,9 +419,9 @@ export function AddTransactionModal({
       .slice(0, 2);
   }, [records]);
 
-  const gross = parseFloat(grossAmount) || 0;
-  const feeValue = parseFloat(fees) || 0;
-  const taxValue = parseFloat(taxes) || 0;
+  const gross = parseAmount(grossAmount) ?? 0;
+  const feeValue = parseAmount(fees) ?? 0;
+  const taxValue = parseAmount(taxes) ?? 0;
   const totalAmount =
     txType === "buy" || txType === "depositOpen" || txType === "cashWithdrawal" || txType === "fxConversion"
       ? gross + feeValue + taxValue
@@ -483,6 +488,63 @@ export function AddTransactionModal({
       return;
     }
 
+    // Validate every numeric field through the shared parser before saving.
+    // `null` means empty / non-finite (NaN, ±Inf) / over the 1e12 magnitude cap —
+    // such values must never reach the sync payload (parity with native Faza 1.4).
+    const grossValue = parseAmount(grossAmount);
+    if (grossValue == null) {
+      setError("Podaj poprawną kwotę.");
+      return;
+    }
+
+    const feeAmount = fees.trim() ? parseAmount(fees) : 0;
+    if (feeAmount == null) {
+      setError("Podaj poprawną wartość opłat.");
+      return;
+    }
+
+    const taxAmount = taxes.trim() ? parseAmount(taxes) : 0;
+    if (taxAmount == null) {
+      setError("Podaj poprawną wartość podatku.");
+      return;
+    }
+
+    let fxRateValue: number | null = null;
+    if (fxRateToBase.trim()) {
+      fxRateValue = parseAmount(fxRateToBase);
+      if (fxRateValue == null) {
+        setError("Podaj poprawny kurs wymiany.");
+        return;
+      }
+    }
+
+    let quantityValue: number | null = null;
+    if (txDef.needsQty && quantity.trim()) {
+      quantityValue = parseAmount(quantity);
+      if (quantityValue == null) {
+        setError("Podaj poprawną ilość.");
+        return;
+      }
+    }
+
+    let priceValue: number | null = null;
+    if (price.trim()) {
+      priceValue = parseAmount(price);
+      if (priceValue == null) {
+        setError("Podaj poprawną cenę.");
+        return;
+      }
+    }
+
+    let targetGrossValue: number | null = null;
+    if (txType === "fxConversion") {
+      targetGrossValue = parseAmount(targetGrossAmount);
+      if (targetGrossValue == null) {
+        setError("Podaj poprawną kwotę po przewalutowaniu.");
+        return;
+      }
+    }
+
     setSaving(true);
     setError(null);
 
@@ -495,19 +557,19 @@ export function AddTransactionModal({
         date: dateSeconds,
         portfolioID: portfolioId,
         transactionType: txType,
-        grossAmount: parseFloat(grossAmount) || 0,
+        grossAmount: grossValue,
         currency,
-        fees: parseFloat(fees) || 0,
-        taxes: parseFloat(taxes) || 0,
-        fxRateToBase: fxRateToBase ? parseFloat(fxRateToBase) : null,
+        fees: feeAmount,
+        taxes: taxAmount,
+        fxRateToBase: fxRateValue,
         targetCurrency: txType === "fxConversion" ? targetCurrency : null,
-        targetGrossAmount: txType === "fxConversion" ? parseFloat(targetGrossAmount) || 0 : null,
+        targetGrossAmount: txType === "fxConversion" ? targetGrossValue : null,
         notes,
         sourcePortfolioID: txType === "accountTransferIn" && sourcePortfolioId ? sourcePortfolioId : null,
         transferKind: txType === "accountTransferIn" ? transferKind : null,
         instrumentID: txDef.needsInstrument && instrumentId ? instrumentId : null,
-        quantity: txDef.needsQty && quantity ? parseFloat(quantity) : null,
-        price: price ? parseFloat(price) : null,
+        quantity: quantityValue,
+        price: priceValue,
       });
 
       const result = await saveRecord(

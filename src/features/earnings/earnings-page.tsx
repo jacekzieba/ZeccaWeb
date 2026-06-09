@@ -36,6 +36,7 @@ import {
   type EmploymentType,
 } from "@/domain/models/earnings";
 import { isFakeSyncEnabled } from "@/lib/env";
+import { parsePositiveAmount } from "@/lib/parse-amount";
 import { V2, V2Badge, V2Button, V2Card, V2Kpi, V2ScreenHead, V2_TYPE, v2InputStyle, v2Mix, v2SelectStyle } from "@/lib/v2-design";
 import { buildIncomeLists, buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import { deleteRecord, refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
@@ -95,8 +96,7 @@ function fmt(n: number, d = 0) {
 }
 
 function parsePositiveNumber(value: string) {
-  const parsed = Number(value.replace(",", "."));
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  return parsePositiveAmount(value);
 }
 
 function parseYear(value: string) {

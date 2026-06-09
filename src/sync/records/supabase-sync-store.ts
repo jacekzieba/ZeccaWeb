@@ -87,6 +87,28 @@ export async function refreshEncryptedKeyBackup(
   return data;
 }
 
+export async function upsertEncryptedKeyBackup(
+  supabase: BrowserSupabaseClient,
+  userId: string,
+  backup: EncryptedKeyBackup,
+): Promise<void> {
+  const payload = {
+    user_id: userId,
+    encrypted_user_data_key: backup.encrypted_user_data_key,
+    salt: backup.salt,
+    nonce: backup.nonce,
+    kdf: backup.kdf,
+    kdf_iterations: backup.kdf_iterations,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await supabase
+    .from("encrypted_key_backups")
+    .upsert([payload] as never[], { onConflict: "user_id" });
+
+  if (error) throw error;
+}
+
 export async function fetchActiveEncryptedRecords(
   supabase: BrowserSupabaseClient,
 ): Promise<EncryptedRecord[]> {
