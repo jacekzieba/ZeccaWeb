@@ -8,7 +8,7 @@ test("renders login and keeps protected routes behind the auth gate", async ({ p
 
   await page.goto("/login");
 
-  await expect(page).toHaveTitle(/InvestorWeb/);
+  await expect(page).toHaveTitle(/Zecca/);
   await expect(page.getByRole("heading", { name: "Logowanie" })).toBeVisible();
   await expect(page.getByRole("textbox").first()).toBeVisible();
   await expect(page.getByPlaceholder("••••••••")).toBeVisible();
@@ -25,7 +25,7 @@ test("keeps public health and market data status routes available", async ({ req
   await expect(health).toBeOK();
   await expect(health.json()).resolves.toMatchObject({
     ok: true,
-    service: "InvestorWeb",
+    service: "ZeccaWeb",
   });
 
   const status = await request.get("/api/market-data/status");

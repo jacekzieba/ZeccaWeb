@@ -40,10 +40,10 @@ export default function ResetPasswordPage() {
                 boxShadow: SHADOWS.button,
               }}
             >
-              I
+              Z
             </div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text }}>Investor</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text }}>Zecca</div>
               <div
                 style={{
                   fontSize: 10,

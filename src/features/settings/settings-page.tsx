@@ -548,7 +548,7 @@ function ProfileCard({
               <span style={{ fontSize: 13, color: V2.subtle }}>✎</span>
             </button>
           )}
-          <div style={{ fontFamily: V2_TYPE.ui, fontSize: 13, color: V2.muted, marginTop: 1 }}>Investor Web · dane odszyfrowywane lokalnie</div>
+          <div style={{ fontFamily: V2_TYPE.ui, fontSize: 13, color: V2.muted, marginTop: 1 }}>Zecca Web · dane odszyfrowywane lokalnie</div>
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
             <V2Badge label={`${accountCount} ${accountCount === 1 ? "konto" : "konta/kont"}`} color={V2.equity} />
           </div>
@@ -646,7 +646,7 @@ function NotificationSection({ prefs }: { prefs: NotificationPrefs }) {
     const result = await Notification.requestPermission();
     setPermission(result);
     if (result === "granted") {
-      new Notification("Investor Web", { body: "Powiadomienia w przeglądarce są włączone." });
+      new Notification("Zecca", { body: "Powiadomienia w przeglądarce są włączone." });
     }
   }
 

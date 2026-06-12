@@ -1,6 +1,6 @@
-# InvestorWeb
+# ZeccaWeb
 
-Webowa wersja Investora. Projekt jest osobnym klientem Next.js dla tego samego prywatnego modelu synchronizacji: Supabase Auth, zaszyfrowane rekordy w Postgresie i odszyfrowanie danych wyłącznie po stronie przeglądarki.
+Webowa wersja Zecca (dawniej Investor). Projekt jest osobnym klientem Next.js dla tego samego prywatnego modelu synchronizacji: Supabase Auth, zaszyfrowane rekordy w Postgresie i odszyfrowanie danych wyłącznie po stronie przeglądarki.
 
 ## Status
 

@@ -4,8 +4,8 @@ import { Providers } from "@/providers/providers";
 import { COLORS } from "@/lib/design-tokens";
 
 export const metadata: Metadata = {
-  title: "InvestorWeb",
-  description: "Private web client for Investor portfolios.",
+  title: "Zecca",
+  description: "Private web client for Zecca portfolios.",
 };
 
 export default function RootLayout({

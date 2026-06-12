@@ -223,10 +223,10 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
             boxShadow: SHADOWS.button,
           }}
         >
-          I
+          Z
         </div>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text, letterSpacing: ".01em" }}>Investor</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text, letterSpacing: ".01em" }}>Zecca</div>
           <div style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 9.5, color: COLORS.subtle, letterSpacing: ".10em", textTransform: "uppercase", marginTop: 1 }}>
             Web · v2
           </div>
@@ -495,14 +495,14 @@ export function AppShell({
           {/* Mobile: brand text */}
           {!isDesktop && (
             <span style={{ fontSize: 14, fontWeight: 800, color: COLORS.text, letterSpacing: ".01em" }}>
-              Investor
+              Zecca
             </span>
           )}
 
           {/* Desktop: brand */}
           {isDesktop && (
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: COLORS.text, letterSpacing: ".02em" }}>Investor</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: COLORS.text, letterSpacing: ".02em" }}>Zecca</span>
               <span
                 style={{
                   fontSize: 10, color: COLORS.subtle,
@@ -741,10 +741,10 @@ function SyncUnlockGate({
                 boxShadow: SHADOWS.button,
               }}
             >
-              I
+              Z
             </div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text }}>Investor</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text }}>Zecca</div>
               <div
                 style={{
                   fontFamily: TYPOGRAPHY.mono,

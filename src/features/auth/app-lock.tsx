@@ -254,7 +254,7 @@ export function AppLock({ children }: { children: React.ReactNode }) {
           gap: 6,
         }}
       >
-        <div style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 500, color: V2.ink, marginBottom: 8 }}>Investor</div>
+        <div style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 500, color: V2.ink, marginBottom: 8 }}>Zecca</div>
         <PinPad label="Podaj PIN, aby odblokować" onPin={verify} error={error} />
       </div>
     );

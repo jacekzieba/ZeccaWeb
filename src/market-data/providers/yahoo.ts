@@ -32,7 +32,7 @@ export async function fetchYahooQuote(symbol: string): Promise<MarketQuote> {
   const response = await fetch(url, {
     headers: {
       accept: "application/json",
-      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X) InvestorWeb/1.0",
+      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X) ZeccaWeb/1.0",
     },
     next: { revalidate: 15 * 60 },
   });
