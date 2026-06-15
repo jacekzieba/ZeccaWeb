@@ -16,6 +16,7 @@ import {
   updateProfile,
   useProfile,
   type NotificationPrefs,
+  type Profile,
 } from "@/features/profile/profile-store";
 import { AppLockSettingsRow } from "@/features/auth/app-lock";
 import { useTelemetryConsent } from "@/features/telemetry/use-telemetry-consent";
@@ -23,10 +24,11 @@ import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { clearCachedUserDataKey } from "@/sync/encryption/key-cache";
 import { clearPendingSyncOperations } from "@/sync/records/record-writer";
 
-function Switch({ on, onChange }: { on: boolean; onChange: (value: boolean) => void }) {
+function Switch({ on, onChange, label }: { on: boolean; onChange: (value: boolean) => void; label: string }) {
   return (
     <button
       onClick={() => onChange(!on)}
+      aria-label={label}
       style={{
         width: 42,
         height: 25,
@@ -141,12 +143,6 @@ export function SettingsPage() {
   const profile = useProfile();
   const snapshot = useSyncStore((s) => s.snapshot);
 
-  const [base, setBase] = useState("PLN");
-  const [locale, setLocale] = useState("pl");
-  const [format, setFormat] = useState("space");
-  const [taxRes, setTaxRes] = useState(true);
-  const [autoTax, setAutoTax] = useState(true);
-
   const accounts = snapshot?.portfolios ?? [];
 
   return (
@@ -158,14 +154,13 @@ export function SettingsPage() {
       <AllocationSection profile={profile} />
 
       <Section eyebrow="Regionalne" title="Waluta i format">
-        <Row label="Waluta bazowa" desc="Przeliczenia portfela i raportów" control={<Segmented options={[{ value: "PLN", label: "PLN" }, { value: "EUR", label: "EUR" }, { value: "USD", label: "USD" }]} value={base} onChange={setBase} />} />
-        <Row label="Język interfejsu" control={<Segmented options={[{ value: "pl", label: "Polski" }, { value: "en", label: "English" }]} value={locale} onChange={setLocale} />} />
-        <Row label="Format liczb" desc="Separator tysięcy w kwotach" control={<Segmented options={[{ value: "space", label: "1 234,5" }, { value: "comma", label: "1,234.5" }]} value={format} onChange={setFormat} />} last />
+        <Row label="Waluta bazowa" desc="Przeliczenia portfela i raportów wg kursów NBP z danego dnia" control={<Segmented options={[{ value: "PLN", label: "PLN" }, { value: "EUR", label: "EUR" }, { value: "USD", label: "USD" }]} value={profile.displayCurrency} onChange={(v) => updateProfile({ displayCurrency: v as Profile["displayCurrency"] })} />} />
+        <Row label="Język interfejsu" desc="Pełne tłumaczenie EN jest w przygotowaniu" control={<Segmented options={[{ value: "pl", label: "Polski" }, { value: "en", label: "English (wkrótce)" }]} value="pl" onChange={() => {}} />} last />
       </Section>
 
       <Section eyebrow="Podatki" title="Rozliczenia podatkowe">
-        <Row label="Rezydencja podatkowa · Polska" desc="Podatek Belki 19% od zysków kapitałowych" control={<Switch on={taxRes} onChange={setTaxRes} />} />
-        <Row label="Automatyczne naliczanie podatku" desc="Szacuj należny podatek przy każdej sprzedaży" control={<Switch on={autoTax} onChange={setAutoTax} />} />
+        <Row label="Rezydencja podatkowa · Polska" desc="Podatek Belki 19% od zysków kapitałowych" control={<Switch on={profile.taxResidencePL} onChange={(v) => updateProfile({ taxResidencePL: v })} label="Rezydencja podatkowa Polska" />} />
+        <Row label="Automatyczne naliczanie podatku" desc="Szacuj należny podatek przy każdej sprzedaży" control={<Switch on={profile.autoTax} onChange={(v) => updateProfile({ autoTax: v })} label="Automatyczne naliczanie podatku" />} />
         <Row label="Limit wpłat IKE 2026" desc="Wykorzystano 6 500 zł z 26 019 zł" control={(
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{ width: 120, height: 7, borderRadius: 4, background: v2Mix(V2.ink, 0.08), overflow: "hidden" }}>
@@ -216,21 +211,10 @@ function MarketDataSection() {
     if (typeof window === "undefined") return true;
     return localStorage.getItem("investor-auto-refresh") !== "false";
   });
-  const [coinGeckoKey, setCoinGeckoKey] = useState(() => {
-    if (typeof window === "undefined") return "";
-    return localStorage.getItem("investor-coingecko-key") ?? "";
-  });
-  const [editingKey, setEditingKey] = useState(false);
 
   function toggleRefresh(v: boolean) {
     setAutoRefresh(v);
     localStorage.setItem("investor-auto-refresh", String(v));
-  }
-
-  function saveKey(key: string) {
-    setCoinGeckoKey(key);
-    localStorage.setItem("investor-coingecko-key", key);
-    setEditingKey(false);
   }
 
   return (
@@ -238,43 +222,8 @@ function MarketDataSection() {
       <Row
         label="Automatyczne odświeżanie kursów"
         desc="Pobierz ceny FX i notowania przy każdym otwarciu aplikacji"
-        control={<Switch on={autoRefresh} onChange={toggleRefresh} />}
-      />
-      <Row
-        label="Klucz API CoinGecko"
-        desc="Opcjonalny klucz Pro/Demo do pobierania cen krypto bez limitu zapytań"
         last
-        control={
-          editingKey ? (
-            <form onSubmit={(e) => { e.preventDefault(); saveKey(coinGeckoKey); }} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <input
-                autoFocus
-                type="text"
-                value={coinGeckoKey}
-                onChange={(e) => setCoinGeckoKey(e.target.value)}
-                placeholder="CG-xxxxxxxxxxxxxxxxxxxxxxxx"
-                style={{
-                  fontFamily: V2_TYPE.mono, fontSize: 12, padding: "7px 10px", borderRadius: 8,
-                  border: `0.5px solid ${V2.line}`, background: V2.card, color: V2.ink,
-                  width: 230, outline: "none",
-                }}
-              />
-              <button type="submit" style={{ padding: "7px 12px", borderRadius: 8, border: "none", background: V2.ink, color: V2.card, fontFamily: V2_TYPE.ui, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                Zapisz
-              </button>
-              <button type="button" onClick={() => setEditingKey(false)} style={{ padding: "7px 12px", borderRadius: 8, border: `0.5px solid ${V2.line}`, background: V2.card, color: V2.muted, fontFamily: V2_TYPE.ui, fontSize: 12, cursor: "pointer" }}>
-                Anuluj
-              </button>
-            </form>
-          ) : (
-            <button
-              onClick={() => setEditingKey(true)}
-              style={{ padding: "7px 12px", borderRadius: 8, border: `0.5px solid ${V2.line}`, background: V2.card, color: V2.ink, fontFamily: V2_TYPE.ui, fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
-            >
-              {coinGeckoKey ? "Zmień klucz" : "Ustaw klucz"}
-            </button>
-          )
-        }
+        control={<Switch on={autoRefresh} onChange={toggleRefresh} label="Automatyczne odświeżanie kursów" />}
       />
     </Section>
   );
@@ -298,7 +247,7 @@ function DisplaySection() {
         label="Wynik realny po inflacji"
         desc="KPI i wykresy pokazują wynik nominalny pomniejszony o roczną inflację YOY (CPI). Wyłącz, aby widzieć wynik nominalny."
         last
-        control={<Switch on={showRealReturn} onChange={toggle} />}
+        control={<Switch on={showRealReturn} onChange={toggle} label="Wynik realny po inflacji" />}
       />
     </Section>
   );
@@ -326,6 +275,7 @@ function PrivacySection() {
         control={
           <Switch
             on={canWrite && acknowledged && enabled}
+            label="Anonimowa telemetria"
             onChange={(v) => {
               if (!canWrite || saving) return;
               void setConsent(v);
@@ -682,10 +632,10 @@ function NotificationSection({ prefs }: { prefs: NotificationPrefs }) {
           {permission === "granted" ? "Włączone" : "Włącz powiadomienia"}
         </button>
       </div>
-      <Row label="Alerty cenowe" desc="Powiadom o zmianie kursu instrumentu > 5%" control={<Switch on={prefs.price} onChange={(v) => setPref("price", v)} />} />
-      <Row label="Dywidendy i odsetki" desc="Informuj o naliczeniu dochodu pasywnego" control={<Switch on={prefs.income} onChange={(v) => setPref("income", v)} />} />
-      <Row label="Cotygodniowe podsumowanie" desc="Wynik portfela w poniedziałki (wymaga backendu)" control={<Switch on={prefs.weekly} onChange={(v) => setPref("weekly", v)} />} />
-      <Row label="Przypomnienie o raporcie PIT" desc="Alert przed terminem rozliczenia rocznego" control={<Switch on={prefs.pit} onChange={(v) => setPref("pit", v)} />} last />
+      <Row label="Alerty cenowe" desc="Powiadom o zmianie kursu instrumentu > 5%" control={<Switch on={prefs.price} onChange={(v) => setPref("price", v)} label="Alerty cenowe" />} />
+      <Row label="Dywidendy i odsetki" desc="Informuj o naliczeniu dochodu pasywnego" control={<Switch on={prefs.income} onChange={(v) => setPref("income", v)} label="Dywidendy i odsetki" />} />
+      <Row label="Cotygodniowe podsumowanie" desc="Wynik portfela w poniedziałki (wymaga backendu)" control={<Switch on={prefs.weekly} onChange={(v) => setPref("weekly", v)} label="Cotygodniowe podsumowanie" />} />
+      <Row label="Przypomnienie o raporcie PIT" desc="Alert przed terminem rozliczenia rocznego" control={<Switch on={prefs.pit} onChange={(v) => setPref("pit", v)} label="Przypomnienie o raporcie PIT" />} last />
     </Section>
   );
 }

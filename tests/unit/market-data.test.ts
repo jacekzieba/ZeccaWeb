@@ -6,9 +6,11 @@ import {
 } from "@/market-data/cache";
 import { parseStooqCsv } from "@/market-data/providers/stooq";
 import { parseYahooChart } from "@/market-data/providers/yahoo";
+import { fetchNbpFxRate } from "@/market-data/providers/nbp";
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.restoreAllMocks();
   clearMarketDataCache();
 });
 
@@ -100,6 +102,54 @@ describe("parseStooqCsv", () => {
       close: 193.25,
       volume: 12345,
     });
+  });
+});
+
+describe("fetchNbpFxRate", () => {
+  it("queries a lookback range for a dated request and uses the last published rate", async () => {
+    // 2026-06-14 is a Sunday; NBP has no fixing, but the range window covers the
+    // prior business days and we should fall back to the most recent one.
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          table: "A",
+          code: "USD",
+          rates: [
+            { effectiveDate: "2026-06-11", mid: 3.71 },
+            { effectiveDate: "2026-06-12", mid: 3.74 },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    );
+
+    const rate = await fetchNbpFxRate("USD", "2026-06-14");
+
+    expect(rate.rate).toBe(3.74);
+    expect(rate.effectiveDate).toBe("2026-06-12");
+    const requestedUrl = String(fetchMock.mock.calls[0][0]);
+    expect(requestedUrl).toContain("/2026-05-31/2026-06-14/");
+  });
+
+  it("uses the latest endpoint when no date is given", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          table: "A",
+          code: "EUR",
+          rates: [{ effectiveDate: "2026-06-12", mid: 4.28 }],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    );
+
+    const rate = await fetchNbpFxRate("EUR");
+
+    expect(rate.rate).toBe(4.28);
+    const requestedUrl = String(fetchMock.mock.calls[0][0]);
+    expect(requestedUrl).toBe(
+      "https://api.nbp.pl/api/exchangerates/rates/a/EUR/?format=json",
+    );
   });
 });
 

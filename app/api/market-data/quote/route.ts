@@ -10,10 +10,14 @@ import {
   yahooSymbolForInstrument,
 } from "@/market-data/symbols";
 import type { MarketQuote } from "@/market-data/types";
+import { rateLimitResponse } from "@/market-data/rate-limit";
 
 const QUOTE_CACHE_TTL_MS = 15 * 60 * 1000;
 
 export async function GET(request: NextRequest) {
+  const limited = rateLimitResponse(request);
+  if (limited) return limited;
+
   const symbol = request.nextUrl.searchParams.get("symbol") ?? "";
   const currency = request.nextUrl.searchParams.get("currency");
   const yahooSymbol = yahooSymbolForInstrument(symbol, currency);

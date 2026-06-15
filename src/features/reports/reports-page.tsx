@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState, type CSSProperties } from "react";
-import { useSyncStore } from "@/sync/store/sync-store";
+import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
+import { useProfile } from "@/features/profile/profile-store";
 import { useSampleDataSignal } from "@/features/telemetry/use-sample-data-signal";
 import { sampleSnapshot } from "@/features/dashboard/sample-data";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
@@ -115,9 +116,13 @@ function SectionHead({ children }: { children: React.ReactNode }) {
 }
 
 export function ReportsPage() {
-  const storeSnapshot = useSyncStore((s) => s.snapshot);
+  const storeSnapshot = useDisplaySnapshot();
   const isDemo = !storeSnapshot;
   const snapshot = storeSnapshot ?? sampleSnapshot;
+  const { displayCurrency } = useProfile();
+  // Demo/sample numbers are illustrative PLN, so only label real data in the
+  // chosen currency.
+  const ccy = isDemo ? "PLN" : displayCurrency;
   useSampleDataSignal(isDemo);
   const [report, setReport] = useState<ReportId>("performance");
 
@@ -165,10 +170,10 @@ export function ReportsPage() {
       {report === "performance" && (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
-            <Kpi label="Łączny zwrot (TWR)" value={fmtPct(metrics.totalReturnPct)} sub={`${absGain >= 0 ? "+" : ""}${fmt(absGain)} PLN ponad wpłaty`} color={metrics.totalReturnPct >= 0 ? PROFIT : LOSS} />
+            <Kpi label="Łączny zwrot (TWR)" value={fmtPct(metrics.totalReturnPct)} sub={`${absGain >= 0 ? "+" : ""}${fmt(absGain)} ${ccy} ponad wpłaty`} color={metrics.totalReturnPct >= 0 ? PROFIT : LOSS} />
             <Kpi label="MWR · XIRR" value={metrics.xirrPct == null ? "—" : fmtPct(metrics.xirrPct)} sub="rocznie, ważony kapitałem" color={(metrics.xirrPct ?? 0) >= 0 ? PROFIT : LOSS} />
             <Kpi label="Maks. obsunięcie" value={`${fmt(metrics.maxDrawdownPct, 2)}%`} sub="od szczytu" color={LOSS} />
-            <Kpi label="Wartość portfela" value={fmt(snapshot.totalValue)} sub="PLN" />
+            <Kpi label="Wartość portfela" value={fmt(snapshot.totalValue)} sub={ccy} />
           </div>
 
           <div style={{ ...card, padding: "22px 22px 18px" }}>
@@ -228,10 +233,10 @@ export function ReportsPage() {
       {report === "income" && (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
-            <Kpi label="Dywidendy" value={`+${fmt(cashflows.dividends)} PLN`} color={PROFIT} />
-            <Kpi label="Odsetki / kupony" value={`+${fmt(cashflows.interest)} PLN`} color={V2.bonds} />
-            <Kpi label="Prowizje" value={`-${fmt(cashflows.fees)} PLN`} color={LOSS} />
-            <Kpi label="Podatki" value={`-${fmt(cashflows.taxes)} PLN`} color={LOSS} />
+            <Kpi label="Dywidendy" value={`+${fmt(cashflows.dividends)} ${ccy}`} color={PROFIT} />
+            <Kpi label="Odsetki / kupony" value={`+${fmt(cashflows.interest)} ${ccy}`} color={V2.bonds} />
+            <Kpi label="Prowizje" value={`-${fmt(cashflows.fees)} ${ccy}`} color={LOSS} />
+            <Kpi label="Podatki" value={`-${fmt(cashflows.taxes)} ${ccy}`} color={LOSS} />
           </div>
           <div style={{ ...card, padding: "20px 22px" }}>
             <SectionHead>Dochód pasywny netto</SectionHead>
@@ -239,7 +244,7 @@ export function ReportsPage() {
               const net = cashflows.dividends + cashflows.interest - cashflows.fees - cashflows.taxes;
               return (
                 <div style={{ fontFamily: SERIF, fontSize: 30, fontWeight: 500, marginTop: 8, color: net >= 0 ? PROFIT : LOSS }}>
-                  {net >= 0 ? "+" : ""}{fmt(net)} PLN
+                  {net >= 0 ? "+" : ""}{fmt(net)} {ccy}
                 </div>
               );
             })()}
@@ -253,15 +258,15 @@ export function ReportsPage() {
       {report === "personalIncome" && (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
-            <Kpi label="Zarobki" value={`+${fmt(personalIncome.earningsPLN)} PLN`} sub={`${personalIncome.earningCount} rekordów`} color={PROFIT} />
-            <Kpi label="Obciążenia" value={`-${fmt(personalIncome.burdensPLN)} PLN`} sub={`${personalIncome.burdenCount} rekordów`} color={LOSS} />
-            <Kpi label="Netto" value={`${personalIncome.netPLN >= 0 ? "+" : ""}${fmt(personalIncome.netPLN)} PLN`} color={personalIncome.netPLN >= 0 ? PROFIT : LOSS} />
+            <Kpi label="Zarobki" value={`+${fmt(personalIncome.earningsPLN)} ${ccy}`} sub={`${personalIncome.earningCount} rekordów`} color={PROFIT} />
+            <Kpi label="Obciążenia" value={`-${fmt(personalIncome.burdensPLN)} ${ccy}`} sub={`${personalIncome.burdenCount} rekordów`} color={LOSS} />
+            <Kpi label="Netto" value={`${personalIncome.netPLN >= 0 ? "+" : ""}${fmt(personalIncome.netPLN)} ${ccy}`} color={personalIncome.netPLN >= 0 ? PROFIT : LOSS} />
             <Kpi label="Razem wpisów" value={fmt(personalIncome.earningCount + personalIncome.burdenCount)} sub="income z sync" />
           </div>
           <div style={{ ...card, padding: "20px 22px" }}>
             <SectionHead>Zarobki i obciążenia</SectionHead>
             <div style={{ fontFamily: SERIF, fontSize: 30, fontWeight: 500, marginTop: 8, color: personalIncome.netPLN >= 0 ? PROFIT : LOSS }}>
-              {personalIncome.netPLN >= 0 ? "+" : ""}{fmt(personalIncome.netPLN)} PLN
+              {personalIncome.netPLN >= 0 ? "+" : ""}{fmt(personalIncome.netPLN)} {ccy}
             </div>
             <div style={{ fontSize: 12.5, color: MUTED, marginTop: 6 }}>
               Suma rekordów zarobków i obciążeń zsynchronizowanych z macOS. Nie jest mieszana z gotówką portfela.

@@ -12,6 +12,7 @@ import { yahooSymbolForInstrument } from "@/market-data/symbols";
 import { isFakeSyncEnabled } from "@/lib/env";
 import { buildFakeManualValuationRecord } from "@/sync/dev/fake-sync";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
+import { useProfile } from "@/features/profile/profile-store";
 import {
   V2,
   V2Badge,
@@ -123,6 +124,7 @@ export function InstrumentsPage() {
   const userDataKey = useSyncStore((s) => s.userDataKey);
   const supabase = useSyncStore((s) => s.supabase);
   const setSync = useSyncStore((s) => s.setSync);
+  const { displayCurrency } = useProfile();
 
   const allInstruments = useMemo(
     () =>
@@ -132,9 +134,10 @@ export function InstrumentsPage() {
             fxRates: marketFxRates,
             useLatestTransactionFxRate: true,
             useMarketQuotes: true,
+            displayCurrency,
           })
         : [],
-    [marketFxRates, records],
+    [marketFxRates, records, displayCurrency],
   );
 
   const [search, setSearch] = useState("");
@@ -457,8 +460,8 @@ export function InstrumentsPage() {
 
       {records && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14 }}>
-          <V2Card pad={20}><V2Kpi label="Wartość rynkowa" value={`${fmt(totalValue)} zł`} sub={`${heldCount} aktywnych pozycji`} /></V2Card>
-          <V2Card pad={20}><V2Kpi label="Największa pozycja" value={best?.symbol ?? "—"} accent={V2.profit} sub={best ? `${fmt(best.marketValue)} PLN` : "Brak aktywów"} /></V2Card>
+          <V2Card pad={20}><V2Kpi label="Wartość rynkowa" value={`${fmt(totalValue)} ${displayCurrency}`} sub={`${heldCount} aktywnych pozycji`} /></V2Card>
+          <V2Card pad={20}><V2Kpi label="Największa pozycja" value={best?.symbol ?? "—"} accent={V2.profit} sub={best ? `${fmt(best.marketValue)} ${displayCurrency}` : "Brak aktywów"} /></V2Card>
           <V2Card pad={20}><V2Kpi label="Wyceny" value={`${pricedCount}/${allInstruments.length}`} accent={V2.bonds} sub="instrumenty z ceną" /></V2Card>
         </div>
       )}
@@ -622,7 +625,7 @@ export function InstrumentsPage() {
           <div style={{ marginLeft: "auto", fontFamily: V2_TYPE.mono, fontSize: 11.5, color: V2.subtle }}>
             {filtered.length} wyników
             {totalValue > 0 && (
-              <> · <strong style={{ color: V2.ink }}>{fmt(totalValue)} PLN</strong></>
+              <> · <strong style={{ color: V2.ink }}>{fmt(totalValue)} {displayCurrency}</strong></>
             )}
           </div>
         </div>
@@ -772,7 +775,7 @@ export function InstrumentsPage() {
                   {isHeld ? (
                     <div style={{ fontFamily: V2_TYPE.serif, fontSize: 16, fontWeight: 500, color: V2.ink, fontVariantNumeric: "tabular-nums" }}>
                       {fmt(inst.marketValue)}{" "}
-                      <span style={{ fontSize: 10, opacity: 0.5 }}>PLN</span>
+                      <span style={{ fontSize: 10, opacity: 0.5 }}>{displayCurrency}</span>
                     </div>
                   ) : (
                     <div style={{ fontSize: 13, color: V2.subtle }}>—</div>

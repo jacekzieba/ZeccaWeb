@@ -22,6 +22,7 @@ import {
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { buildParitySnapshot } from "@/sync/records/parity-snapshot";
 import { useSyncStore } from "@/sync/store/sync-store";
+import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
 import { AddTransactionModal } from "@/features/transactions/add-transaction-modal";
 import { TelemetryConsentBanner } from "@/features/telemetry/telemetry-consent-banner";
 import { CommandPalette } from "@/features/search/command-palette";
@@ -184,7 +185,8 @@ function isNavItemActive(item: NavItem, pathname: string) {
 // ── Sidebar content ──────────────────────────────────────────────
 function SidebarContent({ onNav }: { onNav?: () => void }) {
   const pathname = usePathname();
-  const snapshot = useSyncStore((s) => s.snapshot);
+  const snapshot = useDisplaySnapshot();
+  const { displayCurrency } = useProfile();
   const totalValue = snapshot?.totalValue ?? null;
   const changePct = snapshot?.monthlyChange ?? null;
   const changePLN =
@@ -340,12 +342,12 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
           </div>
           <div style={{ fontFamily: TYPOGRAPHY.serif, fontSize: 27, fontWeight: 500, marginTop: 5, position: "relative", fontVariantNumeric: "tabular-nums", letterSpacing: "-.01em" }}>
             {totalValue == null ? "—" : fmtNavNumber(totalValue)}
-            <span style={{ fontSize: 13, fontStyle: "italic", opacity: 0.6, marginLeft: 5 }}>PLN</span>
+            <span style={{ fontSize: 13, fontStyle: "italic", opacity: 0.6, marginLeft: 5 }}>{displayCurrency}</span>
           </div>
           <div style={{ fontSize: 11.5, color: "#7FD9A8", fontWeight: 600, marginTop: 4, fontVariantNumeric: "tabular-nums", position: "relative" }}>
             {changePLN == null || changePct == null
               ? "Ładowanie danych"
-              : `${changeSign}${fmtNavNumber(changePLN)} PLN (${changePct >= 0 ? "+" : ""}${fmtNavNumber(changePct, 2)}%)`}
+              : `${changeSign}${fmtNavNumber(changePLN)} ${displayCurrency} (${changePct >= 0 ? "+" : ""}${fmtNavNumber(changePct, 2)}%)`}
           </div>
           <div style={{ fontSize: 10.5, color: "rgba(244,242,230,0.50)", marginTop: 1, position: "relative" }}>vs 30 dni temu</div>
         </div>

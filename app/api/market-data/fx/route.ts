@@ -5,17 +5,56 @@ import {
 } from "@/market-data/cache";
 import {
   fetchNbpFxRate,
+  fetchNbpFxRateSeries,
   fetchNbpMonthlyAverageFxRate,
 } from "@/market-data/providers/nbp";
 import type { FxRate } from "@/market-data/types";
+import { rateLimitResponse } from "@/market-data/rate-limit";
 
 const FX_CACHE_TTL_MS = 60 * 60 * 1000;
 
 export async function GET(request: NextRequest) {
+  const limited = rateLimitResponse(request);
+  if (limited) return limited;
+
   const code = request.nextUrl.searchParams.get("code") ?? "";
   const date = request.nextUrl.searchParams.get("date");
+  const start = request.nextUrl.searchParams.get("start");
+  const end = request.nextUrl.searchParams.get("end");
   const yearText = request.nextUrl.searchParams.get("year");
   const monthText = request.nextUrl.searchParams.get("month");
+
+  // Range mode: a daily series used to convert a multi-year chart into a
+  // non-PLN display currency at the rate that applied on each day.
+  if (start || end) {
+    if (
+      !start ||
+      !end ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(start) ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(end)
+    ) {
+      return NextResponse.json(
+        { error: "start and end must both be YYYY-MM-DD." },
+        { status: 400 },
+      );
+    }
+
+    const seriesKey = `fx:nbp:${code.trim().toUpperCase()}:series:${start}:${end}`;
+    const cachedSeries = getCachedMarketData<FxRate[]>(seriesKey);
+    if (cachedSeries) {
+      return NextResponse.json({ data: cachedSeries.value, cache: { hit: true } });
+    }
+    try {
+      const series = await fetchNbpFxRateSeries(code, start, end);
+      const entry = setCachedMarketData(seriesKey, series, FX_CACHE_TTL_MS);
+      return NextResponse.json({ data: entry.value, cache: { hit: false } });
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Market data error." },
+        { status: 502 },
+      );
+    }
+  }
 
   if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return NextResponse.json({ error: "Invalid date format." }, { status: 400 });

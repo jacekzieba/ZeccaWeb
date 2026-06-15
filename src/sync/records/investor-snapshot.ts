@@ -34,7 +34,46 @@ import {
   type PositionValuationDataset,
   type FxRateInput,
 } from "@/domain/valuation/position-valuator";
+import { resolveFxRate } from "@/domain/valuation/price-resolver";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
+
+/** Resolves how many units of the native (PLN) base currency one unit of the
+ * chosen display currency is worth on a given date. Returns 1 for PLN so the
+ * default view is byte-identical to the native computation (preserving macOS
+ * parity); for EUR/USD it divides PLN amounts down into the display currency
+ * using the per-day NBP history loaded into `fxRates`. */
+type BaseToPln = (date: Date) => number;
+
+function makeBaseToPln(
+  displayCurrency: string,
+  dataset: ParsedDataset,
+): BaseToPln {
+  if (displayCurrency === "PLN") {
+    return () => 1;
+  }
+  return (date) => {
+    const resolved = resolveFxRate(
+      displayCurrency,
+      dataset.transactions.map((transaction) => ({
+        transactionType: transaction.transactionType,
+        currency: transaction.currency,
+        grossAmount: transaction.grossAmount,
+        fxRateToBase: transaction.fxRateToBase,
+        targetCurrency: transaction.targetCurrency,
+        targetGrossAmount: transaction.targetGrossAmount,
+        date: toDate(transaction.date),
+      })),
+      date,
+      dataset.fxRates,
+      { latestTransactionRate: dataset.useLatestTransactionFxRate },
+    );
+    // Missing/zero rate → fall back to 1 (no conversion) rather than divide by
+    // zero; the UI keeps the display currency on PLN until rates have loaded.
+    return resolved.source !== "missing" && resolved.rate > EPSILON
+      ? resolved.rate
+      : 1;
+  };
+}
 
 const APPLE_REFERENCE_DATE_UNIX_MS = Date.UTC(2001, 0, 1);
 const EPSILON = 0.000001;
@@ -216,6 +255,11 @@ export type SnapshotBuildOptions = {
   historyGranularity?: "monthly" | "daily";
   useMarketQuotes?: boolean;
   useLatestTransactionFxRate?: boolean;
+  /** Presentation currency for all monetary fields. Defaults to the native base
+   * (PLN). When set to EUR/USD the snapshot is converted using per-day NBP rates
+   * from `fxRates`; percentages, allocation and the performance index stay
+   * currency-consistent because flows and values convert together. */
+  displayCurrency?: string;
 };
 
 type PortfolioValuation = {
@@ -231,31 +275,44 @@ export function buildInvestorDataSnapshot(
 ): InvestorDataSnapshot {
   const dataset = parseDataset(records, options);
   const baseCurrency = getBaseCurrency(dataset);
+  const displayCurrency = (options.displayCurrency ?? baseCurrency).toUpperCase();
   const asOf = getAsOf(records, dataset, options);
+  const baseToPln = makeBaseToPln(displayCurrency, dataset);
   const accounts = getAccounts(dataset, baseCurrency);
   const portfolios = accounts.map((account) =>
-    buildPortfolioSummary(account, dataset, asOf),
+    buildPortfolioSummary(account, dataset, asOf, baseToPln),
   );
   const totalValue = portfolios.reduce(
     (sum, portfolio) => sum + portfolio.value,
     0,
   );
-  const cash = accounts.reduce((sum, account) => {
-    const transactions = transactionsForPortfolio(dataset.transactions, account.id);
-    const ledger = computeLedger(transactions, asOf);
-    return sum + valueCash(ledger, dataset, asOf);
-  }, 0);
-  const valuationSeries = buildValuationSeries(accounts, dataset, asOf, options);
+  const asOfRate = baseToPln(asOf);
+  const cash =
+    accounts.reduce((sum, account) => {
+      const transactions = transactionsForPortfolio(dataset.transactions, account.id);
+      const ledger = computeLedger(transactions, asOf);
+      return sum + valueCash(ledger, dataset, asOf);
+    }, 0) / asOfRate;
+  const valuationSeries = convertSeriesCurrency(
+    buildValuationSeries(accounts, dataset, asOf, options),
+    baseToPln,
+  );
   const monthlyChange = calculateMonthlyChange(valuationSeries);
-  const income = buildIncomeSummary(dataset.income);
-  const cashflows = buildCashflowSummary(accounts, dataset, asOf);
-  const performanceSeries = buildPerformanceSeries(accounts, dataset, valuationSeries);
+  const income = buildIncomeSummary(dataset.income, asOfRate);
+  const cashflows = buildCashflowSummary(accounts, dataset, asOf, baseToPln);
+  const performanceSeries = buildPerformanceSeries(
+    accounts,
+    dataset,
+    valuationSeries,
+    baseToPln,
+  );
   const metrics = buildMetrics(
     accounts,
     dataset,
     asOf,
     totalValue,
     performanceSeries,
+    baseToPln,
   );
 
   return {
@@ -268,10 +325,26 @@ export function buildInvestorDataSnapshot(
     portfolios,
     valuationSeries,
     performanceSeries,
-    allocation: buildAllocation(accounts, dataset, asOf, totalValue),
+    // Allocation is a set of ratios, so it stays currency-invariant and is
+    // computed from the native PLN valuation.
+    allocation: buildAllocation(accounts, dataset, asOf),
     metrics,
     settings: getTelemetrySettings(dataset),
   };
+}
+
+/** Divides each valuation point by the display-currency rate on that point's
+ * own date, so a multi-year chart reflects how FX moved over time. The rate is
+ * read at end-of-day to match the instant `buildValuationSeries` values each
+ * point (it labels points with the day start but values them at the day end). */
+function convertSeriesCurrency(
+  series: InvestorDataSnapshot["valuationSeries"],
+  baseToPln: BaseToPln,
+): InvestorDataSnapshot["valuationSeries"] {
+  return series.map((point) => ({
+    ...point,
+    value: point.value / baseToPln(endOfLocalDay(new Date(point.date))),
+  }));
 }
 
 /** Latest settings record by `updatedAt`. Used for both base currency and the
@@ -307,18 +380,22 @@ function buildPerformanceSeries(
   accounts: AccountPayload[],
   dataset: ParsedDataset,
   valuationSeries: InvestorDataSnapshot["valuationSeries"],
+  baseToPln: BaseToPln,
 ): InvestorDataSnapshot["valuationSeries"] {
   if (valuationSeries.length === 0) return [];
 
   const accountIds = new Set(accounts.map((account) => account.id));
   // Net capital flowing INTO the portfolio per calendar day (deposit +, withdrawal −).
+  // Flows convert at their own date to match the already-converted valuation
+  // series, so the time-weighted index reflects the display currency.
   const flowByDay = new Map<string, number>();
   for (const transaction of dataset.transactions) {
     if (!accountIds.has(transaction.portfolioID)) continue;
     const external = externalCashflowBaseAmount(transaction);
     if (external == null) continue;
+    const converted = external / baseToPln(toDate(transaction.date));
     const key = startOfLocalDay(toDate(transaction.date)).toISOString();
-    flowByDay.set(key, (flowByDay.get(key) ?? 0) - external); // −external = into portfolio
+    flowByDay.set(key, (flowByDay.get(key) ?? 0) - converted); // −converted = into portfolio
   }
 
   const dayKey = (iso: string) => startOfLocalDay(new Date(iso)).toISOString();
@@ -344,6 +421,7 @@ function buildCashflowSummary(
   accounts: AccountPayload[],
   dataset: ParsedDataset,
   asOf: Date,
+  baseToPln: BaseToPln,
 ): InvestorDataSnapshot["cashflows"] {
   const accountIds = new Set(accounts.map((account) => account.id));
   let dividends = 0;
@@ -355,10 +433,12 @@ function buildCashflowSummary(
     if (!accountIds.has(transaction.portfolioID)) continue;
     if (toDate(transaction.date).getTime() > asOf.getTime()) continue;
 
+    // Convert PLN booked amounts into the display currency at the rate on the
+    // transaction's own date, so a lifetime dividend total reflects FX history.
     const fxRate =
-      transaction.currency === "PLN" || !transaction.fxRateToBase
+      (transaction.currency === "PLN" || !transaction.fxRateToBase
         ? 1
-        : transaction.fxRateToBase;
+        : transaction.fxRateToBase) / baseToPln(toDate(transaction.date));
     const gross = transaction.grossAmount * fxRate;
 
     fees += transaction.fees * fxRate;
@@ -418,6 +498,7 @@ function buildMetrics(
   asOf: Date,
   totalValue: number,
   performanceSeries: InvestorDataSnapshot["performanceSeries"],
+  baseToPln: BaseToPln,
 ): PortfolioMetrics {
   const accountIds = new Set(accounts.map((account) => account.id));
   const cashflows: CashflowPoint[] = [];
@@ -426,8 +507,12 @@ function buildMetrics(
   for (const transaction of dataset.transactions) {
     if (!accountIds.has(transaction.portfolioID)) continue;
     if (toDate(transaction.date).getTime() > asOf.getTime()) continue;
-    const amount = externalCashflowBaseAmount(transaction);
-    if (amount == null) continue;
+    const plnAmount = externalCashflowBaseAmount(transaction);
+    if (plnAmount == null) continue;
+    // Convert each flow at its own date so XIRR and net-invested are stated in
+    // the display currency consistently with the (already converted) terminal
+    // value below.
+    const amount = plnAmount / baseToPln(toDate(transaction.date));
     cashflows.push({ date: toDate(transaction.date), amount });
     netInvested -= amount; // contribution (negative cashflow) increases invested
   }
@@ -542,7 +627,10 @@ function parseDataset(
   return dataset;
 }
 
-function buildIncomeSummary(income: IncomePayload[]): IncomeSummary {
+function buildIncomeSummary(
+  income: IncomePayload[],
+  asOfRate: number,
+): IncomeSummary {
   let earningCount = 0;
   let burdenCount = 0;
   let earningsPLN = 0;
@@ -551,10 +639,10 @@ function buildIncomeSummary(income: IncomePayload[]): IncomeSummary {
   for (const item of income) {
     if (item.entryKind === "earning") {
       earningCount += 1;
-      earningsPLN += item.plnAmount ?? 0;
+      earningsPLN += (item.plnAmount ?? 0) / asOfRate;
     } else {
       burdenCount += 1;
-      burdensPLN += item.amountPLN ?? 0;
+      burdensPLN += (item.amountPLN ?? 0) / asOfRate;
     }
   }
 
@@ -624,6 +712,7 @@ function buildPortfolioSummary(
   account: AccountPayload,
   dataset: ParsedDataset,
   asOf: Date,
+  baseToPln: BaseToPln,
 ): PortfolioSummary {
   const transactions = transactionsForPortfolio(dataset.transactions, account.id);
   const valuation = valuePortfolio(computeLedger(transactions, asOf), dataset, asOf);
@@ -636,28 +725,31 @@ function buildPortfolioSummary(
   // Backdating any "future" prices to previousDay keeps the valuation source
   // consistent across both days.
   const datasetForPreviousDay = withPricesCappedAt(dataset, previousDay);
-  const previousValue = valuePortfolio(
-    computeLedger(transactions, previousDay),
-    datasetForPreviousDay,
-    previousDay,
-  ).totalValue;
-  const periodFlow = portfolioFlowIntoBaseAmount(transactions, previousDay, asOf);
+  const previousValue =
+    valuePortfolio(
+      computeLedger(transactions, previousDay),
+      datasetForPreviousDay,
+      previousDay,
+    ).totalValue / baseToPln(previousDay);
+  const value = valuation.totalValue / baseToPln(asOf);
+  const periodFlow =
+    portfolioFlowIntoBaseAmount(transactions, previousDay, asOf) / baseToPln(asOf);
   const dailyChange =
     previousValue > EPSILON
-      ? ((valuation.totalValue - periodFlow - previousValue) / previousValue) * 100
+      ? ((value - periodFlow - previousValue) / previousValue) * 100
       : 0;
 
   const sparkline = buildValuationSeries([account], dataset, asOf, {
     historyGranularity: "daily",
   })
     .slice(-30)
-    .map((point) => point.value);
+    .map((point) => point.value / baseToPln(endOfLocalDay(new Date(point.date))));
 
   return {
     id: account.id,
     name: account.name,
     baseCurrency: account.baseCurrency,
-    value: valuation.totalValue,
+    value,
     dailyChange,
     positions: valuation.positionCount,
     sparkline,
@@ -1079,12 +1171,7 @@ function buildAllocation(
   accounts: AccountPayload[],
   dataset: ParsedDataset,
   asOf: Date,
-  totalValue: number,
 ): AllocationSlice[] {
-  if (totalValue <= EPSILON) {
-    return [];
-  }
-
   const values = new Map<string, number>();
 
   for (const account of accounts) {
@@ -1099,12 +1186,19 @@ function buildAllocation(
     }
   }
 
+  // Allocation is a ratio, so normalise against its own total. This is
+  // currency-invariant: switching display currency does not change the shares.
+  const total = [...values.values()].reduce((sum, value) => sum + value, 0);
+  if (total <= EPSILON) {
+    return [];
+  }
+
   return [...values.entries()]
     .filter(([, value]) => value > EPSILON)
     .sort(([, left], [, right]) => right - left)
     .map(([label, value]) => ({
       label,
-      percent: (value / totalValue) * 100,
+      percent: (value / total) * 100,
     }));
 }
 
@@ -1286,6 +1380,9 @@ export function buildPortfolioDetail(
   if (!account) return null;
 
   const asOf = getAsOf(records, dataset, options);
+  const displayCurrency = (options.displayCurrency ?? "PLN").toUpperCase();
+  const baseToPln = makeBaseToPln(displayCurrency, dataset);
+  const asOfRate = baseToPln(asOf);
   const transactions = transactionsForPortfolio(dataset.transactions, portfolioId);
   const ledger = computeLedger(transactions, asOf);
   const assetsByID = new Map(dataset.assets.map((a) => [a.id, a]));
@@ -1308,7 +1405,7 @@ export function buildPortfolioDetail(
         asOf,
       },
     );
-    const marketValue = valuation.marketValue;
+    const marketValue = valuation.marketValue / asOfRate;
 
     if (marketValue <= EPSILON) continue;
 
@@ -1328,7 +1425,9 @@ export function buildPortfolioDetail(
     });
   }
 
-  const cashValue = valueCash(ledger, dataset, asOf);
+  // cashValue is in the display currency; per-currency cashBalances below stay
+  // in their own currency (each carries its `currency`).
+  const cashValue = valueCash(ledger, dataset, asOf) / asOfRate;
   const totalValue = holdingsValue + cashValue;
 
   for (const h of holdings) {
@@ -1342,7 +1441,10 @@ export function buildPortfolioDetail(
     .map(([currency, amount]) => ({ currency, amount }))
     .sort((a, b) => b.amount - a.amount);
 
-  const valuationSeries = buildValuationSeries([account], dataset, asOf, options);
+  const valuationSeries = convertSeriesCurrency(
+    buildValuationSeries([account], dataset, asOf, options),
+    baseToPln,
+  );
 
   return {
     id: account.id,
@@ -1465,6 +1567,8 @@ export function buildInstrumentList(
   const dataset = parseDataset(records, options);
   const asOf = getAsOf(records, dataset, options);
   const valuationDataset = toPositionValuationDataset(dataset);
+  const displayCurrency = (options.displayCurrency ?? "PLN").toUpperCase();
+  const asOfRate = makeBaseToPln(displayCurrency, dataset)(asOf);
 
   // Aggregate quantity held per instrument across all portfolios
   const quantityByInstrument = new Map<string, number>();
@@ -1524,7 +1628,9 @@ export function buildInstrumentList(
       valuationSource: valuation.source,
       valuationSourceLabel: valuation.sourceLabel,
       totalQuantity,
-      marketValue: valuation.marketValue,
+      // marketValue is in the display currency; lastPrice stays in the
+      // instrument's own currency (shown alongside its `currency`).
+      marketValue: valuation.marketValue / asOfRate,
       portfolios: [...(portfoliosByInstrument.get(asset.id) ?? [])],
     });
   }

@@ -159,19 +159,37 @@ Issues: prior invalid WEBSTG quote returned 404, expected for non-listed test sy
 ## RLS smoke test
 
 ```text
-Second account cannot read first account key backup:
-Second account cannot read first account encrypted records:
-Second account can read only its own records:
+Second account cannot read first account key backup: PASS, authenticated user B (uid 0000…00bb) read 0 of user A's encrypted_key_backups
+Second account cannot read first account encrypted records: PASS, authenticated user B read 0 of user A's encrypted_records and 0 rows globally
+Second account can read only its own records: PASS, authenticated user A (uid 194151b2…) read 513 own records, 0 belonging to other users, 1 own key backup
 Anonymous role cannot read sync tables: PASS, encrypted_records and encrypted_key_backups returned 401 permission denied
 
-Issues: two-authenticated-user isolation not executed; set SUPABASE_RLS_USER_A_EMAIL/PASSWORD and SUPABASE_RLS_USER_B_EMAIL/PASSWORD for automated smoke
+Method (2026-06-15): two-authenticated-user isolation verified directly against live RLS policies on project Investor (nfevwalgjfdsqdepfzin) by impersonating two authenticated JWTs in a transaction (set_config('request.jwt.claims', …) + set local role authenticated) and counting visible rows. This exercises the exact policies the script would (SELECT/INSERT/UPDATE/DELETE all gated on auth.uid() = user_id, role authenticated). Chosen over the credential-based script to avoid creating accounts / handling test passwords on the production project.
+Policy audit: encrypted_records and encrypted_key_backups each have 4 policies (one per command); read/update/delete use qual auth.uid() = user_id, insert/update use the matching with_check. RLS enabled on both (and on profiles, user_devices).
+
+Issues: none for isolation. The credential-based npm run check:rls-smoke still requires real SUPABASE_RLS_USER_A/B_* accounts if a script-driven run is also wanted.
 ```
 
 ## Decision
 
 ```text
-Result: PARTIAL PASS
-Blocking issues: final browser parity smoke after re-unlock is still pending; RLS second-authenticated-user smoke still pending
+Result: PARTIAL PASS (audit blockers addressed in branch fix/staging-audit-blockers; one deploy + one native step remain for the user)
+
+Audit remediation (2026-06-15, branch fix/staging-audit-blockers):
+- delete-account CORS/OPTIONS: FIXED in code. Function now answers OPTIONS (204) and returns CORS headers on every response. REQUIRES a production deploy with verify_jwt=false (the function verifies the JWT itself; the platform gate would otherwise 401 the unauthenticated preflight). The MCP deploy was blocked by the safety classifier as a production/security-sensitive change, so the user must deploy it (supabase functions deploy delete-account --no-verify-jwt, or set Verify JWT off in the dashboard).
+- NBP weekend FX: FIXED. fetchNbpFxRate now queries a 14-day range ending on the requested date and uses the last published rate; unit tests added.
+- Preflight rebrand: FIXED. check-staging-env.mjs expects service ZeccaWeb.
+- RLS two-authenticated-user isolation: PASS (see RLS smoke test section).
+- Market-data endpoints: per-IP rate limiting added (429 + Retry-After); endpoints stay public by design.
+- Settings persistence + base-currency display (PLN/EUR/USD) implemented with per-day NBP conversion; PLN output is byte-identical to before, preserving native parity. Verified live: switching to USD reprices totals and recomputes returns (e.g. XIRR PLN +9.80% vs USD +13.86%).
+- 9 settings switches now expose aria-label; CoinGecko key control removed (unused); EN language marked “wkrótce”.
+- npm audit: PostCSS moderate advisories resolved via overrides; production audit is clean (dev-only esbuild/vite/vitest advisories remain, out of scope).
+
+Remaining for the user:
+- Deploy the delete-account function (verify_jwt=false) and re-run the browser delete smoke.
+- Final web↔native parity smoke after re-unlock (needs the native macOS app).
+- Optional: mirror base-currency conversion in the native app before exposing non-PLN parity comparisons (web intentionally diverges while display currency ≠ PLN).
+
 Non-blocking issues: Stooq fallback not configured
-Follow-up owner: Codex can continue conflict/tombstone checks; user only needed for native app actions/passphrase entry
+Follow-up owner: Codex can continue conflict/tombstone checks; user needed for the edge-function deploy, native app actions, and passphrase entry
 ```

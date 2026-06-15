@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { use, useMemo, useState, type CSSProperties } from "react";
 import { useSyncStore } from "@/sync/store/sync-store";
+import { useProfile } from "@/features/profile/profile-store";
 import { buildPortfolioDetail } from "@/sync/records/investor-snapshot";
 import { AreaChart } from "@/components/charts/area-chart";
 import type { ValuationPoint } from "@/domain/models/investor-data";
@@ -70,6 +71,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
   const { id } = use(params);
   const records = useSyncStore((s) => s.records);
   const marketFxRates = useSyncStore((s) => s.marketFxRates);
+  const { displayCurrency } = useProfile();
 
   const detail = useMemo(
     () =>
@@ -79,9 +81,10 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
             fxRates: marketFxRates,
             useLatestTransactionFxRate: true,
             useMarketQuotes: true,
+            displayCurrency,
           })
         : null,
-    [records, id, marketFxRates],
+    [records, id, marketFxRates, displayCurrency],
   );
   const [period, setPeriod] = useState<Period>("1Y");
   const chartSeries = useMemo(
@@ -126,7 +129,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
           </div>
           <div style={{ fontSize: 24, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
             {fmt(detail.totalValue)}{" "}
-            <span style={{ fontSize: 13, fontWeight: 500, opacity: 0.6 }}>{detail.baseCurrency}</span>
+            <span style={{ fontSize: 13, fontWeight: 500, opacity: 0.6 }}>{displayCurrency}</span>
           </div>
         </div>
         <div style={{ ...glassCard, padding: "18px 20px" }}>
@@ -141,7 +144,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
           </div>
           <div style={{ fontSize: 24, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
             {fmt(detail.cashValue)}{" "}
-            <span style={{ fontSize: 13, fontWeight: 500, opacity: 0.6 }}>{detail.baseCurrency}</span>
+            <span style={{ fontSize: 13, fontWeight: 500, opacity: 0.6 }}>{displayCurrency}</span>
           </div>
         </div>
       </div>
@@ -292,7 +295,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
                   {fmt(h.marketValue)}{" "}
-                  <span style={{ fontSize: 10, opacity: 0.5 }}>PLN</span>
+                  <span style={{ fontSize: 10, opacity: 0.5 }}>{displayCurrency}</span>
                 </div>
               </div>
 
