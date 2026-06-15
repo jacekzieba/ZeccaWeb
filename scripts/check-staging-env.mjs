@@ -106,7 +106,7 @@ if (preflightUrl) {
 
   if (baseUrl) {
     await checkJsonEndpoint(baseUrl, "/api/health", (body, url) => {
-      if (body?.ok !== true || body?.service !== "InvestorWeb") {
+      if (body?.ok !== true || body?.service !== "ZeccaWeb") {
         fail(`${url.toString()} returned an unexpected health payload.`);
       }
     });

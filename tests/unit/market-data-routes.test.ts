@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearMarketDataCache } from "@/market-data/cache";
+import { clearRateLimitState } from "@/market-data/rate-limit";
 import {
   fetchNbpFxRate,
   fetchNbpMonthlyAverageFxRate,
@@ -36,7 +37,64 @@ function request(url: string) {
 afterEach(() => {
   vi.restoreAllMocks();
   clearMarketDataCache();
+  clearRateLimitState();
   delete process.env.STOOQ_API_KEY;
+});
+
+describe("market-data rate limiting", () => {
+  it("returns 429 with Retry-After once a single IP exceeds the window", async () => {
+    mockedFetchNbpFxRate.mockResolvedValue({
+      provider: "nbp",
+      base: "USD",
+      quote: "PLN",
+      rate: 3.74,
+      effectiveDate: "2026-06-12",
+      table: "A",
+    });
+
+    const headers = { "x-forwarded-for": "203.0.113.7" };
+    let lastStatus = 200;
+    // The limiter allows 60/min; 61 calls from the same IP must trip it.
+    for (let i = 0; i < 61; i += 1) {
+      const response = await getFxRate(
+        new NextRequest("http://localhost/api/market-data/fx?code=USD", { headers }),
+      );
+      lastStatus = response.status;
+      if (response.status === 429) {
+        expect(response.headers.get("Retry-After")).toBeTruthy();
+        break;
+      }
+    }
+
+    expect(lastStatus).toBe(429);
+  });
+
+  it("tracks limits per IP, so a different IP is unaffected", async () => {
+    mockedFetchNbpFxRate.mockResolvedValue({
+      provider: "nbp",
+      base: "USD",
+      quote: "PLN",
+      rate: 3.74,
+      effectiveDate: "2026-06-12",
+      table: "A",
+    });
+
+    for (let i = 0; i < 61; i += 1) {
+      await getFxRate(
+        new NextRequest("http://localhost/api/market-data/fx?code=USD", {
+          headers: { "x-forwarded-for": "203.0.113.7" },
+        }),
+      );
+    }
+
+    const otherIp = await getFxRate(
+      new NextRequest("http://localhost/api/market-data/fx?code=USD", {
+        headers: { "x-forwarded-for": "198.51.100.2" },
+      }),
+    );
+
+    expect(otherIp.status).toBe(200);
+  });
 });
 
 describe("GET /api/market-data/quote", () => {
@@ -243,7 +301,7 @@ describe("GET /api/market-data/fx", () => {
 describe("GET /api/market-data/status", () => {
   it("reports whether Yahoo and Stooq are configured", async () => {
     process.env.STOOQ_API_KEY = "test-key";
-    const response = await getMarketDataStatus();
+    const response = await getMarketDataStatus(request("http://localhost/api/market-data/status"));
 
     await expect(response.json()).resolves.toEqual({
       providers: {

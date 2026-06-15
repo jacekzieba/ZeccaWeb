@@ -291,6 +291,96 @@ describe("InvestorDataSnapshot mapper", () => {
     });
   });
 
+  it("states value and return in the chosen display currency (USD vs PLN)", () => {
+    // Bought 10 USD shares at $5 when USD/PLN was 4 (cost 200 PLN). Now the
+    // share is $5.50 and USD/PLN is 5: value is $55 / 275 PLN. The PLN view
+    // earns +37.5% (price + FX), the USD view earns +10% (price only).
+    const records = [
+      record("account", accountID, {
+        recordType: "account",
+        id: accountID,
+        name: "FX Account",
+        accountType: "custom",
+        baseCurrency: "PLN",
+        targetAllocation: {},
+      }),
+      record("asset", usdInstrumentID, {
+        recordType: "asset",
+        id: usdInstrumentID,
+        kind: "etf",
+        symbol: "VOO",
+        name: "Vanguard S&P 500",
+        currency: "USD",
+      }),
+      record("transaction", "aaaaaaaa-0000-4000-8000-000000000001", {
+        recordType: "transaction",
+        id: "aaaaaaaa-0000-4000-8000-000000000001",
+        date: "2026-01-01T00:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID: null,
+        transactionType: "cashDeposit",
+        quantity: null,
+        price: null,
+        // A buy settles in PLN (200 = 50 USD × 4), so fund it with 200 PLN to
+        // leave zero residual cash.
+        grossAmount: 200,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+      record("transaction", "aaaaaaaa-0000-4000-8000-000000000002", {
+        recordType: "transaction",
+        id: "aaaaaaaa-0000-4000-8000-000000000002",
+        date: "2026-01-01T00:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID: usdInstrumentID,
+        transactionType: "buy",
+        quantity: 10,
+        price: 5,
+        grossAmount: 50,
+        currency: "USD",
+        fees: 0,
+        taxes: 0,
+        fxRateToBase: 4,
+      }),
+      record("marketQuote", "aaaaaaaa-0000-4000-8000-000000000003", {
+        recordType: "marketQuote",
+        id: "aaaaaaaa-0000-4000-8000-000000000003",
+        instrumentID: usdInstrumentID,
+        date: "2026-06-01T00:00:00.000Z",
+        price: 5.5,
+        currency: "USD",
+        source: "native-cache",
+      }),
+    ];
+
+    const fxRates = [
+      { currency: "USD", rate: 4, date: new Date("2026-01-01T00:00:00.000Z") },
+      { currency: "USD", rate: 5, date: new Date("2026-06-01T00:00:00.000Z") },
+    ];
+    const options = {
+      asOf: new Date("2026-06-01T00:00:00.000Z"),
+      historyGranularity: "daily" as const,
+      useMarketQuotes: true,
+      fxRates,
+    };
+
+    const pln = buildInvestorDataSnapshot(records, options);
+    const usd = buildInvestorDataSnapshot(records, {
+      ...options,
+      displayCurrency: "USD",
+    });
+
+    expect(pln.totalValue).toBeCloseTo(275, 5);
+    expect(usd.totalValue).toBeCloseTo(55, 5);
+    // The display currency only rescales by the as-of rate for point values.
+    expect(pln.totalValue / usd.totalValue).toBeCloseTo(5, 5);
+
+    // Returns diverge: PLN captures the FX gain, USD does not.
+    expect(pln.metrics.totalReturnPct).toBeCloseTo(37.5, 1);
+    expect(usd.metrics.totalReturnPct).toBeCloseTo(10, 1);
+  });
+
   it("can opt into synced market quotes for current instrument valuation", () => {
     const records = [
       record("account", accountID, {

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState, type CSSProperties } from "react";
 import { buildInstrumentList, buildTransactionList } from "@/sync/records/investor-snapshot";
 import { useSyncStore } from "@/sync/store/sync-store";
+import { useProfile } from "@/features/profile/profile-store";
 import type { InstrumentRow, TransactionRow } from "@/domain/models/investor-data";
 import { V2, V2Card, V2ScreenHead, V2_TYPE, v2Mix } from "@/lib/v2-design";
 
@@ -158,6 +159,7 @@ const tdStyle: CSSProperties = { fontFamily: UI, fontSize: 12.5, color: V2.ink, 
 export function PositionsPage() {
   const records = useSyncStore((s) => s.records);
   const marketFxRates = useSyncStore((s) => s.marketFxRates);
+  const { displayCurrency } = useProfile();
 
   const instruments = useMemo(
     () =>
@@ -167,9 +169,10 @@ export function PositionsPage() {
             fxRates: marketFxRates,
             useLatestTransactionFxRate: true,
             useMarketQuotes: true,
+            displayCurrency,
           })
         : [],
-    [records, marketFxRates],
+    [records, marketFxRates, displayCurrency],
   );
 
   const allTransactions = useMemo(
@@ -287,7 +290,7 @@ export function PositionsPage() {
             </div>
             <div>
               <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: V2.subtle }}>Wartość (przefiltrowana)</div>
-              <div style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 500, color: V2.ink }}>{fmt(totalValue)} <span style={{ fontSize: 12, color: V2.subtle, fontStyle: "italic" }}>PLN</span></div>
+              <div style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 500, color: V2.ink }}>{fmt(totalValue)} <span style={{ fontSize: 12, color: V2.subtle, fontStyle: "italic" }}>{displayCurrency}</span></div>
             </div>
           </div>
 
@@ -313,7 +316,7 @@ export function PositionsPage() {
                       Cena <SortIcon k="lastPrice" />
                     </th>
                     <th onClick={() => toggleSort("marketValue")} style={thStyle("marketValue")}>
-                      Wartość (PLN) <SortIcon k="marketValue" />
+                      Wartość ({displayCurrency}) <SortIcon k="marketValue" />
                     </th>
                     <th style={{ ...thStyle("marketValue"), cursor: "default" }}>Udział</th>
                     <th style={{ ...thStyle("marketValue"), cursor: "default" }}>Wycena</th>

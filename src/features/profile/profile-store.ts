@@ -22,11 +22,20 @@ export type NotificationPrefs = {
   pit: boolean;
 };
 
+/** Currency the UI presents all amounts in. Data is stored natively in PLN and
+ * converted for display using NBP rates. */
+export type DisplayCurrency = "PLN" | "EUR" | "USD";
+
 export type Profile = {
   name: string;
   avatar: string | null;
   targetAllocation: AssetClassTarget[];
   notifications: NotificationPrefs;
+  displayCurrency: DisplayCurrency;
+  /** Polish tax residency (Belka tax preference). Stored as a presentation
+   * preference; detailed tax computation is not yet wired. */
+  taxResidencePL: boolean;
+  autoTax: boolean;
 };
 
 const STORAGE_KEY = "investor-web-profile";
@@ -41,6 +50,9 @@ const DEFAULT_PROFILE: Profile = {
     { label: "Gotówka", percent: 5 },
   ],
   notifications: { price: true, income: true, weekly: false, pit: false },
+  displayCurrency: "PLN",
+  taxResidencePL: true,
+  autoTax: true,
 };
 
 let current: Profile = DEFAULT_PROFILE;

@@ -5,6 +5,8 @@ import { useMemo, useState, type CSSProperties } from "react";
 import { PortfolioEditorModal } from "@/features/portfolios/portfolio-editor-modal";
 import { deleteRecord, refreshSyncStore } from "@/sync/records/record-writer";
 import { useSyncStore } from "@/sync/store/sync-store";
+import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
+import { useProfile } from "@/features/profile/profile-store";
 
 const INK = "#1C3144";
 const MUTED = "rgba(28,49,68,0.58)";
@@ -37,7 +39,8 @@ const PORTFOLIO_COLORS = [
 
 export function PortfolioListPage() {
   const records = useSyncStore((s) => s.records);
-  const snapshot = useSyncStore((s) => s.snapshot);
+  const snapshot = useDisplaySnapshot();
+  const { displayCurrency } = useProfile();
   const userDataKey = useSyncStore((s) => s.userDataKey);
   const supabase = useSyncStore((s) => s.supabase);
   const setSync = useSyncStore((s) => s.setSync);
@@ -172,7 +175,7 @@ export function PortfolioListPage() {
             </div>
             <div style={{ fontSize: 24, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
               {fmt(snapshot.totalValue)}{" "}
-              <span style={{ fontSize: 13, fontWeight: 500, opacity: 0.6 }}>PLN</span>
+              <span style={{ fontSize: 13, fontWeight: 500, opacity: 0.6 }}>{displayCurrency}</span>
             </div>
           </div>
           <div style={{ ...glassCard, padding: "18px 20px" }}>
@@ -189,7 +192,7 @@ export function PortfolioListPage() {
             </div>
             <div style={{ fontSize: 24, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
               {fmt(snapshot.cash)}{" "}
-              <span style={{ fontSize: 13, fontWeight: 500, opacity: 0.6 }}>PLN</span>
+              <span style={{ fontSize: 13, fontWeight: 500, opacity: 0.6 }}>{displayCurrency}</span>
             </div>
           </div>
         </div>
@@ -304,7 +307,7 @@ export function PortfolioListPage() {
               {/* Value */}
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
-                  {fmt(pf.value)} <span style={{ fontSize: 11, opacity: 0.55 }}>PLN</span>
+                  {fmt(pf.value)} <span style={{ fontSize: 11, opacity: 0.55 }}>{displayCurrency}</span>
                 </div>
                 <div style={{ fontSize: 11, color: pf.dailyChange >= 0 ? PROFIT : LOSS, fontWeight: 600, marginTop: 1 }}>
                   {fmtPct(pf.dailyChange)} dziś

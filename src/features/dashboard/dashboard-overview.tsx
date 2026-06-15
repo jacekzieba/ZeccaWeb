@@ -254,6 +254,7 @@ function Eyebrow({ children, style }: { children: React.ReactNode; style?: CSSPr
 
 function Pnl({ value, pct, size = 13 }: { value: number; pct?: number | null; size?: number }) {
   const color = value >= 0 ? PALETTE.profit : PALETTE.loss;
+  const { displayCurrency } = useProfile();
 
   return (
     <span
@@ -265,7 +266,7 @@ function Pnl({ value, pct, size = 13 }: { value: number; pct?: number | null; si
         fontVariantNumeric: "tabular-nums",
       }}
     >
-      {fmtSigned(value)} PLN
+      {fmtSigned(value)} {displayCurrency}
       {pct != null && <span style={{ opacity: 0.72, marginLeft: 4 }}>({fmtPct(pct)})</span>}
     </span>
   );
@@ -323,6 +324,7 @@ function PeriodBar({ value, onChange }: { value: Period; onChange: (period: Peri
 
 function V2Area({ data, height = 240 }: { data: ValuationPoint[]; height?: number }) {
   const wrapRef = useRef<HTMLDivElement>(null);
+  const { displayCurrency } = useProfile();
   const [width, setWidth] = useState(820);
   const [hover, setHover] = useState<number | null>(null);
   const gradId = useId().replace(/:/g, "");
@@ -418,7 +420,7 @@ function V2Area({ data, height = 240 }: { data: ValuationPoint[]; height?: numbe
         >
           <div style={{ opacity: 0.6, fontSize: 10, fontFamily: MONO, letterSpacing: ".03em" }}>{data[hover].label}</div>
           <div style={{ fontWeight: 500, fontFamily: SERIF, fontSize: 17, marginTop: 1, fontVariantNumeric: "tabular-nums" }}>
-            {fmt(data[hover].value)} <span style={{ fontSize: 11, opacity: 0.65 }}>PLN</span>
+            {fmt(data[hover].value)} <span style={{ fontSize: 11, opacity: 0.65 }}>{displayCurrency}</span>
           </div>
         </div>
       )}
@@ -696,9 +698,10 @@ export function DashboardOverview() {
             historyGranularity: "daily",
             useLatestTransactionFxRate: true,
             useMarketQuotes: true,
+            displayCurrency: profile.displayCurrency,
           })
         : storeSnapshot,
-    [marketFxRates, records, storeSnapshot],
+    [marketFxRates, records, storeSnapshot, profile.displayCurrency],
   );
   const syncSummary = records ? summarizeDecryptedRecords(records) : null;
   // Re-render every 30s so the relative "last sync" label stays fresh.
@@ -723,9 +726,10 @@ export function DashboardOverview() {
             fxRates: marketFxRates,
             useLatestTransactionFxRate: true,
             useMarketQuotes: true,
+            displayCurrency: profile.displayCurrency,
           })
         : [],
-    [marketFxRates, records],
+    [marketFxRates, records, profile.displayCurrency],
   );
   const transactions = useMemo(
     () => (records ? buildTransactionList(records) : []),
@@ -826,7 +830,7 @@ export function DashboardOverview() {
             >
               {fmt(totalValue)}
               <span style={{ fontFamily: SERIF, fontSize: isMobile ? 22 : 26, fontStyle: "italic", color: PALETTE.subtle, fontWeight: 400, marginLeft: 8 }}>
-                PLN
+                {profile.displayCurrency}
               </span>
             </div>
             <div style={{ marginTop: 12, display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
@@ -868,12 +872,12 @@ export function DashboardOverview() {
               }}
             >
               <span style={{ color: PALETTE.muted }}>
-                Zainwestowano <b style={{ color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>{fmt(invested)} PLN</b>
+                Zainwestowano <b style={{ color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>{fmt(invested)} {profile.displayCurrency}</b>
               </span>
               <span style={{ color: PALETTE.muted }}>
                 Wynik{" "}
                 <b style={{ color: unrealized >= 0 ? PALETTE.profit : PALETTE.loss }}>
-                  {fmtSigned(unrealized)} PLN
+                  {fmtSigned(unrealized)} {profile.displayCurrency}
                 </b>
               </span>
               <span style={{ color: PALETTE.muted }}>
@@ -907,6 +911,7 @@ export function DashboardOverview() {
 }
 
 function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobile: boolean }) {
+  const { displayCurrency } = useProfile();
   return (
     <Card pad={0}>
       <div style={{ padding: "18px 22px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `0.5px solid ${PALETTE.line}` }}>
@@ -945,7 +950,7 @@ function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobil
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
                   <div style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 500, color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>
-                    {fmt(holding.valuePLN)} PLN
+                    {fmt(holding.valuePLN)} {displayCurrency}
                   </div>
                   {holding.pnl != null ? (
                     <Pnl value={holding.pnl} pct={holding.pnlPct} />
@@ -991,7 +996,7 @@ function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobil
               </div>
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontFamily: SERIF, fontSize: 16, fontWeight: 500, color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>{fmt(holding.valuePLN)}</div>
-                <div style={{ fontFamily: MONO, fontSize: 10.5, color: PALETTE.subtle }}>PLN</div>
+                <div style={{ fontFamily: MONO, fontSize: 10.5, color: PALETTE.subtle }}>{displayCurrency}</div>
               </div>
               <div style={{ textAlign: "right" }}>
                 {holding.pnl != null ? (
@@ -1126,12 +1131,13 @@ function PortfoliosCard({
   interest: number;
   fees: number;
 }) {
+  const { displayCurrency } = useProfile();
   const asOfLabel = fmtDate(asOf);
   const cashflowPeriod = `Narastająco do ${asOfLabel}`;
   const cashflowRows = [
-    ["Dywidendy", cashflowPeriod, `+${fmt(dividends)} zł`, PALETTE.profit],
-    ["Odsetki", cashflowPeriod, `+${fmt(interest)} zł`, PALETTE.bonds],
-    ["Prowizje", cashflowPeriod, `-${fmt(fees)} zł`, PALETTE.loss],
+    ["Dywidendy", cashflowPeriod, `+${fmt(dividends)} ${displayCurrency}`, PALETTE.profit],
+    ["Odsetki", cashflowPeriod, `+${fmt(interest)} ${displayCurrency}`, PALETTE.bonds],
+    ["Prowizje", cashflowPeriod, `-${fmt(fees)} ${displayCurrency}`, PALETTE.loss],
   ] as const;
 
   return (
@@ -1155,11 +1161,11 @@ function PortfoliosCard({
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />
                   <span style={{ fontFamily: UI, fontSize: 13.5, fontWeight: 700, color: PALETTE.ink }}>{portfolio.name}</span>
-                  <span style={{ fontFamily: MONO, fontSize: 10, color: PALETTE.subtle, textTransform: "uppercase", letterSpacing: ".06em" }}>{portfolio.baseCurrency}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 10, color: PALETTE.subtle, textTransform: "uppercase", letterSpacing: ".06em" }}>{displayCurrency}</span>
                 </div>
                 <div style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 500, color: PALETTE.ink, marginTop: 4, fontVariantNumeric: "tabular-nums" }}>
                   {fmt(portfolio.value)}
-                  <span style={{ fontSize: 12, fontStyle: "italic", color: PALETTE.subtle, marginLeft: 4 }}>PLN</span>
+                  <span style={{ fontSize: 12, fontStyle: "italic", color: PALETTE.subtle, marginLeft: 4 }}>{displayCurrency}</span>
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
