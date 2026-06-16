@@ -47,6 +47,8 @@ export async function middleware(request: NextRequest) {
     !pathname.startsWith("/register") &&
     !pathname.startsWith("/forgot-password") &&
     !pathname.startsWith("/reset-password") &&
+    !pathname.startsWith("/privacy-policy") &&
+    !pathname.startsWith("/faq") &&
     !pathname.startsWith("/auth/") &&
     !pathname.startsWith("/api/health") &&
     !pathname.startsWith("/api/market-data/") &&
