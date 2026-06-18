@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { MarketQuote } from "@/market-data/types";
+import type { InstrumentCandidate, MarketQuote } from "@/market-data/types";
 
 const chartSchema = z.object({
   chart: z.object({
@@ -77,6 +77,89 @@ export function parseYahooChart(json: unknown, symbol: string): MarketQuote {
     close,
     volume: latestNumber(quote?.volume),
   };
+}
+
+const searchSchema = z.object({
+  quotes: z
+    .array(
+      z.object({
+        symbol: z.string().nullable().optional(),
+        shortname: z.string().nullable().optional(),
+        longname: z.string().nullable().optional(),
+        exchDisp: z.string().nullable().optional(),
+        quoteType: z.string().nullable().optional(),
+        currency: z.string().nullable().optional(),
+      }),
+    )
+    .nullable()
+    .optional(),
+});
+
+export async function fetchYahooSearch(
+  query: string,
+  kind?: "stock" | "etf",
+): Promise<InstrumentCandidate[]> {
+  const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=10&newsCount=0`;
+  const response = await fetch(url, {
+    headers: {
+      accept: "application/json",
+      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X) ZeccaWeb/1.0",
+    },
+    next: { revalidate: 60 * 60 },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Yahoo Finance returned ${response.status} for search "${query}".`);
+  }
+
+  return parseYahooSearch(await response.json(), kind);
+}
+
+export function parseYahooSearch(
+  json: unknown,
+  kindFilter?: "stock" | "etf",
+): InstrumentCandidate[] {
+  const parsed = searchSchema.parse(json);
+  const candidates: InstrumentCandidate[] = [];
+
+  for (const quote of parsed.quotes ?? []) {
+    const symbol = quote.symbol?.trim();
+    if (!symbol) {
+      continue;
+    }
+
+    const kind = mapQuoteType(quote.quoteType);
+    if (!kind) {
+      // Skip indices, currencies, futures, etc. — this is a stock/ETF picker.
+      continue;
+    }
+    if (kindFilter && kind !== kindFilter) {
+      continue;
+    }
+
+    candidates.push({
+      provider: "yahoo",
+      symbol,
+      name: quote.longname ?? quote.shortname ?? symbol,
+      exchange: quote.exchDisp ?? null,
+      currency: quote.currency ?? null,
+      kind,
+    });
+  }
+
+  return candidates;
+}
+
+function mapQuoteType(quoteType: string | null | undefined): "stock" | "etf" | null {
+  switch (quoteType?.toUpperCase()) {
+    case "EQUITY":
+      return "stock";
+    case "ETF":
+    case "MUTUALFUND":
+      return "etf";
+    default:
+      return null;
+  }
 }
 
 function normalizeYahooSymbol(symbol: string) {

@@ -24,3 +24,12 @@ export type MarketQuote = {
   close: number;
   volume: number | null;
 };
+
+export type InstrumentCandidate = {
+  provider: "yahoo";
+  symbol: string;
+  name: string;
+  exchange: string | null;
+  currency: string | null;
+  kind: "stock" | "etf";
+};
