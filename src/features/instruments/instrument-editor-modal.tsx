@@ -2,6 +2,7 @@
 
 import { createPortal } from "react-dom";
 import {
+  useCallback,
   useEffect,
   useState,
   type CSSProperties,
@@ -11,6 +12,9 @@ import {
 import { useSyncStore } from "@/sync/store/sync-store";
 import { refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
 import { makeAssetPayload } from "@/sync/records/macos-payloads";
+import type { InstrumentCandidate } from "@/market-data/types";
+
+const SEARCH_DEBOUNCE_MS = 350;
 
 const INK = "#1C3144";
 const MUTED = "rgba(28,49,68,0.58)";
@@ -95,6 +99,7 @@ export function InstrumentEditorModal({
   const [category, setCategory] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [candidates, setCandidates] = useState<InstrumentCandidate[]>([]);
 
   useEffect(() => setMounted(true), []);
 
@@ -110,7 +115,62 @@ export function InstrumentEditorModal({
     setCategory(initialValue?.category ?? "");
     setSaving(false);
     setError(null);
+    setCandidates([]);
   }, [initialValue, open]);
+
+  const applyCandidate = useCallback((candidate: InstrumentCandidate) => {
+    setSymbol(candidate.symbol);
+    // Only fill the name when the user hasn't typed one — never clobber input.
+    setName((current) => (current.trim() ? current : candidate.name));
+    if (candidate.currency && CURRENCIES.includes(candidate.currency)) {
+      setCurrency(candidate.currency);
+    }
+    setCandidates([]);
+  }, []);
+
+  // Yahoo autocomplete: only stocks and ETFs are searchable here. Debounce the
+  // symbol input and abort any in-flight request/timer when it changes, when
+  // the modal closes, or on unmount. Errors/offline stay silent — this is a
+  // typeahead, not a validated field.
+  useEffect(() => {
+    if (!open || (kind !== "stock" && kind !== "etf")) {
+      setCandidates([]);
+      return;
+    }
+
+    const query = symbol.trim();
+    if (!query) {
+      setCandidates([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({ q: query, kind });
+        const response = await fetch(`/api/market-data/search?${params.toString()}`, {
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          return;
+        }
+        const body = (await response.json()) as { data?: InstrumentCandidate[] };
+        const results = body.data ?? [];
+        if (results.length === 1) {
+          applyCandidate(results[0]!);
+        } else {
+          setCandidates(results);
+        }
+      } catch {
+        // Silent: aborts, network failures and parse errors leave the field as-is.
+      }
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [symbol, kind, open, applyCandidate]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -275,6 +335,70 @@ export function InstrumentEditorModal({
               />
             </Field>
           </div>
+
+          {candidates.length > 1 && (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                borderRadius: 9,
+                border: `0.5px solid ${LINE_SOFT}`,
+                background: PAPER,
+                overflow: "hidden",
+              }}
+            >
+              {candidates.map((candidate, index) => (
+                <button
+                  key={`${candidate.symbol}-${index}`}
+                  type="button"
+                  onClick={() => applyCandidate(candidate)}
+                  style={{
+                    display: "flex",
+                    alignItems: "baseline",
+                    gap: 8,
+                    padding: "8px 12px",
+                    border: "none",
+                    borderTop: index === 0 ? "none" : `0.5px solid ${LINE_SOFT}`,
+                    background: "transparent",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: INK,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {candidate.symbol}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: MUTED,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      flex: 1,
+                    }}
+                  >
+                    {candidate.name}
+                  </span>
+                  {(candidate.exchange || candidate.currency) && (
+                    <span style={{ fontSize: 10.5, color: SUBTLE, flexShrink: 0 }}>
+                      {[candidate.exchange, candidate.currency]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 120px", gap: 12 }}>
             <Field label="Klasa aktywa">

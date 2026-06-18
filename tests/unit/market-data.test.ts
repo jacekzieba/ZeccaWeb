@@ -5,7 +5,7 @@ import {
   setCachedMarketData,
 } from "@/market-data/cache";
 import { parseStooqCsv } from "@/market-data/providers/stooq";
-import { parseYahooChart } from "@/market-data/providers/yahoo";
+import { parseYahooChart, parseYahooSearch } from "@/market-data/providers/yahoo";
 import { fetchNbpFxRate } from "@/market-data/providers/nbp";
 
 afterEach(() => {
@@ -79,6 +79,120 @@ describe("parseYahooChart", () => {
         "MISSING",
       ),
     ).toThrow("No data found");
+  });
+});
+
+describe("parseYahooSearch", () => {
+  it("maps quote types to instrument kinds and prefers the long name", () => {
+    expect(
+      parseYahooSearch({
+        quotes: [
+          {
+            symbol: "AAPL",
+            shortname: "Apple",
+            longname: "Apple Inc.",
+            exchDisp: "NASDAQ",
+            quoteType: "EQUITY",
+            currency: "USD",
+          },
+          {
+            symbol: "VWCE.DE",
+            shortname: "VANG FTSE AW",
+            longname: "Vanguard FTSE All-World UCITS ETF",
+            exchDisp: "XETRA",
+            quoteType: "ETF",
+            currency: "EUR",
+          },
+          {
+            symbol: "VTSAX",
+            shortname: "Vanguard Total Stock",
+            quoteType: "MUTUALFUND",
+            currency: "USD",
+          },
+        ],
+      }),
+    ).toEqual([
+      {
+        provider: "yahoo",
+        symbol: "AAPL",
+        name: "Apple Inc.",
+        exchange: "NASDAQ",
+        currency: "USD",
+        kind: "stock",
+      },
+      {
+        provider: "yahoo",
+        symbol: "VWCE.DE",
+        name: "Vanguard FTSE All-World UCITS ETF",
+        exchange: "XETRA",
+        currency: "EUR",
+        kind: "etf",
+      },
+      {
+        provider: "yahoo",
+        symbol: "VTSAX",
+        name: "Vanguard Total Stock",
+        exchange: null,
+        currency: "USD",
+        kind: "etf",
+      },
+    ]);
+  });
+
+  it("skips unsupported quote types and entries without a symbol", () => {
+    expect(
+      parseYahooSearch({
+        quotes: [
+          { symbol: "^GSPC", shortname: "S&P 500", quoteType: "INDEX" },
+          { symbol: "EURUSD=X", shortname: "EUR/USD", quoteType: "CURRENCY" },
+          { shortname: "No symbol", quoteType: "EQUITY" },
+          { symbol: "MSFT", shortname: "Microsoft", quoteType: "EQUITY" },
+        ],
+      }),
+    ).toEqual([
+      {
+        provider: "yahoo",
+        symbol: "MSFT",
+        name: "Microsoft",
+        exchange: null,
+        currency: null,
+        kind: "stock",
+      },
+    ]);
+  });
+
+  it("filters by kind when a filter is supplied", () => {
+    const json = {
+      quotes: [
+        { symbol: "AAPL", shortname: "Apple", quoteType: "EQUITY" },
+        { symbol: "VWCE.DE", shortname: "Vanguard", quoteType: "ETF" },
+      ],
+    };
+
+    expect(parseYahooSearch(json, "etf")).toEqual([
+      {
+        provider: "yahoo",
+        symbol: "VWCE.DE",
+        name: "Vanguard",
+        exchange: null,
+        currency: null,
+        kind: "etf",
+      },
+    ]);
+  });
+
+  it("falls back to the symbol when no name is provided and tolerates missing quotes", () => {
+    expect(parseYahooSearch({ quotes: [{ symbol: "TSLA", quoteType: "EQUITY" }] })).toEqual([
+      {
+        provider: "yahoo",
+        symbol: "TSLA",
+        name: "TSLA",
+        exchange: null,
+        currency: null,
+        kind: "stock",
+      },
+    ]);
+    expect(parseYahooSearch({})).toEqual([]);
   });
 });
 

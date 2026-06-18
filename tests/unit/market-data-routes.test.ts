@@ -7,9 +7,10 @@ import {
   fetchNbpMonthlyAverageFxRate,
 } from "@/market-data/providers/nbp";
 import { fetchStooqQuote } from "@/market-data/providers/stooq";
-import { fetchYahooQuote } from "@/market-data/providers/yahoo";
+import { fetchYahooQuote, fetchYahooSearch } from "@/market-data/providers/yahoo";
 import { GET as getFxRate } from "../../app/api/market-data/fx/route";
 import { GET as getQuote } from "../../app/api/market-data/quote/route";
+import { GET as getSearch } from "../../app/api/market-data/search/route";
 import { GET as getMarketDataStatus } from "../../app/api/market-data/status/route";
 
 vi.mock("@/market-data/providers/nbp", () => ({
@@ -19,6 +20,7 @@ vi.mock("@/market-data/providers/nbp", () => ({
 
 vi.mock("@/market-data/providers/yahoo", () => ({
   fetchYahooQuote: vi.fn(),
+  fetchYahooSearch: vi.fn(),
 }));
 
 vi.mock("@/market-data/providers/stooq", () => ({
@@ -28,6 +30,7 @@ vi.mock("@/market-data/providers/stooq", () => ({
 const mockedFetchNbpFxRate = vi.mocked(fetchNbpFxRate);
 const mockedFetchNbpMonthlyAverageFxRate = vi.mocked(fetchNbpMonthlyAverageFxRate);
 const mockedFetchYahooQuote = vi.mocked(fetchYahooQuote);
+const mockedFetchYahooSearch = vi.mocked(fetchYahooSearch);
 const mockedFetchStooqQuote = vi.mocked(fetchStooqQuote);
 
 function request(url: string) {
@@ -295,6 +298,81 @@ describe("GET /api/market-data/fx", () => {
     expect(mockedFetchNbpMonthlyAverageFxRate).toHaveBeenCalledTimes(1);
     expect(mockedFetchNbpMonthlyAverageFxRate).toHaveBeenCalledWith("eur", 2026, 5);
     expect(mockedFetchNbpFxRate).not.toHaveBeenCalled();
+  });
+});
+
+describe("GET /api/market-data/search", () => {
+  const candidate = {
+    provider: "yahoo" as const,
+    symbol: "AAPL",
+    name: "Apple Inc.",
+    exchange: "NASDAQ",
+    currency: "USD",
+    kind: "stock" as const,
+  };
+
+  it("returns candidates and serves the cached value on the next call", async () => {
+    mockedFetchYahooSearch.mockResolvedValue([candidate]);
+
+    const first = await getSearch(request("http://localhost/api/market-data/search?q=apple&kind=stock"));
+    const second = await getSearch(request("http://localhost/api/market-data/search?q=APPLE&kind=stock"));
+
+    await expect(first.json()).resolves.toMatchObject({
+      data: [{ symbol: "AAPL", currency: "USD", kind: "stock" }],
+      cache: { hit: false },
+    });
+    await expect(second.json()).resolves.toMatchObject({
+      data: [{ symbol: "AAPL" }],
+      cache: { hit: true },
+    });
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    // Cache key lowercases the query, so the second call must not refetch.
+    expect(mockedFetchYahooSearch).toHaveBeenCalledTimes(1);
+    expect(mockedFetchYahooSearch).toHaveBeenCalledWith("apple", "stock");
+  });
+
+  it("returns an empty result set for a blank query without calling the provider", async () => {
+    const response = await getSearch(request("http://localhost/api/market-data/search?q=%20%20"));
+
+    await expect(response.json()).resolves.toEqual({ data: [] });
+    expect(response.status).toBe(200);
+    expect(mockedFetchYahooSearch).not.toHaveBeenCalled();
+  });
+
+  it("ignores an invalid kind filter", async () => {
+    mockedFetchYahooSearch.mockResolvedValue([candidate]);
+
+    const response = await getSearch(request("http://localhost/api/market-data/search?q=apple&kind=bond"));
+
+    expect(response.status).toBe(200);
+    expect(mockedFetchYahooSearch).toHaveBeenCalledWith("apple", undefined);
+  });
+
+  it("swallows provider errors and returns 200 with an empty list", async () => {
+    mockedFetchYahooSearch.mockRejectedValue(new Error("Yahoo search failed."));
+
+    const response = await getSearch(request("http://localhost/api/market-data/search?q=apple&kind=etf"));
+
+    await expect(response.json()).resolves.toEqual({ data: [] });
+    expect(response.status).toBe(200);
+  });
+
+  it("returns 429 once a single IP exceeds the window", async () => {
+    mockedFetchYahooSearch.mockResolvedValue([candidate]);
+
+    let lastStatus = 200;
+    for (let i = 0; i < 61; i += 1) {
+      const response = await getSearch(
+        new NextRequest("http://localhost/api/market-data/search?q=apple", {
+          headers: { "x-forwarded-for": "203.0.113.9" },
+        }),
+      );
+      lastStatus = response.status;
+      if (response.status === 429) break;
+    }
+
+    expect(lastStatus).toBe(429);
   });
 });
 
