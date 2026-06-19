@@ -1,11 +1,13 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   Banknote,
   Building2,
   Calendar,
+  ChevronLeft,
+  ChevronRight,
   Filter,
   Loader2,
   MinusCircle,
@@ -51,6 +53,7 @@ const EMPLOYMENT_TYPES: EmploymentType[] = ["employment", "business"];
 const BURDEN_CATEGORIES: EarningBurdenCategory[] = ["incomeTax", "vat", "zus", "accounting"];
 const CURRENCIES = ["PLN", "EUR", "USD", "GBP", "CHF"];
 const PAGE_SIZE = 40;
+const MONTHS_PER_CHART_PAGE = 6;
 
 type EarningDraft = {
   id: string;
@@ -244,8 +247,13 @@ function MonthlyChart({
   summaries: ReturnType<typeof buildIncomeLists>["summaries"];
   isMobile: boolean;
 }) {
-  const items = [...summaries].sort((left, right) => left.periodStart.localeCompare(right.periodStart));
-  const max = Math.max(...items.map((item) => Math.max(item.sourcePLN, item.totalPLN)), 1);
+  const [page, setPage] = useState(0);
+  const items = [...summaries].sort((left, right) => right.periodStart.localeCompare(left.periodStart));
+  const pageCount = Math.max(1, Math.ceil(items.length / MONTHS_PER_CHART_PAGE));
+  const safePage = Math.min(page, pageCount - 1);
+  const pageStart = safePage * MONTHS_PER_CHART_PAGE;
+  const visibleItems = items.slice(pageStart, pageStart + MONTHS_PER_CHART_PAGE);
+  const max = Math.max(...visibleItems.map((item) => Math.max(Math.abs(item.sourcePLN), Math.abs(item.totalPLN))), 1);
 
   if (items.length === 0) {
     return (
@@ -256,21 +264,248 @@ function MonthlyChart({
   }
 
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: isMobile ? 7 : 10, height: 230, overflowX: "auto", paddingBottom: 4 }}>
-      {items.map((item) => {
-        const sourceHeight = Math.max(3, (item.sourcePLN / max) * 170);
-        const totalHeight = Math.max(3, (Math.max(item.totalPLN, 0) / max) * 170);
-        return (
-          <div key={item.id} style={{ minWidth: isMobile ? 36 : 44, flex: "1 0 36px", display: "flex", flexDirection: "column", alignItems: "center", gap: 7 }}>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 176 }}>
-              <div title={`Przed obciążeniami: ${fmt(item.sourcePLN)} PLN`} style={{ width: 11, height: sourceHeight, borderRadius: 4, background: v2Mix(V2.equity, 0.32) }} />
-              <div title={`Po obciążeniach: ${fmt(item.totalPLN)} PLN`} style={{ width: 11, height: totalHeight, borderRadius: 4, background: item.totalPLN >= 0 ? V2.profit : V2.loss }} />
-            </div>
-            <div style={{ fontSize: 10, color: V2.subtle, whiteSpace: "nowrap" }}>{MONTH_LABELS_SHORT[item.month - 1]}</div>
-            {!isMobile && <div style={{ fontFamily: V2_TYPE.mono, fontSize: 9.5, color: V2.muted }}>{String(item.year).slice(2)}</div>}
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, minHeight: 230, paddingTop: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, minHeight: 28 }}>
+        <div style={{ fontSize: 11, color: V2.subtle }}>
+          {pageStart + 1}–{Math.min(pageStart + MONTHS_PER_CHART_PAGE, items.length)} z {items.length} miesięcy · najnowsze najpierw
+        </div>
+        {pageCount > 1 && (
+          <div style={{ display: "flex", gap: 6 }}>
+            <IconButton label="Pokaż nowsze miesiące" disabled={safePage === 0} onClick={() => setPage((current) => Math.max(0, current - 1))}>
+              <ChevronLeft size={15} />
+            </IconButton>
+            <IconButton label="Pokaż starsze miesiące" disabled={safePage >= pageCount - 1} onClick={() => setPage((current) => Math.min(pageCount - 1, current + 1))}>
+              <ChevronRight size={15} />
+            </IconButton>
           </div>
-        );
-      })}
+        )}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {visibleItems.map((item) => {
+          const sourceWidth = Math.max(3, (Math.abs(item.sourcePLN) / max) * 100);
+          const totalWidth = Math.max(3, (Math.abs(item.totalPLN) / max) * 100);
+          return (
+            <div key={item.id} style={{ display: "grid", gridTemplateColumns: isMobile ? "58px minmax(72px, 1fr) 82px" : "72px minmax(120px, 1fr) 108px", alignItems: "center", gap: isMobile ? 8 : 12, minWidth: 0 }}>
+              <div>
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: V2.ink }}>{MONTH_LABELS_SHORT[item.month - 1]}</div>
+                <div style={{ fontFamily: V2_TYPE.mono, fontSize: 10, color: V2.subtle }}>{item.year}</div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 4, minWidth: 0 }}>
+                <div style={{ height: 5, borderRadius: 4, background: v2Mix(V2.ink, 0.06), overflow: "hidden" }}>
+                  <div title={`Przed obciążeniami: ${fmt(item.sourcePLN)} PLN`} style={{ width: `${sourceWidth}%`, height: "100%", borderRadius: 4, background: v2Mix(V2.equity, 0.32) }} />
+                </div>
+                <div style={{ height: 7, borderRadius: 4, background: v2Mix(V2.ink, 0.06), overflow: "hidden" }}>
+                  <div title={`Po obciążeniach: ${fmt(item.totalPLN)} PLN`} style={{ width: `${totalWidth}%`, height: "100%", borderRadius: 4, background: item.totalPLN >= 0 ? V2.profit : V2.loss }} />
+                </div>
+              </div>
+              <div style={{ minWidth: 0, textAlign: "right" }}>
+                <div style={{ fontFamily: V2_TYPE.mono, fontSize: isMobile ? 11 : 12, fontWeight: 700, color: item.totalPLN >= 0 ? V2.profit : V2.loss, whiteSpace: "nowrap" }}>
+                  {fmt(item.totalPLN)} zł
+                </div>
+                <div style={{ fontSize: 9.5, color: V2.subtle, whiteSpace: "nowrap" }}>przed: {fmt(item.sourcePLN)} zł</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function YearlyAverageChart({
+  data,
+}: {
+  data: ReturnType<typeof buildIncomeLists>["yearlyAverages"];
+}) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(760);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const items = [...data].sort((left, right) => left.year - right.year);
+
+  useEffect(() => {
+    const element = wrapRef.current;
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setWidth(Math.max(300, entry.contentRect.width));
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  if (items.length === 0) {
+    return <div style={{ color: V2.subtle, fontSize: 13, padding: "36px 0" }}>Brak danych</div>;
+  }
+
+  const compact = width < 620;
+  const height = compact ? 270 : 330;
+  const padding = { top: 30, right: compact ? 8 : 18, bottom: 48, left: compact ? 42 : 62 };
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
+  const minValue = Math.min(0, ...items.map((item) => item.avgResult));
+  const maxValue = Math.max(0, ...items.map((item) => item.avgResult));
+  const valueRange = Math.max(1, maxValue - minValue);
+  const chartMin = minValue < 0 ? minValue - valueRange * 0.08 : 0;
+  const chartMax = maxValue + valueRange * 0.12;
+  const chartRange = chartMax - chartMin || 1;
+  const step = plotWidth / items.length;
+  const barWidth = Math.min(compact ? 26 : 48, step * 0.54);
+  const x = (index: number) => padding.left + step * index + step / 2;
+  const y = (value: number) => padding.top + ((chartMax - value) / chartRange) * plotHeight;
+  const zeroY = y(0);
+  const ticks = Array.from({ length: 5 }, (_, index) => chartMin + (chartRange * index) / 4);
+  const hovered = hoveredIndex === null ? null : items[hoveredIndex];
+
+  return (
+    <div ref={wrapRef} style={{ position: "relative", width: "100%" }} onMouseLeave={() => setHoveredIndex(null)}>
+      <svg
+        width={width}
+        height={height}
+        viewBox={`0 0 ${width} ${height}`}
+        role="img"
+        aria-label="Średni miesięczny wynik w kolejnych latach"
+        style={{ display: "block", overflow: "visible" }}
+      >
+        {ticks.map((tick) => (
+          <g key={tick}>
+            <line
+              x1={padding.left}
+              x2={width - padding.right}
+              y1={y(tick)}
+              y2={y(tick)}
+              stroke={V2.line2}
+              strokeWidth="1"
+            />
+            <text
+              x={padding.left - 10}
+              y={y(tick) + 4}
+              textAnchor="end"
+              fontFamily={V2_TYPE.mono}
+              fontSize={compact ? 9 : 10.5}
+              fill={V2.subtle}
+            >
+              {Math.abs(tick) >= 1000 ? `${fmt(tick / 1000, tick >= 10000 ? 0 : 1)}k` : fmt(tick)}
+            </text>
+          </g>
+        ))}
+
+        {items.map((item, index) => {
+          const incomplete = item.months < 12;
+          const top = item.avgResult >= 0 ? y(item.avgResult) : zeroY;
+          const columnHeight = Math.max(2, Math.abs(y(item.avgResult) - zeroY));
+          return (
+            <g
+              key={item.year}
+              tabIndex={0}
+              role="img"
+              aria-label={`${item.year}: ${fmt(item.avgResult)} zł, ${item.months} miesięcy`}
+              onMouseEnter={() => setHoveredIndex(index)}
+              onFocus={() => setHoveredIndex(index)}
+              onBlur={() => setHoveredIndex(null)}
+              style={{ outline: "none", cursor: "default" }}
+            >
+              <rect
+                x={x(index) - step / 2}
+                y={padding.top}
+                width={step}
+                height={plotHeight + 28}
+                fill="transparent"
+              />
+              <rect
+                x={x(index) - barWidth / 2}
+                y={top}
+                width={barWidth}
+                height={columnHeight}
+                rx={Math.min(6, barWidth / 5)}
+                fill={incomplete ? v2Mix(V2.equity, 0.1) : v2Mix(V2.equity, 0.32)}
+                stroke={incomplete ? v2Mix(V2.equity, 0.58) : "none"}
+                strokeDasharray={incomplete ? "4 3" : undefined}
+              />
+              <text
+                x={x(index)}
+                y={height - 24}
+                textAnchor="middle"
+                fontFamily={V2_TYPE.ui}
+                fontSize={compact ? 9.5 : 11}
+                fontWeight={item.year === items.at(-1)?.year ? 700 : 500}
+                fill={item.year === items.at(-1)?.year ? V2.ink : V2.subtle}
+              >
+                {item.year}
+              </text>
+              {incomplete && (
+                <text
+                  x={x(index)}
+                  y={height - 9}
+                  textAnchor="middle"
+                  fontFamily={V2_TYPE.ui}
+                  fontSize={compact ? 8 : 9}
+                  fill={V2.subtle}
+                >
+                  {item.months} mies.
+                </text>
+              )}
+            </g>
+          );
+        })}
+
+        {items.slice(0, -1).map((item, index) => {
+          const next = items[index + 1];
+          const incompleteSegment = item.months < 12 || next.months < 12;
+          return (
+            <line
+              key={`${item.year}-${next.year}`}
+              x1={x(index)}
+              y1={y(item.avgResult)}
+              x2={x(index + 1)}
+              y2={y(next.avgResult)}
+              stroke={V2.equity}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeDasharray={incompleteSegment ? "5 5" : undefined}
+              opacity={incompleteSegment ? 0.58 : 0.92}
+              pointerEvents="none"
+            />
+          );
+        })}
+
+        {items.map((item, index) => (
+          <circle
+            key={`point-${item.year}`}
+            cx={x(index)}
+            cy={y(item.avgResult)}
+            r={hoveredIndex === index ? 5 : 3.5}
+            fill={item.months < 12 ? V2.card : V2.equity}
+            stroke={V2.equity}
+            strokeWidth="2"
+            pointerEvents="none"
+          />
+        ))}
+      </svg>
+
+      {hovered && hoveredIndex !== null && (
+        <div
+          style={{
+            position: "absolute",
+            left: Math.min(Math.max(x(hoveredIndex) - 66, 4), width - 136),
+            top: Math.max(4, y(hovered.avgResult) - 62),
+            width: 132,
+            padding: "8px 10px",
+            borderRadius: 9,
+            border: `0.5px solid ${V2.line}`,
+            background: V2.card,
+            boxShadow: `0 8px 22px ${v2Mix(V2.ink, 0.12)}`,
+            pointerEvents: "none",
+            zIndex: 2,
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 10, color: V2.subtle }}>
+            <span>{hovered.year}</span>
+            <span>{hovered.months} mies.</span>
+          </div>
+          <div style={{ marginTop: 3, fontFamily: V2_TYPE.mono, fontSize: 13, fontWeight: 700, color: V2.ink }}>
+            {fmt(hovered.avgResult)} zł
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -620,6 +855,13 @@ export function EarningsPage() {
       </V2Button>
     </div>
   );
+  const latestYearAverage = incomeLists.yearlyAverages[0] ?? null;
+  const previousYearAverage = latestYearAverage
+    ? incomeLists.yearlyAverages.find((item) => item.year === latestYearAverage.year - 1) ?? null
+    : null;
+  const latestYearChange = latestYearAverage && previousYearAverage && previousYearAverage.avgResult !== 0
+    ? ((latestYearAverage.avgResult / previousYearAverage.avgResult) - 1) * 100
+    : null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: V2_TYPE.ui, color: V2.ink }}>
@@ -672,43 +914,49 @@ export function EarningsPage() {
                 <span><span style={{ display: "inline-block", width: 9, height: 9, borderRadius: 2, background: V2.profit, marginRight: 6 }} />Po obc.</span>
               </div>
             </div>
-            <MonthlyChart summaries={summariesForSelection.summaries} isMobile={isMobile} />
+            <MonthlyChart key={selectedYear} summaries={summariesForSelection.summaries} isMobile={isMobile} />
           </div>
         </div>
       </V2Card>
 
-      <div style={{ display: "grid", gridTemplateColumns: isTablet ? "1fr" : "1fr 1fr", gap: 14 }}>
-        <V2Card>
-          <div style={{ fontFamily: V2_TYPE.serif, fontSize: 19, fontWeight: 500, marginBottom: 14 }}>Średnie roczne</div>
-          {incomeLists.yearlyAverages.length === 0 ? (
-            <div style={{ color: V2.subtle, fontSize: 13 }}>Brak danych</div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-              {incomeLists.yearlyAverages.map((row) => (
-                <div key={row.year} style={{ display: "grid", gridTemplateColumns: "64px 1fr auto", gap: 12, alignItems: "center" }}>
-                  <div style={{ fontWeight: 700 }}>{row.year}</div>
-                  <div style={{ height: 8, borderRadius: 5, background: v2Mix(V2.ink, 0.06), overflow: "hidden" }}>
-                    <div style={{ width: `${Math.min(100, Math.max(4, (row.avgResult / Math.max(...incomeLists.yearlyAverages.map((item) => item.avgResult), 1)) * 100))}%`, height: "100%", background: V2.equity }} />
-                  </div>
-                  <div style={{ textAlign: "right", fontFamily: V2_TYPE.mono, fontSize: 12 }}>
-                    {fmt(row.avgResult)} zł
-                    <div style={{ color: V2.subtle, fontSize: 10 }}>{row.months} m-cy</div>
-                  </div>
-                </div>
-              ))}
+      <div>
+        <div style={{ fontFamily: V2_TYPE.serif, fontSize: 19, fontWeight: 500, margin: "2px 2px 10px" }}>Struktura bieżącego wyboru</div>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 14 }}>
+          <V2Card style={{ minWidth: 0 }}>
+            <V2Kpi label="Zatrudnienie" value={`${fmt(summariesForSelection.summaries.reduce((sum, item) => sum + item.employmentPLN, 0))} zł`} accent={V2.profit} />
+          </V2Card>
+          <V2Card style={{ minWidth: 0 }}>
+            <V2Kpi label="B2B" value={`${fmt(summariesForSelection.summaries.reduce((sum, item) => sum + item.businessRevenuePLN, 0))} zł`} accent={V2.equity} />
+          </V2Card>
+          <V2Card style={{ minWidth: 0 }}>
+            <V2Kpi label="Obciążenia" value={`${fmt(summariesForSelection.summaries.reduce((sum, item) => sum + item.burdenPLN, 0))} zł`} accent={V2.loss} />
+          </V2Card>
+        </div>
+      </div>
+
+      <V2Card style={{ overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 14, flexWrap: "wrap", marginBottom: 6 }}>
+          <div>
+            <div style={{ fontFamily: V2_TYPE.serif, fontSize: 19, fontWeight: 500 }}>Średnie roczne</div>
+            <div style={{ color: V2.subtle, fontSize: 11, marginTop: 3 }}>Średni miesięczny wynik · linia pokazuje przebieg</div>
+          </div>
+          {latestYearAverage && (
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontFamily: V2_TYPE.mono, fontSize: 18, fontWeight: 700, color: V2.ink }}>
+                {fmt(latestYearAverage.avgResult)} zł
+              </div>
+              <div style={{ marginTop: 2, fontSize: 10.5, color: latestYearChange === null ? V2.subtle : latestYearChange >= 0 ? V2.profit : V2.loss }}>
+                {latestYearChange === null ? `${latestYearAverage.year}` : `${latestYearChange >= 0 ? "+" : ""}${fmt(latestYearChange, 1)}% r/r · vs ${previousYearAverage?.year}`}
+              </div>
             </div>
           )}
-        </V2Card>
-
-        <V2Card>
-          <div style={{ fontFamily: V2_TYPE.serif, fontSize: 19, fontWeight: 500, marginBottom: 14 }}>Struktura bieżącego wyboru</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-            <V2Kpi label="Zatrudnienie" value={`${fmt(summariesForSelection.summaries.reduce((sum, item) => sum + item.employmentPLN, 0))} zł`} accent={V2.profit} />
-            <V2Kpi label="B2B" value={`${fmt(summariesForSelection.summaries.reduce((sum, item) => sum + item.businessRevenuePLN, 0))} zł`} accent={V2.equity} />
-            <V2Kpi label="Obciążenia" value={`${fmt(summariesForSelection.summaries.reduce((sum, item) => sum + item.burdenPLN, 0))} zł`} accent={V2.loss} />
-          </div>
-        </V2Card>
-      </div>
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 12, color: V2.subtle, fontSize: 10.5 }}>
+            <span><span style={{ display: "inline-block", width: 16, borderTop: `2px solid ${V2.equity}`, marginRight: 6, verticalAlign: "middle" }} />pełny rok</span>
+            <span><span style={{ display: "inline-block", width: 16, borderTop: `2px dashed ${v2Mix(V2.equity, 0.65)}`, marginRight: 6, verticalAlign: "middle" }} />niepełny rok</span>
+        </div>
+        <YearlyAverageChart data={incomeLists.yearlyAverages} />
+      </V2Card>
 
       <V2Card pad={0} style={{ overflow: "hidden" }}>
         <div style={{ padding: 16, background: v2Mix(V2.card2, 0.48), borderBottom: `0.5px solid ${V2.line2}` }}>

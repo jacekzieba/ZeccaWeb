@@ -1479,4 +1479,77 @@ describe("InvestorDataSnapshot mapper", () => {
       marketValue: 0,
     });
   });
+
+  it("fills the daily valuation series from injected live market quotes", () => {
+    const records = [
+      record("account", accountID, {
+        recordType: "account",
+        id: accountID,
+        name: "Core",
+        baseCurrency: "PLN",
+      }),
+      record("asset", instrumentID, {
+        recordType: "asset",
+        id: instrumentID,
+        kind: "etf",
+        symbol: "ETF",
+        name: "ETF",
+        currency: "PLN",
+      }),
+      record("transaction", "22222222-2222-4222-8222-222222222222", {
+        recordType: "transaction",
+        id: "22222222-2222-4222-8222-222222222222",
+        date: "2026-05-01T09:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID: null,
+        transactionType: "cashDeposit",
+        grossAmount: 1_000,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+      record("transaction", "33333333-3333-4333-8333-333333333333", {
+        recordType: "transaction",
+        id: "33333333-3333-4333-8333-333333333333",
+        date: "2026-05-01T10:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID,
+        transactionType: "buy",
+        quantity: 10,
+        price: 100,
+        grossAmount: 1_000,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+    ];
+
+    // Without quotes the position is held flat at its transaction price (100),
+    // so every day in the series is 1000 — the "flat line then jump" problem.
+    const flat = buildInvestorDataSnapshot(records, {
+      asOf: new Date("2026-05-04T12:00:00.000Z"),
+      historyGranularity: "daily",
+      useMarketQuotes: true,
+    });
+    expect(flat.valuationSeries.map((point) => point.value)).toEqual([
+      1_000, 1_000, 1_000, 1_000,
+    ]);
+
+    // With daily quotes injected, the series tracks real day-to-day prices.
+    const quoted = buildInvestorDataSnapshot(records, {
+      asOf: new Date("2026-05-04T12:00:00.000Z"),
+      historyGranularity: "daily",
+      useMarketQuotes: true,
+      marketQuotes: [
+        { instrumentID, price: 100, currency: "PLN", date: new Date("2026-05-01T00:00:00.000Z") },
+        { instrumentID, price: 102, currency: "PLN", date: new Date("2026-05-02T00:00:00.000Z") },
+        { instrumentID, price: 108, currency: "PLN", date: new Date("2026-05-03T00:00:00.000Z") },
+        { instrumentID, price: 105, currency: "PLN", date: new Date("2026-05-04T00:00:00.000Z") },
+      ],
+    });
+    expect(quoted.valuationSeries.map((point) => point.value)).toEqual([
+      1_000, 1_020, 1_080, 1_050,
+    ]);
+    expect(quoted.totalValue).toBe(1_050);
+  });
 });

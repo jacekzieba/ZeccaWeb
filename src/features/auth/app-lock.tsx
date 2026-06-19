@@ -167,6 +167,9 @@ export function AppLockSetup({ onDone }: { onDone?: () => void }) {
 
   return (
     <div>
+      <div style={{ fontFamily: UI, fontSize: 12, color: V2.muted, textAlign: "center", maxWidth: 320, margin: "0 auto 12px", lineHeight: 1.45 }}>
+        To lekka blokada widoku w tej przeglądarce. Nie zastępuje hasła systemowego, menedżera haseł ani biometrii urządzenia.
+      </div>
       {step === "enter" ? (
         <PinPad label="Ustaw PIN (4–6 cyfr)" onPin={handleFirst} error={error} />
       ) : (
@@ -274,9 +277,11 @@ export function AppLockSettingsRow() {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
       <div>
-        <div style={{ fontFamily: UI, fontSize: 13.5, fontWeight: 600, color: V2.ink }}>Blokada PIN</div>
+        <div style={{ fontFamily: UI, fontSize: 13.5, fontWeight: 600, color: V2.ink }}>Blokada ekranu PIN</div>
         <div style={{ fontFamily: UI, fontSize: 12, color: V2.muted, marginTop: 2 }}>
-          {enabled ? `Aplikacja blokuje się po ${getIdleMinutes()} min. nieaktywności` : "Aplikacja nie jest chroniona PINem"}
+          {enabled
+            ? `Karta blokuje widok po ${getIdleMinutes()} min. nieaktywności. To lekka blokada przed podglądem, nie odpowiednik biometrii urządzenia.`
+            : "Widok aplikacji nie blokuje się po odejściu od karty."}
         </div>
       </div>
       <button
@@ -287,7 +292,7 @@ export function AppLockSettingsRow() {
           fontFamily: UI, fontSize: 12.5, fontWeight: 600, cursor: "pointer",
         }}
       >
-        {enabled ? "Usuń PIN" : "Ustaw PIN"}
+        {enabled ? "Usuń PIN" : "Ustaw blokadę"}
       </button>
     </div>
   );

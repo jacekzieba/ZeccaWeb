@@ -109,7 +109,7 @@ function buildFakeQuote(inst: { symbol: string; currency: string }): MarketQuote
     provider: "yahoo",
     symbol: yahooSymbolForInstrument(inst.symbol, inst.currency),
     currency: inst.currency,
-    date: "2026-05-18",
+    date: "2026-06-18",
     open: 136,
     high: 142,
     low: 135,
@@ -703,6 +703,8 @@ export function InstrumentsPage() {
           return (
             <div key={inst.id}>
               <div
+                role="row"
+                aria-label={`${inst.symbol} ${inst.name}`}
                 style={{
                   display: "grid",
                   gridTemplateColumns: "minmax(0,2.5fr) 80px minmax(0,0.8fr) minmax(0,0.8fr) minmax(0,1.1fr) minmax(0,1fr) 220px",

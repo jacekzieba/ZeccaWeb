@@ -23,12 +23,30 @@ import { useTelemetryConsent } from "@/features/telemetry/use-telemetry-consent"
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { clearCachedUserDataKey } from "@/sync/encryption/key-cache";
 import { clearPendingSyncOperations } from "@/sync/records/record-writer";
+import { isFakeSyncEnabled } from "@/lib/env";
+import { buildFakeSyncRecords, fakeUserDataKeyPromise } from "@/sync/dev/fake-sync";
+import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
+import type { BrowserSupabaseClient } from "@/supabase/client";
+
+function portfolioCountLabel(count: number) {
+  const lastDigit = count % 10;
+  const lastTwoDigits = count % 100;
+  const noun = count === 1
+    ? "portfel"
+    : lastDigit >= 2 && lastDigit <= 4 && (lastTwoDigits < 12 || lastTwoDigits > 14)
+      ? "portfele"
+      : "portfeli";
+
+  return `${count} ${noun}`;
+}
 
 function Switch({ on, onChange, label }: { on: boolean; onChange: (value: boolean) => void; label: string }) {
   return (
     <button
       onClick={() => onChange(!on)}
       aria-label={label}
+      role="switch"
+      aria-checked={on}
       style={{
         width: 42,
         height: 25,
@@ -40,7 +58,6 @@ function Switch({ on, onChange, label }: { on: boolean; onChange: (value: boolea
         background: on ? V2.brand : v2Mix(V2.ink, 0.16),
         transition: "background .18s",
       }}
-      aria-pressed={on}
     >
       <span
         style={{
@@ -69,11 +86,17 @@ function Segmented({
   onChange: (value: string) => void;
 }) {
   return (
-    <div style={{ display: "inline-flex", background: v2Mix(V2.ink, 0.06), borderRadius: 9, padding: 3 }}>
+    <div
+      role="radiogroup"
+      aria-label="Wybór ustawienia"
+      style={{ display: "inline-flex", background: v2Mix(V2.ink, 0.06), borderRadius: 9, padding: 3 }}
+    >
       {options.map((option) => (
         <button
           key={option.value}
           onClick={() => onChange(option.value)}
+          role="radio"
+          aria-checked={value === option.value}
           style={{
             padding: "6px 12px",
             borderRadius: 7,
@@ -149,13 +172,13 @@ export function SettingsPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: V2_TYPE.ui, color: V2.ink }}>
       <V2ScreenHead eyebrow="System" title="Ustawienia" sub="Profil, podatki, alokacja, źródła danych i powiadomienia" />
 
-      <ProfileCard profile={profile} accountCount={accounts.length} />
+      <ProfileCard profile={profile} portfolioCount={accounts.length} />
 
       <AllocationSection profile={profile} />
 
       <Section eyebrow="Regionalne" title="Waluta i format">
         <Row label="Waluta bazowa" desc="Przeliczenia portfela i raportów wg kursów NBP z danego dnia" control={<Segmented options={[{ value: "PLN", label: "PLN" }, { value: "EUR", label: "EUR" }, { value: "USD", label: "USD" }]} value={profile.displayCurrency} onChange={(v) => updateProfile({ displayCurrency: v as Profile["displayCurrency"] })} />} />
-        <Row label="Język interfejsu" desc="Pełne tłumaczenie EN jest w przygotowaniu" control={<Segmented options={[{ value: "pl", label: "Polski" }, { value: "en", label: "English (wkrótce)" }]} value="pl" onChange={() => {}} />} last />
+        <Row label="Język interfejsu" desc="Wersja produkcyjna web działa obecnie po polsku." control={<Segmented options={[{ value: "pl", label: "Polski" }]} value="pl" onChange={() => {}} />} last />
       </Section>
 
       <Section eyebrow="Podatki" title="Rozliczenia podatkowe">
@@ -199,9 +222,62 @@ export function SettingsPage() {
       <MarketDataSection />
       <DisplaySection />
       <PrivacySection />
+      {isFakeSyncEnabled() ? <ScreenshotDataSection /> : null}
 
       <DangerZone />
     </div>
+  );
+}
+
+function ScreenshotDataSection() {
+  const setCredentials = useSyncStore((state) => state.setCredentials);
+  const setSync = useSyncStore((state) => state.setSync);
+  const clearSync = useSyncStore((state) => state.clearSync);
+  const [status, setStatus] = useState("Tryb działa wyłącznie lokalnie i nie zapisuje danych do Supabase.");
+
+  async function restoreScreenshotData() {
+    const records = buildFakeSyncRecords();
+    const snapshot = buildInvestorDataSnapshot(records, {
+      asOf: new Date("2026-06-15T12:00:00.000Z"),
+      historyGranularity: "daily",
+      useLatestTransactionFxRate: true,
+      useMarketQuotes: true,
+    });
+    const userDataKey = await fakeUserDataKeyPromise;
+    setCredentials(userDataKey, {} as BrowserSupabaseClient);
+    setSync(records, snapshot);
+    setStatus("Przywrócono pełny zestaw danych do screenshotów.");
+  }
+
+  return (
+    <Section eyebrow="Tryb deweloperski" title="Dane do screenshotów">
+      <Row
+        label="Lokalny zestaw demonstracyjny"
+        desc={status}
+        last
+        control={(
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <button
+              type="button"
+              onClick={() => {
+                clearSync();
+                setStatus("Wyczyszczono dane w tej karcie. Odśwież stronę albo użyj przycisku przywracania.");
+              }}
+              style={{ padding: "8px 12px", borderRadius: 8, border: `0.5px solid ${V2.line}`, background: V2.card, color: V2.ink, fontFamily: V2_TYPE.ui, fontWeight: 600, cursor: "pointer" }}
+            >
+              Wyczyść kartę
+            </button>
+            <button
+              type="button"
+              onClick={() => void restoreScreenshotData()}
+              style={{ padding: "8px 12px", borderRadius: 8, border: "none", background: V2.ink, color: V2.card, fontFamily: V2_TYPE.ui, fontWeight: 600, cursor: "pointer" }}
+            >
+              Przywróć dane
+            </button>
+          </div>
+        )}
+      />
+    </Section>
   );
 }
 
@@ -259,10 +335,10 @@ function PrivacySection() {
     useTelemetryConsent();
 
   const desc = !canWrite
-    ? "Odblokuj synchronizację, aby zmienić to ustawienie."
+    ? "Odblokuj synchronizację, aby zmienić zgodę na produktową telemetrię TelemetryDeck."
     : !acknowledged
-      ? "Pomóż ulepszyć aplikację — wysyłaj anonimowe zdarzenia o korzystaniu z aplikacji. Żadne dane finansowe nie są przesyłane."
-      : "Anonimowe zdarzenia o korzystaniu z aplikacji. Żadne kwoty, instrumenty ani dane portfela nie są przesyłane. Wybór synchronizuje się na wszystkich urządzeniach.";
+      ? "Pomóż ulepszyć aplikację — wysyłaj anonimowe zdarzenia produktowe TelemetryDeck. Żadne dane finansowe nie są przesyłane."
+      : "Steruje anonimową telemetrią produktową TelemetryDeck. Niezależna telemetria techniczna Vercel Analytics i Speed Insights mierzy działanie weba i jest opisana w polityce prywatności.";
 
   return (
     <Section eyebrow="Prywatność" title="Bezpieczeństwo i diagnostyka">
@@ -270,12 +346,12 @@ function PrivacySection() {
         <AppLockSettingsRow />
       </div>
       <Row
-        label="Anonimowa telemetria"
+        label="Telemetria produktowa TelemetryDeck"
         desc={error ?? desc}
         control={
           <Switch
             on={canWrite && acknowledged && enabled}
-            label="Anonimowa telemetria"
+            label="Telemetria produktowa TelemetryDeck"
             onChange={(v) => {
               if (!canWrite || saving) return;
               void setConsent(v);
@@ -285,7 +361,7 @@ function PrivacySection() {
       />
       <Row
         label="Pliki cookie"
-        desc="Aplikacja używa wyłącznie niezbędnych cookies sesji Supabase, które utrzymują zalogowanie. Nie używamy cookies reklamowych ani śledzących, więc nie wymagają one zgody."
+        desc="Aplikacja używa niezbędnych cookies sesji Supabase, które utrzymują zalogowanie. Vercel może przetwarzać techniczne dane wydajności i odwiedzin weba bez danych portfela."
         control={<span />}
       />
       <Row
@@ -401,10 +477,10 @@ function DangerZone() {
 // ── Editable profile (name + avatar) ─────────────────────────────
 function ProfileCard({
   profile,
-  accountCount,
+  portfolioCount,
 }: {
   profile: ReturnType<typeof useProfile>;
-  accountCount: number;
+  portfolioCount: number;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(profile.name);
@@ -500,7 +576,7 @@ function ProfileCard({
           )}
           <div style={{ fontFamily: V2_TYPE.ui, fontSize: 13, color: V2.muted, marginTop: 1 }}>Zecca Web · dane odszyfrowywane lokalnie</div>
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-            <V2Badge label={`${accountCount} ${accountCount === 1 ? "konto" : "konta/kont"}`} color={V2.equity} />
+            <V2Badge label={portfolioCountLabel(portfolioCount)} color={V2.equity} />
           </div>
         </div>
         <Link href="/import" style={{ padding: "9px 16px", borderRadius: 10, border: `0.5px solid ${V2.line}`, background: V2.card, color: V2.ink, fontFamily: V2_TYPE.ui, fontSize: 12.5, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>Import / Eksport</Link>

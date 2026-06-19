@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { buildInstrumentList, buildTransactionList } from "@/sync/records/investor-snapshot";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { useProfile } from "@/features/profile/profile-store";
@@ -75,6 +75,7 @@ function TransactionSheet({
   transactions: TransactionRow[];
   onClose: () => void;
 }) {
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const TX_LABELS: Record<string, string> = {
     buy: "Zakup", sell: "Sprzedaż", dividend: "Dywidenda", interest: "Odsetki",
     bondCoupon: "Kupon", depositOpen: "Lokata", depositClose: "Zamknięcie",
@@ -83,6 +84,35 @@ function TransactionSheet({
   };
   const color = kindColor(instrument.kind);
   const tag = KIND_LABELS[instrument.kind] ?? "INNE";
+
+  useEffect(() => {
+    closeButtonRef.current?.focus();
+  }, []);
+
+  function handleDialogKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onClose();
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const dialog = event.currentTarget;
+    const focusable = Array.from(
+      dialog.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      ),
+    ).filter((element) => !element.hasAttribute("disabled"));
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
 
   return (
     <div
@@ -93,6 +123,10 @@ function TransactionSheet({
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="positions-transaction-sheet-title"
+        onKeyDown={handleDialogKeyDown}
         style={{
           background: V2.card, borderRadius: "18px 18px 0 0", width: "100%", maxWidth: 720,
           maxHeight: "80vh", overflow: "auto",
@@ -103,11 +137,13 @@ function TransactionSheet({
         <div style={{ padding: "22px 24px 16px", borderBottom: `0.5px solid ${V2.line}`, display: "flex", alignItems: "center", gap: 14 }}>
           <Badge label={tag} color={color} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: UI, fontSize: 15, fontWeight: 700, color: V2.ink }}>{instrument.symbol}</div>
+            <div id="positions-transaction-sheet-title" style={{ fontFamily: UI, fontSize: 15, fontWeight: 700, color: V2.ink }}>{instrument.symbol}</div>
             <div style={{ fontFamily: UI, fontSize: 12, color: V2.subtle }}>{instrument.name}</div>
           </div>
           <button
+            ref={closeButtonRef}
             onClick={onClose}
+            aria-label="Zamknij historię transakcji"
             style={{ border: "none", background: "transparent", fontSize: 20, color: V2.muted, cursor: "pointer", lineHeight: 1, padding: "4px 8px" }}
           >
             ×
@@ -233,17 +269,47 @@ export function PositionsPage() {
   }
 
   function SortIcon({ k }: { k: SortKey }) {
-    if (sortKey !== k) return <span style={{ opacity: 0.3, marginLeft: 3 }}>↕</span>;
-    return <span style={{ marginLeft: 3, color: V2.brand }}>{sortDir === "asc" ? "↑" : "↓"}</span>;
+    if (sortKey !== k) return <span aria-hidden="true" style={{ opacity: 0.3, marginLeft: 3 }}>↕</span>;
+    return <span aria-hidden="true" style={{ marginLeft: 3, color: V2.brand }}>{sortDir === "asc" ? "↑" : "↓"}</span>;
   }
 
   function thStyle(key: SortKey, align: "left" | "right" = "right"): CSSProperties {
     return {
       fontFamily: UI, fontSize: 9.5, fontWeight: 700, color: V2.subtle,
       textTransform: "uppercase", letterSpacing: ".07em",
-      padding: "9px 14px", textAlign: align, cursor: "pointer", userSelect: "none",
+      padding: "9px 14px", textAlign: align, userSelect: "none",
       whiteSpace: "nowrap",
     };
+  }
+
+  function sortDirectionFor(key: SortKey): "ascending" | "descending" | "none" {
+    if (sortKey !== key) return "none";
+    return sortDir === "asc" ? "ascending" : "descending";
+  }
+
+  function SortHeader({ column, label, align = "right" }: { column: SortKey; label: string; align?: "left" | "right" }) {
+    return (
+      <th aria-sort={sortDirectionFor(column)} style={{ ...thStyle(column, align), paddingLeft: align === "left" ? 20 : undefined }}>
+        <button
+          type="button"
+          onClick={() => toggleSort(column)}
+          style={{
+            border: "none",
+            background: "transparent",
+            color: "inherit",
+            cursor: "pointer",
+            font: "inherit",
+            letterSpacing: "inherit",
+            padding: 0,
+            textAlign: align,
+            textTransform: "inherit",
+            width: "100%",
+          }}
+        >
+          {label} <SortIcon k={column} />
+        </button>
+      </th>
+    );
   }
 
   return (
@@ -303,21 +369,11 @@ export function PositionsPage() {
               <table style={{ borderCollapse: "collapse", minWidth: 640, width: "100%" }}>
                 <thead>
                   <tr style={{ background: v2Mix(V2.ink, 0.022) }}>
-                    <th onClick={() => toggleSort("symbol")} style={{ ...thStyle("symbol", "left"), paddingLeft: 20 }}>
-                      Instrument <SortIcon k="symbol" />
-                    </th>
-                    <th onClick={() => toggleSort("kind")} style={thStyle("kind")}>
-                      Klasa <SortIcon k="kind" />
-                    </th>
-                    <th onClick={() => toggleSort("quantity")} style={thStyle("quantity")}>
-                      Ilość <SortIcon k="quantity" />
-                    </th>
-                    <th onClick={() => toggleSort("lastPrice")} style={thStyle("lastPrice")}>
-                      Cena <SortIcon k="lastPrice" />
-                    </th>
-                    <th onClick={() => toggleSort("marketValue")} style={thStyle("marketValue")}>
-                      Wartość ({displayCurrency}) <SortIcon k="marketValue" />
-                    </th>
+                    <SortHeader column="symbol" label="Instrument" align="left" />
+                    <SortHeader column="kind" label="Klasa" />
+                    <SortHeader column="quantity" label="Ilość" />
+                    <SortHeader column="lastPrice" label="Cena" />
+                    <SortHeader column="marketValue" label={`Wartość (${displayCurrency})`} />
                     <th style={{ ...thStyle("marketValue"), cursor: "default" }}>Udział</th>
                     <th style={{ ...thStyle("marketValue"), cursor: "default" }}>Wycena</th>
                   </tr>
@@ -330,6 +386,14 @@ export function PositionsPage() {
                       <tr
                         key={instrument.id}
                         onClick={() => setSelected(instrument)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setSelected(instrument);
+                          }
+                        }}
+                        tabIndex={0}
+                        aria-label={`Pokaż transakcje instrumentu ${instrument.symbol}`}
                         style={{ borderTop: `0.5px solid ${V2.line2}`, cursor: "pointer", transition: "background .1s" }}
                         onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = v2Mix(V2.ink, 0.022); }}
                         onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}

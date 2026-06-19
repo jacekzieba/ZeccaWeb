@@ -56,9 +56,7 @@ export async function middleware(request: NextRequest) {
     pathname !== "/favicon.ico";
 
   if (!user && isAppRoute && !fakeSyncEnabled) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("next", pathname);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return supabaseResponse;

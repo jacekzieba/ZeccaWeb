@@ -1,4 +1,4 @@
-import { COLORS, TYPOGRAPHY } from "@/lib/design-tokens";
+import { COLORS } from "@/lib/design-tokens";
 import { Footer } from "@/components/layout/footer";
 
 export const metadata = {
@@ -22,7 +22,7 @@ export default function PrivacyPolicyPage() {
           </h1>
 
           <p style={{ fontSize: 13, color: COLORS.textMuted, marginBottom: 24 }}>
-            <strong>Data wejścia w życie:</strong> 13 czerwca 2026
+            <strong>Data wejścia w życie:</strong> 17 czerwca 2026
           </p>
 
           <div style={{ marginBottom: 24 }}>
@@ -66,15 +66,39 @@ export default function PrivacyPolicyPage() {
           </p>
 
           <h2 style={{ fontSize: 22, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
+            Dane lokalne w przeglądarce
+          </h2>
+
+          <p style={{ marginBottom: 16 }}>
+            W przeglądarce Zecca zapisuje ustawienia interfejsu, preferencje profilu, identyfikator urządzenia web oraz lokalną kolejkę synchronizacji. Opcjonalnie w IndexedDB może zostać zapamiętany klucz odszyfrowywania, jeśli wybierzesz zaufanie tej przeglądarce. Klucz jest usuwany przy wylogowaniu.
+          </p>
+
+          <p style={{ marginBottom: 16 }}>
+            Odszyfrowane dane portfela są przetwarzane w pamięci aktywnej karty. Pliki importu są parsowane lokalnie w przeglądarce, a eksporty są generowane lokalnie.
+          </p>
+
+          <h2 style={{ fontSize: 22, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
             Telemetria produktowa
           </h2>
 
           <p style={{ marginBottom: 16 }}>
-            Zecca może zbierać <strong>anonimową</strong> telemetrię produktową: użycie ekranów, importy, akcje synchronizacji, wersję i numer kompilacji aplikacji, platformę oraz wybrany tryb synchronizacji.
+            Zecca może zbierać <strong>anonimową</strong> telemetrię produktową przez TelemetryDeck: użycie ekranów, importy, akcje synchronizacji, wersję i numer kompilacji aplikacji, platformę oraz wybrany tryb synchronizacji.
           </p>
 
           <p style={{ marginBottom: 16 }}>
             Telemetria <strong>nie zawiera</strong> kwot, tickerów, adresów e-mail ani identyfikatorów portfeli. Można ją wyłączyć w ustawieniach.
+          </p>
+
+          <p style={{ marginBottom: 16 }}>
+            Webowa wersja Zecca korzysta także z Vercel Analytics i Vercel Speed Insights do technicznego pomiaru odwiedzin, wydajności i stabilności strony. Te dane pomagają wykrywać problemy z aplikacją web, ale nie zawierają treści portfela, transakcji, tickerów ani importowanych plików.
+          </p>
+
+          <h2 style={{ fontSize: 22, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
+            Cookies i sesja
+          </h2>
+
+          <p style={{ marginBottom: 16 }}>
+            Zecca używa cookies i mechanizmów sesji Supabase do logowania, odświeżania sesji i ochrony dostępu do prywatnych route’ów aplikacji. Nie używamy cookies reklamowych.
           </p>
 
           <h2 style={{ fontSize: 22, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>

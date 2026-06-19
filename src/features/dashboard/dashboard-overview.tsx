@@ -5,6 +5,7 @@ import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from 
 import type {
   AllocationSlice,
   InstrumentRow,
+  PortfolioMetrics,
   PortfolioSummary,
   TransactionRow,
   ValuationPoint,
@@ -48,6 +49,44 @@ const PALETTE = {
 
 const PERIOD_OPTIONS = ["1M", "3M", "6M", "1Y", "2Y", "MAX"] as const;
 type Period = (typeof PERIOD_OPTIONS)[number];
+const DASHBOARD_SECTIONS_STORAGE_KEY = "zecca.dashboard.sections.v1";
+
+const DASHBOARD_SECTION_OPTIONS = [
+  { id: "summary", label: "Wartość i historia", desc: "Główna wartość portfela, wynik i wykres historii." },
+  { id: "holdings", label: "Instrumenty", desc: "Największe aktywne pozycje." },
+  { id: "allocation", label: "Alokacja", desc: "Podział klas aktywów." },
+  { id: "monthly", label: "Miesięczny P&L", desc: "Miesięczne zmiany wartości." },
+  { id: "transactions", label: "Ostatnie transakcje", desc: "Najnowsza aktywność konta." },
+  { id: "portfolios", label: "Portfele i cashflow", desc: "Podział kont, dywidendy, odsetki i prowizje." },
+] as const;
+type DashboardSectionId = (typeof DASHBOARD_SECTION_OPTIONS)[number]["id"];
+const DASHBOARD_SECTION_OPTION_BY_ID = Object.fromEntries(
+  DASHBOARD_SECTION_OPTIONS.map((section) => [section.id, section]),
+) as Record<DashboardSectionId, (typeof DASHBOARD_SECTION_OPTIONS)[number]>;
+const DEFAULT_DASHBOARD_SECTIONS = DASHBOARD_SECTION_OPTIONS.map((section) => section.id);
+type DashboardSectionSize = { width: 1 | 2 | 3 | 4; height: 1 | 2 | 3 };
+type DashboardCustomizationConfig = {
+  sectionOrder: DashboardSectionId[];
+  visibleSections: DashboardSectionId[];
+  sectionSizes: Partial<Record<DashboardSectionId, DashboardSectionSize>>;
+};
+
+const DASHBOARD_SECTION_SIZE_PRESETS: Record<DashboardSectionId, DashboardSectionSize[]> = {
+  summary: [{ width: 4, height: 2 }, { width: 4, height: 3 }],
+  holdings: [{ width: 3, height: 2 }, { width: 4, height: 3 }],
+  allocation: [{ width: 1, height: 1 }, { width: 2, height: 2 }],
+  monthly: [{ width: 1, height: 1 }, { width: 2, height: 2 }],
+  transactions: [{ width: 2, height: 2 }, { width: 3, height: 2 }, { width: 4, height: 3 }],
+  portfolios: [{ width: 2, height: 2 }, { width: 3, height: 2 }, { width: 4, height: 3 }],
+};
+const DEFAULT_DASHBOARD_SECTION_SIZES = Object.fromEntries(
+  DASHBOARD_SECTION_OPTIONS.map((section) => [section.id, DASHBOARD_SECTION_SIZE_PRESETS[section.id][0]]),
+) as Record<DashboardSectionId, DashboardSectionSize>;
+const DEFAULT_DASHBOARD_CONFIG: DashboardCustomizationConfig = {
+  sectionOrder: DEFAULT_DASHBOARD_SECTIONS,
+  visibleSections: DEFAULT_DASHBOARD_SECTIONS,
+  sectionSizes: DEFAULT_DASHBOARD_SECTION_SIZES,
+};
 
 const PERIOD_MONTHS: Record<Period, number> = {
   "1M": 1,
@@ -296,11 +335,17 @@ function Badge({ label, color }: { label: string; color: string }) {
 
 function PeriodBar({ value, onChange }: { value: Period; onChange: (period: Period) => void }) {
   return (
-    <div style={{ display: "inline-flex", background: mix(PALETTE.ink, 0.06), borderRadius: 11, padding: 3 }}>
+    <div
+      role="radiogroup"
+      aria-label="Zakres wykresu historii"
+      style={{ display: "inline-flex", background: mix(PALETTE.ink, 0.06), borderRadius: 11, padding: 3 }}
+    >
       {PERIOD_OPTIONS.map((option) => (
         <button
           key={option}
           onClick={() => onChange(option)}
+          role="radio"
+          aria-checked={value === option}
           style={{
             padding: "5px 12px",
             borderRadius: 8,
@@ -355,6 +400,7 @@ function V2Area({ data, height = 240 }: { data: ValuationPoint[]; height?: numbe
   const points = data.map((point, index) => `${tx(index).toFixed(1)},${ty(point.value).toFixed(1)}`).join(" ");
   const yTicks = [0, 0.25, 0.5, 0.75, 1].map((factor) => min + factor * range);
   const xStep = Math.max(1, Math.ceil(data.length / Math.min(8, Math.max(3, Math.floor(width / 130)))));
+  const summary = describeSeries(data, "Historia wartości");
 
   function handleMove(event: React.MouseEvent<SVGSVGElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -365,6 +411,8 @@ function V2Area({ data, height = 240 }: { data: ValuationPoint[]; height?: numbe
   return (
     <div ref={wrapRef} style={{ width: "100%", position: "relative" }} onMouseLeave={() => setHover(null)}>
       <svg
+        role="img"
+        aria-label={summary}
         width={width}
         height={height}
         viewBox={`0 0 ${width} ${height}`}
@@ -430,7 +478,11 @@ function V2Area({ data, height = 240 }: { data: ValuationPoint[]; height?: numbe
 
 function V2Alloc({ data, height = 18 }: { data: { id: string; label: string; value: number; color: string }[]; height?: number }) {
   return (
-    <div style={{ display: "flex", width: "100%", height, borderRadius: height / 2, overflow: "hidden", gap: 2 }}>
+    <div
+      role="img"
+      aria-label={`Alokacja: ${data.map((segment) => `${segment.label} ${segment.value.toFixed(1)}%`).join(", ")}`}
+      style={{ display: "flex", width: "100%", height, borderRadius: height / 2, overflow: "hidden", gap: 2 }}
+    >
       {data.map((segment) => (
         <div
           key={segment.id}
@@ -452,7 +504,13 @@ function V2Spark({ data, color, width = 92, height = 30 }: { data: number[]; col
   const points = data.map((value, index) => `${(index / (data.length - 1)) * width},${height - ((value - min) / range) * height}`).join(" ");
 
   return (
-    <svg width={width} height={height} style={{ display: "block", overflow: "visible" }}>
+    <svg
+      role="img"
+      aria-label={`Miniwykres 30 dni: ${data.length} punktów, od ${fmt(data[0])} do ${fmt(data[data.length - 1])}.`}
+      width={width}
+      height={height}
+      style={{ display: "block", overflow: "visible" }}
+    >
       <defs>
         <linearGradient id={`v2sp-${gradId}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity=".2" />
@@ -499,7 +557,14 @@ function V2HatchBars({ solid = true, height = 150, labels, profit, loss }: { sol
 
   return (
     <div ref={wrapRef} style={{ width: "100%" }}>
-      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ display: "block", width: "100%", maxWidth: "100%", height }}>
+      <svg
+        role="img"
+        aria-label={`Miesięczny zysk i strata: ${labels.length} okresów, największa wartość ${fmt(max)}.`}
+        width={width}
+        height={height}
+        viewBox={`0 0 ${width} ${height}`}
+        style={{ display: "block", width: "100%", maxWidth: "100%", height }}
+      >
         <defs>
           <pattern id={`v2hp-${profitPattern}`} patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
             <rect width="6" height="6" fill={PALETTE.profit} opacity="0.16" />
@@ -631,6 +696,90 @@ function filterByPeriod(history: ValuationPoint[], period: Period) {
   return filtered.length >= 2 ? filtered : history.slice(-2);
 }
 
+function describeSeries(series: ValuationPoint[], label: string) {
+  if (series.length === 0) return `${label}: brak danych.`;
+  const values = series.map((point) => point.value);
+  const first = values[0];
+  const last = values[values.length - 1];
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const trend = last >= first ? "wzrost" : "spadek";
+  return `${label}: ${series.length} punktów, ${trend} z ${fmt(first)} do ${fmt(last)}, minimum ${fmt(min)}, maksimum ${fmt(max)}.`;
+}
+
+function sanitizeSectionOrder(value: unknown): DashboardSectionId[] {
+  const allowed = new Set<string>(DEFAULT_DASHBOARD_SECTIONS);
+  const source = Array.isArray(value) ? value : DEFAULT_DASHBOARD_SECTIONS;
+  const order = source.filter((item): item is DashboardSectionId => typeof item === "string" && allowed.has(item));
+  const missing = DEFAULT_DASHBOARD_SECTIONS.filter((id) => !order.includes(id));
+  return [...order, ...missing];
+}
+
+function sanitizeVisibleSections(value: unknown): DashboardSectionId[] {
+  const allowed = new Set<string>(DEFAULT_DASHBOARD_SECTIONS);
+  const visible = Array.isArray(value)
+    ? value.filter((item): item is DashboardSectionId => typeof item === "string" && allowed.has(item))
+    : DEFAULT_DASHBOARD_SECTIONS;
+  return visible.length > 0 ? visible : DEFAULT_DASHBOARD_SECTIONS;
+}
+
+function sanitizeSectionSizes(value: unknown): Partial<Record<DashboardSectionId, DashboardSectionSize>> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return DEFAULT_DASHBOARD_SECTION_SIZES;
+  const result: Partial<Record<DashboardSectionId, DashboardSectionSize>> = {};
+  for (const id of DEFAULT_DASHBOARD_SECTIONS) {
+    const raw = (value as Record<string, unknown>)[id];
+    const presets = DASHBOARD_SECTION_SIZE_PRESETS[id];
+    if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+      const width = (raw as Record<string, unknown>).width;
+      const height = (raw as Record<string, unknown>).height;
+      const match = presets.find((preset) => preset.width === width && preset.height === height);
+      result[id] = match ?? DEFAULT_DASHBOARD_SECTION_SIZES[id];
+    } else {
+      result[id] = DEFAULT_DASHBOARD_SECTION_SIZES[id];
+    }
+  }
+  return result;
+}
+
+function readDashboardConfig(): DashboardCustomizationConfig {
+  if (typeof window === "undefined") return DEFAULT_DASHBOARD_CONFIG;
+  try {
+    const raw = window.localStorage.getItem(DASHBOARD_SECTIONS_STORAGE_KEY);
+    if (!raw) return DEFAULT_DASHBOARD_CONFIG;
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return {
+        ...DEFAULT_DASHBOARD_CONFIG,
+        visibleSections: sanitizeVisibleSections(parsed),
+      };
+    }
+    if (!parsed || typeof parsed !== "object") return DEFAULT_DASHBOARD_CONFIG;
+    const config = parsed as Record<string, unknown>;
+    return {
+      sectionOrder: sanitizeSectionOrder(config.sectionOrder),
+      visibleSections: sanitizeVisibleSections(config.visibleSections),
+      sectionSizes: sanitizeSectionSizes(config.sectionSizes),
+    };
+  } catch {
+    return DEFAULT_DASHBOARD_CONFIG;
+  }
+}
+
+function saveDashboardConfig(config: DashboardCustomizationConfig) {
+  try {
+    window.localStorage.setItem(
+      DASHBOARD_SECTIONS_STORAGE_KEY,
+      JSON.stringify({
+        sectionOrder: sanitizeSectionOrder(config.sectionOrder),
+        visibleSections: sanitizeVisibleSections(config.visibleSections),
+        sectionSizes: sanitizeSectionSizes(config.sectionSizes),
+      }),
+    );
+  } catch {
+    // Local UI preference only; ignore storage failures.
+  }
+}
+
 function normalizeAllocation(snapshotAllocation: AllocationSlice[]) {
   if (snapshotAllocation.length === 0) {
     return [{ id: "cash", label: "Gotówka", value: 100, color: PALETTE.cash }];
@@ -683,9 +832,12 @@ export function DashboardOverview() {
   const storeSnapshot = useSyncStore((state) => state.snapshot);
   const records = useSyncStore((state) => state.records);
   const marketFxRates = useSyncStore((state) => state.marketFxRates);
+  const marketQuotes = useSyncStore((state) => state.marketQuotes);
   const lastSyncedAt = useSyncStore((state) => state.lastSyncedAt);
   const profile = useProfile();
   const [period, setPeriod] = useState<Period>("1Y");
+  const [dashboardConfig, setDashboardConfig] = useState<DashboardCustomizationConfig>(readDashboardConfig);
+  const [showCustomize, setShowCustomize] = useState(false);
   const isMobile = useMedia("(max-width: 720px)");
   const isTablet = useMedia("(max-width: 1140px)");
 
@@ -695,13 +847,14 @@ export function DashboardOverview() {
         ? buildInvestorDataSnapshot(records, {
             asOf: new Date(),
             fxRates: marketFxRates,
+            marketQuotes,
             historyGranularity: "daily",
             useLatestTransactionFxRate: true,
             useMarketQuotes: true,
             displayCurrency: profile.displayCurrency,
           })
         : storeSnapshot,
-    [marketFxRates, records, storeSnapshot, profile.displayCurrency],
+    [marketFxRates, marketQuotes, records, storeSnapshot, profile.displayCurrency],
   );
   const syncSummary = records ? summarizeDecryptedRecords(records) : null;
   // Re-render every 30s so the relative "last sync" label stays fresh.
@@ -710,6 +863,9 @@ export function DashboardOverview() {
     const id = setInterval(() => bumpSyncTick((t) => t + 1), 30_000);
     return () => clearInterval(id);
   }, []);
+  useEffect(() => {
+    saveDashboardConfig(dashboardConfig);
+  }, [dashboardConfig]);
   const lastSyncLabel = formatLastSync(lastSyncedAt);
   const dateText = new Date(snapshot?.asOf ?? Date.now()).toLocaleDateString("pl-PL", {
     day: "numeric",
@@ -724,12 +880,13 @@ export function DashboardOverview() {
         ? buildInstrumentList(records, {
             asOf: new Date(),
             fxRates: marketFxRates,
+            marketQuotes,
             useLatestTransactionFxRate: true,
             useMarketQuotes: true,
             displayCurrency: profile.displayCurrency,
           })
         : [],
-    [marketFxRates, records, profile.displayCurrency],
+    [marketFxRates, marketQuotes, records, profile.displayCurrency],
   );
   const transactions = useMemo(
     () => (records ? buildTransactionList(records) : []),
@@ -752,6 +909,172 @@ export function DashboardOverview() {
   const cashflows = snapshot.cashflows;
   const invested = metrics.netInvested;
   const unrealized = totalValue - metrics.netInvested;
+  const visibleSections = new Set(dashboardConfig.visibleSections);
+  const orderedVisibleSections = dashboardConfig.sectionOrder.filter((section) => visibleSections.has(section));
+  const toggleSection = (section: DashboardSectionId) => {
+    setDashboardConfig((current) => {
+      const visible = new Set(current.visibleSections);
+      if (visible.has(section)) visible.delete(section);
+      else visible.add(section);
+      if (visible.size === 0) return current;
+      return { ...current, visibleSections: current.sectionOrder.filter((id) => visible.has(id)) };
+    });
+  };
+  const moveSection = (section: DashboardSectionId, direction: -1 | 1) => {
+    setDashboardConfig((current) => {
+      const order = [...current.sectionOrder];
+      const index = order.indexOf(section);
+      const nextIndex = index + direction;
+      if (index < 0 || nextIndex < 0 || nextIndex >= order.length) return current;
+      [order[index], order[nextIndex]] = [order[nextIndex], order[index]];
+      return { ...current, sectionOrder: order };
+    });
+  };
+  const resizeSection = (section: DashboardSectionId, size: DashboardSectionSize) => {
+    setDashboardConfig((current) => ({
+      ...current,
+      sectionSizes: { ...current.sectionSizes, [section]: size },
+    }));
+  };
+  const resetSections = () => setDashboardConfig(DEFAULT_DASHBOARD_CONFIG);
+  const sectionSize = (section: DashboardSectionId) => dashboardConfig.sectionSizes[section] ?? DEFAULT_DASHBOARD_SECTION_SIZES[section];
+  const renderSection = (section: DashboardSectionId) => {
+    if (section === "summary") {
+      return (
+        <SummaryCard
+          isMobile={isMobile}
+          isTablet={isTablet}
+          lastSyncedAt={lastSyncedAt}
+          lastSyncLabel={lastSyncLabel}
+          totalValue={totalValue}
+          displayCurrency={profile.displayCurrency}
+          deltaPLN={deltaPLN}
+          monthlyChange={monthlyChange}
+          metrics={metrics}
+          invested={invested}
+          unrealized={unrealized}
+          period={period}
+          onPeriodChange={setPeriod}
+          chartData={chartData}
+        />
+      );
+    }
+    if (section === "holdings") return <HoldingsCard holdings={holdings} isMobile={isMobile} />;
+    if (section === "allocation") return <AllocationCard allocation={allocation} />;
+    if (section === "monthly") return <MonthlyCard valuationSeries={historySource} />;
+    if (section === "transactions") return <TransactionsCard transactions={txRows} />;
+    return (
+      <PortfoliosCard
+        portfolios={snapshot.portfolios}
+        asOf={snapshot.asOf}
+        dividends={cashflows.dividends}
+        interest={cashflows.interest}
+        fees={cashflows.fees}
+      />
+    );
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: UI, color: PALETTE.ink }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 10, padding: DASHBOARD_HEAD_PADDING }}>
+        <div>
+          <div style={{ fontFamily: SERIF, fontSize: isMobile ? 26 : 31, fontWeight: 500, color: PALETTE.ink, letterSpacing: "-.01em" }}>
+            Dzień dobry, <span style={{ fontStyle: "italic", color: PALETTE.brand }}>{firstName(profile.name)}</span>
+          </div>
+          <div style={{ fontFamily: UI, fontSize: 13, color: PALETTE.muted, marginTop: 3 }}>
+            {dateText} · {syncSummary ? "wszystkie dane zsynchronizowane" : "dane z lokalnego snapshotu"}.
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowCustomize((value) => !value)}
+          aria-expanded={showCustomize}
+          style={{
+            border: `0.5px solid ${PALETTE.line}`,
+            borderRadius: 10,
+            background: showCustomize ? mix(PALETTE.brand, 0.1) : PALETTE.card,
+            color: showCustomize ? PALETTE.brand : PALETTE.ink,
+            cursor: "pointer",
+            fontFamily: UI,
+            fontSize: 12.5,
+            fontWeight: 700,
+            padding: "8px 13px",
+            boxShadow: `0 1px 4px ${mix(PALETTE.ink, 0.06)}`,
+          }}
+        >
+          Dostosuj
+        </button>
+      </div>
+
+      {showCustomize && (
+        <DashboardCustomizePanel
+          config={dashboardConfig}
+          visibleSections={visibleSections}
+          onToggle={toggleSection}
+          onMove={moveSection}
+          onResize={resizeSection}
+          onReset={resetSections}
+        />
+      )}
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: isMobile || isTablet ? "1fr" : "repeat(4, minmax(0, 1fr))",
+          gap: 14,
+          alignItems: "stretch",
+        }}
+      >
+        {orderedVisibleSections.map((section) => {
+          const size = sectionSize(section);
+          return (
+            <div
+              key={section}
+              style={{
+                gridColumn: isMobile || isTablet ? "1 / -1" : `span ${size.width}`,
+                minWidth: 0,
+              }}
+            >
+              {renderSection(section)}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function SummaryCard({
+  isMobile,
+  isTablet,
+  lastSyncedAt,
+  lastSyncLabel,
+  totalValue,
+  displayCurrency,
+  deltaPLN,
+  monthlyChange,
+  metrics,
+  invested,
+  unrealized,
+  period,
+  onPeriodChange,
+  chartData,
+}: {
+  isMobile: boolean;
+  isTablet: boolean;
+  lastSyncedAt: number | null;
+  lastSyncLabel: string;
+  totalValue: number;
+  displayCurrency: string;
+  deltaPLN: number;
+  monthlyChange: number;
+  metrics: PortfolioMetrics;
+  invested: number;
+  unrealized: number;
+  period: Period;
+  onPeriodChange: (period: Period) => void;
+  chartData: ValuationPoint[];
+}) {
   const stat = (label: string, value: string, color: string = PALETTE.ink) => (
     <div style={{ flex: 1, minWidth: 86 }}>
       <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: PALETTE.subtle }}>
@@ -773,140 +1096,261 @@ export function DashboardOverview() {
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: UI, color: PALETTE.ink }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 10, padding: DASHBOARD_HEAD_PADDING }}>
-        <div>
-          <div style={{ fontFamily: SERIF, fontSize: isMobile ? 26 : 31, fontWeight: 500, color: PALETTE.ink, letterSpacing: "-.01em" }}>
-            Dzień dobry, <span style={{ fontStyle: "italic", color: PALETTE.brand }}>{firstName(profile.name)}</span>
+    <Card glass pad={0} style={{ overflow: "hidden" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isTablet ? "1fr" : "minmax(280px, 360px) 1fr" }}>
+        <div
+          style={{
+            padding: isMobile ? "22px 22px 6px" : "30px 30px 26px",
+            borderRight: isTablet ? "none" : `0.5px solid ${PALETTE.line}`,
+            position: "relative",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+            <Eyebrow>Wartość portfela</Eyebrow>
+            <span
+              title={lastSyncedAt ? new Date(lastSyncedAt).toLocaleString("pl-PL") : undefined}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                fontFamily: UI,
+                fontSize: 11,
+                fontWeight: 500,
+                color: PALETTE.muted,
+                background: mix(PALETTE.ink, 0.05),
+                padding: "5px 10px",
+                borderRadius: 99,
+              }}
+            >
+              <span
+                style={{ width: 6, height: 6, borderRadius: "50%", background: lastSyncedAt ? PALETTE.profit : PALETTE.subtle }}
+              />
+              {lastSyncLabel}
+            </span>
           </div>
-          <div style={{ fontFamily: UI, fontSize: 13, color: PALETTE.muted, marginTop: 3 }}>
-            {dateText} · {syncSummary ? "wszystkie dane zsynchronizowane" : "dane z lokalnego snapshotu"}.
-          </div>
-        </div>
-      </div>
-
-      <Card glass pad={0} style={{ overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: isTablet ? "1fr" : "minmax(280px, 360px) 1fr" }}>
           <div
             style={{
-              padding: isMobile ? "22px 22px 6px" : "30px 30px 26px",
-              borderRight: isTablet ? "none" : `0.5px solid ${PALETTE.line}`,
-              position: "relative",
+              fontFamily: SERIF,
+              fontWeight: 400,
+              fontSize: isMobile ? 52 : 66,
+              lineHeight: 0.98,
+              letterSpacing: "-.015em",
+              color: PALETTE.ink,
+              fontVariantNumeric: "tabular-nums lining-nums",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-              <Eyebrow>Wartość portfela</Eyebrow>
-              <span
-                title={lastSyncedAt ? new Date(lastSyncedAt).toLocaleString("pl-PL") : undefined}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  fontFamily: UI,
-                  fontSize: 11,
-                  fontWeight: 500,
-                  color: PALETTE.muted,
-                  background: mix(PALETTE.ink, 0.05),
-                  padding: "5px 10px",
-                  borderRadius: 99,
-                }}
-              >
-                <span
-                  style={{ width: 6, height: 6, borderRadius: "50%", background: lastSyncedAt ? PALETTE.profit : PALETTE.subtle }}
+            {fmt(totalValue)}
+            <span style={{ fontFamily: SERIF, fontSize: isMobile ? 22 : 26, fontStyle: "italic", color: PALETTE.subtle, fontWeight: 400, marginLeft: 8 }}>
+              {displayCurrency}
+            </span>
+          </div>
+          <div style={{ marginTop: 12, display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+            <Pnl value={deltaPLN} pct={monthlyChange} size={14.5} />
+            <span style={{ fontSize: 12, color: PALETTE.subtle }}>vs 30 dni temu</span>
+          </div>
+          <div style={{ height: "0.5px", background: PALETTE.line, margin: isMobile ? "20px 0" : "24px 0" }} />
+          <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+            {stat(
+              "MWR · XIRR",
+              metrics.xirrPct == null ? "—" : fmtPct(metrics.xirrPct),
+              metrics.xirrPct != null && metrics.xirrPct < 0 ? PALETTE.loss : PALETTE.brand,
+            )}
+            {stat(
+              "Wynik realny",
+              fmtPct(metrics.realReturnPct),
+              metrics.realReturnPct >= 0 ? PALETTE.profit : PALETTE.loss,
+            )}
+            {stat("Max DD", `${fmt(metrics.maxDrawdownPct, 2)}%`, PALETTE.loss)}
+          </div>
+        </div>
+
+        <div style={{ padding: isMobile ? "12px 16px 18px" : "22px 26px 18px", background: mix(PALETTE.card2, 0.4) }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 6 }}>
+            <Eyebrow>Historia · {period === "MAX" ? "maksimum" : period}</Eyebrow>
+            <PeriodBar value={period} onChange={onPeriodChange} />
+          </div>
+          <V2Area data={chartData} height={isMobile ? 190 : 232} />
+          <div
+            style={{
+              display: "flex",
+              gap: 22,
+              flexWrap: "wrap",
+              marginTop: 10,
+              paddingTop: 12,
+              borderTop: `0.5px solid ${PALETTE.line2}`,
+              fontFamily: UI,
+              fontSize: 12,
+            }}
+          >
+            <span style={{ color: PALETTE.muted }}>
+              Zainwestowano <b style={{ color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>{fmt(invested)} {displayCurrency}</b>
+            </span>
+            <span style={{ color: PALETTE.muted }}>
+              Wynik{" "}
+              <b style={{ color: unrealized >= 0 ? PALETTE.profit : PALETTE.loss }}>
+                {fmtSigned(unrealized)} {displayCurrency}
+              </b>
+            </span>
+            <span style={{ color: PALETTE.muted }}>
+              Inflacja YOY <b style={{ color: PALETTE.ink }}>{fmt(metrics.inflationPct, 2)}%</b>
+            </span>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function smallControlStyle(disabled: boolean): CSSProperties {
+  return {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    border: `0.5px solid ${PALETTE.line}`,
+    background: PALETTE.card,
+    color: disabled ? PALETTE.subtle : PALETTE.ink,
+    cursor: disabled ? "not-allowed" : "pointer",
+    fontFamily: MONO,
+    fontSize: 13,
+    fontWeight: 700,
+    opacity: disabled ? 0.45 : 1,
+  };
+}
+
+function DashboardCustomizePanel({
+  config,
+  visibleSections,
+  onToggle,
+  onMove,
+  onResize,
+  onReset,
+}: {
+  config: DashboardCustomizationConfig;
+  visibleSections: Set<DashboardSectionId>;
+  onToggle: (section: DashboardSectionId) => void;
+  onMove: (section: DashboardSectionId, direction: -1 | 1) => void;
+  onResize: (section: DashboardSectionId, size: DashboardSectionSize) => void;
+  onReset: () => void;
+}) {
+  return (
+    <Card>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14, flexWrap: "wrap", marginBottom: 14 }}>
+        <div>
+          <Eyebrow>Dashboard</Eyebrow>
+          <div style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 500, color: PALETTE.ink, marginTop: 3 }}>
+            Układ sekcji
+          </div>
+          <div style={{ fontFamily: UI, fontSize: 12, color: PALETTE.muted, marginTop: 3 }}>
+            Web zapisuje widoczność, kolejność i preset rozmiaru w tej przeglądarce.
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onReset}
+          style={{
+            border: `0.5px solid ${PALETTE.line}`,
+            borderRadius: 9,
+            background: PALETTE.card,
+            color: PALETTE.ink,
+            cursor: "pointer",
+            fontFamily: UI,
+            fontSize: 12,
+            fontWeight: 700,
+            padding: "7px 11px",
+          }}
+        >
+          Przywróć domyślne
+        </button>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {config.sectionOrder.map((sectionId, index) => {
+          const section = DASHBOARD_SECTION_OPTION_BY_ID[sectionId];
+          const checked = visibleSections.has(sectionId);
+          const currentSize = config.sectionSizes[sectionId] ?? DEFAULT_DASHBOARD_SECTION_SIZES[sectionId];
+          const presets = DASHBOARD_SECTION_SIZE_PRESETS[sectionId];
+          return (
+            <div
+              key={sectionId}
+              style={{
+                border: `0.5px solid ${checked ? mix(PALETTE.brand, 0.42) : PALETTE.line}`,
+                borderRadius: 11,
+                background: checked ? mix(PALETTE.brand, 0.055) : mix(PALETTE.ink, 0.018),
+                padding: "11px 12px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => onToggle(sectionId)}
+                  aria-label={`Pokaż sekcję ${section.label}`}
+                  style={{ marginTop: 2 }}
                 />
-                {lastSyncLabel}
-              </span>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", flexWrap: "wrap" }}>
+                    <div>
+                      <div style={{ fontFamily: UI, fontSize: 13, fontWeight: 700, color: PALETTE.ink }}>
+                        {section.label}
+                      </div>
+                      <div style={{ fontFamily: UI, fontSize: 11.5, color: PALETTE.muted, marginTop: 2, lineHeight: 1.35 }}>
+                        {section.desc}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button
+                        type="button"
+                        onClick={() => onMove(sectionId, -1)}
+                        disabled={index === 0}
+                        aria-label={`Przesuń ${section.label} wyżej`}
+                        style={smallControlStyle(index === 0)}
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onMove(sectionId, 1)}
+                        disabled={index === config.sectionOrder.length - 1}
+                        aria-label={`Przesuń ${section.label} niżej`}
+                        style={smallControlStyle(index === config.sectionOrder.length - 1)}
+                      >
+                        ↓
+                      </button>
+                    </div>
+                  </div>
+                  <div role="radiogroup" aria-label={`Rozmiar sekcji ${section.label}`} style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
+                    {presets.map((preset) => {
+                      const selected = currentSize.width === preset.width && currentSize.height === preset.height;
+                      return (
+                        <button
+                          key={`${preset.width}x${preset.height}`}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          onClick={() => onResize(sectionId, preset)}
+                          style={{
+                            border: `0.5px solid ${selected ? mix(PALETTE.brand, 0.48) : PALETTE.line}`,
+                            borderRadius: 8,
+                            background: selected ? mix(PALETTE.brand, 0.1) : PALETTE.card,
+                            color: selected ? PALETTE.brand : PALETTE.muted,
+                            cursor: "pointer",
+                            fontFamily: MONO,
+                            fontSize: 11,
+                            fontWeight: 700,
+                            padding: "5px 8px",
+                          }}
+                        >
+                          {preset.width}×{preset.height}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
             </div>
-            <div
-              style={{
-                fontFamily: SERIF,
-                fontWeight: 400,
-                fontSize: isMobile ? 52 : 66,
-                lineHeight: 0.98,
-                letterSpacing: "-.015em",
-                color: PALETTE.ink,
-                fontVariantNumeric: "tabular-nums lining-nums",
-              }}
-            >
-              {fmt(totalValue)}
-              <span style={{ fontFamily: SERIF, fontSize: isMobile ? 22 : 26, fontStyle: "italic", color: PALETTE.subtle, fontWeight: 400, marginLeft: 8 }}>
-                {profile.displayCurrency}
-              </span>
-            </div>
-            <div style={{ marginTop: 12, display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-              <Pnl value={deltaPLN} pct={monthlyChange} size={14.5} />
-              <span style={{ fontSize: 12, color: PALETTE.subtle }}>vs 30 dni temu</span>
-            </div>
-            <div style={{ height: "0.5px", background: PALETTE.line, margin: isMobile ? "20px 0" : "24px 0" }} />
-            <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
-              {stat(
-                "MWR · XIRR",
-                metrics.xirrPct == null ? "—" : fmtPct(metrics.xirrPct),
-                metrics.xirrPct != null && metrics.xirrPct < 0 ? PALETTE.loss : PALETTE.brand,
-              )}
-              {stat(
-                "Wynik realny",
-                fmtPct(metrics.realReturnPct),
-                metrics.realReturnPct >= 0 ? PALETTE.profit : PALETTE.loss,
-              )}
-              {stat("Max DD", `${fmt(metrics.maxDrawdownPct, 2)}%`, PALETTE.loss)}
-            </div>
-          </div>
-
-          <div style={{ padding: isMobile ? "12px 16px 18px" : "22px 26px 18px", background: mix(PALETTE.card2, 0.4) }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 6 }}>
-              <Eyebrow>Historia · {period === "MAX" ? "maksimum" : period}</Eyebrow>
-              <PeriodBar value={period} onChange={setPeriod} />
-            </div>
-            <V2Area data={chartData} height={isMobile ? 190 : 232} />
-            <div
-              style={{
-                display: "flex",
-                gap: 22,
-                flexWrap: "wrap",
-                marginTop: 10,
-                paddingTop: 12,
-                borderTop: `0.5px solid ${PALETTE.line2}`,
-                fontFamily: UI,
-                fontSize: 12,
-              }}
-            >
-              <span style={{ color: PALETTE.muted }}>
-                Zainwestowano <b style={{ color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>{fmt(invested)} {profile.displayCurrency}</b>
-              </span>
-              <span style={{ color: PALETTE.muted }}>
-                Wynik{" "}
-                <b style={{ color: unrealized >= 0 ? PALETTE.profit : PALETTE.loss }}>
-                  {fmtSigned(unrealized)} {profile.displayCurrency}
-                </b>
-              </span>
-              <span style={{ color: PALETTE.muted }}>
-                Inflacja YOY <b style={{ color: PALETTE.ink }}>{fmt(metrics.inflationPct, 2)}%</b>
-              </span>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      <div style={{ display: "grid", gridTemplateColumns: isMobile || isTablet ? "1fr" : "1.9fr 1fr", gap: 14 }}>
-        <HoldingsCard holdings={holdings} isMobile={isMobile} />
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <AllocationCard allocation={allocation} />
-          <MonthlyCard valuationSeries={historySource} />
-        </div>
+          );
+        })}
       </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: isMobile || isTablet ? "1fr" : "1.4fr 1fr", gap: 14 }}>
-        <TransactionsCard transactions={txRows} />
-        <PortfoliosCard
-          portfolios={snapshot.portfolios}
-          asOf={snapshot.asOf}
-          dividends={cashflows.dividends}
-          interest={cashflows.interest}
-          fees={cashflows.fees}
-        />
-      </div>
-    </div>
+    </Card>
   );
 }
 

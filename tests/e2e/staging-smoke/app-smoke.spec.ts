@@ -15,7 +15,7 @@ test("renders login and keeps protected routes behind the auth gate", async ({ p
 
   await page.goto("/dashboard");
 
-  await expect(page).toHaveURL(/\/login\?next=%2Fdashboard$/);
+  await expect(page).toHaveURL(/\/login$/);
   await expect(page.getByRole("heading", { name: "Logowanie" })).toBeVisible();
   expect(consoleErrors).toEqual([]);
 });

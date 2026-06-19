@@ -5,7 +5,11 @@ import {
   setCachedMarketData,
 } from "@/market-data/cache";
 import { parseStooqCsv } from "@/market-data/providers/stooq";
-import { parseYahooChart, parseYahooSearch } from "@/market-data/providers/yahoo";
+import {
+  parseYahooChart,
+  parseYahooChartSeries,
+  parseYahooSearch,
+} from "@/market-data/providers/yahoo";
 import { fetchNbpFxRate } from "@/market-data/providers/nbp";
 
 afterEach(() => {
@@ -79,6 +83,71 @@ describe("parseYahooChart", () => {
         "MISSING",
       ),
     ).toThrow("No data found");
+  });
+});
+
+describe("parseYahooChartSeries", () => {
+  it("returns one daily quote per timestamp, skipping non-trading days", () => {
+    const series = parseYahooChartSeries(
+      {
+        chart: {
+          result: [
+            {
+              meta: { currency: "USD" },
+              // 2026-05-14, 2026-05-15, 2026-05-16 (UTC)
+              timestamp: [1_778_716_800, 1_778_803_200, 1_778_889_600],
+              indicators: {
+                quote: [
+                  {
+                    open: [188, 189, 192],
+                    high: [191, 194, 195],
+                    low: [187, 188, 191],
+                    close: [189, null, 193.25],
+                    volume: [10000, null, 12345],
+                  },
+                ],
+              },
+            },
+          ],
+          error: null,
+        },
+      },
+      "AAPL",
+    );
+
+    expect(series).toHaveLength(2);
+    expect(series[0]).toEqual({
+      provider: "yahoo",
+      symbol: "AAPL",
+      currency: "USD",
+      date: "2026-05-14",
+      open: 188,
+      high: 191,
+      low: 187,
+      close: 189,
+      volume: 10000,
+    });
+    expect(series[1]).toMatchObject({ date: "2026-05-16", close: 193.25 });
+  });
+
+  it("throws when no valid closes are present", () => {
+    expect(() =>
+      parseYahooChartSeries(
+        {
+          chart: {
+            result: [
+              {
+                meta: { currency: "USD" },
+                timestamp: [1_778_716_800],
+                indicators: { quote: [{ close: [null] }] },
+              },
+            ],
+            error: null,
+          },
+        },
+        "AAPL",
+      ),
+    ).toThrow("no valid price history");
   });
 });
 

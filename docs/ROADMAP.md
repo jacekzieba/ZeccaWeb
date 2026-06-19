@@ -75,3 +75,9 @@ Procedura walidacji: `docs/STAGING_VALIDATION.md`.
 4. Potwierdzic konflikt i tombstone: zmiana tego samego rekordu po obu stronach, soft delete i wymuszenie lokalnej zmiany nie moga prowadzic do cichej utraty danych.
 5. Sprawdzic granice prywatnosci providerow: endpointy market data dostaja tylko pojedynczy symbol albo walute i date, bez listy pozycji, ilosci ani identyfikatorow uzytkownika.
 6. Bramka domkniecia: snapshot web i snapshot natywny zgadzaja sie na tym samym zestawie rekordow, a zapisane przez web rekordy przechodza natywne dekodowanie.
+
+## Etap 8 - parytet web-native po release-risk
+
+1. Rozszerzyc dashboard customize poza webowe presety: drag-and-drop, gesty resize i brakujace sekcje natywne po `zecca.dashboard.sections.v1`.
+2. Dodac WebAuthn/passkey jako mocniejszy odpowiednik LocalAuthentication dla weba. Obecny App Lock pozostaje tylko lekka blokada ekranu PIN.
+3. Domknac brakujace wykresy i raporty native-web po zamknieciu staging oraz compliance P0/P1.

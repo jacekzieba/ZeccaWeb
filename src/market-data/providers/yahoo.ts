@@ -10,6 +10,7 @@ const chartSchema = z.object({
         chartPreviousClose: z.number().nullable().optional(),
         regularMarketTime: z.number().nullable().optional(),
       }),
+      timestamp: z.array(z.number()).nullable().optional(),
       indicators: z.object({
         quote: z.array(z.object({
           open: z.array(z.number().nullable()).nullable().optional(),
@@ -77,6 +78,74 @@ export function parseYahooChart(json: unknown, symbol: string): MarketQuote {
     close,
     volume: latestNumber(quote?.volume),
   };
+}
+
+export type YahooHistoryRange = "1mo" | "3mo" | "6mo" | "1y" | "2y" | "5y" | "max";
+
+export async function fetchYahooDailyHistory(
+  symbol: string,
+  range: YahooHistoryRange = "2y",
+): Promise<MarketQuote[]> {
+  const normalizedSymbol = normalizeYahooSymbol(symbol);
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(normalizedSymbol)}?interval=1d&range=${range}`;
+  const response = await fetch(url, {
+    headers: {
+      accept: "application/json",
+      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X) ZeccaWeb/1.0",
+    },
+    next: { revalidate: 60 * 60 },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Yahoo Finance returned ${response.status} for ${normalizedSymbol}.`);
+  }
+
+  return parseYahooChartSeries(await response.json(), normalizedSymbol);
+}
+
+export function parseYahooChartSeries(json: unknown, symbol: string): MarketQuote[] {
+  const parsed = chartSchema.parse(json);
+  const errorDescription = parsed.chart.error?.description;
+  if (errorDescription) {
+    throw new Error(errorDescription);
+  }
+
+  const result = parsed.chart.result?.[0];
+  if (!result) {
+    throw new Error("Yahoo Finance returned no quote data.");
+  }
+
+  const timestamps = result.timestamp ?? [];
+  const quote = result.indicators.quote?.[0];
+  const currency = result.meta.currency ?? null;
+  const series: MarketQuote[] = [];
+
+  for (let i = 0; i < timestamps.length; i += 1) {
+    const close = quote?.close?.[i];
+    if (typeof close !== "number" || close <= 0) {
+      // Yahoo emits nulls for non-trading days/holidays; skip them.
+      continue;
+    }
+
+    const date = new Date(timestamps[i] * 1000).toISOString().slice(0, 10);
+    series.push({
+      provider: "yahoo",
+      symbol,
+      currency,
+      date,
+      open: quote?.open?.[i] ?? close,
+      high: quote?.high?.[i] ?? close,
+      low: quote?.low?.[i] ?? close,
+      close,
+      volume: quote?.volume?.[i] ?? null,
+    });
+  }
+
+  if (series.length === 0) {
+    throw new Error("Yahoo Finance returned no valid price history.");
+  }
+
+  return series;
 }
 
 const searchSchema = z.object({

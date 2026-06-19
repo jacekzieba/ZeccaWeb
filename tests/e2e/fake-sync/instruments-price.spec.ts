@@ -11,11 +11,11 @@ test("fetches a fake quote preview and saves it as a manual valuation", async ({
   await expect(main.getByText("Yahoo Finance jest skonfigurowany")).toBeVisible();
   await expect(main.getByText("Yahoo · OK · Stooq")).toBeVisible();
 
-  await main.getByRole("button", { name: "Cena" }).click();
+  await main.getByRole("row", { name: /AAPL Apple/ }).getByRole("button", { name: "Cena" }).click();
 
   await expect(main.getByText("140,00 USD")).toBeVisible();
   await expect(
-    main.getByText("Yahoo AAPL · 2026-05-18 · zapisze jako wycenę manualną"),
+    main.getByText("Yahoo AAPL · 2026-06-18 · zapisze jako wycenę manualną"),
   ).toBeVisible();
 
   await main.getByRole("button", { name: "Zapisz" }).click();

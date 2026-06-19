@@ -68,6 +68,17 @@ npm run test:e2e:fake-sync
 
 Wszystkie komendy musza przejsc. Jesli nie przechodza, nie zaczynac walidacji staging.
 
+## Bramka release-risk
+
+Przed oznaczeniem weba jako release-ready potwierdzic dodatkowo:
+
+1. `.env.local`, staging URL-e, anon key, service role key i inne sekrety nie sa trackowane w git i nie trafiaja do artefaktow builda. Publiczne zmienne `NEXT_PUBLIC_*` moga zawierac tylko wartosci przeznaczone dla klienta.
+2. Polityka prywatnosci web jawnie opisuje TelemetryDeck, Vercel Analytics, Vercel Speed Insights, Supabase cookies/session, lokalny anonymous/device ID, localStorage oraz IndexedDB key cache.
+3. Ustawienia web wyjasniaja, ze przelacznik telemetrii steruje telemetria produktowa TelemetryDeck, a nie techniczna analityka operacyjna Vercel.
+4. App Lock jest opisany jako lekka blokada ekranu PIN, bez sugerowania rownowaznosci z biometrią systemowa.
+5. Martwe lub niereleasowe claims marketingowe sa usuniete albo ukryte, w szczegolnosci niedostepne wersje jezykowe.
+6. Dashboard web ma domyslnie zachowany dotychczasowy uklad, a ustawienia `zecca.dashboard.sections.v1` zapisuja widocznosc, kolejnosc i preset rozmiaru sekcji.
+
 ## Walidacja odczytu
 
 1. Uruchomic web:
@@ -164,6 +175,16 @@ Na staging utworzyc drugie konto testowe i sprawdzic, ze nie widzi rekordow pier
 
 Oczekiwany wynik: RLS ogranicza dostep po `auth.uid()`.
 
+## Account deletion i recovery
+
+1. Na koncie A wlaczyc sync passphrase i potwierdzic, ze istnieje poprawny `encrypted_key_backups`.
+2. Wylogowac sie, zalogowac ponownie i odblokowac dane ta sama passphrase.
+3. Na drugim profilu przegladarki zalogowac sie tym samym kontem i potwierdzic recovery klucza z backupu.
+4. Uruchomic usuniecie konta z web Settings.
+5. Potwierdzic, ze konto nie moze sie ponownie zalogowac, a `encrypted_records`, `encrypted_key_backups`, `profiles` i `user_devices` dla tego usera zniknely albo sa niedostepne zgodnie z funkcja `delete-account`.
+
+Oczekiwany wynik: recovery dziala przed usunieciem, a po usunieciu nie zostaja czytelne dane staging tego konta.
+
 ## Raport walidacji
 
 Po tescie wypelnic:
@@ -215,6 +236,22 @@ Market data privacy:
 RLS:
 - second account isolation:
 
+Key backup recovery:
+- same browser:
+- second browser profile:
+
+Delete account:
+- auth user removed:
+- encrypted records removed/unreadable:
+- key backups removed/unreadable:
+
+Release-risk:
+- env/secrets:
+- privacy policy:
+- telemetry settings copy:
+- App Lock copy:
+- dashboard customize default:
+
 Open issues:
 ```
 
@@ -230,3 +267,5 @@ Etap 7 mozna oznaczyc jako gotowy, gdy:
 6. Konflikty i tombstones nie prowadza do cichej utraty danych.
 7. Endpointy market data nie dostaja danych portfela.
 8. Drugie konto testowe nie widzi rekordow pierwszego konta.
+9. Recovery klucza i usuniecie konta przechodza na staging.
+10. Release-risk gate jest wypelniony bez otwartych P0/P1.

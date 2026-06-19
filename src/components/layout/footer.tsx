@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { COLORS, TYPOGRAPHY } from "@/lib/design-tokens";
+import { COLORS } from "@/lib/design-tokens";
 
 export function Footer() {
   return (

@@ -21,7 +21,7 @@ export function FakeSyncBootstrap() {
     async function seedFakeSync() {
       const records = buildFakeSyncRecords();
       const snapshot = buildInvestorDataSnapshot(records, {
-        asOf: new Date(),
+        asOf: new Date("2026-06-15T12:00:00.000Z"),
         historyGranularity: "daily",
         useLatestTransactionFxRate: true,
         useMarketQuotes: true,

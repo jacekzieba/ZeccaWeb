@@ -1,4 +1,4 @@
-import { COLORS, TYPOGRAPHY } from "@/lib/design-tokens";
+import { COLORS } from "@/lib/design-tokens";
 import { Footer } from "@/components/layout/footer";
 
 export const metadata = {

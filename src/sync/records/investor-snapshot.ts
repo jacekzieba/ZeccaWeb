@@ -34,7 +34,10 @@ import {
   type PositionValuationDataset,
   type FxRateInput,
 } from "@/domain/valuation/position-valuator";
-import { resolveFxRate } from "@/domain/valuation/price-resolver";
+import {
+  resolveFxRate,
+  type MarketQuoteInput,
+} from "@/domain/valuation/price-resolver";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
 
 /** Resolves how many units of the native (PLN) base currency one unit of the
@@ -242,6 +245,10 @@ type ParsedDataset = {
   transactions: TransactionPayload[];
   manualValuations: ManualValuationPayload[];
   marketQuotes: MarketQuotePayload[];
+  /** Daily quotes fetched live from a market-data provider (e.g. Yahoo) and
+   * injected via options, rather than parsed from synced `marketQuote` records.
+   * Already in resolver-ready form (keyed by instrumentID, dates as `Date`). */
+  externalMarketQuotes: MarketQuoteInput[];
   income: IncomePayload[];
   settings: SettingsPayload[];
   fxRates: FxRateInput[];
@@ -251,6 +258,10 @@ type ParsedDataset = {
 
 export type SnapshotBuildOptions = {
   fxRates?: FxRateInput[];
+  /** Live daily market quotes (per instrument) used to fill day-to-day price
+   * movement in the valuation history between sparse manual valuations. Only
+   * consulted when `useMarketQuotes` is set. */
+  marketQuotes?: MarketQuoteInput[];
   asOf?: Date;
   historyGranularity?: "monthly" | "daily";
   useMarketQuotes?: boolean;
@@ -568,6 +579,7 @@ function parseDataset(
     transactions: [],
     manualValuations: [],
     marketQuotes: [],
+    externalMarketQuotes: options.marketQuotes ?? [],
     income: [],
     settings: [],
     fxRates: options.fxRates ?? [],
@@ -1087,6 +1099,7 @@ function valueCash(
     ParsedDataset,
     | "manualValuations"
     | "marketQuotes"
+    | "externalMarketQuotes"
     | "transactions"
     | "fxRates"
     | "useMarketQuotes"
@@ -1106,6 +1119,7 @@ function toPositionValuationDataset(
     ParsedDataset,
     | "manualValuations"
     | "marketQuotes"
+    | "externalMarketQuotes"
     | "transactions"
     | "fxRates"
     | "useMarketQuotes"
@@ -1120,12 +1134,15 @@ function toPositionValuationDataset(
       date: toDate(valuation.date),
     })),
     marketQuotes: dataset.useMarketQuotes
-      ? dataset.marketQuotes.map((quote) => ({
-          instrumentID: quote.instrumentID,
-          price: quote.price,
-          currency: quote.currency,
-          date: toDate(quote.date),
-        }))
+      ? [
+          ...dataset.marketQuotes.map((quote) => ({
+            instrumentID: quote.instrumentID,
+            price: quote.price,
+            currency: quote.currency,
+            date: toDate(quote.date),
+          })),
+          ...dataset.externalMarketQuotes,
+        ]
       : [],
     transactions: dataset.transactions.map((transaction) => ({
       instrumentID: transaction.instrumentID,
@@ -1238,6 +1255,7 @@ function fullDailyDates(dataset: ParsedDataset, asOf: Date): Date[] {
     ...dataset.transactions.map((t) => toDate(t.date)),
     ...dataset.manualValuations.map((v) => toDate(v.date)),
     ...dataset.marketQuotes.map((q) => toDate(q.date)),
+    ...dataset.externalMarketQuotes.map((q) => q.date),
   ].filter((d) => !Number.isNaN(d.getTime()));
 
   if (allDates.length === 0) {
@@ -1264,6 +1282,7 @@ function fullMonthEndDates(dataset: ParsedDataset, asOf: Date): Date[] {
     ...dataset.transactions.map((t) => toDate(t.date)),
     ...dataset.manualValuations.map((v) => toDate(v.date)),
     ...dataset.marketQuotes.map((q) => toDate(q.date)),
+    ...dataset.externalMarketQuotes.map((q) => q.date),
   ].filter((d) => !Number.isNaN(d.getTime()));
 
   if (allDates.length === 0) {

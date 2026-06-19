@@ -17,6 +17,15 @@ allowed values. If it is not in this document, it is not sent. Implementations
   We **never** set a custom user identifier here. The Supabase `user.id` is reserved
   exclusively for RevenueCat App User ID and must **never** be passed to TelemetryDeck.
 
+### 1.1 Web operational telemetry
+
+The Settings telemetry switch controls only TelemetryDeck product telemetry. The web
+app also keeps Vercel Analytics and Vercel Speed Insights in `app/layout.tsx` for
+operational visit, performance, and stability measurement. Vercel telemetry must be
+disclosed in the privacy policy and marketing copy must not claim that no technical
+telemetry exists. Vercel events must not include portfolio contents, decrypted
+records, tickers, imported files, Supabase user ids, or free-text financial data.
+
 ---
 
 ## 2. Hard privacy rules (non-negotiable)
