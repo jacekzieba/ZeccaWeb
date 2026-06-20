@@ -23,10 +23,6 @@ import { useTelemetryConsent } from "@/features/telemetry/use-telemetry-consent"
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { clearCachedUserDataKey } from "@/sync/encryption/key-cache";
 import { clearPendingSyncOperations } from "@/sync/records/record-writer";
-import { isFakeSyncEnabled } from "@/lib/env";
-import { buildFakeSyncRecords, fakeUserDataKeyPromise } from "@/sync/dev/fake-sync";
-import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
-import type { BrowserSupabaseClient } from "@/supabase/client";
 
 function portfolioCountLabel(count: number) {
   const lastDigit = count % 10;
@@ -222,62 +218,9 @@ export function SettingsPage() {
       <MarketDataSection />
       <DisplaySection />
       <PrivacySection />
-      {isFakeSyncEnabled() ? <ScreenshotDataSection /> : null}
 
       <DangerZone />
     </div>
-  );
-}
-
-function ScreenshotDataSection() {
-  const setCredentials = useSyncStore((state) => state.setCredentials);
-  const setSync = useSyncStore((state) => state.setSync);
-  const clearSync = useSyncStore((state) => state.clearSync);
-  const [status, setStatus] = useState("Tryb działa wyłącznie lokalnie i nie zapisuje danych do Supabase.");
-
-  async function restoreScreenshotData() {
-    const records = buildFakeSyncRecords();
-    const snapshot = buildInvestorDataSnapshot(records, {
-      asOf: new Date("2026-06-15T12:00:00.000Z"),
-      historyGranularity: "daily",
-      useLatestTransactionFxRate: true,
-      useMarketQuotes: true,
-    });
-    const userDataKey = await fakeUserDataKeyPromise;
-    setCredentials(userDataKey, {} as BrowserSupabaseClient);
-    setSync(records, snapshot);
-    setStatus("Przywrócono pełny zestaw danych do screenshotów.");
-  }
-
-  return (
-    <Section eyebrow="Tryb deweloperski" title="Dane do screenshotów">
-      <Row
-        label="Lokalny zestaw demonstracyjny"
-        desc={status}
-        last
-        control={(
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-            <button
-              type="button"
-              onClick={() => {
-                clearSync();
-                setStatus("Wyczyszczono dane w tej karcie. Odśwież stronę albo użyj przycisku przywracania.");
-              }}
-              style={{ padding: "8px 12px", borderRadius: 8, border: `0.5px solid ${V2.line}`, background: V2.card, color: V2.ink, fontFamily: V2_TYPE.ui, fontWeight: 600, cursor: "pointer" }}
-            >
-              Wyczyść kartę
-            </button>
-            <button
-              type="button"
-              onClick={() => void restoreScreenshotData()}
-              style={{ padding: "8px 12px", borderRadius: 8, border: "none", background: V2.ink, color: V2.card, fontFamily: V2_TYPE.ui, fontWeight: 600, cursor: "pointer" }}
-            >
-              Przywróć dane
-            </button>
-          </div>
-        )}
-      />
-    </Section>
   );
 }
 

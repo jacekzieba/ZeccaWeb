@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1",
-    "dev:screenshots": "NEXT_PUBLIC_FAKE_SYNC=1 next dev --hostname 127.0.0.1 --port 3101",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
