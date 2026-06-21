@@ -1076,8 +1076,8 @@ function SummaryCard({
   chartData: ValuationPoint[];
 }) {
   const stat = (label: string, value: string, color: string = PALETTE.ink) => (
-    <div style={{ flex: 1, minWidth: 86 }}>
-      <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: PALETTE.subtle }}>
+    <div style={{ minWidth: 0 }}>
+      <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, lineHeight: 1.2, minHeight: 24, letterSpacing: ".1em", textTransform: "uppercase", color: PALETTE.subtle }}>
         {label}
       </div>
       <div
@@ -1087,6 +1087,7 @@ function SummaryCard({
           fontWeight: 500,
           color,
           marginTop: 3,
+          lineHeight: 1,
           fontVariantNumeric: "tabular-nums",
         }}
       >
@@ -1149,7 +1150,7 @@ function SummaryCard({
             <span style={{ fontSize: 12, color: PALETTE.subtle }}>vs 30 dni temu</span>
           </div>
           <div style={{ height: "0.5px", background: PALETTE.line, margin: isMobile ? "20px 0" : "24px 0" }} />
-          <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 18 }}>
             {stat(
               "MWR · XIRR",
               metrics.xirrPct == null ? "—" : fmtPct(metrics.xirrPct),

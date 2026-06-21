@@ -7,6 +7,7 @@ import {
   type ManualValuationInput,
   type PriceTransactionInput,
 } from "@/domain/valuation/price-resolver";
+import { bondPeriodRate } from "@/domain/valuation/bond-rates";
 
 export type { FxRateInput } from "@/domain/valuation/price-resolver";
 
@@ -189,7 +190,7 @@ function dirtyTreasuryBondPrice(
 
   while (periodStart.getTime() < effectiveAsOf.getTime()) {
     const periodEnd = addYears(periodStart, 1);
-    const annualRate = treasuryBondAnnualRate(params, periodIndex) / 100;
+    const annualRate = bondPeriodRate(params, periodIndex, periodStart) / 100;
 
     if (effectiveAsOf.getTime() < periodEnd.getTime()) {
       const totalDays = Math.max(1, daysBetween(periodStart, periodEnd));
@@ -212,18 +213,6 @@ function dirtyTreasuryBondPrice(
   }
 
   return principal + carriedInterest;
-}
-
-function treasuryBondAnnualRate(params: BondParamsInput, periodIndex: number) {
-  if (periodIndex === 0) {
-    return params.firstPeriodRate;
-  }
-
-  if (params.subsequentBase === "stałe") {
-    return params.marginOverBase;
-  }
-
-  return Math.max(0, params.marginOverBase);
 }
 
 function addYears(date: Date, years: number) {

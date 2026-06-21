@@ -235,9 +235,8 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
         </div>
       </div>
 
-      {/* Scroll area: nav groups and the total-value card scroll together,
-          so the card sits directly under the menu rather than pinned. */}
-      <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+      {/* Only navigation scrolls. The summary card below stays visible. */}
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
       <nav style={{ padding: "6px 10px 4px" }}>
         {navGroups.map((group, gi) => (
           <div key={gi} style={{ marginBottom: 8 }}>
@@ -311,8 +310,9 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
           </div>
         ))}
       </nav>
+      </div>
 
-      {/* Total-value card — directly under the menu items, scrolls with them */}
+      {/* Total-value card — fixed below the scrollable menu */}
       <div style={{ padding: "4px 10px 12px" }}>
         <div
           style={{
@@ -323,20 +323,6 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
             position: "relative", overflow: "hidden",
           }}
         >
-          <div
-            style={{
-              position: "absolute", right: -22, top: -22,
-              width: 80, height: 80, borderRadius: "50%",
-              background: "rgba(33,74,53,0.55)", filter: "blur(20px)",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute", left: -16, bottom: -28,
-              width: 70, height: 70, borderRadius: "50%",
-              background: v2Mix(COLORS.gold, 0.4), filter: "blur(26px)",
-            }}
-          />
           <div style={{ fontSize: 9.5, fontWeight: 700, color: "rgba(244,242,230,0.62)", textTransform: "uppercase", letterSpacing: ".13em", position: "relative" }}>
             Łączna wartość
           </div>
@@ -351,7 +337,6 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
           </div>
           <div style={{ fontSize: 10.5, color: "rgba(244,242,230,0.50)", marginTop: 1, position: "relative" }}>vs 30 dni temu</div>
         </div>
-      </div>
       </div>
 
       {/* Logout */}
@@ -527,19 +512,20 @@ export function AppShell({
               style={{
                 display: "flex", alignItems: "center", gap: 8,
                 padding: "6px 12px 6px 10px", borderRadius: 10,
-                background: v2Mix(V2.card, 0.55),
-                border: `0.5px solid ${V2.spec}`,
+                background: V2.card,
+                border: `1px solid ${v2Mix(V2.ink, 0.28)}`,
+                boxShadow: `inset 0 1px 0 ${V2.spec}, 0 2px 8px ${v2Mix(V2.ink, 0.06)}`,
                 minWidth: 300, cursor: "text",
                 fontFamily: "inherit",
               }}
             >
-              <span style={{ fontSize: 13, color: COLORS.subtle }}>⌕</span>
-              <span style={{ fontSize: 12, color: COLORS.subtle }}>Szukaj instrumentu, transakcji…</span>
+              <span style={{ fontSize: 13, color: COLORS.muted }}>⌕</span>
+              <span style={{ fontSize: 12, color: COLORS.muted }}>Szukaj instrumentu, transakcji…</span>
               <span
                 style={{
-                  marginLeft: "auto", fontSize: 10, color: COLORS.subtle,
+                  marginLeft: "auto", fontSize: 10, color: COLORS.muted,
                   padding: "2px 6px", borderRadius: 4,
-                  background: v2Mix(V2.ink, 0.05),
+                  background: v2Mix(V2.ink, 0.07),
                   fontFamily: TYPOGRAPHY.mono,
                 }}
               >

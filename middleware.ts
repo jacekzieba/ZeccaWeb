@@ -43,6 +43,7 @@ export async function middleware(request: NextRequest) {
   // /reset-password stays public: the recovery link may land without a session,
   // and the form itself explains how to request a fresh link.
   const isAppRoute =
+    pathname !== "/" &&
     !pathname.startsWith("/login") &&
     !pathname.startsWith("/register") &&
     !pathname.startsWith("/forgot-password") &&
