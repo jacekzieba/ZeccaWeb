@@ -20,6 +20,11 @@ import {
 import { summarizeDecryptedRecords } from "@/sync/records/sync-summary";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { firstName, useProfile } from "@/features/profile/profile-store";
+import {
+  groupTreasuryBondSeries,
+  treasuryBondFamilyLabel,
+  type GroupedTreasuryBondFamily,
+} from "@/domain/bonds/bond-series-groups";
 
 const SERIF = TYPOGRAPHY.serif;
 const UI = TYPOGRAPHY.system;
@@ -74,7 +79,7 @@ type DashboardCustomizationConfig = {
 };
 
 const DASHBOARD_SECTION_SIZE_PRESETS: Record<DashboardSectionId, DashboardSectionSize[]> = {
-  summary: [{ width: 4, height: 2 }, { width: 4, height: 3 }],
+  summary: [{ width: 4, height: 2 }],
   holdings: [{ width: 3, height: 2 }, { width: 4, height: 3 }],
   allocation: [{ width: 1, height: 1 }, { width: 2, height: 2 }],
   monthly: [{ width: 1, height: 1 }, { width: 2, height: 2 }],
@@ -630,7 +635,6 @@ function V2HatchBars({ solid = true, height = 150, labels, profit, loss }: { sol
 function toHoldingViews(instruments: InstrumentRow[]): HoldingView[] {
   return instruments
     .filter((instrument) => instrument.totalQuantity > 0)
-    .slice(0, 6)
     .map((instrument) => ({
       id: instrument.id,
       symbol: instrument.symbol,
@@ -1370,13 +1374,44 @@ function DashboardCustomizePanel({
 
 function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobile: boolean }) {
   const { displayCurrency } = useProfile();
+  const [expandedFamilies, setExpandedFamilies] = useState<Set<GroupedTreasuryBondFamily>>(() => new Set());
+  const groupedHoldings = useMemo(() => groupTreasuryBondSeries(holdings).slice(0, 6), [holdings]);
+  const rows = groupedHoldings.flatMap((entry) => {
+    if (entry.type === "item") return [{ holding: entry.item, family: null, depth: 0 }];
+    const groupHolding: HoldingView = {
+      id: `bond-family-${entry.family}`,
+      symbol: entry.family,
+      name: `${treasuryBondFamilyLabel(entry.family)} · ${entry.items.length} ${entry.items.length === 1 ? "seria" : "serie"}`,
+      kind: "treasuryBond",
+      quantity: entry.items.reduce((sum, item) => sum + item.quantity, 0),
+      price: 0,
+      currency: "PLN",
+      valuePLN: entry.items.reduce((sum, item) => sum + item.valuePLN, 0),
+      pnl: null,
+      pnlPct: null,
+      d30Pct: null,
+      source: `${entry.items.length} ${entry.items.length === 1 ? "seria" : "serie"}`,
+    };
+    const parent = { holding: groupHolding, family: entry.family, depth: 0 };
+    return expandedFamilies.has(entry.family)
+      ? [parent, ...entry.items.map((holding) => ({ holding, family: null, depth: 1 }))]
+      : [parent];
+  });
+  const toggleFamily = (family: GroupedTreasuryBondFamily) => {
+    setExpandedFamilies((current) => {
+      const next = new Set(current);
+      if (next.has(family)) next.delete(family);
+      else next.add(family);
+      return next;
+    });
+  };
   return (
     <Card pad={0}>
       <div style={{ padding: "18px 22px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `0.5px solid ${PALETTE.line}` }}>
         <div>
           <Eyebrow>Instrumenty</Eyebrow>
           <div style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 500, color: PALETTE.ink, marginTop: 2, whiteSpace: "nowrap" }}>
-            {holdings.length} pozycji w portfelu
+            {groupedHoldings.length} pozycji w portfelu
           </div>
         </div>
         <Link href="/instruments" style={{ fontFamily: UI, fontSize: 12, color: PALETTE.brand, fontWeight: 600, textDecoration: "none" }}>
@@ -1395,14 +1430,29 @@ function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobil
       {holdings.length === 0 ? (
         <div style={{ padding: "32px 22px", color: PALETTE.subtle, fontSize: 13 }}>Brak aktywnych instrumentów w zsynchronizowanych danych.</div>
       ) : (
-        holdings.map((holding, index) => {
+        rows.map(({ holding, family, depth }, index) => {
           const tagColor = kindColor(holding.kind);
           const tag = KIND_LABELS[holding.kind] ?? "INNE";
+          const isGroup = family !== null;
 
           if (isMobile) {
             return (
-              <div key={holding.id} style={{ borderTop: index === 0 ? "none" : `0.5px solid ${PALETTE.line2}`, padding: "14px 22px" }}>
+              <div
+                key={holding.id}
+                onClick={isGroup ? () => toggleFamily(family!) : undefined}
+                onKeyDown={isGroup ? (event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    toggleFamily(family!);
+                  }
+                } : undefined}
+                role={isGroup ? "button" : undefined}
+                tabIndex={isGroup ? 0 : undefined}
+                aria-expanded={isGroup ? expandedFamilies.has(family!) : undefined}
+                style={{ borderTop: index === 0 ? "none" : `0.5px solid ${PALETTE.line2}`, padding: "14px 22px", paddingLeft: depth ? 42 : 22, cursor: isGroup ? "pointer" : "default" }}
+              >
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                  {isGroup && <span aria-hidden="true" style={{ color: PALETTE.bonds }}>{expandedFamilies.has(family!) ? "⌄" : "›"}</span>}
                   <Badge label={tag} color={tagColor} />
                   <div style={{ fontFamily: UI, fontSize: 14, fontWeight: 700, color: PALETTE.ink }}>{holding.symbol}</div>
                 </div>
@@ -1423,13 +1473,24 @@ function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobil
           return (
             <div
               key={holding.id}
+              onClick={isGroup ? () => toggleFamily(family!) : undefined}
+              onKeyDown={isGroup ? (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  toggleFamily(family!);
+                }
+              } : undefined}
+              role={isGroup ? "button" : undefined}
+              tabIndex={isGroup ? 0 : undefined}
+              aria-expanded={isGroup ? expandedFamilies.has(family!) : undefined}
               style={{
                 display: "grid",
                 gridTemplateColumns: "minmax(0,2.4fr) minmax(0,1fr) minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,.7fr)",
                 padding: "13px 22px",
                 borderTop: `0.5px solid ${PALETTE.line2}`,
                 alignItems: "center",
-                cursor: "pointer",
+                cursor: isGroup ? "pointer" : "default",
+                paddingLeft: depth ? 42 : 22,
                 transition: "background .12s",
               }}
               onMouseEnter={(event) => {
@@ -1440,6 +1501,7 @@ function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobil
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                {isGroup && <span aria-hidden="true" style={{ color: PALETTE.bonds, width: 10 }}>{expandedFamilies.has(family!) ? "⌄" : "›"}</span>}
                 <Badge label={tag} color={tagColor} />
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontFamily: UI, fontSize: 13.5, fontWeight: 700, color: PALETTE.ink }}>{holding.symbol}</div>
@@ -1449,7 +1511,7 @@ function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobil
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontFamily: MONO, fontSize: 12.5, color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>{fmtQty(holding.quantity)}</div>
                 <div style={{ fontFamily: MONO, fontSize: 10.5, color: PALETTE.subtle }}>
-                  {holding.currency} {fmt(holding.price, 2)}
+                  {holding.price > 0 ? `${holding.currency} ${fmt(holding.price, 2)}` : "—"}
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>

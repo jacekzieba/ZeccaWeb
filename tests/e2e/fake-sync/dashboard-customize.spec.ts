@@ -121,3 +121,21 @@ test("dashboard uses natural section heights below the desktop breakpoint", asyn
   );
   expect(mobileOverflow).toBe(0);
 });
+
+test("dashboard normalizes the removed oversized summary preset", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("zecca.dashboard.sections.v1", JSON.stringify({
+      sectionOrder: ["summary", "holdings", "allocation", "monthly", "transactions", "portfolios"],
+      visibleSections: ["summary", "holdings", "allocation", "monthly", "transactions", "portfolios"],
+      sectionSizes: { summary: { width: 4, height: 3 } },
+    }));
+  });
+  await page.goto("/dashboard");
+
+  const summary = section(page, "summary");
+  await expect.poll(async () => (await summary.boundingBox())?.height).toBe(494);
+  await expect.poll(async () => page.evaluate(() => {
+    const raw = window.localStorage.getItem("zecca.dashboard.sections.v1");
+    return raw ? JSON.parse(raw).sectionSizes?.summary : null;
+  })).toEqual({ width: 4, height: 2 });
+});

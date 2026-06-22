@@ -6,8 +6,13 @@ import { useSyncStore } from "@/sync/store/sync-store";
 import { useProfile } from "@/features/profile/profile-store";
 import { buildPortfolioDetail } from "@/sync/records/investor-snapshot";
 import { AreaChart } from "@/components/charts/area-chart";
-import type { ValuationPoint } from "@/domain/models/investor-data";
+import type { HoldingRow, ValuationPoint } from "@/domain/models/investor-data";
 import { TYPOGRAPHY } from "@/lib/design-tokens";
+import {
+  groupTreasuryBondSeries,
+  treasuryBondFamilyLabel,
+  type GroupedTreasuryBondFamily,
+} from "@/domain/bonds/bond-series-groups";
 
 const PERIOD_OPTIONS = ["1M", "3M", "6M", "1Y", "2Y", "MAX"] as const;
 type Period = (typeof PERIOD_OPTIONS)[number];
@@ -91,6 +96,11 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
     () => (detail ? filterSeriesByPeriod(detail.valuationSeries, period) : []),
     [detail, period],
   );
+  const groupedHoldings = useMemo(
+    () => groupTreasuryBondSeries(detail?.holdings ?? []),
+    [detail],
+  );
+  const [expandedFamilies, setExpandedFamilies] = useState<Set<GroupedTreasuryBondFamily>>(() => new Set());
 
   if (!records) {
     return (
@@ -117,6 +127,35 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
     );
   }
 
+  const holdingRows = groupedHoldings.flatMap((entry) => {
+    if (entry.type === "item") return [{ holding: entry.item, family: null, depth: 0 }];
+    const holding: HoldingRow = {
+      instrumentId: `bond-family-${entry.family}`,
+      symbol: entry.family,
+      name: `${treasuryBondFamilyLabel(entry.family)} · ${entry.items.length} ${entry.items.length === 1 ? "seria" : "serie"}`,
+      kind: "treasuryBond",
+      quantity: entry.items.reduce((sum, item) => sum + item.quantity, 0),
+      lastPrice: 0,
+      currency: "PLN",
+      valuationSource: "treasuryBond",
+      valuationSourceLabel: `${entry.items.length} ${entry.items.length === 1 ? "seria" : "serie"}`,
+      marketValue: entry.items.reduce((sum, item) => sum + item.marketValue, 0),
+      portfolioPercent: entry.items.reduce((sum, item) => sum + item.portfolioPercent, 0),
+    };
+    const parent = { holding, family: entry.family, depth: 0 };
+    return expandedFamilies.has(entry.family)
+      ? [parent, ...entry.items.map((item) => ({ holding: item, family: null, depth: 1 }))]
+      : [parent];
+  });
+  const toggleFamily = (family: GroupedTreasuryBondFamily) => {
+    setExpandedFamilies((current) => {
+      const next = new Set(current);
+      if (next.has(family)) next.delete(family);
+      else next.add(family);
+      return next;
+    });
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <Breadcrumb name={detail.name} />
@@ -136,7 +175,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
           <div style={{ fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 6 }}>
             Pozycji
           </div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: INK }}>{detail.holdings.length}</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: INK }}>{groupedHoldings.length}</div>
         </div>
         <div style={{ ...glassCard, padding: "18px 20px" }}>
           <div style={{ fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 6 }}>
@@ -193,7 +232,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
           }}
         >
           <div style={{ fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>
-            Pozycje ({detail.holdings.length})
+            Pozycje ({groupedHoldings.length})
           </div>
         </div>
 
@@ -229,13 +268,24 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
           </div>
         )}
 
-        {detail.holdings.map((h) => {
+        {holdingRows.map(({ holding: h, family, depth }) => {
           const color = KIND_COLORS[h.kind] ?? SUBTLE;
           const kindLabel = KIND_LABELS[h.kind] ?? h.kind;
+          const isGroup = family !== null;
 
           return (
             <div
               key={h.instrumentId}
+              onClick={isGroup ? () => toggleFamily(family!) : undefined}
+              onKeyDown={isGroup ? (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  toggleFamily(family!);
+                }
+              } : undefined}
+              role={isGroup ? "button" : undefined}
+              tabIndex={isGroup ? 0 : undefined}
+              aria-expanded={isGroup ? expandedFamilies.has(family!) : undefined}
               style={{
                 display: "grid",
                 gridTemplateColumns: "minmax(0,2.5fr) minmax(0,0.8fr) minmax(0,1fr) minmax(0,1.2fr) minmax(0,0.8fr)",
@@ -243,12 +293,15 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
                 borderTop: `0.5px solid ${LINE_SOFT}`,
                 alignItems: "center",
                 transition: "background .12s",
+                cursor: isGroup ? "pointer" : "default",
+                paddingLeft: depth ? 42 : 22,
               }}
               onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(28,49,68,0.025)")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
               {/* Instrument */}
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {isGroup && <span aria-hidden="true" style={{ color, width: 10 }}>{expandedFamilies.has(family!) ? "⌄" : "›"}</span>}
                 <span
                   style={{
                     width: 32,

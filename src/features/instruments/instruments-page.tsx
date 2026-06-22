@@ -13,6 +13,12 @@ import { isFakeSyncEnabled } from "@/lib/env";
 import { buildFakeManualValuationRecord } from "@/sync/dev/fake-sync";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import { useProfile } from "@/features/profile/profile-store";
+import type { InstrumentRow } from "@/domain/models/investor-data";
+import {
+  groupTreasuryBondSeries,
+  treasuryBondFamilyLabel,
+  type GroupedTreasuryBondFamily,
+} from "@/domain/bonds/bond-series-groups";
 import {
   V2,
   V2Badge,
@@ -153,6 +159,7 @@ export function InstrumentsPage() {
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [marketDataStatus, setMarketDataStatus] = useState<MarketDataStatus | null>(null);
   const [marketDataStatusError, setMarketDataStatusError] = useState<string | null>(null);
+  const [expandedFamilies, setExpandedFamilies] = useState<Set<GroupedTreasuryBondFamily>>(() => new Set());
 
   useEffect(() => {
     if (!records) {
@@ -218,7 +225,41 @@ export function InstrumentsPage() {
     [filtered],
   );
 
-  const heldCount = useMemo(() => allInstruments.filter((i) => i.totalQuantity > 0).length, [allInstruments]);
+  const groupedFiltered = useMemo(() => groupTreasuryBondSeries(filtered), [filtered]);
+  const groupedAllCount = useMemo(() => groupTreasuryBondSeries(allInstruments).length, [allInstruments]);
+  const groupedHeldCount = useMemo(
+    () => groupTreasuryBondSeries(allInstruments.filter((instrument) => instrument.totalQuantity > 0)).length,
+    [allInstruments],
+  );
+  const displayRows = useMemo(() => groupedFiltered.flatMap((entry) => {
+    if (entry.type === "item") return [{ instrument: entry.item, family: null, depth: 0 }];
+    const instrument: InstrumentRow = {
+      id: `bond-family-${entry.family}`,
+      symbol: entry.family,
+      name: `${treasuryBondFamilyLabel(entry.family)} · ${entry.items.length} ${entry.items.length === 1 ? "seria" : "serie"}`,
+      kind: "treasuryBond",
+      currency: "PLN",
+      lastPrice: 0,
+      lastPriceDate: null,
+      valuationSource: "treasuryBond",
+      valuationSourceLabel: `${entry.items.length} ${entry.items.length === 1 ? "seria" : "serie"}`,
+      totalQuantity: entry.items.reduce((sum, item) => sum + item.totalQuantity, 0),
+      marketValue: entry.items.reduce((sum, item) => sum + item.marketValue, 0),
+      portfolios: [...new Set(entry.items.flatMap((item) => item.portfolios))],
+    };
+    const parent = { instrument, family: entry.family, depth: 0 };
+    return expandedFamilies.has(entry.family)
+      ? [parent, ...entry.items.map((item) => ({ instrument: item, family: null, depth: 1 }))]
+      : [parent];
+  }), [expandedFamilies, groupedFiltered]);
+  const toggleFamily = (family: GroupedTreasuryBondFamily) => {
+    setExpandedFamilies((current) => {
+      const next = new Set(current);
+      if (next.has(family)) next.delete(family);
+      else next.add(family);
+      return next;
+    });
+  };
   const editableInstruments = useMemo(() => {
     if (!records) {
       return [];
@@ -444,7 +485,7 @@ export function InstrumentsPage() {
       <V2ScreenHead
         eyebrow="Analiza"
         title="Instrumenty"
-        sub={records ? `${allInstruments.length} pozycji · ${heldCount} w portfelu` : "Odblokuj dane w panelu synchronizacji"}
+        sub={records ? `${groupedAllCount} pozycji · ${groupedHeldCount} w portfelu` : "Odblokuj dane w panelu synchronizacji"}
         action={(
           <V2Button
             onClick={() => {
@@ -460,7 +501,7 @@ export function InstrumentsPage() {
 
       {records && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14 }}>
-          <V2Card pad={20}><V2Kpi label="Wartość rynkowa" value={`${fmt(totalValue)} ${displayCurrency}`} sub={`${heldCount} aktywnych pozycji`} /></V2Card>
+          <V2Card pad={20}><V2Kpi label="Wartość rynkowa" value={`${fmt(totalValue)} ${displayCurrency}`} sub={`${groupedHeldCount} aktywnych pozycji`} /></V2Card>
           <V2Card pad={20}><V2Kpi label="Największa pozycja" value={best?.symbol ?? "—"} accent={V2.profit} sub={best ? `${fmt(best.marketValue)} ${displayCurrency}` : "Brak aktywów"} /></V2Card>
           <V2Card pad={20}><V2Kpi label="Wyceny" value={`${pricedCount}/${allInstruments.length}`} accent={V2.bonds} sub="instrumenty z ceną" /></V2Card>
         </div>
@@ -623,7 +664,7 @@ export function InstrumentsPage() {
           )}
 
           <div style={{ marginLeft: "auto", fontFamily: V2_TYPE.mono, fontSize: 11.5, color: V2.subtle }}>
-            {filtered.length} wyników
+            {groupedFiltered.length} wyników
             {totalValue > 0 && (
               <> · <strong style={{ color: V2.ink }}>{fmt(totalValue)} {displayCurrency}</strong></>
             )}
@@ -692,10 +733,11 @@ export function InstrumentsPage() {
           </div>
         )}
 
-        {filtered.map((inst) => {
+        {displayRows.map(({ instrument: inst, family, depth }) => {
           const color = KIND_COLORS[inst.kind] ?? SUBTLE;
           const kindLabel = KIND_LABELS[inst.kind] ?? inst.kind;
           const isHeld = inst.totalQuantity > 0;
+          const isGroup = family !== null;
           const preview = quotePreview?.instrumentId === inst.id ? quotePreview : null;
           const isLoadingQuote = quoteLoadingId === inst.id;
           const isSavingQuote = quoteSavingId === inst.id;
@@ -709,6 +751,7 @@ export function InstrumentsPage() {
                   display: "grid",
                   gridTemplateColumns: "minmax(0,2.5fr) 80px minmax(0,0.8fr) minmax(0,0.8fr) minmax(0,1.1fr) minmax(0,1fr) 220px",
                   padding: "14px 22px",
+                  paddingLeft: depth ? 42 : 22,
                   borderTop: `0.5px solid ${LINE_SOFT}`,
                   alignItems: "center",
                   opacity: isHeld ? 1 : 0.5,
@@ -719,6 +762,17 @@ export function InstrumentsPage() {
               >
                 {/* Name + symbol */}
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  {isGroup && (
+                    <button
+                      type="button"
+                      onClick={() => toggleFamily(family!)}
+                      aria-label={`${expandedFamilies.has(family!) ? "Zwiń" : "Rozwiń"} serie ${family}`}
+                      aria-expanded={expandedFamilies.has(family!)}
+                      style={{ width: 24, height: 24, border: "none", background: "transparent", color, cursor: "pointer", fontSize: 18, padding: 0 }}
+                    >
+                      {expandedFamilies.has(family!) ? "⌄" : "›"}
+                    </button>
+                  )}
                   <span
                     style={{
                       width: 34,
@@ -811,6 +865,17 @@ export function InstrumentsPage() {
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, flexWrap: "wrap" }}>
+                  {isGroup ? (
+                    <button
+                      type="button"
+                      onClick={() => toggleFamily(family!)}
+                      aria-expanded={expandedFamilies.has(family!)}
+                      style={{ padding: "6px 10px", borderRadius: 8, border: `0.5px solid ${V2.line}`, background: v2Mix(V2.card, 0.72), color: V2.muted, fontSize: 12, cursor: "pointer", fontFamily: V2_TYPE.ui }}
+                    >
+                      {expandedFamilies.has(family!) ? "Zwiń serie" : "Pokaż serie"}
+                    </button>
+                  ) : (
+                  <>
                   <button
                     onClick={() => void handleFetchQuote(inst)}
                     disabled={!userDataKey || isLoadingQuote || isSavingQuote}
@@ -866,10 +931,12 @@ export function InstrumentsPage() {
                   >
                     {deletingId === inst.id ? "Usuwam…" : "Usuń"}
                   </button>
+                  </>
+                  )}
                 </div>
               </div>
 
-              {preview && (
+              {!isGroup && preview && (
                 <div
                   style={{
                     display: "flex",
