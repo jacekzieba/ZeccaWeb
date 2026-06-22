@@ -55,7 +55,6 @@ const PALETTE = {
 const PERIOD_OPTIONS = ["1M", "3M", "6M", "1Y", "2Y", "MAX"] as const;
 type Period = (typeof PERIOD_OPTIONS)[number];
 const DASHBOARD_SECTIONS_STORAGE_KEY = "zecca.dashboard.sections.v1";
-const DASHBOARD_GRID_ROW_HEIGHT = 240;
 const DASHBOARD_GRID_GAP = 14;
 
 const DASHBOARD_SECTION_OPTIONS = [
@@ -71,7 +70,7 @@ const DASHBOARD_SECTION_OPTION_BY_ID = Object.fromEntries(
   DASHBOARD_SECTION_OPTIONS.map((section) => [section.id, section]),
 ) as Record<DashboardSectionId, (typeof DASHBOARD_SECTION_OPTIONS)[number]>;
 const DEFAULT_DASHBOARD_SECTIONS = DASHBOARD_SECTION_OPTIONS.map((section) => section.id);
-type DashboardSectionSize = { width: 1 | 2 | 3 | 4; height: 1 | 2 | 3 };
+type DashboardSectionSize = { width: 1 | 2 | 3 | 4 };
 type DashboardCustomizationConfig = {
   sectionOrder: DashboardSectionId[];
   visibleSections: DashboardSectionId[];
@@ -79,12 +78,12 @@ type DashboardCustomizationConfig = {
 };
 
 const DASHBOARD_SECTION_SIZE_PRESETS: Record<DashboardSectionId, DashboardSectionSize[]> = {
-  summary: [{ width: 4, height: 2 }],
-  holdings: [{ width: 3, height: 2 }, { width: 4, height: 3 }],
-  allocation: [{ width: 1, height: 1 }, { width: 2, height: 2 }],
-  monthly: [{ width: 1, height: 1 }, { width: 2, height: 2 }],
-  transactions: [{ width: 2, height: 2 }, { width: 3, height: 2 }, { width: 4, height: 3 }],
-  portfolios: [{ width: 2, height: 2 }, { width: 3, height: 2 }, { width: 4, height: 3 }],
+  summary: [{ width: 4 }],
+  holdings: [{ width: 3 }, { width: 4 }],
+  allocation: [{ width: 1 }, { width: 2 }],
+  monthly: [{ width: 1 }, { width: 2 }],
+  transactions: [{ width: 2 }, { width: 3 }, { width: 4 }],
+  portfolios: [{ width: 2 }, { width: 3 }, { width: 4 }],
 };
 const DEFAULT_DASHBOARD_SECTION_SIZES = Object.fromEntries(
   DASHBOARD_SECTION_OPTIONS.map((section) => [section.id, DASHBOARD_SECTION_SIZE_PRESETS[section.id][0]]),
@@ -275,8 +274,7 @@ function Card({
         boxSizing: "border-box",
         height: "100%",
         minHeight: 0,
-        overflow: "auto",
-        overscrollBehavior: "contain",
+        overflow: "visible",
         ...style,
       }}
     >
@@ -742,8 +740,7 @@ function sanitizeSectionSizes(value: unknown): Partial<Record<DashboardSectionId
     const presets = DASHBOARD_SECTION_SIZE_PRESETS[id];
     if (raw && typeof raw === "object" && !Array.isArray(raw)) {
       const width = (raw as Record<string, unknown>).width;
-      const height = (raw as Record<string, unknown>).height;
-      const match = presets.find((preset) => preset.width === width && preset.height === height);
+      const match = presets.find((preset) => preset.width === width);
       result[id] = match ?? DEFAULT_DASHBOARD_SECTION_SIZES[id];
     } else {
       result[id] = DEFAULT_DASHBOARD_SECTION_SIZES[id];
@@ -1033,7 +1030,7 @@ export function DashboardOverview() {
         style={{
           display: "grid",
           gridTemplateColumns: isMobile || isTablet ? "1fr" : "repeat(4, minmax(0, 1fr))",
-          gridAutoRows: isMobile || isTablet ? "auto" : `${DASHBOARD_GRID_ROW_HEIGHT}px`,
+          gridAutoRows: "auto",
           gap: DASHBOARD_GRID_GAP,
           alignItems: "stretch",
         }}
@@ -1046,7 +1043,6 @@ export function DashboardOverview() {
               data-testid={`dashboard-section-${section}`}
               style={{
                 gridColumn: isMobile || isTablet ? "1 / -1" : `span ${size.width}`,
-                gridRow: isMobile || isTablet ? "auto" : `span ${size.height}`,
                 height: isMobile || isTablet ? "auto" : "100%",
                 minHeight: 0,
                 minWidth: 0,
@@ -1335,12 +1331,12 @@ function DashboardCustomizePanel({
                       </button>
                     </div>
                   </div>
-                  <div role="radiogroup" aria-label={`Rozmiar sekcji ${section.label}`} style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
+                  <div role="radiogroup" aria-label={`Szerokość sekcji ${section.label}`} style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
                     {presets.map((preset) => {
-                      const selected = currentSize.width === preset.width && currentSize.height === preset.height;
+                      const selected = currentSize.width === preset.width;
                       return (
                         <button
-                          key={`${preset.width}x${preset.height}`}
+                          key={preset.width}
                           type="button"
                           role="radio"
                           aria-checked={selected}
@@ -1357,7 +1353,7 @@ function DashboardCustomizePanel({
                             padding: "5px 8px",
                           }}
                         >
-                          {preset.width}×{preset.height}
+                          {preset.width === 1 ? "1 kolumna" : preset.width < 5 ? `${preset.width} kolumny` : `${preset.width} kolumn`}
                         </button>
                       );
                     })}

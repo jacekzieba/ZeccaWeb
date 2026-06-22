@@ -18,6 +18,12 @@ import {
   type NotificationPrefs,
   type Profile,
 } from "@/features/profile/profile-store";
+import {
+  AllocationEditorModal,
+  type AllocationDraft,
+} from "@/features/portfolios/allocation-editor-modal";
+import { readAllocation, sumAllocation } from "@/features/portfolios/asset-classes";
+import type { PortfolioSummary } from "@/domain/models/investor-data";
 import { AppLockSettingsRow } from "@/features/auth/app-lock";
 import { useTelemetryConsent } from "@/features/telemetry/use-telemetry-consent";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
@@ -170,8 +176,6 @@ export function SettingsPage() {
 
       <ProfileCard profile={profile} portfolioCount={accounts.length} />
 
-      <AllocationSection profile={profile} />
-
       <Section eyebrow="Regionalne" title="Waluta i format">
         <Row label="Waluta bazowa" desc="Przeliczenia portfela i raportów wg kursów NBP z danego dnia" control={<Segmented options={[{ value: "PLN", label: "PLN" }, { value: "EUR", label: "EUR" }, { value: "USD", label: "USD" }]} value={profile.displayCurrency} onChange={(v) => updateProfile({ displayCurrency: v as Profile["displayCurrency"] })} />} />
         <Row label="Język interfejsu" desc="Wersja produkcyjna web działa obecnie po polsku." control={<Segmented options={[{ value: "pl", label: "Polski" }]} value="pl" onChange={() => {}} />} last />
@@ -190,28 +194,7 @@ export function SettingsPage() {
         )} last />
       </Section>
 
-      <Section eyebrow="Dane" title="Konta i źródła">
-        {accounts.length === 0 ? (
-          <Row label="Brak zsynchronizowanych kont" desc="Odblokuj dane w panelu synchronizacji, aby zobaczyć swoje konta." control={<span />} last />
-        ) : (
-          accounts.map((account, index) => (
-            <Row
-              key={account.id}
-              label={account.name}
-              desc={`${account.positions} ${account.positions === 1 ? "pozycja" : "pozycji"} · ${account.baseCurrency}`}
-              last={index === accounts.length - 1}
-              control={(
-                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                  <span style={{ fontFamily: V2_TYPE.mono, fontSize: 12, color: V2.ink }}>
-                    {account.value.toLocaleString("pl-PL", { maximumFractionDigits: 0 })} {account.baseCurrency}
-                  </span>
-                  <V2Badge label="Sync" color={V2.profit} />
-                </div>
-              )}
-            />
-          ))
-        )}
-      </Section>
+      <AccountsSection accounts={accounts} />
 
       <NotificationSection prefs={profile.notifications} />
 
@@ -528,69 +511,94 @@ function ProfileCard({
   );
 }
 
-// ── Default target asset-class allocation ────────────────────────
-function AllocationSection({ profile }: { profile: ReturnType<typeof useProfile> }) {
-  const targets = profile.targetAllocation;
-  const total = useMemo(() => targets.reduce((sum, t) => sum + (t.percent || 0), 0), [targets]);
+// ── Accounts + per-portfolio target allocation ───────────────────
+function AccountsSection({ accounts }: { accounts: PortfolioSummary[] }) {
+  const records = useSyncStore((s) => s.records);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
-  function setPercent(index: number, value: number) {
-    const next = targets.map((t, i) => (i === index ? { ...t, percent: value } : t));
-    updateProfile({ targetAllocation: next });
-  }
+  const drafts = useMemo(() => {
+    const map = new Map<string, AllocationDraft>();
+    for (const account of accounts) {
+      const source = records?.find(
+        (record) =>
+          !record.deletedAt &&
+          record.envelope.type === "account" &&
+          record.id === account.id,
+      );
+      const payload = (source?.envelope.payload ?? {}) as {
+        accountType?: string;
+        colorHex?: string;
+        targetAllocation?: Record<string, number>;
+      };
+      map.set(account.id, {
+        id: account.id,
+        name: account.name,
+        baseCurrency: account.baseCurrency,
+        accountType: payload.accountType,
+        colorHex: payload.colorHex,
+        targetAllocation: payload.targetAllocation,
+        updatedAt: source?.updatedAt ?? "",
+      });
+    }
+    return map;
+  }, [accounts, records]);
 
-  const COLORS = [V2.equity, V2.bonds, V2.deposit, V2.cash, V2.gold, V2.brand];
+  const editingDraft = editingId ? drafts.get(editingId) ?? null : null;
 
   return (
-    <Section eyebrow="Strategia" title="Domyślna alokacja portfela">
-      <div style={{ padding: "14px 24px 4px" }}>
-        <div style={{ fontFamily: V2_TYPE.ui, fontSize: 12, color: V2.muted, marginBottom: 12 }}>
-          Docelowy udział każdej klasy aktywów. Suma powinna wynosić 100%.
-        </div>
-        <div style={{ display: "flex", width: "100%", height: 14, borderRadius: 7, overflow: "hidden", gap: 2, marginBottom: 16 }}>
-          {targets.map((t, i) => (
-            <div key={t.label} title={`${t.label}: ${t.percent}%`} style={{ flex: Math.max(t.percent, 0.001), background: COLORS[i % COLORS.length], transition: "flex .2s" }} />
-          ))}
-        </div>
-      </div>
-      {targets.map((target, index) => (
-        <Row
-          key={target.label}
-          label={target.label}
-          last={index === targets.length - 1}
-          control={(
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                step={1}
-                value={target.percent}
-                onChange={(e) => setPercent(index, Number(e.target.value))}
-                style={{ width: 140, accentColor: V2.brand }}
+    <>
+      <Section eyebrow="Dane" title="Konta i alokacja">
+        {accounts.length === 0 ? (
+          <Row label="Brak zsynchronizowanych kont" desc="Odblokuj dane w panelu synchronizacji, aby zobaczyć swoje konta." control={<span />} last />
+        ) : (
+          accounts.map((account, index) => {
+            const draft = drafts.get(account.id);
+            const allocated = sumAllocation(readAllocation(draft?.targetAllocation));
+            return (
+              <Row
+                key={account.id}
+                label={account.name}
+                desc={`${account.positions} ${account.positions === 1 ? "pozycja" : "pozycji"} · ${account.baseCurrency}`}
+                last={index === accounts.length - 1}
+                control={(
+                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                    <span style={{ fontFamily: V2_TYPE.mono, fontSize: 12, color: V2.ink }}>
+                      {account.value.toLocaleString("pl-PL", { maximumFractionDigits: 0 })} {account.baseCurrency}
+                    </span>
+                    <V2Badge
+                      label={allocated > 0 ? `Alokacja ${Math.round(allocated)}%` : "Bez alokacji"}
+                      color={allocated > 0 ? V2.profit : V2.subtle}
+                    />
+                    <button
+                      onClick={() => setEditingId(account.id)}
+                      aria-label={`Alokacja ${account.name}`}
+                      style={{
+                        padding: "6px 13px",
+                        borderRadius: 9,
+                        border: `0.5px solid ${V2.line}`,
+                        background: V2.card,
+                        color: V2.ink,
+                        fontFamily: V2_TYPE.ui,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Alokacja
+                    </button>
+                  </div>
+                )}
               />
-              <input
-                type="number"
-                min={0}
-                max={100}
-                value={target.percent}
-                onChange={(e) => setPercent(index, Math.max(0, Math.min(100, Number(e.target.value))))}
-                style={{
-                  width: 56, padding: "6px 8px", borderRadius: 8, border: `0.5px solid ${V2.line}`,
-                  background: V2.card, color: V2.ink, fontFamily: V2_TYPE.mono, fontSize: 12.5, textAlign: "right", outline: "none",
-                }}
-              />
-              <span style={{ fontFamily: V2_TYPE.mono, fontSize: 12, color: V2.subtle }}>%</span>
-            </div>
-          )}
-        />
-      ))}
-      <div style={{ padding: "13px 24px", borderTop: `0.5px solid ${V2.line2}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontFamily: V2_TYPE.ui, fontSize: 12.5, fontWeight: 600, color: V2.ink }}>Suma</span>
-        <span style={{ fontFamily: V2_TYPE.mono, fontSize: 13, fontWeight: 700, color: Math.round(total) === 100 ? V2.profit : V2.loss }}>
-          {total.toLocaleString("pl-PL", { maximumFractionDigits: 0 })}%{Math.round(total) === 100 ? "" : " — powinno być 100%"}
-        </span>
-      </div>
-    </Section>
+            );
+          })
+        )}
+      </Section>
+      <AllocationEditorModal
+        open={editingDraft !== null}
+        draft={editingDraft}
+        onClose={() => setEditingId(null)}
+      />
+    </>
   );
 }
 

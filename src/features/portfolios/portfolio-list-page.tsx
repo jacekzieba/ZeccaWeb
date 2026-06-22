@@ -58,10 +58,19 @@ export function PortfolioListPage() {
             record.id === portfolio.id,
         );
 
+        const payload = (sourceRecord?.envelope.payload ?? {}) as {
+          accountType?: string;
+          colorHex?: string;
+          targetAllocation?: Record<string, number>;
+        };
+
         return {
           id: portfolio.id,
           name: portfolio.name,
           baseCurrency: portfolio.baseCurrency,
+          accountType: payload.accountType,
+          colorHex: payload.colorHex,
+          targetAllocation: payload.targetAllocation,
           updatedAt: sourceRecord?.updatedAt ?? "",
         };
       }) ?? [],

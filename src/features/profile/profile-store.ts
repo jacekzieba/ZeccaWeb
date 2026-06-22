@@ -2,18 +2,11 @@
 
 import { useSyncExternalStore } from "react";
 
-// The display profile (name, avatar), target asset-class allocation and
-// notification preferences are personal presentation settings that never need
-// to leave the browser, so they live in localStorage rather than the encrypted
-// sync. This keeps them aligned with the app's "decrypted data stays local"
-// principle while still being editable.
-
-export type AssetClassTarget = {
-  /** Asset-class key, matching the labels produced by the snapshot allocation. */
-  label: string;
-  /** Target share of the portfolio, percent. */
-  percent: number;
-};
+// The display profile (name, avatar) and notification preferences are personal
+// presentation settings that never need to leave the browser, so they live in
+// localStorage rather than the encrypted sync. This keeps them aligned with the
+// app's "decrypted data stays local" principle while still being editable.
+// (Target allocation is per-portfolio and lives on the synced account record.)
 
 export type NotificationPrefs = {
   price: boolean;
@@ -29,7 +22,6 @@ export type DisplayCurrency = "PLN" | "EUR" | "USD";
 export type Profile = {
   name: string;
   avatar: string | null;
-  targetAllocation: AssetClassTarget[];
   notifications: NotificationPrefs;
   displayCurrency: DisplayCurrency;
   /** Polish tax residency (Belka tax preference). Stored as a presentation
@@ -43,12 +35,6 @@ const STORAGE_KEY = "investor-web-profile";
 const DEFAULT_PROFILE: Profile = {
   name: "Inwestor",
   avatar: null,
-  targetAllocation: [
-    { label: "Akcje / ETF", percent: 60 },
-    { label: "Obligacje", percent: 30 },
-    { label: "Lokaty", percent: 5 },
-    { label: "Gotówka", percent: 5 },
-  ],
   notifications: { price: true, income: true, weekly: false, pit: false },
   displayCurrency: "PLN",
   taxResidencePL: true,
@@ -69,9 +55,6 @@ function load(): Profile {
       ...DEFAULT_PROFILE,
       ...parsed,
       notifications: { ...DEFAULT_PROFILE.notifications, ...parsed.notifications },
-      targetAllocation: parsed.targetAllocation?.length
-        ? parsed.targetAllocation
-        : DEFAULT_PROFILE.targetAllocation,
     };
   } catch {
     return DEFAULT_PROFILE;

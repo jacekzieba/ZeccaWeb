@@ -50,6 +50,11 @@ type PortfolioDraft = {
   id: string;
   name: string;
   baseCurrency: string;
+  /** Preserved from the source account record so editing the name never wipes
+   * the per-portfolio allocation, color, or type set on macOS. */
+  accountType?: string;
+  colorHex?: string;
+  targetAllocation?: Record<string, number>;
   updatedAt: string;
 };
 
@@ -119,6 +124,9 @@ export function PortfolioEditorModal({
           id,
           name: trimmedName,
           baseCurrency,
+          accountType: initialValue?.accountType,
+          colorHex: initialValue?.colorHex,
+          targetAllocation: initialValue?.targetAllocation,
         }),
         { baseUpdatedAt: initialValue?.updatedAt ?? null },
       );

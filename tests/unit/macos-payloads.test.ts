@@ -26,6 +26,23 @@ describe("macOS sync payload helpers", () => {
     });
   });
 
+  it("preserves a per-portfolio target allocation, color and type", () => {
+    expect(
+      makeAccountPayload({
+        id: "11111111-1111-4111-8111-111111111111",
+        name: "Główny",
+        baseCurrency: "PLN",
+        accountType: "brokerage",
+        colorHex: "#34699A",
+        targetAllocation: { equity: 65, bonds: 35 },
+      }),
+    ).toMatchObject({
+      accountType: "brokerage",
+      colorHex: "#34699A",
+      targetAllocation: { equity: 65, bonds: 35 },
+    });
+  });
+
   it("creates asset payloads with nullable refactor fields", () => {
     expect(
       makeAssetPayload({
