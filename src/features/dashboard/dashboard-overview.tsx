@@ -50,6 +50,8 @@ const PALETTE = {
 const PERIOD_OPTIONS = ["1M", "3M", "6M", "1Y", "2Y", "MAX"] as const;
 type Period = (typeof PERIOD_OPTIONS)[number];
 const DASHBOARD_SECTIONS_STORAGE_KEY = "zecca.dashboard.sections.v1";
+const DASHBOARD_GRID_ROW_HEIGHT = 240;
+const DASHBOARD_GRID_GAP = 14;
 
 const DASHBOARD_SECTION_OPTIONS = [
   { id: "summary", label: "Wartość i historia", desc: "Główna wartość portfela, wynik i wykres historii." },
@@ -265,6 +267,11 @@ function Card({
         boxShadow: glass
           ? `inset 0 1px 0 ${PALETTE.spec}, 0 8px 28px ${mix(PALETTE.ink, 0.07)}`
           : `0 1px 0 ${mix(PALETTE.ink, 0.03)}, 0 6px 20px ${mix(PALETTE.ink, 0.05)}`,
+        boxSizing: "border-box",
+        height: "100%",
+        minHeight: 0,
+        overflow: "auto",
+        overscrollBehavior: "contain",
         ...style,
       }}
     >
@@ -1018,10 +1025,12 @@ export function DashboardOverview() {
       )}
 
       <div
+        data-testid="dashboard-grid"
         style={{
           display: "grid",
           gridTemplateColumns: isMobile || isTablet ? "1fr" : "repeat(4, minmax(0, 1fr))",
-          gap: 14,
+          gridAutoRows: isMobile || isTablet ? "auto" : `${DASHBOARD_GRID_ROW_HEIGHT}px`,
+          gap: DASHBOARD_GRID_GAP,
           alignItems: "stretch",
         }}
       >
@@ -1030,8 +1039,12 @@ export function DashboardOverview() {
           return (
             <div
               key={section}
+              data-testid={`dashboard-section-${section}`}
               style={{
                 gridColumn: isMobile || isTablet ? "1 / -1" : `span ${size.width}`,
+                gridRow: isMobile || isTablet ? "auto" : `span ${size.height}`,
+                height: isMobile || isTablet ? "auto" : "100%",
+                minHeight: 0,
                 minWidth: 0,
               }}
             >
@@ -1097,7 +1110,7 @@ function SummaryCard({
   );
 
   return (
-    <Card glass pad={0} style={{ overflow: "hidden" }}>
+    <Card glass pad={0}>
       <div style={{ display: "grid", gridTemplateColumns: isTablet ? "1fr" : "minmax(280px, 360px) 1fr" }}>
         <div
           style={{
