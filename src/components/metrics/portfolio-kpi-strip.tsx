@@ -10,6 +10,7 @@ const cardStyle: CSSProperties = {
   border: `0.5px solid ${V2.line}`,
   boxShadow: `0 1px 0 ${v2Mix(V2.ink, 0.03)}, 0 6px 20px ${v2Mix(V2.ink, 0.05)}`,
   padding: "15px 17px",
+  height: "100%",
 };
 
 function fmt(n: number, d = 0) {
@@ -70,29 +71,67 @@ export function KpiCard({
   );
 }
 
-export type PortfolioKpiStripInput = {
+export type KpiTileId =
+  | "kpiUnrealized"
+  | "kpiXirr"
+  | "kpiTwr"
+  | "kpiCagr"
+  | "kpiRealReturn"
+  | "kpiMaxDd"
+  | "kpiRealized"
+  | "kpiInvested"
+  | "kpiDividends"
+  | "kpiOpenPositions";
+
+/** Metadata for each KPI tile — used to register them as individually
+ * toggleable dashboard sections. */
+export const KPI_TILE_META: { id: KpiTileId; label: string; desc: string }[] = [
+  { id: "kpiUnrealized", label: "Zysk niezrealizowany", desc: "Wartość ponad zainwestowany kapitał." },
+  { id: "kpiXirr", label: "MWR · XIRR", desc: "Roczny zwrot ważony kapitałem." },
+  { id: "kpiTwr", label: "Zwrot (TWR)", desc: "Zwrot całkowity, bez wpłat." },
+  { id: "kpiCagr", label: "CAGR", desc: "Annualizowany zwrot ważony czasem." },
+  { id: "kpiRealReturn", label: "Wynik realny", desc: "Zwrot po inflacji." },
+  { id: "kpiMaxDd", label: "Maks. obsunięcie", desc: "Największy spadek od szczytu." },
+  { id: "kpiRealized", label: "Zysk zrealizowany", desc: "Wynik z zamkniętych pozycji." },
+  { id: "kpiInvested", label: "Zainwestowany kapitał", desc: "Wpłaty netto." },
+  { id: "kpiDividends", label: "Dywidendy", desc: "Suma otrzymanych dywidend." },
+  { id: "kpiOpenPositions", label: "Otwarte pozycje", desc: "Liczba aktywnych pozycji." },
+];
+
+export type KpiTile = { id: KpiTileId; label: string; value: string; sub?: string; color: string };
+
+export type PortfolioKpiInput = {
   metrics: PortfolioMetrics;
   cashflows: CashflowSummary;
   totalValue: number;
   openPositions: number;
   currency: string;
-  /** When set, prepends portfolio value + cash tiles (used on the Portfel view,
-   * where there is no large summary card to carry them). */
-  cashValue?: number;
 };
 
-/** Phase 1a parity strip: the KPI tiles the macOS/iOS app shows by default,
- * built entirely from values the web snapshot already computes. */
-export function PortfolioKpiStrip({
-  metrics,
-  cashflows,
-  totalValue,
-  openPositions,
-  currency,
-  cashValue,
-}: PortfolioKpiStripInput) {
+/** Computes every KPI tile from values the snapshot already produces. Single
+ * source of truth for the Portfel strip and the per-tile Dashboard sections. */
+export function getKpiTiles(input: PortfolioKpiInput): KpiTile[] {
+  const { metrics, cashflows, totalValue, openPositions, currency } = input;
   const unrealized = totalValue - metrics.netInvested;
   const xirr = metrics.xirrPct;
+  return [
+    { id: "kpiUnrealized", label: "Zysk niezrealizowany", value: `${fmtSigned(unrealized)} ${currency}`, color: unrealized >= 0 ? V2.profit : V2.loss },
+    { id: "kpiXirr", label: "MWR · XIRR", value: xirr == null ? "—" : fmtPct(xirr), sub: "rocznie", color: (xirr ?? 0) >= 0 ? V2.profit : V2.loss },
+    { id: "kpiTwr", label: "Zwrot (TWR)", value: fmtPct(metrics.totalReturnPct), sub: "bez wpłat", color: metrics.totalReturnPct >= 0 ? V2.profit : V2.loss },
+    { id: "kpiCagr", label: "CAGR", value: fmtPct(metrics.cagrPct), sub: "rocznie, TWR", color: metrics.cagrPct >= 0 ? V2.profit : V2.loss },
+    { id: "kpiRealReturn", label: "Wynik realny", value: fmtPct(metrics.realReturnPct), sub: "po inflacji", color: metrics.realReturnPct >= 0 ? V2.profit : V2.loss },
+    { id: "kpiMaxDd", label: "Maks. obsunięcie", value: `${fmt(metrics.maxDrawdownPct, 2)}%`, sub: "od szczytu", color: V2.loss },
+    { id: "kpiRealized", label: "Zysk zrealizowany", value: `${fmtSigned(metrics.realizedPnl)} ${currency}`, sub: "zamknięte pozycje", color: metrics.realizedPnl >= 0 ? V2.profit : V2.loss },
+    { id: "kpiInvested", label: "Zainwestowany kapitał", value: `${fmt(metrics.netInvested)} ${currency}`, color: V2.ink },
+    { id: "kpiDividends", label: "Dywidendy", value: `+${fmt(cashflows.dividends)} ${currency}`, color: V2.profit },
+    { id: "kpiOpenPositions", label: "Otwarte pozycje", value: String(openPositions), color: V2.ink },
+  ];
+}
+
+/** Full KPI strip (all tiles in one grid). Used on the Portfel view, which has
+ * no per-section customization; optionally prepends value + cash tiles. */
+export function PortfolioKpiStrip(input: PortfolioKpiInput & { cashValue?: number }) {
+  const tiles = getKpiTiles(input);
   return (
     <div
       style={{
@@ -101,56 +140,15 @@ export function PortfolioKpiStrip({
         gap: 12,
       }}
     >
-      {cashValue != null && (
+      {input.cashValue != null && (
         <>
-          <KpiCard label="Wartość portfela" value={`${fmt(totalValue)} ${currency}`} />
-          <KpiCard label="Gotówka" value={`${fmt(cashValue)} ${currency}`} />
+          <KpiCard label="Wartość portfela" value={`${fmt(input.totalValue)} ${input.currency}`} />
+          <KpiCard label="Gotówka" value={`${fmt(input.cashValue)} ${input.currency}`} />
         </>
       )}
-      <KpiCard
-        label="Zysk niezrealizowany"
-        value={`${fmtSigned(unrealized)} ${currency}`}
-        color={unrealized >= 0 ? V2.profit : V2.loss}
-      />
-      <KpiCard
-        label="MWR · XIRR"
-        value={xirr == null ? "—" : fmtPct(xirr)}
-        sub="rocznie"
-        color={(xirr ?? 0) >= 0 ? V2.profit : V2.loss}
-      />
-      <KpiCard
-        label="Zwrot (TWR)"
-        value={fmtPct(metrics.totalReturnPct)}
-        sub="bez wpłat"
-        color={metrics.totalReturnPct >= 0 ? V2.profit : V2.loss}
-      />
-      <KpiCard
-        label="CAGR"
-        value={fmtPct(metrics.cagrPct)}
-        sub="rocznie, TWR"
-        color={metrics.cagrPct >= 0 ? V2.profit : V2.loss}
-      />
-      <KpiCard
-        label="Wynik realny"
-        value={fmtPct(metrics.realReturnPct)}
-        sub="po inflacji"
-        color={metrics.realReturnPct >= 0 ? V2.profit : V2.loss}
-      />
-      <KpiCard
-        label="Maks. obsunięcie"
-        value={`${fmt(metrics.maxDrawdownPct, 2)}%`}
-        sub="od szczytu"
-        color={V2.loss}
-      />
-      <KpiCard
-        label="Zysk zrealizowany"
-        value={`${fmtSigned(metrics.realizedPnl)} ${currency}`}
-        sub="zamknięte pozycje"
-        color={metrics.realizedPnl >= 0 ? V2.profit : V2.loss}
-      />
-      <KpiCard label="Zainwestowany kapitał" value={`${fmt(metrics.netInvested)} ${currency}`} />
-      <KpiCard label="Dywidendy" value={`+${fmt(cashflows.dividends)} ${currency}`} color={V2.profit} />
-      <KpiCard label="Otwarte pozycje" value={String(openPositions)} />
+      {tiles.map((tile) => (
+        <KpiCard key={tile.id} label={tile.label} value={tile.value} sub={tile.sub} color={tile.color} />
+      ))}
     </div>
   );
 }

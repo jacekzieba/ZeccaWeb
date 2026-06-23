@@ -25,7 +25,7 @@ import {
   treasuryBondFamilyLabel,
   type GroupedTreasuryBondFamily,
 } from "@/domain/bonds/bond-series-groups";
-import { PortfolioKpiStrip } from "@/components/metrics/portfolio-kpi-strip";
+import { KpiCard, KPI_TILE_META, getKpiTiles, type KpiTileId } from "@/components/metrics/portfolio-kpi-strip";
 import { ValueVsDepositsChart } from "@/components/charts/value-vs-deposits-chart";
 
 const SERIF = TYPOGRAPHY.serif;
@@ -61,7 +61,7 @@ const DASHBOARD_GRID_GAP = 14;
 
 const DASHBOARD_SECTION_OPTIONS = [
   { id: "summary", label: "Wartość i historia", desc: "Główna wartość portfela, wynik i wykres historii." },
-  { id: "kpis", label: "Wskaźniki", desc: "Kluczowe wskaźniki: zwrot, XIRR, wynik realny, dywidendy." },
+  ...KPI_TILE_META.map((tile) => ({ id: tile.id, label: tile.label, desc: tile.desc })),
   { id: "valueVsDeposits", label: "Wartość vs wpłaty", desc: "Wartość konta na tle skumulowanych wpłat." },
   { id: "holdings", label: "Instrumenty", desc: "Największe aktywne pozycje." },
   { id: "allocation", label: "Alokacja", desc: "Podział klas aktywów." },
@@ -69,6 +69,7 @@ const DASHBOARD_SECTION_OPTIONS = [
   { id: "transactions", label: "Ostatnie transakcje", desc: "Najnowsza aktywność konta." },
   { id: "portfolios", label: "Portfele i cashflow", desc: "Podział kont, dywidendy, odsetki i prowizje." },
 ] as const;
+const KPI_SECTION_IDS = new Set<string>(KPI_TILE_META.map((tile) => tile.id));
 type DashboardSectionId = (typeof DASHBOARD_SECTION_OPTIONS)[number]["id"];
 const DASHBOARD_SECTION_OPTION_BY_ID = Object.fromEntries(
   DASHBOARD_SECTION_OPTIONS.map((section) => [section.id, section]),
@@ -85,9 +86,12 @@ type DashboardCustomizationConfig = {
   knownSections: DashboardSectionId[];
 };
 
+const KPI_SIZE_PRESETS: DashboardSectionSize[] = [{ width: 1 }, { width: 2 }];
 const DASHBOARD_SECTION_SIZE_PRESETS: Record<DashboardSectionId, DashboardSectionSize[]> = {
   summary: [{ width: 4 }],
-  kpis: [{ width: 4 }, { width: 2 }],
+  ...(Object.fromEntries(
+    KPI_TILE_META.map((tile) => [tile.id, KPI_SIZE_PRESETS]),
+  ) as Record<KpiTileId, DashboardSectionSize[]>),
   valueVsDeposits: [{ width: 4 }, { width: 2 }],
   holdings: [{ width: 3 }, { width: 4 }],
   allocation: [{ width: 1 }, { width: 2 }],
@@ -949,6 +953,15 @@ export function DashboardOverview() {
   const cashflows = snapshot.cashflows;
   const invested = metrics.netInvested;
   const unrealized = totalValue - metrics.netInvested;
+  const kpiTileById = new Map<string, ReturnType<typeof getKpiTiles>[number]>(
+    getKpiTiles({
+      metrics,
+      cashflows,
+      totalValue,
+      openPositions: holdings.length,
+      currency: profile.displayCurrency,
+    }).map((tile) => [tile.id, tile]),
+  );
   const visibleSections = new Set(dashboardConfig.visibleSections);
   const orderedVisibleSections = dashboardConfig.sectionOrder.filter((section) => visibleSections.has(section));
   const toggleSection = (section: DashboardSectionId) => {
@@ -999,16 +1012,10 @@ export function DashboardOverview() {
         />
       );
     }
-    if (section === "kpis") {
-      return (
-        <PortfolioKpiStrip
-          metrics={metrics}
-          cashflows={cashflows}
-          totalValue={totalValue}
-          openPositions={holdings.length}
-          currency={profile.displayCurrency}
-        />
-      );
+    if (KPI_SECTION_IDS.has(section)) {
+      const tile = kpiTileById.get(section);
+      if (!tile) return null;
+      return <KpiCard label={tile.label} value={tile.value} sub={tile.sub} color={tile.color} />;
     }
     if (section === "valueVsDeposits") {
       return (
