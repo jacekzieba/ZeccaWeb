@@ -56,7 +56,7 @@ const PALETTE = {
 
 const PERIOD_OPTIONS = ["1M", "3M", "6M", "1Y", "2Y", "MAX"] as const;
 type Period = (typeof PERIOD_OPTIONS)[number];
-const DASHBOARD_SECTIONS_STORAGE_KEY = "zecca.dashboard.sections.v3";
+const DASHBOARD_SECTIONS_STORAGE_KEY = "zecca.dashboard.sections.v1";
 const DASHBOARD_GRID_GAP = 14;
 
 const DASHBOARD_SECTION_OPTIONS = [
@@ -79,6 +79,10 @@ type DashboardCustomizationConfig = {
   sectionOrder: DashboardSectionId[];
   visibleSections: DashboardSectionId[];
   sectionSizes: Partial<Record<DashboardSectionId, DashboardSectionSize>>;
+  /** Sections that existed when this config was last written. Used to detect
+   * sections shipped *after* the user saved, so we can surface them by default
+   * (once) instead of leaving new parity features hidden. */
+  knownSections: DashboardSectionId[];
 };
 
 const DASHBOARD_SECTION_SIZE_PRESETS: Record<DashboardSectionId, DashboardSectionSize[]> = {
@@ -98,6 +102,7 @@ const DEFAULT_DASHBOARD_CONFIG: DashboardCustomizationConfig = {
   sectionOrder: DEFAULT_DASHBOARD_SECTIONS,
   visibleSections: DEFAULT_DASHBOARD_SECTIONS,
   sectionSizes: DEFAULT_DASHBOARD_SECTION_SIZES,
+  knownSections: DEFAULT_DASHBOARD_SECTIONS,
 };
 
 const PERIOD_MONTHS: Record<Period, number> = {
@@ -769,10 +774,30 @@ function readDashboardConfig(): DashboardCustomizationConfig {
     }
     if (!parsed || typeof parsed !== "object") return DEFAULT_DASHBOARD_CONFIG;
     const config = parsed as Record<string, unknown>;
+    const sectionOrder = sanitizeSectionOrder(config.sectionOrder);
+    const visible = sanitizeVisibleSections(config.visibleSections);
+    // Sections shipped after this config was saved (absent from the order the
+    // user last knew). Surface them by default once, so new parity features are
+    // not stuck hidden behind a stale local layout. The fallback uses the *raw*
+    // stored order (not sanitizeSectionOrder, which back-fills missing defaults
+    // and would hide brand-new sections).
+    const isKnownId = (id: unknown): id is DashboardSectionId =>
+      typeof id === "string" && DEFAULT_DASHBOARD_SECTIONS.includes(id as DashboardSectionId);
+    const known = (
+      Array.isArray(config.knownSections)
+        ? config.knownSections
+        : Array.isArray(config.sectionOrder)
+          ? config.sectionOrder
+          : []
+    ).filter(isKnownId);
+    const newlyShipped = DEFAULT_DASHBOARD_SECTIONS.filter(
+      (id) => !known.includes(id) && !visible.includes(id),
+    );
     return {
-      sectionOrder: sanitizeSectionOrder(config.sectionOrder),
-      visibleSections: sanitizeVisibleSections(config.visibleSections),
+      sectionOrder,
+      visibleSections: [...visible, ...newlyShipped],
       sectionSizes: sanitizeSectionSizes(config.sectionSizes),
+      knownSections: DEFAULT_DASHBOARD_SECTIONS,
     };
   } catch {
     return DEFAULT_DASHBOARD_CONFIG;
@@ -787,6 +812,7 @@ function saveDashboardConfig(config: DashboardCustomizationConfig) {
         sectionOrder: sanitizeSectionOrder(config.sectionOrder),
         visibleSections: sanitizeVisibleSections(config.visibleSections),
         sectionSizes: sanitizeSectionSizes(config.sectionSizes),
+        knownSections: DEFAULT_DASHBOARD_SECTIONS,
       }),
     );
   } catch {
@@ -1305,6 +1331,7 @@ function DashboardCustomizePanel({
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {config.sectionOrder.map((sectionId, index) => {
           const section = DASHBOARD_SECTION_OPTION_BY_ID[sectionId];
+          if (!section) return null;
           const checked = visibleSections.has(sectionId);
           const currentSize = config.sectionSizes[sectionId] ?? DEFAULT_DASHBOARD_SECTION_SIZES[sectionId];
           const presets = DASHBOARD_SECTION_SIZE_PRESETS[sectionId];
