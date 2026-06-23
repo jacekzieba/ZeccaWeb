@@ -5,6 +5,7 @@ import {
   type PositionValuationDataset,
 } from "@/domain/valuation/position-valuator";
 import { bondPeriodRate, inflationReferenceRate } from "@/domain/valuation/bond-rates";
+import { normalizeTreasuryBondParams } from "@/domain/valuation/treasury-bond-issues";
 
 const EMPTY_DATASET: PositionValuationDataset = {
   manualValuations: [],
@@ -94,6 +95,16 @@ describe("treasury bond inflation-indexed valuation", () => {
       return sum + perBond * h.quantity;
     }, 0);
     expect(total).toBeCloseTo(21_710.95, 2);
+  });
+
+  it("normalizes legacy synced issue params before valuation", () => {
+    const legacyParams = inflationParams("2029-02-01T00:00:00.000Z", 1.5, 1.5);
+    const normalized = normalizeTreasuryBondParams("ROS0229", legacyParams);
+
+    expect(normalized.firstPeriodRate).toBe(7.2);
+    expect(normalized.maturityDate.toISOString()).toBe("2029-02-27T00:00:00.000Z");
+    expect(unitPrice(normalized, new Date("2023-02-27T00:00:00.000Z"), asOf))
+      .toBeCloseTo(124.11, 1);
   });
 
   it("uses inflation + margin (not margin alone) for periods after year 1", () => {

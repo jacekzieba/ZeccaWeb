@@ -39,6 +39,7 @@ import {
   resolveFxRate,
   type MarketQuoteInput,
 } from "@/domain/valuation/price-resolver";
+import { normalizeTreasuryBondParams } from "@/domain/valuation/treasury-bond-issues";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
 
 /** Resolves how many units of the native (PLN) base currency one unit of the
@@ -1357,7 +1358,7 @@ function toPositionAssetInput(
     kind: asset.kind,
     currency: asset.currency,
     bondParams: asset.bondParams
-      ? {
+      ? normalizeTreasuryBondParams(asset.symbol, {
           maturityDate: toDate(asset.bondParams.maturityDate),
           nominalValue: asset.bondParams.nominalValue,
           firstPeriodRate: asset.bondParams.firstPeriodRate,
@@ -1365,7 +1366,7 @@ function toPositionAssetInput(
           marginOverBase: asset.bondParams.marginOverBase,
           capitalization: asset.bondParams.capitalization,
           interestPayment: asset.bondParams.interestPayment,
-        }
+        })
       : null,
   };
 }
