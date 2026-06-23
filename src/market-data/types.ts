@@ -14,7 +14,7 @@ export type FxRate = {
 };
 
 export type MarketQuote = {
-  provider: "yahoo" | "stooq";
+  provider: "yahoo";
   symbol: string;
   currency: string | null;
   date: string;

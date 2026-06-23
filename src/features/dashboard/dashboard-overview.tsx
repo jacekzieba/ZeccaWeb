@@ -1448,9 +1448,9 @@ function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobil
                 style={{ borderTop: index === 0 ? "none" : `0.5px solid ${PALETTE.line2}`, padding: "14px 22px", paddingLeft: depth ? 42 : 22, cursor: isGroup ? "pointer" : "default" }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                  {isGroup && <span aria-hidden="true" style={{ color: PALETTE.bonds }}>{expandedFamilies.has(family!) ? "⌄" : "›"}</span>}
                   <Badge label={tag} color={tagColor} />
                   <div style={{ fontFamily: UI, fontSize: 14, fontWeight: 700, color: PALETTE.ink }}>{holding.symbol}</div>
+                  {isGroup && <span aria-hidden="true" style={{ marginLeft: "auto", color: PALETTE.bonds }}>{expandedFamilies.has(family!) ? "⌄" : "›"}</span>}
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
                   <div style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 500, color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>
@@ -1497,12 +1497,12 @@ function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobil
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-                {isGroup && <span aria-hidden="true" style={{ color: PALETTE.bonds, width: 10 }}>{expandedFamilies.has(family!) ? "⌄" : "›"}</span>}
                 <Badge label={tag} color={tagColor} />
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontFamily: UI, fontSize: 13.5, fontWeight: 700, color: PALETTE.ink }}>{holding.symbol}</div>
                   <div style={{ fontFamily: UI, fontSize: 11, color: PALETTE.subtle, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{holding.name}</div>
                 </div>
+                {isGroup && <span aria-hidden="true" style={{ marginLeft: "auto", color: PALETTE.bonds, flexShrink: 0 }}>{expandedFamilies.has(family!) ? "⌄" : "›"}</span>}
               </div>
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontFamily: MONO, fontSize: 12.5, color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>{fmtQty(holding.quantity)}</div>

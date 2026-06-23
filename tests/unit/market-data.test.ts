@@ -4,7 +4,6 @@ import {
   getCachedMarketData,
   setCachedMarketData,
 } from "@/market-data/cache";
-import { parseStooqCsv } from "@/market-data/providers/stooq";
 import {
   parseYahooChart,
   parseYahooChartSeries,
@@ -262,29 +261,6 @@ describe("parseYahooSearch", () => {
       },
     ]);
     expect(parseYahooSearch({})).toEqual([]);
-  });
-});
-
-describe("parseStooqCsv", () => {
-  it("parses a daily OHLCV row for fallback quotes", () => {
-    expect(
-      parseStooqCsv(
-        ["Date,Open,High,Low,Close,Volume", "2026-05-15,190,195,188,193.25,12345"].join(
-          "\n",
-        ),
-        "aapl.us",
-      ),
-    ).toEqual({
-      provider: "stooq",
-      symbol: "aapl.us",
-      currency: "USD",
-      date: "2026-05-15",
-      open: 190,
-      high: 195,
-      low: 188,
-      close: 193.25,
-      volume: 12345,
-    });
   });
 });
 

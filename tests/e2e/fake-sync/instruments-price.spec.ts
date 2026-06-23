@@ -9,7 +9,7 @@ test("fetches a fake quote preview and saves it as a manual valuation", async ({
   await expect(main.getByText("Instrumenty", { exact: true })).toBeVisible();
   await expect(main.getByText("Apple")).toBeVisible();
   await expect(main.getByText("Yahoo Finance jest skonfigurowany")).toBeVisible();
-  await expect(main.getByText("Yahoo · OK · Stooq")).toBeVisible();
+  await expect(main.getByText("Yahoo · OK")).toBeVisible();
 
   await main.getByRole("row", { name: /AAPL Apple/ }).getByRole("button", { name: "Cena" }).click();
 

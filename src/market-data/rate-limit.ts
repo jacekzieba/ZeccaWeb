@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 // Lightweight per-IP fixed-window limiter for the public market-data routes.
-// These endpoints proxy external providers (Yahoo/NBP/Stooq) without requiring a
+// These endpoints proxy external providers (Yahoo/NBP) without requiring a
 // session, so an unauthenticated client could otherwise hammer them. The state
 // is in-memory and therefore per-instance on Fluid Compute — enough to blunt
 // abuse from a single origin; a durable cross-instance limit would need KV/Redis.

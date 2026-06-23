@@ -3,7 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/e2e/fake-sync",
   webServer: {
-    command: "STOOQ_API_KEY= NEXT_PUBLIC_FAKE_SYNC=1 npm run dev -- --port 3101",
+    command: "NEXT_PUBLIC_FAKE_SYNC=1 npm run dev -- --port 3101",
     url: "http://127.0.0.1:3101/api/health",
     reuseExistingServer: false,
   },

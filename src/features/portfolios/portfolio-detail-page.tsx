@@ -301,7 +301,6 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
             >
               {/* Instrument */}
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                {isGroup && <span aria-hidden="true" style={{ color, width: 10 }}>{expandedFamilies.has(family!) ? "⌄" : "›"}</span>}
                 <span
                   style={{
                     width: 32,
@@ -321,12 +320,13 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
                 >
                   {h.symbol.slice(0, 3).toUpperCase()}
                 </span>
-                <div>
+                <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: INK }}>{h.name}</div>
                   <div style={{ fontSize: 11, color: SUBTLE }}>
                     {h.symbol} · <span style={{ color: `${color}CC` }}>{kindLabel}</span>
                   </div>
                 </div>
+                {isGroup && <span aria-hidden="true" style={{ marginLeft: "auto", color, flexShrink: 0 }}>{expandedFamilies.has(family!) ? "⌄" : "›"}</span>}
               </div>
 
               {/* Quantity */}

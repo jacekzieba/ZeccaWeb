@@ -15,13 +15,9 @@ Etap 5 domyka tylko proxy i cache danych rynkowych. Nie aktualizuje automatyczni
    - Obslugiwany zakres w aplikacji: ostatni dostepny dzienny punkt OHLCV dla symbolu Yahoo.
    - Endpoint web: `/api/market-data/quote?symbol=AAPL`.
    - Yahoo jest traktowany jako podstawowy provider propozycji ceny dla pojedynczego symbolu, nie jako zrodlo gwarantowane dla wszystkich instrumentow.
+   - Yahoo jest jedynym providerem quote'ow; po bledzie endpoint zwraca 502 bez fallbacku.
    - Endpoint nie wymaga klucza API w konfiguracji serwera.
-   - Legacy symbole Stooq sa mapowane przed requestem: `.us` znika, `.pl` przechodzi na `.WA`, `.uk` na `.L`.
-
-3. Quote fallback: Stooq CSV download.
-   - Stooq pozostaje druga opcja, zgodnie z klientami macOS/iOS.
-   - Fallback dziala tylko przy ustawionym `STOOQ_API_KEY`.
-   - Endpoint web probuje Yahoo jako pierwsze, a po bledzie przechodzi na Stooq z symbolem Stooq, np. `CDR` + `PLN` -> Yahoo `CDR.WA`, fallback Stooq `cdr.pl`.
+   - Legacy symbole sa mapowane przed requestem: `.us` znika, `.pl` przechodzi na `.WA`, `.uk` na `.L`.
 
 ## Prywatnosc
 

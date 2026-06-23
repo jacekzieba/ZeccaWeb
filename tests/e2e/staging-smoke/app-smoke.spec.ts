@@ -34,7 +34,6 @@ test("keeps public health and market data status routes available", async ({ req
     providers: {
       yahoo: { configured: true },
       nbp: { configured: true },
-      stooq: { requiredEnv: "STOOQ_API_KEY" },
     },
   });
 

@@ -1,4 +1,6 @@
-const LEGACY_STOOQ_SUFFIXES: Record<string, string> = {
+// Legacy instrument symbols were stored with these suffixes (a Stooq-style
+// convention from an earlier provider); normalize them to Yahoo suffixes.
+const LEGACY_SYMBOL_SUFFIXES: Record<string, string> = {
   ".US": "",
   ".PL": ".WA",
   ".UK": ".L",
@@ -11,9 +13,9 @@ export function yahooSymbolForInstrument(symbol: string, currency?: string | nul
     return normalized;
   }
 
-  for (const [stooqSuffix, yahooSuffix] of Object.entries(LEGACY_STOOQ_SUFFIXES)) {
-    if (normalized.endsWith(stooqSuffix)) {
-      return `${normalized.slice(0, -stooqSuffix.length)}${yahooSuffix}`;
+  for (const [legacySuffix, yahooSuffix] of Object.entries(LEGACY_SYMBOL_SUFFIXES)) {
+    if (normalized.endsWith(legacySuffix)) {
+      return `${normalized.slice(0, -legacySuffix.length)}${yahooSuffix}`;
     }
   }
 
@@ -27,39 +29,6 @@ export function yahooSymbolForInstrument(symbol: string, currency?: string | nul
 
   if (currency === "GBP") {
     return `${normalized}.L`;
-  }
-
-  return normalized;
-}
-
-export function stooqSymbolForInstrument(symbol: string, currency?: string | null) {
-  const normalized = symbol.trim().toLowerCase();
-  if (!normalized) {
-    return normalized;
-  }
-
-  if (normalized.endsWith(".wa")) {
-    return `${normalized.slice(0, -3)}.pl`;
-  }
-
-  if (normalized.endsWith(".l")) {
-    return `${normalized.slice(0, -2)}.uk`;
-  }
-
-  if (normalized.includes(".")) {
-    return normalized;
-  }
-
-  if (currency === "PLN") {
-    return `${normalized}.pl`;
-  }
-
-  if (currency === "GBP") {
-    return `${normalized}.uk`;
-  }
-
-  if (currency === "USD") {
-    return `${normalized}.us`;
   }
 
   return normalized;

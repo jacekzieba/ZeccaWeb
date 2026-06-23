@@ -96,10 +96,6 @@ type MarketDataStatus = {
     yahoo: {
       configured: boolean;
     };
-    stooq: {
-      configured: boolean;
-      requiredEnv: string;
-    };
     nbp: {
       configured: boolean;
     };
@@ -567,9 +563,7 @@ export function InstrumentsPage() {
               {marketDataStatusError
                 ? marketDataStatusError
                 : marketDataStatus?.providers.yahoo.configured
-                  ? marketDataStatus.providers.stooq.configured
-                    ? "Yahoo Finance jest skonfigurowany, a Stooq działa jako druga opcja."
-                    : "Yahoo Finance jest skonfigurowany. Stooq jako druga opcja wymaga STOOQ_API_KEY."
+                  ? "Yahoo Finance jest skonfigurowany."
                   : "Sprawdzam konfigurację providerów..."}
             </div>
           </div>
@@ -595,9 +589,6 @@ export function InstrumentsPage() {
                 ? "OK"
                 : "niedostępny"
               : "sprawdzam"}
-            {marketDataStatus
-              ? ` · Stooq ${marketDataStatus.providers.stooq.configured ? "OK" : "brak klucza"}`
-              : ""}
           </div>
         </div>
       )}
@@ -762,17 +753,6 @@ export function InstrumentsPage() {
               >
                 {/* Name + symbol */}
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  {isGroup && (
-                    <button
-                      type="button"
-                      onClick={() => toggleFamily(family!)}
-                      aria-label={`${expandedFamilies.has(family!) ? "Zwiń" : "Rozwiń"} serie ${family}`}
-                      aria-expanded={expandedFamilies.has(family!)}
-                      style={{ width: 24, height: 24, border: "none", background: "transparent", color, cursor: "pointer", fontSize: 18, padding: 0 }}
-                    >
-                      {expandedFamilies.has(family!) ? "⌄" : "›"}
-                    </button>
-                  )}
                   <span
                     style={{
                       width: 34,
@@ -792,10 +772,21 @@ export function InstrumentsPage() {
                   >
                     {inst.symbol.slice(0, 4).toUpperCase()}
                   </span>
-                  <div>
+                  <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 13.5, fontWeight: 700, color: V2.ink }}>{inst.name}</div>
                     <div style={{ fontFamily: V2_TYPE.mono, fontSize: 11, color: V2.subtle }}>{inst.symbol} · {inst.currency}</div>
                   </div>
+                  {isGroup && (
+                    <button
+                      type="button"
+                      onClick={() => toggleFamily(family!)}
+                      aria-label={`${expandedFamilies.has(family!) ? "Zwiń" : "Rozwiń"} serie ${family}`}
+                      aria-expanded={expandedFamilies.has(family!)}
+                      style={{ marginLeft: "auto", width: 24, height: 24, border: "none", background: "transparent", color, cursor: "pointer", fontSize: 18, padding: 0, flexShrink: 0 }}
+                    >
+                      {expandedFamilies.has(family!) ? "⌄" : "›"}
+                    </button>
+                  )}
                 </div>
 
                 {/* Kind badge */}
@@ -954,7 +945,7 @@ export function InstrumentsPage() {
                       {fmt(preview.quote.close, 2)} {quoteCurrencyForInstrument(preview.quote, inst.currency)}
                     </div>
                     <div style={{ color: MUTED, fontSize: 11, marginTop: 2 }}>
-                      {preview.quote.provider === "stooq" ? "Stooq" : "Yahoo"} {preview.quote.symbol || preview.requestSymbol} · {preview.quote.date} · zapisze jako wycenę manualną
+                      Yahoo {preview.quote.symbol || preview.requestSymbol} · {preview.quote.date} · zapisze jako wycenę manualną
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

@@ -408,7 +408,7 @@ export function PositionsPage() {
                           </div>
                         </td>
                         <td style={{ ...tdStyle, textAlign: "right", color: V2.muted, fontFamily: MONO, fontSize: 11 }}>
-                          {instrument.kind}
+                          {KIND_LABELS[instrument.kind] ?? instrument.kind}
                         </td>
                         <td style={{ ...tdStyle, textAlign: "right", fontFamily: MONO }}>
                           {fmtQty(instrument.totalQuantity)}

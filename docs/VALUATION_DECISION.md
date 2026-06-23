@@ -8,9 +8,8 @@ Etap 6 wprowadza historie cen i wyceny rynkowe. Celem nie jest automatyczne ujaw
 
 1. `manualValuation` - zrodlo prawdy dla wycen instrumentow zapisanych w sync.
 2. Cena transakcyjna - fallback, gdy instrument nie ma wyceny manualnej przed dana data.
-3. Yahoo Finance - podstawowe zrodlo propozycji ceny dla pojedynczego symbolu.
-4. Stooq - druga opcja dla propozycji ceny, gdy Yahoo nie zwroci danych i serwer ma `STOOQ_API_KEY`.
-5. NBP FX - zrodlo propozycji kursu waluty do PLN dla pojedynczej waluty i daty.
+3. Yahoo Finance - zrodlo propozycji ceny dla pojedynczego symbolu.
+4. NBP FX - zrodlo propozycji kursu waluty do PLN dla pojedynczej waluty i daty.
 
 Provider market data nie zapisuje samodzielnie rekordow sync. Wynik providera staje sie trwaly dopiero po potwierdzeniu przez uzytkownika i zaszyfrowaniu jako rekord sync.
 
@@ -44,7 +43,7 @@ Dla instrumentu i daty:
 2. Najnowsza cena z transakcji z data `<= valuationDate`.
 3. Brak ceny oznacza wartosc pozycji `0` i powinien byc widoczny w diagnostyce/testach.
 
-Po pobraniu ceny z Yahoo albo fallbacku Stooq UI pokazuje preview. Dopiero zatwierdzenie zapisuje nowy `manualValuation`.
+Po pobraniu ceny z Yahoo UI pokazuje preview. Dopiero zatwierdzenie zapisuje nowy `manualValuation`.
 
 ## Reguly FX
 
