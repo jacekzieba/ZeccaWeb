@@ -147,7 +147,8 @@ export function useSectionCustomization<Id extends string>(registry: SectionRegi
 
   useEffect(() => {
     saveConfig(registry, config);
-  }, [config, registry]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config, registry.storageKey]);
 
   const toggle = (id: Id) =>
     setConfig((current) => {

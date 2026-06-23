@@ -24,7 +24,16 @@ const registry: SectionRegistry<Id> = {
   ],
 };
 
-beforeEach(() => window.localStorage.clear());
+beforeEach(() => {
+  const store: Record<string, string> = {};
+  const mock = {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => { store[key] = String(value); },
+    removeItem: (key: string) => { delete store[key]; },
+    clear: () => { Object.keys(store).forEach((k) => { delete store[k]; }); },
+  };
+  Object.defineProperty(window, "localStorage", { value: mock, writable: true, configurable: true });
+});
 
 describe("section-customization", () => {
   it("defaultConfig exposes every section, ordered, with first-preset sizes", () => {
@@ -78,7 +87,7 @@ describe("section-customization", () => {
       knownSections: ["a", "b"], // "c" shipped later
     }));
     const cfg = readConfig(registry);
-    expect(cfg.visibleSections).toContain("c");
+    expect(cfg.visibleSections).toEqual(["a", "c"]);
   });
 
   it("saveConfig round-trips through readConfig", () => {
