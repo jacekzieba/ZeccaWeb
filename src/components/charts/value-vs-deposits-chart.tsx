@@ -14,6 +14,9 @@ const PERIOD_MONTHS: Record<Period, number> = { "1M": 1, "3M": 3, "6M": 6, "1Y":
 
 // Crops to the selected horizon using the latest date across both series as the
 // anchor, so value[i] and deposits[i] stay index-aligned after filtering.
+// Both series come from the same snapshot builder and share a date grid, so
+// cropping each by the same cutoff keeps them index-aligned; n = Math.min(...)
+// below clamps defensively in case lengths ever diverge.
 function cropByPeriod(value: ValuationPoint[], deposits: ValuationPoint[], period: Period) {
   if (period === "MAX") return { value, deposits };
   const lastDate = [value.at(-1)?.date, deposits.at(-1)?.date].filter(Boolean).sort().at(-1);

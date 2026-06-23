@@ -147,6 +147,10 @@ export function useSectionCustomization<Id extends string>(registry: SectionRegi
 
   useEffect(() => {
     saveConfig(registry, config);
+    // registry is a stable module-level constant, not a per-render object, so
+    // keying on registry.storageKey (not the whole registry reference) prevents
+    // spurious re-saves when callers pass an inline registry whose identity
+    // changes each render while the storage key stays the same.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config, registry.storageKey]);
 

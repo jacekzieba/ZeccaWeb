@@ -33,6 +33,8 @@ export function SectionGrid<Id extends string>({
       }}
     >
       {orderedVisibleSections.map((id) => {
+        const rendered = renderSection(id);
+        if (rendered == null) return null;
         const size = sizeOf(id);
         return (
           <div
@@ -45,7 +47,7 @@ export function SectionGrid<Id extends string>({
               minWidth: 0,
             }}
           >
-            {renderSection(id)}
+            {rendered}
           </div>
         );
       })}
