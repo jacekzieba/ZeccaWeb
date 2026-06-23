@@ -3,8 +3,6 @@
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
-  ArrowDown,
-  ArrowUp,
   BadgeDollarSign,
   BadgePercent,
   Banknote,
@@ -15,18 +13,23 @@ import {
   ChartNoAxesColumnDecreasing,
   ChartNoAxesCombined,
   ChartPie,
-  ChevronDown,
-  ChevronUp,
   CircleDollarSign,
   CircleGauge,
   ClipboardList,
   Coins,
   LayoutDashboard,
   Landmark,
-  RotateCcw,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
+import {
+  useSectionCustomization,
+  type SectionDef,
+  type SectionRegistry,
+  type SectionSize,
+} from "@/components/customize/section-customization";
+import { SectionCustomizePanel, type SectionPanelTheme } from "@/components/customize/section-customize-panel";
+import { SectionGrid } from "@/components/customize/section-grid";
 import type {
   AllocationSlice,
   InstrumentRow,
@@ -50,7 +53,7 @@ import {
   treasuryBondFamilyLabel,
   type GroupedTreasuryBondFamily,
 } from "@/domain/bonds/bond-series-groups";
-import { KpiCard, KPI_TILE_META, getKpiTiles, type KpiTileId } from "@/components/metrics/portfolio-kpi-strip";
+import { KpiCard, KPI_TILE_META, getKpiTiles } from "@/components/metrics/portfolio-kpi-strip";
 import { ValueVsDepositsChart } from "@/components/charts/value-vs-deposits-chart";
 
 const SERIF = TYPOGRAPHY.serif;
@@ -81,34 +84,9 @@ const PALETTE = {
 
 const PERIOD_OPTIONS = ["1M", "3M", "6M", "1Y", "2Y", "MAX"] as const;
 type Period = (typeof PERIOD_OPTIONS)[number];
-const DASHBOARD_SECTIONS_STORAGE_KEY = "zecca.dashboard.sections.v1";
 const DASHBOARD_GRID_GAP = 14;
-type DashboardSectionCategoryId = "overview" | "metrics" | "charts" | "data";
 
-const DASHBOARD_SECTION_OPTIONS = [
-  { id: "summary", label: "Wartość i historia", desc: "Główna wartość portfela, wynik i wykres historii.", category: "overview" },
-  ...KPI_TILE_META.map((tile) => ({ id: tile.id, label: tile.label, desc: tile.desc, category: "metrics" as const })),
-  { id: "valueVsDeposits", label: "Wartość vs wpłaty", desc: "Wartość konta na tle skumulowanych wpłat.", category: "charts" },
-  { id: "holdings", label: "Instrumenty", desc: "Największe aktywne pozycje.", category: "data" },
-  { id: "allocation", label: "Alokacja", desc: "Podział klas aktywów.", category: "charts" },
-  { id: "monthly", label: "Miesięczny P&L", desc: "Miesięczne zmiany wartości.", category: "charts" },
-  { id: "transactions", label: "Ostatnie transakcje", desc: "Najnowsza aktywność konta.", category: "data" },
-  { id: "portfolios", label: "Portfele i cashflow", desc: "Podział kont, dywidendy, odsetki i prowizje.", category: "data" },
-] as const;
-const KPI_SECTION_IDS = new Set<string>(KPI_TILE_META.map((tile) => tile.id));
-type DashboardSectionId = (typeof DASHBOARD_SECTION_OPTIONS)[number]["id"];
-const DASHBOARD_SECTION_CATEGORY_ORDER: DashboardSectionCategoryId[] = ["overview", "metrics", "charts", "data"];
-const DASHBOARD_SECTION_CATEGORIES: Record<
-  DashboardSectionCategoryId,
-  { label: string; desc: string; icon: LucideIcon }
-> = {
-  overview: { label: "Przegląd", desc: "Główna karta dashboardu.", icon: LayoutDashboard },
-  metrics: { label: "Wskaźniki", desc: "KPI portfela i zwrotu.", icon: CircleGauge },
-  charts: { label: "Wykresy", desc: "Wizualizacje wartości i alokacji.", icon: ChartArea },
-  data: { label: "Dane", desc: "Listy, transakcje i portfele.", icon: ClipboardList },
-};
-const DASHBOARD_SECTION_ICONS: Record<DashboardSectionId, LucideIcon> = {
-  summary: LayoutDashboard,
+const DASHBOARD_KPI_ICONS: Record<string, LucideIcon> = {
   kpiUnrealized: ChartLine,
   kpiXirr: BadgePercent,
   kpiTwr: CircleGauge,
@@ -119,49 +97,53 @@ const DASHBOARD_SECTION_ICONS: Record<DashboardSectionId, LucideIcon> = {
   kpiInvested: Landmark,
   kpiDividends: Coins,
   kpiOpenPositions: BriefcaseBusiness,
-  valueVsDeposits: ChartNoAxesCombined,
-  holdings: Wallet,
-  allocation: ChartPie,
-  monthly: ChartColumn,
-  transactions: ClipboardList,
-  portfolios: Banknote,
-};
-const DASHBOARD_SECTION_OPTION_BY_ID = Object.fromEntries(
-  DASHBOARD_SECTION_OPTIONS.map((section) => [section.id, section]),
-) as Record<DashboardSectionId, (typeof DASHBOARD_SECTION_OPTIONS)[number]>;
-const DEFAULT_DASHBOARD_SECTIONS = DASHBOARD_SECTION_OPTIONS.map((section) => section.id);
-type DashboardSectionSize = { width: 1 | 2 | 3 | 4 };
-type DashboardCustomizationConfig = {
-  sectionOrder: DashboardSectionId[];
-  visibleSections: DashboardSectionId[];
-  sectionSizes: Partial<Record<DashboardSectionId, DashboardSectionSize>>;
-  /** Sections that existed when this config was last written. Used to detect
-   * sections shipped *after* the user saved, so we can surface them by default
-   * (once) instead of leaving new parity features hidden. */
-  knownSections: DashboardSectionId[];
 };
 
-const KPI_SIZE_PRESETS: DashboardSectionSize[] = [{ width: 1 }, { width: 2 }];
-const DASHBOARD_SECTION_SIZE_PRESETS: Record<DashboardSectionId, DashboardSectionSize[]> = {
-  summary: [{ width: 4 }],
-  ...(Object.fromEntries(
-    KPI_TILE_META.map((tile) => [tile.id, KPI_SIZE_PRESETS]),
-  ) as Record<KpiTileId, DashboardSectionSize[]>),
-  valueVsDeposits: [{ width: 4 }, { width: 2 }],
-  holdings: [{ width: 3 }, { width: 4 }],
-  allocation: [{ width: 1 }, { width: 2 }],
-  monthly: [{ width: 1 }, { width: 2 }],
-  transactions: [{ width: 2 }, { width: 3 }, { width: 4 }],
-  portfolios: [{ width: 2 }, { width: 3 }, { width: 4 }],
+const KPI_SIZE_PRESETS: SectionSize[] = [{ width: 1 }, { width: 2 }];
+
+const DASHBOARD_SECTIONS: SectionDef<string>[] = [
+  { id: "summary", label: "Wartość i historia", desc: "Główna wartość portfela, wynik i wykres historii.", category: "overview", icon: LayoutDashboard, sizePresets: [{ width: 4 }] },
+  ...KPI_TILE_META.map((tile) => ({
+    id: tile.id,
+    label: tile.label,
+    desc: tile.desc,
+    category: "metrics",
+    icon: DASHBOARD_KPI_ICONS[tile.id],
+    sizePresets: KPI_SIZE_PRESETS,
+  })),
+  { id: "valueVsDeposits", label: "Wartość vs wpłaty", desc: "Wartość konta na tle skumulowanych wpłat.", category: "charts", icon: ChartNoAxesCombined, sizePresets: [{ width: 4 }, { width: 2 }] },
+  { id: "holdings", label: "Instrumenty", desc: "Największe aktywne pozycje.", category: "data", icon: Wallet, sizePresets: [{ width: 3 }, { width: 4 }] },
+  { id: "allocation", label: "Alokacja", desc: "Podział klas aktywów.", category: "charts", icon: ChartPie, sizePresets: [{ width: 1 }, { width: 2 }] },
+  { id: "monthly", label: "Miesięczny P&L", desc: "Miesięczne zmiany wartości.", category: "charts", icon: ChartColumn, sizePresets: [{ width: 1 }, { width: 2 }] },
+  { id: "transactions", label: "Ostatnie transakcje", desc: "Najnowsza aktywność konta.", category: "data", icon: ClipboardList, sizePresets: [{ width: 2 }, { width: 3 }, { width: 4 }] },
+  { id: "portfolios", label: "Portfele i cashflow", desc: "Podział kont, dywidendy, odsetki i prowizje.", category: "data", icon: Banknote, sizePresets: [{ width: 2 }, { width: 3 }, { width: 4 }] },
+];
+
+const DASHBOARD_REGISTRY: SectionRegistry<string> = {
+  storageKey: "zecca.dashboard.sections.v1",
+  categoryOrder: ["overview", "metrics", "charts", "data"],
+  categories: [
+    { id: "overview", label: "Przegląd", desc: "Główna karta dashboardu.", icon: LayoutDashboard },
+    { id: "metrics", label: "Wskaźniki", desc: "KPI portfela i zwrotu.", icon: CircleGauge },
+    { id: "charts", label: "Wykresy", desc: "Wizualizacje wartości i alokacji.", icon: ChartArea },
+    { id: "data", label: "Dane", desc: "Listy, transakcje i portfele.", icon: ClipboardList },
+  ],
+  sections: DASHBOARD_SECTIONS,
 };
-const DEFAULT_DASHBOARD_SECTION_SIZES = Object.fromEntries(
-  DASHBOARD_SECTION_OPTIONS.map((section) => [section.id, DASHBOARD_SECTION_SIZE_PRESETS[section.id][0]]),
-) as Record<DashboardSectionId, DashboardSectionSize>;
-const DEFAULT_DASHBOARD_CONFIG: DashboardCustomizationConfig = {
-  sectionOrder: DEFAULT_DASHBOARD_SECTIONS,
-  visibleSections: DEFAULT_DASHBOARD_SECTIONS,
-  sectionSizes: DEFAULT_DASHBOARD_SECTION_SIZES,
-  knownSections: DEFAULT_DASHBOARD_SECTIONS,
+type DashboardSectionId = string;
+
+const KPI_SECTION_IDS = new Set<string>(KPI_TILE_META.map((tile) => tile.id));
+
+const DASHBOARD_THEME: SectionPanelTheme = {
+  card: PALETTE.card,
+  ink: PALETTE.ink,
+  brand: PALETTE.brand,
+  muted: PALETTE.muted,
+  subtle: PALETTE.subtle,
+  line: PALETTE.line,
+  fontUi: UI,
+  fontSerif: SERIF,
+  fontMono: MONO,
 };
 
 const PERIOD_MONTHS: Record<Period, number> = {
@@ -786,99 +768,6 @@ function describeSeries(series: ValuationPoint[], label: string) {
   return `${label}: ${series.length} punktów, ${trend} z ${fmt(first)} do ${fmt(last)}, minimum ${fmt(min)}, maksimum ${fmt(max)}.`;
 }
 
-function sanitizeSectionOrder(value: unknown): DashboardSectionId[] {
-  const allowed = new Set<string>(DEFAULT_DASHBOARD_SECTIONS);
-  const source = Array.isArray(value) ? value : DEFAULT_DASHBOARD_SECTIONS;
-  const order = source.filter((item): item is DashboardSectionId => typeof item === "string" && allowed.has(item));
-  const missing = DEFAULT_DASHBOARD_SECTIONS.filter((id) => !order.includes(id));
-  return [...order, ...missing];
-}
-
-function sanitizeVisibleSections(value: unknown): DashboardSectionId[] {
-  const allowed = new Set<string>(DEFAULT_DASHBOARD_SECTIONS);
-  const visible = Array.isArray(value)
-    ? value.filter((item): item is DashboardSectionId => typeof item === "string" && allowed.has(item))
-    : DEFAULT_DASHBOARD_SECTIONS;
-  return visible.length > 0 ? visible : DEFAULT_DASHBOARD_SECTIONS;
-}
-
-function sanitizeSectionSizes(value: unknown): Partial<Record<DashboardSectionId, DashboardSectionSize>> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return DEFAULT_DASHBOARD_SECTION_SIZES;
-  const result: Partial<Record<DashboardSectionId, DashboardSectionSize>> = {};
-  for (const id of DEFAULT_DASHBOARD_SECTIONS) {
-    const raw = (value as Record<string, unknown>)[id];
-    const presets = DASHBOARD_SECTION_SIZE_PRESETS[id];
-    if (raw && typeof raw === "object" && !Array.isArray(raw)) {
-      const width = (raw as Record<string, unknown>).width;
-      const match = presets.find((preset) => preset.width === width);
-      result[id] = match ?? DEFAULT_DASHBOARD_SECTION_SIZES[id];
-    } else {
-      result[id] = DEFAULT_DASHBOARD_SECTION_SIZES[id];
-    }
-  }
-  return result;
-}
-
-function readDashboardConfig(): DashboardCustomizationConfig {
-  if (typeof window === "undefined") return DEFAULT_DASHBOARD_CONFIG;
-  try {
-    const raw = window.localStorage.getItem(DASHBOARD_SECTIONS_STORAGE_KEY);
-    if (!raw) return DEFAULT_DASHBOARD_CONFIG;
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
-      return {
-        ...DEFAULT_DASHBOARD_CONFIG,
-        visibleSections: sanitizeVisibleSections(parsed),
-      };
-    }
-    if (!parsed || typeof parsed !== "object") return DEFAULT_DASHBOARD_CONFIG;
-    const config = parsed as Record<string, unknown>;
-    const sectionOrder = sanitizeSectionOrder(config.sectionOrder);
-    const visible = sanitizeVisibleSections(config.visibleSections);
-    // Sections shipped after this config was saved (absent from the order the
-    // user last knew). Surface them by default once, so new parity features are
-    // not stuck hidden behind a stale local layout. The fallback uses the *raw*
-    // stored order (not sanitizeSectionOrder, which back-fills missing defaults
-    // and would hide brand-new sections).
-    const isKnownId = (id: unknown): id is DashboardSectionId =>
-      typeof id === "string" && DEFAULT_DASHBOARD_SECTIONS.includes(id as DashboardSectionId);
-    const known = (
-      Array.isArray(config.knownSections)
-        ? config.knownSections
-        : Array.isArray(config.sectionOrder)
-          ? config.sectionOrder
-          : []
-    ).filter(isKnownId);
-    const newlyShipped = DEFAULT_DASHBOARD_SECTIONS.filter(
-      (id) => !known.includes(id) && !visible.includes(id),
-    );
-    return {
-      sectionOrder,
-      visibleSections: [...visible, ...newlyShipped],
-      sectionSizes: sanitizeSectionSizes(config.sectionSizes),
-      knownSections: DEFAULT_DASHBOARD_SECTIONS,
-    };
-  } catch {
-    return DEFAULT_DASHBOARD_CONFIG;
-  }
-}
-
-function saveDashboardConfig(config: DashboardCustomizationConfig) {
-  try {
-    window.localStorage.setItem(
-      DASHBOARD_SECTIONS_STORAGE_KEY,
-      JSON.stringify({
-        sectionOrder: sanitizeSectionOrder(config.sectionOrder),
-        visibleSections: sanitizeVisibleSections(config.visibleSections),
-        sectionSizes: sanitizeSectionSizes(config.sectionSizes),
-        knownSections: DEFAULT_DASHBOARD_SECTIONS,
-      }),
-    );
-  } catch {
-    // Local UI preference only; ignore storage failures.
-  }
-}
-
 function normalizeAllocation(snapshotAllocation: AllocationSlice[]) {
   if (snapshotAllocation.length === 0) {
     return [{ id: "cash", label: "Gotówka", value: 100, color: PALETTE.cash }];
@@ -935,7 +824,7 @@ export function DashboardOverview() {
   const lastSyncedAt = useSyncStore((state) => state.lastSyncedAt);
   const profile = useProfile();
   const [period, setPeriod] = useState<Period>("1Y");
-  const [dashboardConfig, setDashboardConfig] = useState<DashboardCustomizationConfig>(readDashboardConfig);
+  const { config: dashboardConfig, toggle, move, resize, reset } = useSectionCustomization(DASHBOARD_REGISTRY);
   const [showCustomize, setShowCustomize] = useState(false);
   const isMobile = useMedia("(max-width: 720px)");
   const isTablet = useMedia("(max-width: 1140px)");
@@ -962,9 +851,6 @@ export function DashboardOverview() {
     const id = setInterval(() => bumpSyncTick((t) => t + 1), 30_000);
     return () => clearInterval(id);
   }, []);
-  useEffect(() => {
-    saveDashboardConfig(dashboardConfig);
-  }, [dashboardConfig]);
   const lastSyncLabel = formatLastSync(lastSyncedAt);
   const dateText = new Date(snapshot?.asOf ?? Date.now()).toLocaleDateString("pl-PL", {
     day: "numeric",
@@ -1018,34 +904,9 @@ export function DashboardOverview() {
     }).map((tile) => [tile.id, tile]),
   );
   const visibleSections = new Set(dashboardConfig.visibleSections);
-  const orderedVisibleSections = dashboardConfig.sectionOrder.filter((section) => visibleSections.has(section));
-  const toggleSection = (section: DashboardSectionId) => {
-    setDashboardConfig((current) => {
-      const visible = new Set(current.visibleSections);
-      if (visible.has(section)) visible.delete(section);
-      else visible.add(section);
-      if (visible.size === 0) return current;
-      return { ...current, visibleSections: current.sectionOrder.filter((id) => visible.has(id)) };
-    });
-  };
-  const moveSection = (section: DashboardSectionId, direction: -1 | 1) => {
-    setDashboardConfig((current) => {
-      const order = [...current.sectionOrder];
-      const index = order.indexOf(section);
-      const nextIndex = index + direction;
-      if (index < 0 || nextIndex < 0 || nextIndex >= order.length) return current;
-      [order[index], order[nextIndex]] = [order[nextIndex], order[index]];
-      return { ...current, sectionOrder: order };
-    });
-  };
-  const resizeSection = (section: DashboardSectionId, size: DashboardSectionSize) => {
-    setDashboardConfig((current) => ({
-      ...current,
-      sectionSizes: { ...current.sectionSizes, [section]: size },
-    }));
-  };
-  const resetSections = () => setDashboardConfig(DEFAULT_DASHBOARD_CONFIG);
-  const sectionSize = (section: DashboardSectionId) => dashboardConfig.sectionSizes[section] ?? DEFAULT_DASHBOARD_SECTION_SIZES[section];
+  const orderedVisibleSections = dashboardConfig.sectionOrder.filter((s) => visibleSections.has(s));
+  const sectionSize = (id: DashboardSectionId) =>
+    dashboardConfig.sectionSizes[id] ?? DASHBOARD_REGISTRY.sections.find((s) => s.id === id)!.sizePresets[0];
   const renderSection = (section: DashboardSectionId) => {
     if (section === "summary") {
       return (
@@ -1129,44 +990,30 @@ export function DashboardOverview() {
       </div>
 
       {showCustomize && (
-        <DashboardCustomizePanel
+        <SectionCustomizePanel
+          registry={DASHBOARD_REGISTRY}
           config={dashboardConfig}
           visibleSections={visibleSections}
-          onToggle={toggleSection}
-          onMove={moveSection}
-          onResize={resizeSection}
-          onReset={resetSections}
+          onToggle={toggle}
+          onMove={move}
+          onResize={resize}
+          onReset={reset}
+          theme={DASHBOARD_THEME}
+          eyebrow="Dashboard"
+          title="Układ sekcji"
+          subtitle="Web zapisuje widoczność, kolejność i preset rozmiaru w tej przeglądarce."
         />
       )}
 
-      <div
-        data-testid="dashboard-grid"
-        style={{
-          display: "grid",
-          gridTemplateColumns: isMobile || isTablet ? "1fr" : "repeat(4, minmax(0, 1fr))",
-          gridAutoRows: "auto",
-          gap: DASHBOARD_GRID_GAP,
-          alignItems: "stretch",
-        }}
-      >
-        {orderedVisibleSections.map((section) => {
-          const size = sectionSize(section);
-          return (
-            <div
-              key={section}
-              data-testid={`dashboard-section-${section}`}
-              style={{
-                gridColumn: isMobile || isTablet ? "1 / -1" : `span ${size.width}`,
-                height: isMobile || isTablet ? "auto" : "100%",
-                minHeight: 0,
-                minWidth: 0,
-              }}
-            >
-              {renderSection(section)}
-            </div>
-          );
-        })}
-      </div>
+      <SectionGrid
+        orderedVisibleSections={orderedVisibleSections}
+        sizeOf={sectionSize}
+        renderSection={renderSection}
+        isMobile={isMobile}
+        isTablet={isTablet}
+        testIdPrefix="dashboard"
+        gap={DASHBOARD_GRID_GAP}
+      />
     </div>
   );
 }
@@ -1324,277 +1171,6 @@ function SummaryCard({
             </span>
           </div>
         </div>
-      </div>
-    </Card>
-  );
-}
-
-function smallControlStyle(disabled: boolean): CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    border: `0.5px solid ${PALETTE.line}`,
-    background: PALETTE.card,
-    color: disabled ? PALETTE.subtle : PALETTE.ink,
-    cursor: disabled ? "not-allowed" : "pointer",
-    opacity: disabled ? 0.45 : 1,
-  };
-}
-
-function DashboardCustomizePanel({
-  config,
-  visibleSections,
-  onToggle,
-  onMove,
-  onResize,
-  onReset,
-}: {
-  config: DashboardCustomizationConfig;
-  visibleSections: Set<DashboardSectionId>;
-  onToggle: (section: DashboardSectionId) => void;
-  onMove: (section: DashboardSectionId, direction: -1 | 1) => void;
-  onResize: (section: DashboardSectionId, size: DashboardSectionSize) => void;
-  onReset: () => void;
-}) {
-  const categoryPanelId = useId();
-  const [expandedCategories, setExpandedCategories] = useState<Record<DashboardSectionCategoryId, boolean>>({
-    overview: true,
-    metrics: true,
-    charts: true,
-    data: true,
-  });
-  const groupedSections = DASHBOARD_SECTION_CATEGORY_ORDER.map((categoryId) => {
-    const sections = config.sectionOrder.filter((sectionId) => DASHBOARD_SECTION_OPTION_BY_ID[sectionId]?.category === categoryId);
-    return { categoryId, sections };
-  }).filter((category) => category.sections.length > 0);
-  const toggleCategory = (categoryId: DashboardSectionCategoryId) => {
-    setExpandedCategories((current) => ({ ...current, [categoryId]: !current[categoryId] }));
-  };
-
-  return (
-    <Card>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14, flexWrap: "wrap", marginBottom: 14 }}>
-        <div>
-          <Eyebrow>Dashboard</Eyebrow>
-          <div style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 500, color: PALETTE.ink, marginTop: 3 }}>
-            Układ sekcji
-          </div>
-          <div style={{ fontFamily: UI, fontSize: 12, color: PALETTE.muted, marginTop: 3 }}>
-            Web zapisuje widoczność, kolejność i preset rozmiaru w tej przeglądarce.
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={onReset}
-          style={{
-            border: `0.5px solid ${PALETTE.line}`,
-            borderRadius: 9,
-            background: PALETTE.card,
-            color: PALETTE.ink,
-            cursor: "pointer",
-            fontFamily: UI,
-            fontSize: 12,
-            fontWeight: 700,
-            padding: "7px 11px",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 7,
-          }}
-        >
-          <RotateCcw size={14} strokeWidth={2} aria-hidden="true" />
-          Przywróć domyślne
-        </button>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {groupedSections.map(({ categoryId, sections }) => {
-          const category = DASHBOARD_SECTION_CATEGORIES[categoryId];
-          const CategoryIcon = category.icon;
-          const expanded = expandedCategories[categoryId];
-          const categoryVisibleCount = sections.filter((sectionId) => visibleSections.has(sectionId)).length;
-          const panelId = `${categoryPanelId}-${categoryId}`;
-          return (
-            <div
-              key={categoryId}
-              style={{
-                border: `0.5px solid ${PALETTE.line}`,
-                borderRadius: 12,
-                background: mix(PALETTE.ink, 0.014),
-                overflow: "hidden",
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => toggleCategory(categoryId)}
-                aria-expanded={expanded}
-                aria-controls={panelId}
-                style={{
-                  width: "100%",
-                  border: 0,
-                  background: expanded ? mix(PALETTE.brand, 0.06) : "transparent",
-                  color: PALETTE.ink,
-                  cursor: "pointer",
-                  padding: "11px 12px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  textAlign: "left",
-                }}
-              >
-                <span
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: 8,
-                    background: mix(PALETTE.brand, 0.11),
-                    color: PALETTE.brand,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flex: "0 0 auto",
-                  }}
-                >
-                  <CategoryIcon size={15.5} strokeWidth={2} aria-hidden="true" />
-                </span>
-                <span style={{ minWidth: 0, flex: 1 }}>
-                  <span style={{ display: "block", fontFamily: UI, fontSize: 13, fontWeight: 800, color: PALETTE.ink }}>
-                    {category.label}
-                  </span>
-                  <span style={{ display: "block", fontFamily: UI, fontSize: 11.5, color: PALETTE.muted, marginTop: 2, lineHeight: 1.35 }}>
-                    {category.desc}
-                  </span>
-                </span>
-                <span
-                  style={{
-                    fontFamily: MONO,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: PALETTE.muted,
-                    background: PALETTE.card,
-                    border: `0.5px solid ${PALETTE.line}`,
-                    borderRadius: 999,
-                    padding: "3px 7px",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {categoryVisibleCount}/{sections.length}
-                </span>
-                {expanded ? <ChevronUp size={16} strokeWidth={2} aria-hidden="true" /> : <ChevronDown size={16} strokeWidth={2} aria-hidden="true" />}
-              </button>
-              {expanded && (
-                <div id={panelId} style={{ display: "flex", flexDirection: "column", gap: 8, padding: "0 10px 10px" }}>
-                  {sections.map((sectionId) => {
-                    const section = DASHBOARD_SECTION_OPTION_BY_ID[sectionId];
-                    if (!section) return null;
-                    const checked = visibleSections.has(sectionId);
-                    const currentSize = config.sectionSizes[sectionId] ?? DEFAULT_DASHBOARD_SECTION_SIZES[sectionId];
-                    const presets = DASHBOARD_SECTION_SIZE_PRESETS[sectionId];
-                    const sectionIndex = config.sectionOrder.indexOf(sectionId);
-                    const SectionIcon = DASHBOARD_SECTION_ICONS[sectionId];
-                    return (
-                      <div
-                        key={sectionId}
-                        style={{
-                          border: `0.5px solid ${checked ? mix(PALETTE.brand, 0.42) : PALETTE.line}`,
-                          borderRadius: 11,
-                          background: checked ? mix(PALETTE.brand, 0.055) : PALETTE.card,
-                          padding: "11px 12px",
-                        }}
-                      >
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => onToggle(sectionId)}
-                            aria-label={`Pokaż sekcję ${section.label}`}
-                            style={{ marginTop: 6 }}
-                          />
-                          <span
-                            style={{
-                              width: 26,
-                              height: 26,
-                              borderRadius: 8,
-                              background: checked ? mix(PALETTE.brand, 0.12) : mix(PALETTE.ink, 0.045),
-                              color: checked ? PALETTE.brand : PALETTE.muted,
-                              display: "inline-flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              flex: "0 0 auto",
-                            }}
-                          >
-                            <SectionIcon size={14.5} strokeWidth={2} aria-hidden="true" />
-                          </span>
-                          <div style={{ minWidth: 0, flex: 1 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", flexWrap: "wrap" }}>
-                              <div>
-                                <div style={{ fontFamily: UI, fontSize: 13, fontWeight: 700, color: PALETTE.ink }}>
-                                  {section.label}
-                                </div>
-                                <div style={{ fontFamily: UI, fontSize: 11.5, color: PALETTE.muted, marginTop: 2, lineHeight: 1.35 }}>
-                                  {section.desc}
-                                </div>
-                              </div>
-                              <div style={{ display: "flex", gap: 6 }}>
-                                <button
-                                  type="button"
-                                  onClick={() => onMove(sectionId, -1)}
-                                  disabled={sectionIndex === 0}
-                                  aria-label={`Przesuń ${section.label} wyżej`}
-                                  style={smallControlStyle(sectionIndex === 0)}
-                                >
-                                  <ArrowUp size={14} strokeWidth={2.1} aria-hidden="true" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => onMove(sectionId, 1)}
-                                  disabled={sectionIndex === config.sectionOrder.length - 1}
-                                  aria-label={`Przesuń ${section.label} niżej`}
-                                  style={smallControlStyle(sectionIndex === config.sectionOrder.length - 1)}
-                                >
-                                  <ArrowDown size={14} strokeWidth={2.1} aria-hidden="true" />
-                                </button>
-                              </div>
-                            </div>
-                            <div role="radiogroup" aria-label={`Szerokość sekcji ${section.label}`} style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
-                              {presets.map((preset) => {
-                                const selected = currentSize.width === preset.width;
-                                return (
-                                  <button
-                                    key={preset.width}
-                                    type="button"
-                                    role="radio"
-                                    aria-checked={selected}
-                                    onClick={() => onResize(sectionId, preset)}
-                                    style={{
-                                      border: `0.5px solid ${selected ? mix(PALETTE.brand, 0.48) : PALETTE.line}`,
-                                      borderRadius: 8,
-                                      background: selected ? mix(PALETTE.brand, 0.1) : PALETTE.card,
-                                      color: selected ? PALETTE.brand : PALETTE.muted,
-                                      cursor: "pointer",
-                                      fontFamily: MONO,
-                                      fontSize: 11,
-                                      fontWeight: 700,
-                                      padding: "5px 8px",
-                                    }}
-                                  >
-                                    {preset.width === 1 ? "1 kolumna" : preset.width < 5 ? `${preset.width} kolumny` : `${preset.width} kolumn`}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
       </div>
     </Card>
   );
