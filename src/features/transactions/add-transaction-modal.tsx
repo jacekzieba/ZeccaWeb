@@ -115,7 +115,12 @@ const labelStyle: CSSProperties = {
 
 const inputStyle: CSSProperties = {
   width: "100%",
-  padding: "9px 12px",
+  // Longhand so `selectStyle` (and other spreads) can override paddingLeft
+  // without mixing shorthand + longhand (React warns about that on rerender).
+  paddingTop: 9,
+  paddingRight: 12,
+  paddingBottom: 9,
+  paddingLeft: 12,
   borderRadius: 9,
   border: "0.5px solid rgba(22,29,24,0.14)",
   background: PAPER,

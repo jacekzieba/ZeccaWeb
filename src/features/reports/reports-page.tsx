@@ -7,6 +7,7 @@ import { useSampleDataSignal } from "@/features/telemetry/use-sample-data-signal
 import { sampleSnapshot } from "@/features/dashboard/sample-data";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
 import { AreaChart } from "@/components/charts/area-chart";
+import { ValueVsDepositsChart } from "@/components/charts/value-vs-deposits-chart";
 import type { ValuationPoint } from "@/domain/models/investor-data";
 import { V2, V2_TYPE, v2Mix } from "@/lib/v2-design";
 
@@ -171,8 +172,10 @@ export function ReportsPage() {
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
             <Kpi label="Łączny zwrot (TWR)" value={fmtPct(metrics.totalReturnPct)} sub={`${absGain >= 0 ? "+" : ""}${fmt(absGain)} ${ccy} ponad wpłaty`} color={metrics.totalReturnPct >= 0 ? PROFIT : LOSS} />
+            <Kpi label="CAGR" value={fmtPct(metrics.cagrPct)} sub="rocznie, ważony czasem" color={metrics.cagrPct >= 0 ? PROFIT : LOSS} />
             <Kpi label="MWR · XIRR" value={metrics.xirrPct == null ? "—" : fmtPct(metrics.xirrPct)} sub="rocznie, ważony kapitałem" color={(metrics.xirrPct ?? 0) >= 0 ? PROFIT : LOSS} />
             <Kpi label="Maks. obsunięcie" value={`${fmt(metrics.maxDrawdownPct, 2)}%`} sub="od szczytu" color={LOSS} />
+            <Kpi label="Zysk zrealizowany" value={`${metrics.realizedPnl >= 0 ? "+" : ""}${fmt(metrics.realizedPnl)} ${ccy}`} sub="zamknięte pozycje" color={metrics.realizedPnl >= 0 ? PROFIT : LOSS} />
             <Kpi label="Wartość portfela" value={fmt(snapshot.totalValue)} sub={ccy} />
           </div>
 
@@ -185,6 +188,15 @@ export function ReportsPage() {
             </div>
             <AreaChart data={perf} height={220} color={V2.brand} />
           </div>
+
+          {snapshot.valuationSeries.length > 1 && (
+            <div style={{ ...card, padding: "22px 22px 18px" }}>
+              <div style={{ marginBottom: 14 }}>
+                <SectionHead>Wartość konta vs wpłaty</SectionHead>
+              </div>
+              <ValueVsDepositsChart value={snapshot.valuationSeries} deposits={snapshot.netInvestedSeries} currency={ccy} height={220} />
+            </div>
+          )}
 
           {monthlyStats.best && monthlyStats.worst && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>

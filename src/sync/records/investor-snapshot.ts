@@ -11,6 +11,7 @@ import type {
   PortfolioSummary,
   SnapshotSettings,
   TransactionRow,
+  ValuationPoint,
 } from "@/domain/models/investor-data";
 import {
   buildIncomeListsFromRows,
@@ -311,6 +312,12 @@ export function buildInvestorDataSnapshot(
   const monthlyChange = calculateMonthlyChange(valuationSeries);
   const income = buildIncomeSummary(dataset.income, asOfRate);
   const cashflows = buildCashflowSummary(accounts, dataset, asOf, baseToPln);
+  const netInvestedSeries = buildNetInvestedSeries(
+    accounts,
+    dataset,
+    valuationSeries,
+    baseToPln,
+  );
   const performanceSeries = buildPerformanceSeries(
     accounts,
     dataset,
@@ -335,6 +342,7 @@ export function buildInvestorDataSnapshot(
     cashflows,
     portfolios,
     valuationSeries,
+    netInvestedSeries,
     performanceSeries,
     // Allocation is a set of ratios, so it stays currency-invariant and is
     // computed from the native PLN valuation.
@@ -503,6 +511,40 @@ function transactionBaseAmount(transaction: TransactionPayload): number {
   return transaction.grossAmount * transaction.fxRateToBase;
 }
 
+/** Cumulative net external capital (contributions − withdrawals) at each
+ * valuation date, in display currency, so the deposits line can be overlaid on
+ * the value line. Each flow is converted at its own date, consistent with the
+ * `netInvested` metric and the already-converted valuation series. */
+function buildNetInvestedSeries(
+  accounts: AccountPayload[],
+  dataset: ParsedDataset,
+  valuationSeries: ValuationPoint[],
+  baseToPln: BaseToPln,
+): ValuationPoint[] {
+  const accountIds = new Set(accounts.map((account) => account.id));
+  const flows = dataset.transactions
+    .filter((transaction) => accountIds.has(transaction.portfolioID))
+    .map((transaction) => {
+      const plnAmount = externalCashflowBaseAmount(transaction);
+      if (plnAmount == null) return null;
+      const date = toDate(transaction.date);
+      // Contributions increase invested capital, so negate the investor-signed flow.
+      return { time: date.getTime(), invested: -(plnAmount / baseToPln(date)) };
+    })
+    .filter((flow): flow is { time: number; invested: number } => flow !== null)
+    .sort((a, b) => a.time - b.time);
+
+  return valuationSeries.map((point) => {
+    const cutoff = toDate(point.date).getTime();
+    let cumulative = 0;
+    for (const flow of flows) {
+      if (flow.time > cutoff) break;
+      cumulative += flow.invested;
+    }
+    return { label: point.label, date: point.date, value: cumulative };
+  });
+}
+
 function buildMetrics(
   accounts: AccountPayload[],
   dataset: ParsedDataset,
@@ -535,19 +577,149 @@ function buildMetrics(
   const xirr = computeXirr(cashflows);
   const inflationPct = getInflationPct(dataset);
   const totalReturnPct = computePerformanceReturnPct(performanceSeries);
+  const cagrPct = computeCagrPct(performanceSeries);
   const realReturnPct = computeRealReturnPct(totalReturnPct, inflationPct);
   const maxDrawdownPct = computeMaxDrawdownPct(
     performanceSeries.map((point) => point.value),
   );
+  const realizedPnl =
+    buildRealizedPnl(accountIds, dataset, asOf) / baseToPln(asOf);
 
   return {
     netInvested: Math.max(netInvested, 0),
     totalReturnPct,
+    cagrPct,
     realReturnPct,
     xirrPct: xirr == null ? null : xirr * 100,
     maxDrawdownPct,
+    realizedPnl,
     inflationPct,
   };
+}
+
+/** Annualises the time-weighted (deposit-neutral) index over its own span. */
+function computeCagrPct(
+  performanceSeries: InvestorDataSnapshot["performanceSeries"],
+): number {
+  const first = performanceSeries[0];
+  const last = performanceSeries.at(-1);
+  if (!first || !last || first.value <= EPSILON) return 0;
+  const years =
+    (toDate(last.date).getTime() - toDate(first.date).getTime()) /
+    (365.25 * 24 * 60 * 60 * 1000);
+  if (years <= EPSILON) return computeTotalReturnPct(last.value, first.value);
+  const growth = last.value / first.value;
+  if (growth <= 0) return 0;
+  return (Math.pow(growth, 1 / years) - 1) * 100;
+}
+
+type RealizedLot = { quantity: number; costBasisBase: number };
+
+/** Self-contained FIFO realised-P&L pass. Kept separate from `computeLedger`
+ * so the parity-tested valuation path is untouched: it replays position exits
+ * (sell / bondRedemption / depositClose) against FIFO lots and sums
+ * proceeds − cost basis, all in the native PLN base. */
+function buildRealizedPnl(
+  accountIds: Set<string>,
+  dataset: ParsedDataset,
+  asOf: Date,
+): number {
+  const toBase = (currency: string, fxRateToBase: number | null | undefined) =>
+    currency === "PLN" || !fxRateToBase ? 1 : fxRateToBase;
+  const lotsByInstrument = new Map<string, RealizedLot[]>();
+  let realizedBase = 0;
+
+  const pushLot = (
+    instrumentID: string | null | undefined,
+    quantity: number,
+    costPerUnitBase: number,
+  ) => {
+    if (!instrumentID || quantity <= EPSILON) return;
+    const lots = lotsByInstrument.get(instrumentID) ?? [];
+    lots.push({ quantity, costBasisBase: costPerUnitBase * quantity });
+    lotsByInstrument.set(instrumentID, lots);
+  };
+
+  const consume = (
+    instrumentID: string | null | undefined,
+    quantity: number,
+  ): number => {
+    if (!instrumentID || quantity <= EPSILON) return 0;
+    const lots = lotsByInstrument.get(instrumentID) ?? [];
+    let remaining = quantity;
+    let costBase = 0;
+    while (remaining > EPSILON && lots.length > 0) {
+      const lot = lots[0];
+      const consumed = Math.min(lot.quantity, remaining);
+      const unitCost = lot.quantity > EPSILON ? lot.costBasisBase / lot.quantity : 0;
+      costBase += unitCost * consumed;
+      lot.quantity -= consumed;
+      lot.costBasisBase -= unitCost * consumed;
+      remaining -= consumed;
+      if (lot.quantity <= EPSILON) lots.shift();
+    }
+    lotsByInstrument.set(instrumentID, lots);
+    return costBase;
+  };
+
+  const transactions = dataset.transactions
+    .filter(
+      (transaction) =>
+        accountIds.has(transaction.portfolioID) &&
+        toDate(transaction.date).getTime() <= asOf.getTime(),
+    )
+    .sort((a, b) => toDate(a.date).getTime() - toDate(b.date).getTime());
+
+  for (const transaction of transactions) {
+    const quantity = transaction.quantity ?? 0;
+    const fx = toBase(transaction.currency, transaction.fxRateToBase);
+    switch (transaction.transactionType) {
+      case "buy": {
+        const costPerUnit =
+          transaction.price ??
+          (quantity > EPSILON ? transaction.grossAmount / quantity : 0);
+        pushLot(transaction.instrumentID, quantity, costPerUnit * fx);
+        break;
+      }
+      case "depositOpen":
+        pushLot(transaction.instrumentID, 1, transaction.grossAmount * fx);
+        break;
+      case "accountTransferIn":
+        if (transaction.transferKind === "asset") {
+          const transferLots = transaction.transferLots ?? [];
+          if (transferLots.length > 0) {
+            for (const lot of transferLots) {
+              pushLot(
+                transaction.instrumentID,
+                lot.quantity,
+                lot.unitCost * toBase(lot.currency, lot.fxRateToBase),
+              );
+            }
+          } else {
+            const costPerUnit =
+              transaction.price ??
+              (quantity > EPSILON ? transaction.grossAmount / quantity : 0);
+            pushLot(transaction.instrumentID, quantity, costPerUnit * fx);
+          }
+        }
+        break;
+      case "sell":
+      case "bondRedemption":
+      case "depositClose": {
+        const exitQty =
+          transaction.transactionType === "depositClose" && quantity <= EPSILON
+            ? 1
+            : quantity;
+        const costBase = consume(transaction.instrumentID, exitQty);
+        const proceedsBase =
+          (transaction.grossAmount - transaction.fees - transaction.taxes) * fx;
+        realizedBase += proceedsBase - costBase;
+        break;
+      }
+    }
+  }
+
+  return realizedBase;
 }
 
 function computePerformanceReturnPct(
@@ -727,7 +899,9 @@ function buildPortfolioSummary(
   baseToPln: BaseToPln,
 ): PortfolioSummary {
   const transactions = transactionsForPortfolio(dataset.transactions, account.id);
-  const valuation = valuePortfolio(computeLedger(transactions, asOf), dataset, asOf);
+  const todayLedger = computeLedger(transactions, asOf);
+  const valuation = valuePortfolio(todayLedger, dataset, asOf);
+  const value = valuation.totalValue / baseToPln(asOf);
 
   const previousDay = endOfLocalDay(addLocalDays(asOf, -1));
   // For the 1D comparison we want yesterday's POSITIONS at today's PRICES.
@@ -737,18 +911,28 @@ function buildPortfolioSummary(
   // Backdating any "future" prices to previousDay keeps the valuation source
   // consistent across both days.
   const datasetForPreviousDay = withPricesCappedAt(dataset, previousDay);
-  const previousValue =
-    valuePortfolio(
-      computeLedger(transactions, previousDay),
-      datasetForPreviousDay,
-      previousDay,
-    ).totalValue / baseToPln(previousDay);
-  const value = valuation.totalValue / baseToPln(asOf);
+  const previousLedger = computeLedger(transactions, previousDay);
+
+  // Daily-change basis: value treasury bonds by their accrual formula on BOTH
+  // days. A bond valued from sparse manual valuations is otherwise flat between
+  // entries — and `withPricesCappedAt` backdates a fresh entry onto the previous
+  // day — so the 1D move would read 0% even though the bond accrues interest
+  // every day. The formula yields the true daily accrual; non-bond assets are
+  // unaffected by the flag and keep their quote/valuation pricing.
+  const valueForDelta =
+    valuePortfolio(todayLedger, dataset, asOf, { bondsUseFormula: true })
+      .totalValue / baseToPln(asOf);
+  const previousValueForDelta =
+    valuePortfolio(previousLedger, datasetForPreviousDay, previousDay, {
+      bondsUseFormula: true,
+    }).totalValue / baseToPln(previousDay);
   const periodFlow =
     portfolioFlowIntoBaseAmount(transactions, previousDay, asOf) / baseToPln(asOf);
   const dailyChange =
-    previousValue > EPSILON
-      ? ((value - periodFlow - previousValue) / previousValue) * 100
+    previousValueForDelta > EPSILON
+      ? ((valueForDelta - periodFlow - previousValueForDelta) /
+          previousValueForDelta) *
+        100
       : 0;
 
   const sparkline = buildValuationSeries([account], dataset, asOf, {
@@ -1038,6 +1222,7 @@ function valuePortfolio(
   ledger: Ledger,
   dataset: ParsedDataset,
   asOf: Date,
+  options: { bondsUseFormula?: boolean } = {},
 ): PortfolioValuation {
   const assetsByID = new Map(dataset.assets.map((asset) => [asset.id, asset]));
   const valuationDataset = toPositionValuationDataset(dataset);
@@ -1059,6 +1244,7 @@ function valuePortfolio(
         lots: ledger.openLots.get(instrumentID) ?? [],
         dataset: valuationDataset,
         asOf,
+        bondsUseFormula: options.bondsUseFormula,
       },
     );
     const marketValue = valuation.marketValue;
@@ -1465,6 +1651,28 @@ export function buildPortfolioDetail(
     baseToPln,
   );
 
+  const cashflows = buildCashflowSummary([account], dataset, asOf, baseToPln);
+  const netInvestedSeries = buildNetInvestedSeries(
+    [account],
+    dataset,
+    valuationSeries,
+    baseToPln,
+  );
+  const performanceSeries = buildPerformanceSeries(
+    [account],
+    dataset,
+    valuationSeries,
+    baseToPln,
+  );
+  const metrics = buildMetrics(
+    [account],
+    dataset,
+    asOf,
+    totalValue,
+    performanceSeries,
+    baseToPln,
+  );
+
   return {
     id: account.id,
     name: account.name,
@@ -1474,6 +1682,9 @@ export function buildPortfolioDetail(
     holdings,
     cashBalances,
     valuationSeries,
+    netInvestedSeries,
+    metrics,
+    cashflows,
   };
 }
 

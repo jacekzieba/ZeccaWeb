@@ -231,7 +231,12 @@ export function V2Kpi({
 
 export const v2InputStyle: CSSProperties = {
   width: "100%",
-  padding: "8px 12px 8px 31px",
+  // Longhand so callers can override paddingLeft via spread without mixing
+  // shorthand + longhand (which React warns about on rerender).
+  paddingTop: 8,
+  paddingRight: 12,
+  paddingBottom: 8,
+  paddingLeft: 31,
   borderRadius: 9,
   border: `0.5px solid ${V2.line}`,
   background: v2Mix(V2.card, 0.72),

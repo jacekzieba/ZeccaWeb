@@ -13,6 +13,8 @@ import {
   treasuryBondFamilyLabel,
   type GroupedTreasuryBondFamily,
 } from "@/domain/bonds/bond-series-groups";
+import { PortfolioKpiStrip } from "@/components/metrics/portfolio-kpi-strip";
+import { ValueVsDepositsChart } from "@/components/charts/value-vs-deposits-chart";
 
 const PERIOD_OPTIONS = ["1M", "3M", "6M", "1Y", "2Y", "MAX"] as const;
 type Period = (typeof PERIOD_OPTIONS)[number];
@@ -160,33 +162,15 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <Breadcrumb name={detail.name} />
 
-      {/* KPI row */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-        <div style={{ ...glassCard, padding: "18px 20px" }}>
-          <div style={{ fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 6 }}>
-            Wartość portfela
-          </div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
-            {fmt(detail.totalValue)}{" "}
-            <span style={{ fontSize: 13, fontWeight: 500, opacity: 0.6 }}>{displayCurrency}</span>
-          </div>
-        </div>
-        <div style={{ ...glassCard, padding: "18px 20px" }}>
-          <div style={{ fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 6 }}>
-            Pozycji
-          </div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: INK }}>{groupedHoldings.length}</div>
-        </div>
-        <div style={{ ...glassCard, padding: "18px 20px" }}>
-          <div style={{ fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 6 }}>
-            Gotówka
-          </div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
-            {fmt(detail.cashValue)}{" "}
-            <span style={{ fontSize: 13, fontWeight: 500, opacity: 0.6 }}>{displayCurrency}</span>
-          </div>
-        </div>
-      </div>
+      {/* KPI strip — shared with Dashboard for macOS/iOS parity */}
+      <PortfolioKpiStrip
+        metrics={detail.metrics}
+        cashflows={detail.cashflows}
+        totalValue={detail.totalValue}
+        cashValue={detail.cashValue}
+        openPositions={detail.holdings.length}
+        currency={displayCurrency}
+      />
 
       {/* Valuation chart */}
       {detail.valuationSeries.length > 1 && (
@@ -220,6 +204,21 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
             </div>
           </div>
           <AreaChart data={chartSeries} height={200} />
+        </div>
+      )}
+
+      {/* Value vs deposits */}
+      {detail.valuationSeries.length > 1 && (
+        <div style={{ ...glassCard, padding: "22px 22px 18px" }}>
+          <div style={{ fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 14 }}>
+            Wartość konta na tle wpłat
+          </div>
+          <ValueVsDepositsChart
+            value={detail.valuationSeries}
+            deposits={detail.netInvestedSeries}
+            currency={displayCurrency}
+            height={210}
+          />
         </div>
       )}
 
@@ -289,12 +288,11 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
               style={{
                 display: "grid",
                 gridTemplateColumns: "minmax(0,2.5fr) minmax(0,0.8fr) minmax(0,1fr) minmax(0,1.2fr) minmax(0,0.8fr)",
-                padding: "14px 22px",
+                padding: `14px 22px 14px ${depth ? 42 : 22}px`,
                 borderTop: `0.5px solid ${LINE_SOFT}`,
                 alignItems: "center",
                 transition: "background .12s",
                 cursor: isGroup ? "pointer" : "default",
-                paddingLeft: depth ? 42 : 22,
               }}
               onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(28,49,68,0.025)")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}

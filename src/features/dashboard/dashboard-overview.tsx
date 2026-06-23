@@ -25,6 +25,8 @@ import {
   treasuryBondFamilyLabel,
   type GroupedTreasuryBondFamily,
 } from "@/domain/bonds/bond-series-groups";
+import { PortfolioKpiStrip } from "@/components/metrics/portfolio-kpi-strip";
+import { ValueVsDepositsChart } from "@/components/charts/value-vs-deposits-chart";
 
 const SERIF = TYPOGRAPHY.serif;
 const UI = TYPOGRAPHY.system;
@@ -54,11 +56,13 @@ const PALETTE = {
 
 const PERIOD_OPTIONS = ["1M", "3M", "6M", "1Y", "2Y", "MAX"] as const;
 type Period = (typeof PERIOD_OPTIONS)[number];
-const DASHBOARD_SECTIONS_STORAGE_KEY = "zecca.dashboard.sections.v1";
+const DASHBOARD_SECTIONS_STORAGE_KEY = "zecca.dashboard.sections.v3";
 const DASHBOARD_GRID_GAP = 14;
 
 const DASHBOARD_SECTION_OPTIONS = [
   { id: "summary", label: "Wartość i historia", desc: "Główna wartość portfela, wynik i wykres historii." },
+  { id: "kpis", label: "Wskaźniki", desc: "Kluczowe wskaźniki: zwrot, XIRR, wynik realny, dywidendy." },
+  { id: "valueVsDeposits", label: "Wartość vs wpłaty", desc: "Wartość konta na tle skumulowanych wpłat." },
   { id: "holdings", label: "Instrumenty", desc: "Największe aktywne pozycje." },
   { id: "allocation", label: "Alokacja", desc: "Podział klas aktywów." },
   { id: "monthly", label: "Miesięczny P&L", desc: "Miesięczne zmiany wartości." },
@@ -79,6 +83,8 @@ type DashboardCustomizationConfig = {
 
 const DASHBOARD_SECTION_SIZE_PRESETS: Record<DashboardSectionId, DashboardSectionSize[]> = {
   summary: [{ width: 4 }],
+  kpis: [{ width: 4 }, { width: 2 }],
+  valueVsDeposits: [{ width: 4 }, { width: 2 }],
   holdings: [{ width: 3 }, { width: 4 }],
   allocation: [{ width: 1 }, { width: 2 }],
   monthly: [{ width: 1 }, { width: 2 }],
@@ -967,6 +973,26 @@ export function DashboardOverview() {
         />
       );
     }
+    if (section === "kpis") {
+      return (
+        <PortfolioKpiStrip
+          metrics={metrics}
+          cashflows={cashflows}
+          totalValue={totalValue}
+          openPositions={holdings.length}
+          currency={profile.displayCurrency}
+        />
+      );
+    }
+    if (section === "valueVsDeposits") {
+      return (
+        <ValueVsDepositsCard
+          value={historySource}
+          deposits={snapshot.netInvestedSeries}
+          currency={profile.displayCurrency}
+        />
+      );
+    }
     if (section === "holdings") return <HoldingsCard holdings={holdings} isMobile={isMobile} />;
     if (section === "allocation") return <AllocationCard allocation={allocation} />;
     if (section === "monthly") return <MonthlyCard valuationSeries={historySource} />;
@@ -1445,7 +1471,7 @@ function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobil
                 role={isGroup ? "button" : undefined}
                 tabIndex={isGroup ? 0 : undefined}
                 aria-expanded={isGroup ? expandedFamilies.has(family!) : undefined}
-                style={{ borderTop: index === 0 ? "none" : `0.5px solid ${PALETTE.line2}`, padding: "14px 22px", paddingLeft: depth ? 42 : 22, cursor: isGroup ? "pointer" : "default" }}
+                style={{ borderTop: index === 0 ? "none" : `0.5px solid ${PALETTE.line2}`, padding: `14px 22px 14px ${depth ? 42 : 22}px`, cursor: isGroup ? "pointer" : "default" }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                   <Badge label={tag} color={tagColor} />
@@ -1482,11 +1508,10 @@ function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobil
               style={{
                 display: "grid",
                 gridTemplateColumns: "minmax(0,2.4fr) minmax(0,1fr) minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,.7fr)",
-                padding: "13px 22px",
+                padding: `13px 22px 13px ${depth ? 42 : 22}px`,
                 borderTop: `0.5px solid ${PALETTE.line2}`,
                 alignItems: "center",
                 cursor: isGroup ? "pointer" : "default",
-                paddingLeft: depth ? 42 : 22,
                 transition: "background .12s",
               }}
               onMouseEnter={(event) => {
@@ -1531,6 +1556,26 @@ function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobil
           );
         })
       )}
+    </Card>
+  );
+}
+
+function ValueVsDepositsCard({
+  value,
+  deposits,
+  currency,
+}: {
+  value: ValuationPoint[];
+  deposits: ValuationPoint[];
+  currency: string;
+}) {
+  return (
+    <Card>
+      <Eyebrow>Wartość vs wpłaty</Eyebrow>
+      <div style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 500, color: PALETTE.ink, margin: "4px 0 16px" }}>
+        Wartość konta na tle wpłat
+      </div>
+      <ValueVsDepositsChart value={value} deposits={deposits} currency={currency} height={236} />
     </Card>
   );
 }
@@ -1661,7 +1706,7 @@ function PortfoliosCard({
       <Eyebrow>Portfele</Eyebrow>
       <div style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 500, color: PALETTE.ink, margin: "4px 0 16px" }}>Podział na konta</div>
       <div style={{ fontFamily: UI, fontSize: 11.5, color: PALETTE.subtle, margin: "-10px 0 16px" }}>
-        Wycena na {asOfLabel} · miniwykresy: ostatnie 30 dni · zmiana: 1D
+        Wycena na {asOfLabel} · miniwykresy: ostatnie 30 dni · zmiana: 30 dni
       </div>
       {portfolios.length === 0 ? (
         <div style={{ padding: "20px 0", color: PALETTE.subtle, fontSize: 13 }}>Brak portfeli do pokazania.</div>
@@ -1670,6 +1715,12 @@ function PortfoliosCard({
         {portfolios.map((portfolio, index) => {
           const color = index === 0 ? PALETTE.brand : PALETTE.bonds;
           const series = portfolio.sparkline.length >= 2 ? portfolio.sparkline : [portfolio.value, portfolio.value];
+          // 30d change derived from the same points as the sparkline, so the
+          // number and the chart always agree.
+          const change30d =
+            series.length >= 2 && Math.abs(series[0]) > 1e-6
+              ? ((series[series.length - 1] - series[0]) / series[0]) * 100
+              : 0;
 
           return (
             <div key={portfolio.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", borderRadius: 12, background: mix(PALETTE.ink, 0.025), border: `0.5px solid ${PALETTE.line2}` }}>
@@ -1689,9 +1740,9 @@ function PortfoliosCard({
                   30 dni
                 </div>
                 <V2Spark data={series} color={color} />
-                <div style={{ display: "inline-flex", alignItems: "baseline", gap: 5, fontFamily: UI, fontSize: 12, fontWeight: 700, color: portfolio.dailyChange >= 0 ? PALETTE.profit : PALETTE.loss, marginTop: 4 }}>
-                  <span style={{ fontSize: 9.5, fontWeight: 700, color: PALETTE.subtle, letterSpacing: ".06em" }}>1D</span>
-                  <span>{fmtPct(portfolio.dailyChange)}</span>
+                <div style={{ display: "inline-flex", alignItems: "baseline", gap: 5, fontFamily: UI, fontSize: 12, fontWeight: 700, color: change30d >= 0 ? PALETTE.profit : PALETTE.loss, marginTop: 4 }}>
+                  <span style={{ fontSize: 9.5, fontWeight: 700, color: PALETTE.subtle, letterSpacing: ".06em" }}>30D</span>
+                  <span>{fmtPct(change30d)}</span>
                 </div>
               </div>
             </div>

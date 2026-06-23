@@ -741,8 +741,7 @@ export function InstrumentsPage() {
                 style={{
                   display: "grid",
                   gridTemplateColumns: "minmax(0,2.5fr) 80px minmax(0,0.8fr) minmax(0,0.8fr) minmax(0,1.1fr) minmax(0,1fr) 220px",
-                  padding: "14px 22px",
-                  paddingLeft: depth ? 42 : 22,
+                  padding: `14px 22px 14px ${depth ? 42 : 22}px`,
                   borderTop: `0.5px solid ${LINE_SOFT}`,
                   alignItems: "center",
                   opacity: isHeld ? 1 : 0.5,

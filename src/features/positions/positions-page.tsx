@@ -190,7 +190,7 @@ function TransactionSheet({
   );
 }
 
-const tdStyle: CSSProperties = { fontFamily: UI, fontSize: 12.5, color: V2.ink, padding: "10px 14px", verticalAlign: "middle" };
+const tdStyle: CSSProperties = { fontFamily: UI, fontSize: 12.5, color: V2.ink, paddingTop: 10, paddingRight: 14, paddingBottom: 10, paddingLeft: 14, verticalAlign: "middle" };
 
 export function PositionsPage() {
   const records = useSyncStore((s) => s.records);
@@ -277,7 +277,7 @@ export function PositionsPage() {
     return {
       fontFamily: UI, fontSize: 9.5, fontWeight: 700, color: V2.subtle,
       textTransform: "uppercase", letterSpacing: ".07em",
-      padding: "9px 14px", textAlign: align, userSelect: "none",
+      paddingTop: 9, paddingRight: 14, paddingBottom: 9, paddingLeft: 14, textAlign: align, userSelect: "none",
       whiteSpace: "nowrap",
     };
   }
@@ -289,7 +289,7 @@ export function PositionsPage() {
 
   function SortHeader({ column, label, align = "right" }: { column: SortKey; label: string; align?: "left" | "right" }) {
     return (
-      <th aria-sort={sortDirectionFor(column)} style={{ ...thStyle(column, align), paddingLeft: align === "left" ? 20 : undefined }}>
+      <th aria-sort={sortDirectionFor(column)} style={{ ...thStyle(column, align), paddingLeft: align === "left" ? 20 : 14 }}>
         <button
           type="button"
           onClick={() => toggleSort(column)}

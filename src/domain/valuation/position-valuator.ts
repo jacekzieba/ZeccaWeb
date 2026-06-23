@@ -74,22 +74,32 @@ export function valueInstrumentPosition(input: {
   lots: OpenLotInput[];
   dataset: PositionValuationDataset;
   asOf: Date;
+  /**
+   * When true, treasury bonds are valued by their accrual formula and any
+   * explicit manual valuation / market quote is ignored. Used for the
+   * day-over-day change so a bond's 1D move reflects real daily interest
+   * accrual rather than the flat step between sparse manual valuations.
+   */
+  bondsUseFormula?: boolean;
 }): PositionValuation {
-  const { instrumentID, quantity, asset, lots, dataset, asOf } = input;
+  const { instrumentID, quantity, asset, lots, dataset, asOf, bondsUseFormula } =
+    input;
 
   if (asset?.kind === "treasuryBond" && asset.bondParams) {
-    const explicitPrice = resolveInstrumentPrice(
-      instrumentID,
-      {
-        assetCurrency: asset.currency,
-        manualValuations: dataset.manualValuations,
-        marketQuotes: dataset.marketQuotes,
-        transactions: [],
-      },
-      asOf,
-    );
+    const explicitPrice = bondsUseFormula
+      ? null
+      : resolveInstrumentPrice(
+          instrumentID,
+          {
+            assetCurrency: asset.currency,
+            manualValuations: dataset.manualValuations,
+            marketQuotes: dataset.marketQuotes,
+            transactions: [],
+          },
+          asOf,
+        );
 
-    if (explicitPrice.source !== "missing") {
+    if (explicitPrice && explicitPrice.source !== "missing") {
       return {
         price: explicitPrice.value,
         currency: explicitPrice.currency,

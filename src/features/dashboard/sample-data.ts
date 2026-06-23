@@ -58,6 +58,11 @@ export const sampleSnapshot: InvestorDataSnapshot = {
     },
   ],
   valuationSeries: SAMPLE_HISTORY,
+  // Demo contributions: a steady deposit ramp that the value series grows above.
+  netInvestedSeries: SAMPLE_HISTORY.map((point, index) => ({
+    ...point,
+    value: 300_000 + index * 3_000,
+  })),
   performanceSeries: SAMPLE_HISTORY.map((point) => ({
     ...point,
     value: (point.value / SAMPLE_HISTORY[0].value) * 100,
@@ -69,9 +74,11 @@ export const sampleSnapshot: InvestorDataSnapshot = {
   metrics: {
     netInvested: 372_000,
     totalReturnPct: 15.31,
+    cagrPct: 7.21,
     realReturnPct: 11.42,
     xirrPct: 8.74,
     maxDrawdownPct: -6.94,
+    realizedPnl: 18_430,
     inflationPct: 3.5,
   },
 };

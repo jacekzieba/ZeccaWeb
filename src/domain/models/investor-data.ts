@@ -42,12 +42,18 @@ export type PortfolioMetrics = {
   netInvested: number;
   /** Time-weighted total return, percent, neutral to deposits/withdrawals. */
   totalReturnPct: number;
+  /** Annualised time-weighted return (CAGR) over the valuation span, percent. */
+  cagrPct: number;
   /** Inflation-adjusted total return, percent. */
   realReturnPct: number;
   /** Annualised money-weighted return (XIRR), percent, or null if unsolvable. */
   xirrPct: number | null;
   /** Maximum drawdown of the valuation series, non-positive percent. */
   maxDrawdownPct: number;
+  /** Realised P&L from closed positions (FIFO proceeds − cost basis), base
+   * currency. Exact for single-currency data; FX figures are converted at the
+   * as-of rate. */
+  realizedPnl: number;
   /** Assumed annual inflation used for the real return, percent. */
   inflationPct: number;
 };
@@ -71,6 +77,10 @@ export type InvestorDataSnapshot = {
   cashflows: CashflowSummary;
   portfolios: PortfolioSummary[];
   valuationSeries: ValuationPoint[];
+  /** Cumulative net external capital (deposits − withdrawals) at each
+   * valuation-series date, display currency. Aligned 1:1 with valuationSeries
+   * so the two can be overlaid (value vs. contributions). */
+  netInvestedSeries: ValuationPoint[];
   /** Time-weighted return index (growth of 100), neutral to deposits/withdrawals.
    * Use this — not raw value — to compare actual performance vs a benchmark. */
   performanceSeries: ValuationPoint[];
@@ -117,6 +127,12 @@ export type PortfolioDetail = {
   holdings: HoldingRow[];
   cashBalances: CashBalance[];
   valuationSeries: ValuationPoint[];
+  /** Cumulative net external capital aligned to valuationSeries (see snapshot). */
+  netInvestedSeries: ValuationPoint[];
+  /** Return/risk metrics for this portfolio, computed like the global snapshot. */
+  metrics: PortfolioMetrics;
+  /** Dividends / interest / fees / taxes booked on this portfolio. */
+  cashflows: CashflowSummary;
 };
 
 export type TransactionRow = {
