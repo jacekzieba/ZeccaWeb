@@ -20,13 +20,14 @@ test("dashboard customize stores section visibility and width, and preserves it 
     return page.evaluate(() => {
       const raw = window.localStorage.getItem("zecca.dashboard.sections.v1");
       const config = raw ? JSON.parse(raw) : {};
+      const sectionOrder = config.sectionOrder ?? [];
       return {
-        firstTwo: config.sectionOrder?.slice(0, 2),
+        holdingsBeforeValueChart: sectionOrder.indexOf("holdings") < sectionOrder.indexOf("valueVsDeposits"),
         holdingsSize: config.sectionSizes?.holdings,
       };
     });
   }).toMatchObject({
-    firstTwo: ["holdings", "summary"],
+    holdingsBeforeValueChart: true,
     holdingsSize: { width: 4 },
   });
 
