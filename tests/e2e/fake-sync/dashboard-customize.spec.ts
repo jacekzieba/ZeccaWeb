@@ -3,6 +3,9 @@ import { expect, test, type Page } from "@playwright/test";
 const section = (page: Page, id: string) =>
   page.getByTestId(`dashboard-section-${id}`);
 
+const expandCategory = (page: Page, name: string) =>
+  page.getByRole("main").getByRole("button", { name: new RegExp(`^${name}`) }).click();
+
 const ALL_SECTIONS = ["summary", "holdings", "allocation", "monthly", "transactions", "portfolios"] as const;
 
 test("dashboard customize stores section visibility and width, and preserves it after reload", async ({ page }) => {
@@ -13,6 +16,8 @@ test("dashboard customize stores section visibility and width, and preserves it 
 
   await main.getByRole("button", { name: "Dostosuj" }).click();
   await expect(main.getByText("Układ sekcji")).toBeVisible();
+
+  await expandCategory(page, "Dane");
 
   await main.getByRole("button", { name: "Przesuń Instrumenty wyżej" }).click();
   await main.getByRole("radiogroup", { name: "Szerokość sekcji Instrumenty" }).getByRole("radio", { name: "4 kolumny" }).click();
@@ -78,6 +83,7 @@ test("dashboard width preset changes the column span and persists", async ({ pag
   const initialSpan = await transactions.evaluate((wrapper) => wrapper.style.gridColumn);
 
   await main.getByRole("button", { name: "Dostosuj" }).click();
+  await expandCategory(page, "Dane");
   await main
     .getByRole("radiogroup", { name: "Szerokość sekcji Ostatnie transakcje" })
     .getByRole("radio", { name: "4 kolumny" })

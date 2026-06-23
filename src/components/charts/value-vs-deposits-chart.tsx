@@ -8,20 +8,48 @@ import type { ValuationPoint } from "@/domain/models/investor-data";
 const VALUE_COLOR = COLORS.accent;
 const DEPOSIT_COLOR = COLORS.bonds;
 
+const PERIOD_OPTIONS = ["1M", "3M", "6M", "1Y", "2Y", "MAX"] as const;
+type Period = (typeof PERIOD_OPTIONS)[number];
+const PERIOD_MONTHS: Record<Period, number> = { "1M": 1, "3M": 3, "6M": 6, "1Y": 12, "2Y": 24, MAX: 0 };
+
+// Crops to the selected horizon using the latest date across both series as the
+// anchor, so value[i] and deposits[i] stay index-aligned after filtering.
+// Both series come from the same snapshot builder and share a date grid, so
+// cropping each by the same cutoff keeps them index-aligned; n = Math.min(...)
+// below clamps defensively in case lengths ever diverge.
+function cropByPeriod(value: ValuationPoint[], deposits: ValuationPoint[], period: Period) {
+  if (period === "MAX") return { value, deposits };
+  const lastDate = [value.at(-1)?.date, deposits.at(-1)?.date].filter(Boolean).sort().at(-1);
+  if (!lastDate) return { value, deposits };
+  const cutoff = new Date(lastDate);
+  cutoff.setMonth(cutoff.getMonth() - PERIOD_MONTHS[period]);
+  const crop = (series: ValuationPoint[]) => {
+    if (series.length <= 2) return series;
+    const filtered = series.filter((p) => new Date(p.date).getTime() >= cutoff.getTime());
+    return filtered.length >= 2 ? filtered : series.slice(-2);
+  };
+  return { value: crop(value), deposits: crop(deposits) };
+}
+
 /** Overlays portfolio value against cumulative contributions. The gap between
  * the two lines is the cumulative gain/loss — the headline parity chart ported
  * from the macOS/iOS app ("Wartość konta vs wpłaty"). */
 export function ValueVsDepositsChart({
-  value,
-  deposits,
+  value: valueProp,
+  deposits: depositsProp,
   height = 220,
   currency = "PLN",
+  showPeriodControl = true,
 }: {
   value: ValuationPoint[];
   deposits: ValuationPoint[];
   height?: number;
   currency?: string;
+  showPeriodControl?: boolean;
 }) {
+  const [period, setPeriod] = useState<Period>("MAX");
+  const { value, deposits } = cropByPeriod(valueProp, depositsProp, period);
+
   const wrapRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(600);
   const [hover, setHover] = useState<number | null>(null);
@@ -72,9 +100,37 @@ export function ValueVsDepositsChart({
 
   return (
     <div ref={wrapRef} style={{ width: "100%", position: "relative" }} onMouseLeave={() => setHover(null)}>
-      <div style={{ display: "flex", gap: 16, marginBottom: 8, flexWrap: "wrap" }}>
-        <Legend color={VALUE_COLOR} label="Wartość konta" />
-        <Legend color={DEPOSIT_COLOR} label="Wpłaty (skumulowane)" dashed />
+      <div style={{ display: "flex", gap: 16, marginBottom: 8, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+          <Legend color={VALUE_COLOR} label="Wartość konta" />
+          <Legend color={DEPOSIT_COLOR} label="Wpłaty (skumulowane)" dashed />
+        </div>
+        {showPeriodControl && (
+          <div role="radiogroup" aria-label="Zakres wykresu wartość vs wpłaty" style={{ display: "inline-flex", background: "rgba(22,29,24,0.06)", borderRadius: 10, padding: 3 }}>
+            {PERIOD_OPTIONS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                aria-checked={period === option}
+                onClick={() => setPeriod(option)}
+                style={{
+                  padding: "4px 9px",
+                  borderRadius: 7,
+                  border: "none",
+                  cursor: "pointer",
+                  fontFamily: TYPOGRAPHY.system,
+                  fontSize: 11,
+                  fontWeight: period === option ? 700 : 500,
+                  background: period === option ? COLORS.surface : "transparent",
+                  color: period === option ? COLORS.text : COLORS.muted,
+                }}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <svg
         width={width}

@@ -128,27 +128,3 @@ export function getKpiTiles(input: PortfolioKpiInput): KpiTile[] {
   ];
 }
 
-/** Full KPI strip (all tiles in one grid). Used on the Portfel view, which has
- * no per-section customization; optionally prepends value + cash tiles. */
-export function PortfolioKpiStrip(input: PortfolioKpiInput & { cashValue?: number }) {
-  const tiles = getKpiTiles(input);
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(158px, 1fr))",
-        gap: 12,
-      }}
-    >
-      {input.cashValue != null && (
-        <>
-          <KpiCard label="Wartość portfela" value={`${fmt(input.totalValue)} ${input.currency}`} />
-          <KpiCard label="Gotówka" value={`${fmt(input.cashValue)} ${input.currency}`} />
-        </>
-      )}
-      {tiles.map((tile) => (
-        <KpiCard key={tile.id} label={tile.label} value={tile.value} sub={tile.sub} color={tile.color} />
-      ))}
-    </div>
-  );
-}
