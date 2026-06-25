@@ -579,7 +579,11 @@ function buildMetrics(
   const inflationPct = getInflationPct(dataset);
   const totalReturnPct = computePerformanceReturnPct(performanceSeries);
   const cagrPct = computeCagrPct(performanceSeries);
-  const realReturnPct = computeRealReturnPct(totalReturnPct, inflationPct);
+  // Real return is stated on an ANNUAL basis: deflate the annualised nominal
+  // return (CAGR) by the annual inflation rate. Deflating the *cumulative*
+  // multi-year return by a single year's inflation would mix horizons and
+  // overstate the real result for any portfolio older than a year.
+  const realReturnPct = computeRealReturnPct(cagrPct, inflationPct);
   const maxDrawdownPct = computeMaxDrawdownPct(
     performanceSeries.map((point) => point.value),
   );

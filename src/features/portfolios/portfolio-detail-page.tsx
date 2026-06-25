@@ -478,7 +478,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
   const isMobile = useMedia("(max-width: 720px)");
   const isTablet = useMedia("(max-width: 1140px)");
   const [showCustomize, setShowCustomize] = useState(false);
-  const { config, toggle, move, resize, reset } = useSectionCustomization(PD_REGISTRY);
+  const { config, toggle, reorder, resize, reset } = useSectionCustomization(PD_REGISTRY);
   const visibleSections = new Set(config.visibleSections);
   const orderedVisibleSections = config.sectionOrder.filter((s) => visibleSections.has(s));
   const sizeOf = (id: string) =>
@@ -611,7 +611,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
           config={config}
           visibleSections={visibleSections}
           onToggle={toggle}
-          onMove={move}
+          onReorder={reorder}
           onResize={resize}
           onReset={reset}
           theme={PD_THEME}

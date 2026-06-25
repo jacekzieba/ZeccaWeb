@@ -38,6 +38,29 @@ function allIds<Id extends string>(registry: SectionRegistry<Id>): Id[] {
   return registry.sections.map((section) => section.id);
 }
 
+/** Moves `id` one slot up (`-1`) or down (`1`) within the subsequence of
+ * VISIBLE sections, skipping hidden ones. Returns a new order array; the two
+ * swapped ids exchange slots so every other section (visible or hidden) stays
+ * put. No-op when `id` is already at the visible edge in that direction. */
+export function reorderVisibleSection<Id extends string>(
+  order: Id[],
+  visible: Id[],
+  id: Id,
+  dir: -1 | 1,
+): Id[] {
+  const visibleSet = new Set<Id>(visible);
+  const index = order.indexOf(id);
+  if (index < 0) return order;
+  let target = index + dir;
+  while (target >= 0 && target < order.length && !visibleSet.has(order[target])) {
+    target += dir;
+  }
+  if (target < 0 || target >= order.length) return order;
+  const next = [...order];
+  [next[index], next[target]] = [next[target], next[index]];
+  return next;
+}
+
 export function defaultSizes<Id extends string>(registry: SectionRegistry<Id>): Record<Id, SectionSize> {
   return Object.fromEntries(
     registry.sections.map((section) => [section.id, section.sizePresets[0]]),
@@ -173,10 +196,23 @@ export function useSectionCustomization<Id extends string>(registry: SectionRegi
       return { ...current, sectionOrder: order };
     });
 
+  // Reorders within the visible subsequence (skipping hidden sections), so the
+  // flat "Układ" list can move a section across category boundaries.
+  const reorder = (id: Id, dir: -1 | 1) =>
+    setConfig((current) => ({
+      ...current,
+      sectionOrder: reorderVisibleSection(
+        current.sectionOrder,
+        current.visibleSections,
+        id,
+        dir,
+      ),
+    }));
+
   const resize = (id: Id, size: SectionSize) =>
     setConfig((current) => ({ ...current, sectionSizes: { ...current.sectionSizes, [id]: size } }));
 
   const reset = () => setConfig(defaultConfig(registry));
 
-  return { config, toggle, move, resize, reset };
+  return { config, toggle, move, reorder, resize, reset };
 }

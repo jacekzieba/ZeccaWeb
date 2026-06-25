@@ -46,7 +46,7 @@ export function SectionCustomizePanel<Id extends string>({
   config,
   visibleSections,
   onToggle,
-  onMove,
+  onReorder,
   onResize,
   onReset,
   theme,
@@ -58,7 +58,7 @@ export function SectionCustomizePanel<Id extends string>({
   config: SectionConfig<Id>;
   visibleSections: Set<Id>;
   onToggle: (id: Id) => void;
-  onMove: (id: Id, dir: -1 | 1) => void;
+  onReorder: (id: Id, dir: -1 | 1) => void;
   onResize: (id: Id, size: SectionSize) => void;
   onReset: () => void;
   theme: SectionPanelTheme;
@@ -76,6 +76,9 @@ export function SectionCustomizePanel<Id extends string>({
       sections: config.sectionOrder.filter((id) => sectionById[id]?.category === categoryId),
     }))
     .filter((group) => group.sections.length > 0);
+  // Flat, cross-category order of the sections that are actually rendered — the
+  // source list for the "Układ" reorder controls below.
+  const orderedVisible = config.sectionOrder.filter((id) => visibleSections.has(id));
   const toggleCategory = (categoryId: string) =>
     setExpandedCategories((current) => ({ ...current, [categoryId]: !current[categoryId] }));
 
@@ -165,7 +168,6 @@ export function SectionCustomizePanel<Id extends string>({
                     if (!section) return null;
                     const checked = visibleSections.has(sectionId);
                     const currentSize = config.sectionSizes[sectionId] ?? section.sizePresets[0];
-                    const sectionIndex = config.sectionOrder.indexOf(sectionId);
                     const SectionIcon = section.icon;
                     return (
                       <div key={sectionId} style={{ border: `0.5px solid ${checked ? mixHex(theme.brand, 0.42) : theme.line}`, borderRadius: 11, background: checked ? mixHex(theme.brand, 0.055) : theme.card, padding: "11px 12px" }}>
@@ -175,19 +177,9 @@ export function SectionCustomizePanel<Id extends string>({
                             <SectionIcon size={14.5} strokeWidth={2} aria-hidden="true" />
                           </span>
                           <div style={{ minWidth: 0, flex: 1 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", flexWrap: "wrap" }}>
-                              <div>
-                                <div style={{ fontFamily: theme.fontUi, fontSize: 13, fontWeight: 700, color: theme.ink }}>{section.label}</div>
-                                <div style={{ fontFamily: theme.fontUi, fontSize: 11.5, color: theme.muted, marginTop: 2, lineHeight: 1.35 }}>{section.desc}</div>
-                              </div>
-                              <div style={{ display: "flex", gap: 6 }}>
-                                <button type="button" onClick={() => onMove(sectionId, -1)} disabled={sectionIndex === 0} aria-label={`Przesuń ${section.label} wyżej`} style={smallControlStyle(sectionIndex === 0, theme)}>
-                                  <ArrowUp size={14} strokeWidth={2.1} aria-hidden="true" />
-                                </button>
-                                <button type="button" onClick={() => onMove(sectionId, 1)} disabled={sectionIndex === config.sectionOrder.length - 1} aria-label={`Przesuń ${section.label} niżej`} style={smallControlStyle(sectionIndex === config.sectionOrder.length - 1, theme)}>
-                                  <ArrowDown size={14} strokeWidth={2.1} aria-hidden="true" />
-                                </button>
-                              </div>
+                            <div>
+                              <div style={{ fontFamily: theme.fontUi, fontSize: 13, fontWeight: 700, color: theme.ink }}>{section.label}</div>
+                              <div style={{ fontFamily: theme.fontUi, fontSize: 11.5, color: theme.muted, marginTop: 2, lineHeight: 1.35 }}>{section.desc}</div>
                             </div>
                             <div role="radiogroup" aria-label={`Szerokość sekcji ${section.label}`} style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
                               {section.sizePresets.map((preset) => {
@@ -216,6 +208,54 @@ export function SectionCustomizePanel<Id extends string>({
             </div>
           );
         })}
+      </div>
+
+      <div style={{ marginTop: 18 }}>
+        <div style={{ fontFamily: theme.fontUi, fontSize: 10.5, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: theme.subtle }}>
+          Układ
+        </div>
+        <div style={{ fontFamily: theme.fontUi, fontSize: 12, color: theme.muted, marginTop: 3, marginBottom: 10 }}>
+          Kolejność widocznych sekcji na stronie — niezależnie od kategorii.
+        </div>
+        {orderedVisible.length === 0 ? (
+          <div style={{ fontFamily: theme.fontUi, fontSize: 12, color: theme.muted }}>
+            Brak widocznych sekcji. Włącz sekcje powyżej, aby ustalić ich kolejność.
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {orderedVisible.map((sectionId, position) => {
+              const section = sectionById[sectionId];
+              if (!section) return null;
+              const SectionIcon = section.icon;
+              const isFirst = position === 0;
+              const isLast = position === orderedVisible.length - 1;
+              return (
+                <div
+                  key={sectionId}
+                  style={{ display: "flex", alignItems: "center", gap: 10, border: `0.5px solid ${theme.line}`, borderRadius: 10, background: theme.card, padding: "8px 10px" }}
+                >
+                  <span style={{ fontFamily: theme.fontMono, fontSize: 11, fontWeight: 700, color: theme.muted, width: 18, textAlign: "right", flex: "0 0 auto" }}>
+                    {position + 1}
+                  </span>
+                  <span style={{ width: 24, height: 24, borderRadius: 7, background: mixHex(theme.brand, 0.12), color: theme.brand, display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto" }}>
+                    <SectionIcon size={13.5} strokeWidth={2} aria-hidden="true" />
+                  </span>
+                  <span style={{ minWidth: 0, flex: 1, fontFamily: theme.fontUi, fontSize: 13, fontWeight: 600, color: theme.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {section.label}
+                  </span>
+                  <div style={{ display: "flex", gap: 6, flex: "0 0 auto" }}>
+                    <button type="button" onClick={() => onReorder(sectionId, -1)} disabled={isFirst} aria-label={`Przesuń ${section.label} wyżej`} style={smallControlStyle(isFirst, theme)}>
+                      <ArrowUp size={14} strokeWidth={2.1} aria-hidden="true" />
+                    </button>
+                    <button type="button" onClick={() => onReorder(sectionId, 1)} disabled={isLast} aria-label={`Przesuń ${section.label} niżej`} style={smallControlStyle(isLast, theme)}>
+                      <ArrowDown size={14} strokeWidth={2.1} aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
