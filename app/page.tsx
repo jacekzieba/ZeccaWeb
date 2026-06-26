@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/supabase/server";
-import { LANDING_HTML } from "./_landing/content";
+import { LANDING_BODY_HTML, LANDING_NAV_HTML } from "./_landing/content";
+import { LandingHero } from "./_landing/landing-hero";
 import { LandingInteractions } from "./_landing/landing-interactions";
 import "./_landing/landing.css";
 
@@ -31,7 +32,11 @@ export default async function LandingPage() {
 
   return (
     <>
-      <div dangerouslySetInnerHTML={{ __html: LANDING_HTML }} />
+      <div className="zlanding">
+        <div dangerouslySetInnerHTML={{ __html: LANDING_NAV_HTML }} />
+        <LandingHero />
+        <div dangerouslySetInnerHTML={{ __html: LANDING_BODY_HTML }} />
+      </div>
       <LandingInteractions />
     </>
   );

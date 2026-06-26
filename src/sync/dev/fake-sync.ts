@@ -3,11 +3,13 @@
 import type { RecordType } from "@/domain/models/investor-data";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
 
-export const fakeUserDataKeyPromise = crypto.subtle.generateKey(
-  { name: "AES-GCM", length: 256 },
-  false,
-  ["encrypt", "decrypt"],
-);
+export function createFakeUserDataKey() {
+  return crypto.subtle.generateKey(
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"],
+  );
+}
 
 const accountID = "11111111-1111-4111-8111-111111111111";
 const instrumentID = "22222222-2222-4222-8222-222222222222";

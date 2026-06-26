@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
-import { buildFakeSyncRecords, fakeUserDataKeyPromise } from "@/sync/dev/fake-sync";
+import { buildFakeSyncRecords, createFakeUserDataKey } from "@/sync/dev/fake-sync";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { isFakeSyncEnabled } from "@/lib/env";
 import type { BrowserSupabaseClient } from "@/supabase/client";
@@ -26,7 +26,7 @@ export function FakeSyncBootstrap() {
         useLatestTransactionFxRate: true,
         useMarketQuotes: true,
       });
-      const userDataKey = await fakeUserDataKeyPromise;
+      const userDataKey = await createFakeUserDataKey();
 
       if (cancelled) {
         return;

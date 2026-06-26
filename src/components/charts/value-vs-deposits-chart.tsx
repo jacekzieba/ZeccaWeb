@@ -40,12 +40,14 @@ export function ValueVsDepositsChart({
   height = 220,
   currency = "PLN",
   showPeriodControl = true,
+  periodLabels,
 }: {
   value: ValuationPoint[];
   deposits: ValuationPoint[];
   height?: number;
   currency?: string;
   showPeriodControl?: boolean;
+  periodLabels?: Partial<Record<Period, string>>;
 }) {
   const [period, setPeriod] = useState<Period>("MAX");
   const { value, deposits } = cropByPeriod(valueProp, depositsProp, period);
@@ -126,7 +128,7 @@ export function ValueVsDepositsChart({
                   color: period === option ? COLORS.text : COLORS.muted,
                 }}
               >
-                {option}
+                {periodLabels?.[option] ?? option}
               </button>
             ))}
           </div>

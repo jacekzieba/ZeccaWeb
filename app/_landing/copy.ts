@@ -32,14 +32,26 @@ export const landingCopy = {
     eyebrow: "Natywnie na macOS i iOS",
     title: "Wszystkie Twoje inwestycje, <em>czytane</em> jak rocznik finansowy.",
     lede: "Zecca prowadzi Twoje portfele: <b>IKE, IKZE, akcje, ETF-y, obligacje skarbowe i lokaty</b>, lokalnie i prywatnie. Wielkie, czytelne liczby zamiast zimnego dashboardu. Kursy z NBP, inflacja z GUS, pełna historia liczona od pierwszej transakcji.",
-    ctaPrimary: "Dołącz do bety przez TestFlight",
-    ctaPrimaryHref: "#",
+    ctaPrimary: "Dołącz do listy beta",
+    ctaPrimaryHref: "#lista-beta",
     storeBadges: [
       { top: "Pobierz w", main: "App Store", soon: "wkrótce" },
       { top: "Pobierz w", main: "Mac App Store", soon: "wkrótce" },
     ],
     note: "<b>Darmowa w wersji beta.</b> Działa lokalnie, bez konta, jeśli nie chcesz synchronizacji.",
     imageAlt: "Zecca na macOS — raporty i statystyki",
+    waitlist: {
+      label: "Powiadom mnie, gdy otworzymy zapisy",
+      placeholder: "Twój adres e-mail",
+      button: "Wkrótce",
+      note: "Zapisy uruchomimy wkrótce. Adres nie jest teraz zapisywany.",
+    },
+    trust: [
+      { title: "Dane szyfrowane end-to-end", desc: "Tylko Ty masz dostęp do swoich danych." },
+      { title: "Działa lokalnie", desc: "Twoje dane zostają na Twoim urządzeniu." },
+      { title: "Kursy walut z NBP", desc: "Aktualne kursy bezpośrednio z NBP." },
+      { title: "Inflacja CPI z GUS", desc: "Oficjalne dane o inflacji prosto z GUS." },
+    ],
   },
 
   // ── 01 · Funkcje (9 kart, w tej samej kolejności co ikony) ────────────────
@@ -231,7 +243,7 @@ export const landingCopy = {
     title: "Pomóż nam dopracować <em>Zeccę</em>.",
     desc: "Zbieramy feedback od pierwszych użytkowników. Napisz, co działa, co nie i czego brakuje. Czytamy każdą wiadomość i to ona kształtuje kolejne wersje.",
     discordButton: "Dołącz do Discorda",
-    discordHref: "#",
+    discordHref: "https://discord.gg/wrKjxVyFQ",
     discordNote: "Społeczność, zapowiedzi i szybki kontakt z autorem.",
     // Adres, na który trafia formularz (otwiera klienta poczty) oraz temat maila.
     email: "zecca.barista363@passmail.net",

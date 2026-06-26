@@ -66,8 +66,6 @@ const SHOWCASE_MEDIA = [
   { frame: "iphone", src: "/landing/ios.webp", width: 600, height: 1305 },
 ] as const;
 
-const APPLE_SVG = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.9c0-2.2 1.8-3.3 1.9-3.3-1-1.5-2.6-1.7-3.2-1.7-1.4-.1-2.7.8-3.3.8-.7 0-1.7-.8-2.8-.8-1.4 0-2.8.8-3.5 2.1-1.5 2.6-.4 6.5 1.1 8.6.7 1 1.5 2.2 2.6 2.2 1 0 1.4-.7 2.7-.7 1.2 0 1.6.7 2.7.6 1.1 0 1.8-1 2.5-2 .8-1.2 1.1-2.3 1.1-2.4 0 0-2.1-.8-2.1-3.2zM14.2 5.9c.6-.7 1-1.7.9-2.7-.9 0-1.9.6-2.5 1.3-.5.6-1 1.6-.9 2.6 1 .1 1.9-.5 2.5-1.2z"/></svg>`;
-const STAR_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.5 6.5L22 9.8l-5 4.4 1.4 6.8L12 17.7 5.6 21l1.4-6.8-5-4.4 6.5-1.3z"/></svg>`;
 const DISCORD_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19.3 5.3A16 16 0 0015.4 4l-.2.4a12 12 0 014 .9 13 13 0 00-14.6 0c1.2-.5 2.6-.8 4-.9L8.6 4a16 16 0 00-3.9 1.3C2.2 9 1.5 12.6 1.8 16.2a16 16 0 004.9 2.5l.6-1c-.5-.2-1-.4-1.5-.7l.4-.3a11.5 11.5 0 009.8 0l.4.3c-.5.3-1 .5-1.5.7l.6 1a16 16 0 004.9-2.5c.4-4.2-.7-7.8-3-11zM8.9 14.3c-1 0-1.7-.9-1.7-1.9s.8-1.9 1.7-1.9 1.8.9 1.7 1.9c0 1-.8 1.9-1.7 1.9zm6.2 0c-1 0-1.7-.9-1.7-1.9s.8-1.9 1.7-1.9 1.8.9 1.7 1.9c0 1-.8 1.9-1.7 1.9z"/></svg>`;
 const CHECK_SVG = `<svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>`;
 const PLUS_SVG = `<svg class="pm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`;
@@ -90,39 +88,6 @@ const navHtml = `
     </div>
   </div>
 </nav>`;
-
-const heroHtml = `
-<header class="hero" id="top">
-  <div class="wrap hero-grid">
-    <span class="beta-banner">${c.hero.betaBanner}</span>
-    <div class="eyebrow">${c.hero.eyebrow}</div>
-    <h1>${c.hero.title}</h1>
-    <p class="lede">${c.hero.lede}</p>
-
-    <div class="cta-row">
-      <a class="btn btn-brand btn-lg" href="${c.hero.ctaPrimaryHref}">
-        ${STAR_SVG}
-        ${c.hero.ctaPrimary}
-      </a>
-      <div class="store-badges">
-        ${c.hero.storeBadges
-          .map(
-            (b) => `<span class="store-badge" title="Wkrótce">
-          <span class="store-soon">${b.soon}</span>
-          ${APPLE_SVG}
-          <span><span class="sb-top">${b.top}</span><span class="sb-main">${b.main}</span></span>
-        </span>`,
-          )
-          .join("\n        ")}
-      </div>
-    </div>
-    <p class="cta-note">${c.hero.note}</p>
-
-    <div class="macwin reveal">
-      <img class="mac-shot" src="/landing/hero-mac.webp" width="2000" height="1157" fetchpriority="high" decoding="async" alt="${c.hero.imageAlt}"/>
-    </div>
-  </div>
-</header>`;
 
 const featuresHtml = `
 <section class="block" id="funkcje">
@@ -320,10 +285,9 @@ const footerHtml = `
   </div>
 </footer>`;
 
-export const LANDING_HTML = `
-<div class="zlanding">
-${navHtml}
-${heroHtml}
+export const LANDING_NAV_HTML = navHtml;
+
+export const LANDING_BODY_HTML = `
 ${featuresHtml}
 ${showcaseHtml}
 ${privacyHtml}
@@ -331,5 +295,4 @@ ${investorHtml}
 ${faqHtml}
 ${feedbackHtml}
 ${footerHtml}
-</div>
 `;

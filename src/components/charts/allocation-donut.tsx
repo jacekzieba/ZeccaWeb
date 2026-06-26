@@ -117,19 +117,26 @@ export function AllocationDonut({ slices }: { slices: Slice[] }) {
           const color = PALETTE[i % PALETTE.length];
           const isActive = active === i;
           return (
-            <div
-              key={i}
-              data-testid="allocation-donut-legend"
-              onMouseEnter={() => setActive(i)}
-              onMouseLeave={() => setActive((prev) => (prev === i ? null : prev))}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                cursor: "default",
-                opacity: active != null && !isActive ? 0.5 : 1,
-                transition: "opacity 0.2s ease",
-              }}
+          <button
+            key={i}
+            data-testid="allocation-donut-legend"
+            onMouseEnter={() => setActive(i)}
+            onMouseLeave={() => setActive((prev) => (prev === i ? null : prev))}
+            onFocus={() => setActive(i)}
+            onBlur={() => setActive((prev) => (prev === i ? null : prev))}
+            style={{
+              width: "100%",
+              border: "none",
+              padding: 0,
+              background: "transparent",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              cursor: "default",
+              textAlign: "left",
+              opacity: active != null && !isActive ? 0.5 : 1,
+              transition: "opacity 0.2s ease",
+            }}
             >
               <div
                 style={{
@@ -163,7 +170,7 @@ export function AllocationDonut({ slices }: { slices: Slice[] }) {
               >
                 {slice.percent.toFixed(1)}%
               </span>
-            </div>
+          </button>
           );
         })}
       </div>
