@@ -5,6 +5,8 @@ import {
   readConfig,
   saveConfig,
   mixHex,
+  reorderVisibleSection,
+  reorderVisibleSectionTo,
   type SectionRegistry,
 } from "@/components/customize/section-customization";
 
@@ -94,6 +96,31 @@ describe("section-customization", () => {
     const cfg = { ...defaultConfig(registry), visibleSections: ["a", "c"] as Id[] };
     saveConfig(registry, cfg);
     expect(readConfig(registry).visibleSections).toEqual(["a", "c"]);
+  });
+
+  it("reorderVisibleSection moves a section across category boundaries", () => {
+    // a,b are g1; c is g2. Moving b down past c puts a g1 item below a g2 item.
+    expect(reorderVisibleSection(["a", "b", "c"], ["a", "b", "c"], "b", 1)).toEqual(["a", "c", "b"]);
+    expect(reorderVisibleSection(["a", "b", "c"], ["a", "b", "c"], "c", -1)).toEqual(["a", "c", "b"]);
+  });
+
+  it("reorderVisibleSection skips hidden sections so the visible order shifts by one", () => {
+    // b is hidden: moving a "down" should swap with the next VISIBLE section (c).
+    expect(reorderVisibleSection(["a", "b", "c"], ["a", "c"], "a", 1)).toEqual(["c", "b", "a"]);
+  });
+
+  it("reorderVisibleSection is a no-op at the visible edges", () => {
+    expect(reorderVisibleSection(["a", "b", "c"], ["a", "c"], "a", -1)).toEqual(["a", "b", "c"]);
+    expect(reorderVisibleSection(["a", "b", "c"], ["a", "c"], "c", 1)).toEqual(["a", "b", "c"]);
+  });
+
+  it("reorderVisibleSectionTo moves a section before or after a target", () => {
+    expect(reorderVisibleSectionTo(["a", "b", "c"], ["a", "b", "c"], "c", "a", "before")).toEqual(["c", "a", "b"]);
+    expect(reorderVisibleSectionTo(["a", "b", "c"], ["a", "b", "c"], "a", "c", "after")).toEqual(["b", "c", "a"]);
+  });
+
+  it("reorderVisibleSectionTo keeps hidden sections in their stored slots", () => {
+    expect(reorderVisibleSectionTo(["a", "b", "c"], ["a", "c"], "c", "a", "before")).toEqual(["c", "b", "a"]);
   });
 
   it("mixHex turns a hex + alpha into rgba", () => {

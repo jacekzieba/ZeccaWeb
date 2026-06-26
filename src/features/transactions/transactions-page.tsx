@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useSyncStore } from "@/sync/store/sync-store";
-import { buildTransactionList } from "@/sync/records/investor-snapshot";
+import { buildInvestorDataSnapshot, buildTransactionList } from "@/sync/records/investor-snapshot";
 import {
   AddTransactionModal,
   type TransactionEditorDraft,
 } from "@/features/transactions/add-transaction-modal";
 import { deleteRecord, refreshSyncStore } from "@/sync/records/record-writer";
+import { isFakeSyncEnabled } from "@/lib/env";
 import {
   V2,
   V2Badge,
@@ -107,6 +108,8 @@ export function TransactionsPage() {
   const [search, setSearch] = useState("");
   const [editingTransactionId, setEditingTransactionId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
 
   const portfolios = useMemo(() => {
     const seen = new Map<string, string>();
@@ -146,6 +149,7 @@ export function TransactionsPage() {
           notes?: string;
           sourcePortfolioID?: string | null;
           transferKind?: string | null;
+          contributionTreatment?: string | null;
         };
 
         return {
@@ -169,6 +173,7 @@ export function TransactionsPage() {
           notes: payload.notes ?? "",
           sourcePortfolioId: payload.sourcePortfolioID ?? null,
           transferKind: payload.transferKind ?? null,
+          contributionTreatment: payload.contributionTreatment ?? null,
           updatedAt: record.updatedAt,
         } satisfies TransactionEditorDraft;
       });
@@ -177,40 +182,6 @@ export function TransactionsPage() {
   const editingTransaction = editingTransactionId
     ? editableTransactions.find((transaction) => transaction.id === editingTransactionId) ?? null
     : null;
-
-  async function handleDeleteTransaction(id: string) {
-    if (!userDataKey || !supabase || !records) {
-      return;
-    }
-
-    if (!window.confirm("Usunąć transakcję?")) {
-      return;
-    }
-
-    const sourceRecord = records.find(
-      (record) =>
-        !record.deletedAt &&
-        record.envelope.type === "transaction" &&
-        record.id === id,
-    );
-
-    setDeletingId(id);
-
-    try {
-      const result = await deleteRecord(supabase, "transaction", id, {
-        baseUpdatedAt: sourceRecord?.updatedAt ?? null,
-      });
-      if (!result.queued) {
-        const { records: nextRecords, snapshot: nextSnapshot } = await refreshSyncStore(
-          supabase,
-          userDataKey,
-        );
-        setSync(nextRecords, nextSnapshot);
-      }
-    } finally {
-      setDeletingId(null);
-    }
-  }
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -233,6 +204,190 @@ export function TransactionsPage() {
       return true;
     });
   }, [allTransactions, portfolioFilter, typeFilter, search]);
+
+  const displayedTransactions = useMemo(() => filtered.slice(0, 200), [filtered]);
+  const displayedIds = useMemo(
+    () => displayedTransactions.map((transaction) => transaction.id),
+    [displayedTransactions],
+  );
+  const selectedVisibleCount = displayedIds.filter((id) => selectedIds.has(id)).length;
+  const allVisibleSelected = displayedIds.length > 0 && selectedVisibleCount === displayedIds.length;
+  const hasPartialVisibleSelection = selectedVisibleCount > 0 && !allVisibleSelected;
+
+  useEffect(() => {
+    setSelectedIds((current) => {
+      const liveIds = new Set(allTransactions.map((transaction) => transaction.id));
+      const next = new Set([...current].filter((id) => liveIds.has(id)));
+      return next.size === current.size ? current : next;
+    });
+  }, [allTransactions]);
+
+  function rebuildSnapshot(nextRecords: NonNullable<typeof records>) {
+    return buildInvestorDataSnapshot(nextRecords, {
+      asOf: new Date(),
+      historyGranularity: "daily",
+      useLatestTransactionFxRate: true,
+      useMarketQuotes: true,
+    });
+  }
+
+  function markTransactionsDeletedLocally(ids: Iterable<string>) {
+    if (!records) return;
+    const deletedIds = new Set(ids);
+    if (deletedIds.size === 0) return;
+
+    const deletedAt = new Date().toISOString();
+    const nextRecords = records.map((record) =>
+      !record.deletedAt &&
+      record.envelope.type === "transaction" &&
+      deletedIds.has(record.id)
+        ? { ...record, updatedAt: deletedAt, deletedAt }
+        : record,
+    );
+    setSync(nextRecords, rebuildSnapshot(nextRecords));
+  }
+
+  function toggleSelected(id: string) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function toggleVisibleSelection() {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (allVisibleSelected) {
+        for (const id of displayedIds) next.delete(id);
+      } else {
+        for (const id of displayedIds) next.add(id);
+      }
+      return next;
+    });
+  }
+
+  async function handleDeleteTransaction(id: string) {
+    if (!userDataKey || !supabase || !records) {
+      return;
+    }
+
+    if (!window.confirm("Usunąć transakcję?")) {
+      return;
+    }
+
+    if (isFakeSyncEnabled()) {
+      markTransactionsDeletedLocally([id]);
+      setSelectedIds((current) => {
+        if (!current.has(id)) return current;
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+      return;
+    }
+
+    const sourceRecord = records.find(
+      (record) =>
+        !record.deletedAt &&
+        record.envelope.type === "transaction" &&
+        record.id === id,
+    );
+
+    setDeletingId(id);
+
+    try {
+      const result = await deleteRecord(supabase, "transaction", id, {
+        baseUpdatedAt: sourceRecord?.updatedAt ?? null,
+      });
+      if (!result.queued) {
+        const { records: nextRecords, snapshot: nextSnapshot } = await refreshSyncStore(
+          supabase,
+          userDataKey,
+        );
+        setSync(nextRecords, nextSnapshot);
+      } else {
+        markTransactionsDeletedLocally([id]);
+      }
+      setSelectedIds((current) => {
+        if (!current.has(id)) return current;
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  async function handleDeleteSelectedTransactions() {
+    if (!userDataKey || !supabase || !records || selectedIds.size === 0) {
+      return;
+    }
+
+    const liveIds = new Set(allTransactions.map((transaction) => transaction.id));
+    const idsToDelete = [...selectedIds].filter((id) => liveIds.has(id));
+    if (idsToDelete.length === 0) {
+      return;
+    }
+
+    if (!window.confirm(`Usunąć zaznaczone transakcje (${idsToDelete.length})?`)) {
+      return;
+    }
+
+    if (isFakeSyncEnabled()) {
+      markTransactionsDeletedLocally(idsToDelete);
+      setSelectedIds((current) => {
+        const next = new Set(current);
+        for (const id of idsToDelete) next.delete(id);
+        return next;
+      });
+      return;
+    }
+
+    setBulkDeleting(true);
+    const queuedIds: string[] = [];
+    const deletedIds: string[] = [];
+
+    try {
+      for (const id of idsToDelete) {
+        const sourceRecord = records.find(
+          (record) =>
+            !record.deletedAt &&
+            record.envelope.type === "transaction" &&
+            record.id === id,
+        );
+        const result = await deleteRecord(supabase, "transaction", id, {
+          baseUpdatedAt: sourceRecord?.updatedAt ?? null,
+        });
+        deletedIds.push(id);
+        if (result.queued) {
+          queuedIds.push(id);
+        }
+      }
+
+      if (queuedIds.length === 0) {
+        const { records: nextRecords, snapshot: nextSnapshot } = await refreshSyncStore(
+          supabase,
+          userDataKey,
+        );
+        setSync(nextRecords, nextSnapshot);
+      } else {
+        markTransactionsDeletedLocally(deletedIds);
+      }
+      setSelectedIds((current) => {
+        const next = new Set(current);
+        for (const id of deletedIds) next.delete(id);
+        return next;
+      });
+    } finally {
+      setBulkDeleting(false);
+    }
+  }
 
   const selectStyle: CSSProperties = v2SelectStyle;
   const deposits = allTransactions.filter((tx) => tx.transactionType === "cashDeposit").reduce((sum, tx) => sum + tx.grossAmount, 0);
@@ -344,19 +499,83 @@ export function TransactionsPage() {
         </div>
       )}
 
+      {records && selectedIds.size > 0 && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 12,
+            padding: "10px 12px",
+            borderRadius: 10,
+            background: v2Mix(V2.brand, 0.08),
+            border: `0.5px solid ${v2Mix(V2.brand, 0.16)}`,
+          }}
+        >
+          <div style={{ fontFamily: V2_TYPE.ui, fontSize: 12.5, fontWeight: 650, color: V2.brand }}>
+            Zaznaczone: {selectedIds.size}
+          </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              disabled={bulkDeleting}
+              style={{
+                padding: "7px 10px",
+                borderRadius: 8,
+                border: `0.5px solid ${V2.line}`,
+                background: "transparent",
+                color: V2.muted,
+                fontSize: 12,
+                cursor: bulkDeleting ? "not-allowed" : "pointer",
+                fontFamily: V2_TYPE.ui,
+              }}
+            >
+              Odznacz
+            </button>
+            <button
+              onClick={() => void handleDeleteSelectedTransactions()}
+              disabled={!userDataKey || bulkDeleting}
+              style={{
+                padding: "7px 10px",
+                borderRadius: 8,
+                border: `0.5px solid ${v2Mix(V2.loss, 0.2)}`,
+                background: bulkDeleting ? v2Mix(V2.loss, 0.08) : "transparent",
+                color: V2.loss,
+                fontSize: 12,
+                cursor: !userDataKey || bulkDeleting ? "not-allowed" : "pointer",
+                fontFamily: V2_TYPE.ui,
+              }}
+            >
+              {bulkDeleting ? "Usuwam…" : "Usuń zaznaczone"}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <div style={{ ...glassCard, padding: 0 }}>
         {/* Header row */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "100px minmax(0,1.5fr) minmax(0,1.2fr) 90px minmax(0,1fr) 90px 126px",
+            gridTemplateColumns: "32px 100px minmax(0,1.5fr) minmax(0,1.2fr) 90px minmax(0,1fr) 90px 126px",
             padding: "10px 22px",
             background: v2Mix(V2.ink, 0.022),
             borderBottom: `0.5px solid ${LINE_SOFT}`,
             borderRadius: "16px 16px 0 0",
           }}
         >
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={allVisibleSelected}
+              aria-checked={hasPartialVisibleSelection ? "mixed" : allVisibleSelected}
+              aria-label="Zaznacz widoczne transakcje"
+              onChange={toggleVisibleSelection}
+              disabled={displayedIds.length === 0 || bulkDeleting}
+              style={{ width: 15, height: 15, accentColor: V2.brand, cursor: bulkDeleting ? "not-allowed" : "pointer" }}
+            />
+          </div>
           {["Data", "Instrument", "Portfel", "Typ", "Kwota", "Waluta", "Akcje"].map((h, i) => (
             <div
               key={h}
@@ -389,25 +608,38 @@ export function TransactionsPage() {
           </div>
         )}
 
-        {filtered.slice(0, 200).map((tx) => {
+        {displayedTransactions.map((tx) => {
           const color = TX_COLORS[tx.transactionType] ?? SUBTLE;
           const label = TX_LABELS[tx.transactionType] ?? tx.transactionType;
           const isInflow = ["cashDeposit", "dividend", "interest", "bondCoupon", "bondRedemption", "depositClose", "transferIn", "correction"].includes(tx.transactionType);
+          const isSelected = selectedIds.has(tx.id);
 
           return (
             <div
               key={tx.id}
               style={{
                 display: "grid",
-                gridTemplateColumns: "100px minmax(0,1.5fr) minmax(0,1.2fr) 90px minmax(0,1fr) 90px 126px",
+                gridTemplateColumns: "32px 100px minmax(0,1.5fr) minmax(0,1.2fr) 90px minmax(0,1fr) 90px 126px",
                 padding: "13px 22px",
                 borderTop: `0.5px solid ${LINE_SOFT}`,
                 alignItems: "center",
+                background: isSelected ? v2Mix(V2.brand, 0.055) : "transparent",
                 transition: "background .12s",
               }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = v2Mix(V2.ink, 0.022))}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+              onMouseEnter={(e) => (e.currentTarget.style.background = v2Mix(V2.ink, 0.022))}
+              onMouseLeave={(e) => (e.currentTarget.style.background = isSelected ? v2Mix(V2.brand, 0.055) : "transparent")}
             >
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  aria-label={`Zaznacz transakcję ${tx.instrumentName ?? tx.transactionType}`}
+                  onChange={() => toggleSelected(tx.id)}
+                  disabled={bulkDeleting || deletingId === tx.id}
+                  style={{ width: 15, height: 15, accentColor: V2.brand, cursor: bulkDeleting || deletingId === tx.id ? "not-allowed" : "pointer" }}
+                />
+              </div>
+
               {/* Date */}
               <div style={{ fontFamily: V2_TYPE.mono, fontSize: 11.5, color: V2.muted }}>{fmtDate(tx.date)}</div>
 
