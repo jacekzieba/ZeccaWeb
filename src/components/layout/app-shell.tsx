@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useState, useEffect, useMemo, type CSSProperties } from "react";
@@ -225,7 +226,13 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
             boxShadow: SHADOWS.button,
           }}
         >
-          Z
+          <Image
+            src="/zecca-logo.png"
+            alt=""
+            width={32}
+            height={32}
+            style={{ width: "100%", height: "100%", display: "block", objectFit: "cover", borderRadius: "inherit" }}
+          />
         </div>
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text, letterSpacing: ".01em" }}>Zecca</div>
@@ -481,7 +488,8 @@ export function AppShell({
 
           {/* Mobile: brand text */}
           {!isDesktop && (
-            <span style={{ fontSize: 14, fontWeight: 800, color: COLORS.text, letterSpacing: ".01em" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 800, color: COLORS.text, letterSpacing: ".01em" }}>
+              <Image src="/zecca-logo.png" alt="" width={24} height={24} style={{ width: 24, height: 24, borderRadius: 7, objectFit: "cover" }} />
               Zecca
             </span>
           )}
@@ -489,6 +497,7 @@ export function AppShell({
           {/* Desktop: brand */}
           {isDesktop && (
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <Image src="/zecca-logo.png" alt="" width={24} height={24} style={{ width: 24, height: 24, borderRadius: 7, objectFit: "cover" }} />
               <span style={{ fontSize: 13, fontWeight: 800, color: COLORS.text, letterSpacing: ".02em" }}>Zecca</span>
               <span
                 style={{
@@ -729,7 +738,13 @@ function SyncUnlockGate({
                 boxShadow: SHADOWS.button,
               }}
             >
-              Z
+              <Image
+                src="/zecca-logo.png"
+                alt=""
+                width={32}
+                height={32}
+                style={{ width: "100%", height: "100%", display: "block", objectFit: "cover", borderRadius: "inherit" }}
+              />
             </div>
             <div>
               <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text }}>Zecca</div>

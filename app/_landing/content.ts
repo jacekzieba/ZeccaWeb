@@ -78,7 +78,7 @@ const navHtml = `
 <nav class="nav">
   <div class="nav-in">
     <a class="brand" href="#top">
-      <span class="mark">Z</span>
+      <span class="mark"><img src="/zecca-logo.png" alt="" /></span>
       <span class="wordmark">Zecca</span>
       <span class="beta-pill">beta</span>
     </a>
@@ -261,7 +261,7 @@ const footerHtml = `
   <div class="wrap">
     <div class="foot-top">
       <div class="foot-brand">
-        <a class="brand" href="#top"><span class="mark">Z</span><span class="wordmark">Zecca</span></a>
+        <a class="brand" href="#top"><span class="mark"><img src="/zecca-logo.png" alt="" /></span><span class="wordmark">Zecca</span></a>
         <p>${c.footer.tagline}</p>
       </div>
       ${c.footer.columns

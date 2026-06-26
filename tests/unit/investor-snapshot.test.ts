@@ -770,6 +770,290 @@ describe("InvestorDataSnapshot mapper", () => {
     expect(snapshot.metrics.maxDrawdownPct).toBeCloseTo(-10, 5);
   });
 
+  it("treats an inter-account cash transfer as a flow, not performance", () => {
+    const records = [
+      record("account", accountID, {
+        recordType: "account",
+        id: accountID,
+        name: "Core",
+        baseCurrency: "PLN",
+      }),
+      record("transaction", "33333333-3333-4333-8333-333333333333", {
+        recordType: "transaction",
+        id: "33333333-3333-4333-8333-333333333333",
+        date: "2026-05-01T10:00:00.000Z",
+        portfolioID: accountID,
+        transactionType: "cashDeposit",
+        grossAmount: 1_000,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+      record("transaction", "44444444-4444-4444-8444-444444444444", {
+        recordType: "transaction",
+        id: "44444444-4444-4444-8444-444444444444",
+        date: "2026-05-02T10:00:00.000Z",
+        portfolioID: accountID,
+        transactionType: "accountTransferIn",
+        grossAmount: 1_000,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+        transferKind: "cash",
+        // Flagged by the user as genuine new capital, so it counts as invested.
+        contributionTreatment: "countAsContribution",
+      }),
+    ];
+
+    const snapshot = buildInvestorDataSnapshot(records, {
+      asOf: new Date("2026-05-02T10:00:00.000Z"),
+      historyGranularity: "daily",
+    });
+
+    // Value doubled (1000 -> 2000) purely because capital moved in from another
+    // account. That is a contribution, not a +100% return, so the time-weighted
+    // metrics must stay flat and the flagged transfer must count as invested.
+    expect(snapshot.totalValue).toBe(2_000);
+    expect(snapshot.metrics.totalReturnPct).toBeCloseTo(0, 5);
+    expect(snapshot.metrics.maxDrawdownPct).toBeCloseTo(0, 5);
+    expect(snapshot.metrics.netInvested).toBeCloseTo(2_000, 5);
+  });
+
+  it("excludes an unflagged inter-account transfer from net contributions", () => {
+    const records = [
+      record("account", accountID, {
+        recordType: "account",
+        id: accountID,
+        name: "Core",
+        baseCurrency: "PLN",
+      }),
+      record("transaction", "33333333-3333-4333-8333-333333333333", {
+        recordType: "transaction",
+        id: "33333333-3333-4333-8333-333333333333",
+        date: "2026-05-01T10:00:00.000Z",
+        portfolioID: accountID,
+        transactionType: "cashDeposit",
+        grossAmount: 1_000,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+      record("transaction", "44444444-4444-4444-8444-444444444444", {
+        recordType: "transaction",
+        id: "44444444-4444-4444-8444-444444444444",
+        date: "2026-05-02T10:00:00.000Z",
+        portfolioID: accountID,
+        transactionType: "accountTransferIn",
+        grossAmount: 1_000,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+        transferKind: "cash",
+        // No contributionTreatment → default "ignore" (native parity).
+      }),
+    ];
+
+    const snapshot = buildInvestorDataSnapshot(records, {
+      asOf: new Date("2026-05-02T10:00:00.000Z"),
+      historyGranularity: "daily",
+    });
+
+    // The transfer is still neutralised for performance (TWR flat), but an
+    // unflagged internal move is not fresh capital, so net-invested stays at the
+    // 1000 genuinely deposited — matching native's default `ignoreForContributions`.
+    expect(snapshot.totalValue).toBe(2_000);
+    expect(snapshot.metrics.totalReturnPct).toBeCloseTo(0, 5);
+    expect(snapshot.metrics.netInvested).toBeCloseTo(1_000, 5);
+  });
+
+  it("does not explode the time-weighted return on a buy into a near-empty account", () => {
+    const bigInstrument = "99999999-9999-4999-8999-999999999999";
+    const records = [
+      record("account", accountID, {
+        recordType: "account",
+        id: accountID,
+        name: "Core",
+        baseCurrency: "PLN",
+      }),
+      record("asset", bigInstrument, {
+        recordType: "asset",
+        id: bigInstrument,
+        kind: "etf",
+        symbol: "BIG",
+        name: "Big ETF",
+        currency: "PLN",
+      }),
+      // Day 1: a token deposit leaves the account with 0.01 PLN of cash dust.
+      record("transaction", "33333333-3333-4333-8333-333333333333", {
+        recordType: "transaction",
+        id: "33333333-3333-4333-8333-333333333333",
+        date: "2026-05-01T10:00:00.000Z",
+        portfolioID: accountID,
+        transactionType: "cashDeposit",
+        grossAmount: 0.01,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+      // Day 2: a large deposit funds a 1000 PLN buy on the same day.
+      record("transaction", "44444444-4444-4444-8444-444444444444", {
+        recordType: "transaction",
+        id: "44444444-4444-4444-8444-444444444444",
+        date: "2026-05-02T09:00:00.000Z",
+        portfolioID: accountID,
+        transactionType: "cashDeposit",
+        grossAmount: 1_000,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+      record("transaction", "55555555-5555-4555-8555-555555555558", {
+        recordType: "transaction",
+        id: "55555555-5555-4555-8555-555555555558",
+        date: "2026-05-02T10:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID: bigInstrument,
+        transactionType: "buy",
+        quantity: 10,
+        price: 100,
+        grossAmount: 1_000,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+      // Same-day mark-to-market: the holding is worth 1010, a genuine +1% on the
+      // 1000 deployed — NOT a multi-thousand-percent move relative to the 0.01
+      // cash dust that opened the day.
+      record("manualValuation", "66666666-6666-4666-8666-666666666666", {
+        recordType: "manualValuation",
+        id: "66666666-6666-4666-8666-666666666666",
+        instrumentID: bigInstrument,
+        date: "2026-05-02T11:00:00.000Z",
+        value: 101,
+        currency: "PLN",
+      }),
+    ];
+
+    const snapshot = buildInvestorDataSnapshot(records, {
+      asOf: new Date("2026-05-02T12:00:00.000Z"),
+      historyGranularity: "daily",
+    });
+
+    expect(snapshot.totalValue).toBeCloseTo(1_010.01, 2);
+    // Dividing the 10 PLN gain by (0.01 dust + 1000 inflow) yields ~1%, not the
+    // ~100000% the previous `gain / previousValue` formula produced.
+    expect(snapshot.metrics.totalReturnPct).toBeCloseTo(1, 0);
+    expect(snapshot.metrics.totalReturnPct).toBeLessThan(5);
+  });
+
+  it("reads the inflation rate from the latest settings by updatedAt", () => {
+    const records = [
+      record("account", accountID, {
+        recordType: "account",
+        id: accountID,
+        name: "Core",
+        baseCurrency: "PLN",
+      }),
+      // Newer record listed FIRST in the array; the older one listed last. A
+      // naive `.at(-1)` would wrongly pick the stale 3% rate.
+      record("settings", "88888888-8888-4888-8888-888888888881", {
+        recordType: "settings",
+        id: "88888888-8888-4888-8888-888888888881",
+        baseCurrency: "PLN",
+        inflationRate: 5,
+        updatedAt: "2026-05-10T00:00:00.000Z",
+      }),
+      record("settings", "88888888-8888-4888-8888-888888888882", {
+        recordType: "settings",
+        id: "88888888-8888-4888-8888-888888888882",
+        baseCurrency: "PLN",
+        inflationRate: 3,
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      }),
+    ];
+
+    const snapshot = buildInvestorDataSnapshot(records, {
+      asOf: new Date("2026-05-10T00:00:00.000Z"),
+    });
+
+    expect(snapshot.metrics.inflationPct).toBe(5);
+  });
+
+  it("states real return on an annualised basis (real CAGR), not cumulative", () => {
+    const records = [
+      record("account", accountID, {
+        recordType: "account",
+        id: accountID,
+        name: "Core",
+        baseCurrency: "PLN",
+      }),
+      record("asset", instrumentID, {
+        recordType: "asset",
+        id: instrumentID,
+        kind: "etf",
+        symbol: "ETF",
+        name: "ETF",
+        currency: "PLN",
+      }),
+      record("transaction", "33333333-3333-4333-8333-333333333333", {
+        recordType: "transaction",
+        id: "33333333-3333-4333-8333-333333333333",
+        date: "2024-01-01T10:00:00.000Z",
+        portfolioID: accountID,
+        transactionType: "cashDeposit",
+        grossAmount: 1_000,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+      record("transaction", "44444444-4444-4444-8444-444444444444", {
+        recordType: "transaction",
+        id: "44444444-4444-4444-8444-444444444444",
+        date: "2024-01-01T10:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID,
+        transactionType: "buy",
+        quantity: 10,
+        price: 100,
+        grossAmount: 1_000,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+      record("manualValuation", "55555555-5555-4555-8555-555555555555", {
+        recordType: "manualValuation",
+        id: "55555555-5555-4555-8555-555555555555",
+        instrumentID,
+        date: "2026-01-01T10:00:00.000Z",
+        value: 120,
+        currency: "PLN",
+      }),
+      record("settings", "88888888-8888-4888-8888-888888888888", {
+        recordType: "settings",
+        id: "B2AA7BD4-A95D-4D80-90F9-787B8A1EC401",
+        baseCurrency: "PLN",
+        inflationRate: 5,
+        updatedAt: "2026-01-01T10:00:00.000Z",
+      }),
+    ];
+
+    const snapshot = buildInvestorDataSnapshot(records, {
+      asOf: new Date("2026-01-01T10:00:00.000Z"),
+      historyGranularity: "daily",
+    });
+
+    // The portfolio grew +20% over ~2 years, so the cumulative and annualised
+    // figures differ markedly. Real return must deflate the ANNUAL nominal
+    // (CAGR) by the ANNUAL inflation rate — same horizon on both sides.
+    expect(snapshot.metrics.totalReturnPct).toBeCloseTo(20, 1);
+    const expectedReal =
+      ((1 + snapshot.metrics.cagrPct / 100) / (1 + 5 / 100) - 1) * 100;
+    expect(snapshot.metrics.realReturnPct).toBeCloseTo(expectedReal, 4);
+    // Guard against the old behaviour (cumulative nominal ÷ annual inflation).
+    const cumulativeMistake = ((1 + 20 / 100) / (1 + 5 / 100) - 1) * 100;
+    expect(snapshot.metrics.realReturnPct).not.toBeCloseTo(cumulativeMistake, 1);
+  });
+
   it("summarizes macOS income records without mixing them into portfolio cash", () => {
     const snapshot = buildInvestorDataSnapshot([
       record("account", accountID, {
@@ -1060,8 +1344,12 @@ describe("InvestorDataSnapshot mapper", () => {
       id: bondID,
       totalQuantity: 50,
     });
-    expect(instruments[0]?.lastPrice).toBeCloseTo(100.7233, 4);
-    expect(instruments[0]?.marketValue).toBeCloseTo(5_036.16, 2);
+    // ROD0338 is a catalogued issue, so the verified first-period rate (5.85%)
+    // from the known-issues table overrides the 6% carried on the synced
+    // bondParams above — matching the native TreasuryBondIssueCatalog. Accrued
+    // over 44 days (2026-04-01 → 2026-05-15) at 5.85%: 100 + 100·0.0585·44/365.
+    expect(instruments[0]?.lastPrice).toBeCloseTo(100.7052, 4);
+    expect(instruments[0]?.marketValue).toBeCloseTo(5_035.26, 2);
     expect(instruments[0]).toMatchObject({
       valuationSource: "treasuryBond",
       valuationSourceLabel: "Obligacja skarbowa",

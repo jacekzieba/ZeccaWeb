@@ -424,10 +424,17 @@ function buildPerformanceSeries(
 
   return valuationSeries.map((point, i) => {
     if (i > 0) {
-      const flow = flowByDay.get(dayKey(point.date)) ?? 0;
       if (previousValue > EPSILON) {
-        const periodReturn = (point.value - flow - previousValue) / previousValue;
-        index *= 1 + periodReturn;
+        const flow = flowByDay.get(dayKey(point.date)) ?? 0;
+        // Mirrors the native PerformanceEngine.periodReturn: divide the period
+        // gain by the capital actually at work during the period — the opening
+        // value plus any same-day inflow. Dividing by the opening value alone
+        // makes a large deposit-and-buy into a near-empty account divide a tiny
+        // accrual by cash dust and explode the index. Clamp the per-period
+        // factor at 0 so a >100% drop can't drive the index negative.
+        const denominator = previousValue + Math.max(flow, 0);
+        const periodReturn = (point.value - flow - previousValue) / denominator;
+        index *= Math.max(0, 1 + periodReturn);
       }
       previousValue = point.value;
     }
@@ -494,12 +501,48 @@ function externalCashflowBaseAmount(
   switch (transaction.transactionType) {
     case "cashDeposit":
     case "transferIn":
+    // A transfer in from another of the user's accounts is fresh capital from
+    // the scoped portfolio's perspective, not market performance — counting it
+    // as a contribution keeps the time-weighted index, XIRR and net-invested
+    // honest in the per-portfolio view. In the aggregate view it cancels
+    // against the paired `transferOut` on the source account, so the total
+    // stays neutral. Both cash and asset transfers carry their value in
+    // grossAmount (the native editor books an asset transfer's grossAmount as
+    // the summed lot cost basis, Σ quantity × unitCost), so the flow is
+    // neutralised here just like cash — the holding's market value entering the
+    // valuation is offset by this flow, leaving only any embedded gain.
+    case "accountTransferIn":
       return -base;
     case "cashWithdrawal":
     case "transferOut":
       return base;
-    // Transfers between the user's own accounts net to zero at the total
-    // level, so they are not treated as external capital.
+    default:
+      return null;
+  }
+}
+
+/** Like {@link externalCashflowBaseAmount}, but for the "net contributions"
+ * (wpłaty) line rather than performance neutralisation. A transfer in from
+ * another of the user's own accounts is an internal reallocation, not fresh
+ * external capital, so it counts as a contribution only when the user marked it
+ * `countAsContribution` — mirroring native HistoryEngine.contributionFlowAmount
+ * (default `ignoreForContributions`). It is still neutralised for TWR/XIRR via
+ * {@link externalCashflowBaseAmount}. */
+function contributionBaseAmount(
+  transaction: TransactionPayload,
+): number | null {
+  const base = transactionBaseAmount(transaction);
+  switch (transaction.transactionType) {
+    case "cashDeposit":
+    case "transferIn":
+      return -base;
+    case "accountTransferIn":
+      return transaction.contributionTreatment === "countAsContribution"
+        ? -base
+        : null;
+    case "cashWithdrawal":
+    case "transferOut":
+      return base;
     default:
       return null;
   }
@@ -526,17 +569,21 @@ function buildNetInvestedSeries(
   const flows = dataset.transactions
     .filter((transaction) => accountIds.has(transaction.portfolioID))
     .map((transaction) => {
-      const plnAmount = externalCashflowBaseAmount(transaction);
+      const plnAmount = contributionBaseAmount(transaction);
       if (plnAmount == null) return null;
       const date = toDate(transaction.date);
       // Contributions increase invested capital, so negate the investor-signed flow.
-      return { time: date.getTime(), invested: -(plnAmount / baseToPln(date)) };
+      // Bucket by calendar day: the valuation series labels points at the day
+      // start but values them at the day end, so a same-day flow must count for
+      // that point. Comparing the raw timestamp instead would push an
+      // afternoon deposit one point ahead of the value that already reflects it.
+      return { time: startOfLocalDay(date).getTime(), invested: -(plnAmount / baseToPln(date)) };
     })
     .filter((flow): flow is { time: number; invested: number } => flow !== null)
     .sort((a, b) => a.time - b.time);
 
   return valuationSeries.map((point) => {
-    const cutoff = toDate(point.date).getTime();
+    const cutoff = startOfLocalDay(toDate(point.date)).getTime();
     let cumulative = 0;
     for (const flow of flows) {
       if (flow.time > cutoff) break;
@@ -561,14 +608,23 @@ function buildMetrics(
   for (const transaction of dataset.transactions) {
     if (!accountIds.has(transaction.portfolioID)) continue;
     if (toDate(transaction.date).getTime() > asOf.getTime()) continue;
-    const plnAmount = externalCashflowBaseAmount(transaction);
-    if (plnAmount == null) continue;
+    const date = toDate(transaction.date);
     // Convert each flow at its own date so XIRR and net-invested are stated in
     // the display currency consistently with the (already converted) terminal
     // value below.
-    const amount = plnAmount / baseToPln(toDate(transaction.date));
-    cashflows.push({ date: toDate(transaction.date), amount });
-    netInvested -= amount; // contribution (negative cashflow) increases invested
+    const rate = baseToPln(date);
+    // XIRR must neutralise every external flow, including internal account
+    // transfers, so it uses the broad external-flow definition.
+    const external = externalCashflowBaseAmount(transaction);
+    if (external != null) {
+      cashflows.push({ date, amount: external / rate });
+    }
+    // Net-invested counts only genuine contributions: an unflagged account
+    // transfer is an internal move, not fresh capital (parity with native).
+    const contribution = contributionBaseAmount(transaction);
+    if (contribution != null) {
+      netInvested -= contribution / rate; // contribution increases invested
+    }
   }
 
   if (totalValue > EPSILON) {
@@ -579,7 +635,11 @@ function buildMetrics(
   const inflationPct = getInflationPct(dataset);
   const totalReturnPct = computePerformanceReturnPct(performanceSeries);
   const cagrPct = computeCagrPct(performanceSeries);
-  const realReturnPct = computeRealReturnPct(totalReturnPct, inflationPct);
+  // Real return is stated on an ANNUAL basis: deflate the annualised nominal
+  // return (CAGR) by the annual inflation rate. Deflating the *cumulative*
+  // multi-year return by a single year's inflation would mix horizons and
+  // overstate the real result for any portfolio older than a year.
+  const realReturnPct = computeRealReturnPct(cagrPct, inflationPct);
   const maxDrawdownPct = computeMaxDrawdownPct(
     performanceSeries.map((point) => point.value),
   );
@@ -634,10 +694,17 @@ function buildRealizedPnl(
     instrumentID: string | null | undefined,
     quantity: number,
     costPerUnitBase: number,
+    // Acquisition costs (e.g. buy commission) capitalised into the lot's cost
+    // basis, so realised P&L nets out entry costs the way the exit side already
+    // nets out fees/taxes from proceeds.
+    extraCostBase = 0,
   ) => {
     if (!instrumentID || quantity <= EPSILON) return;
     const lots = lotsByInstrument.get(instrumentID) ?? [];
-    lots.push({ quantity, costBasisBase: costPerUnitBase * quantity });
+    lots.push({
+      quantity,
+      costBasisBase: costPerUnitBase * quantity + Math.max(0, extraCostBase),
+    });
     lotsByInstrument.set(instrumentID, lots);
   };
 
@@ -679,7 +746,12 @@ function buildRealizedPnl(
         const costPerUnit =
           transaction.price ??
           (quantity > EPSILON ? transaction.grossAmount / quantity : 0);
-        pushLot(transaction.instrumentID, quantity, costPerUnit * fx);
+        pushLot(
+          transaction.instrumentID,
+          quantity,
+          costPerUnit * fx,
+          transaction.fees * fx,
+        );
         break;
       }
       case "depositOpen":
@@ -733,10 +805,10 @@ function computePerformanceReturnPct(
 }
 
 function getInflationPct(dataset: ParsedDataset): number {
-  const fromSettings = dataset.settings
-    .map((settings) => settings.inflationRate)
-    .filter((value): value is number => typeof value === "number");
-  const latest = fromSettings.at(-1);
+  // Pick the rate from the most recently updated settings record, consistent
+  // with how base currency and the telemetry gate resolve "latest" — array
+  // order is not reliable, so sort by `updatedAt`.
+  const latest = getLatestSettings(dataset)?.inflationRate;
   if (latest == null) return 0;
   // Stored either as a fraction (0.035) or a percentage (3.5).
   return Math.abs(latest) <= 1 ? latest * 100 : latest;
@@ -929,10 +1001,13 @@ function buildPortfolioSummary(
     }).totalValue / baseToPln(previousDay);
   const periodFlow =
     portfolioFlowIntoBaseAmount(transactions, previousDay, asOf) / baseToPln(asOf);
+  // Divide by the capital at work during the day (opening value + same-day
+  // inflow), matching the native PerformanceEngine.periodReturn, so a deposit
+  // into a near-empty account doesn't divide a tiny accrual by cash dust.
+  const dailyDenominator = previousValueForDelta + Math.max(periodFlow, 0);
   const dailyChange =
     previousValueForDelta > EPSILON
-      ? ((valueForDelta - periodFlow - previousValueForDelta) /
-          previousValueForDelta) *
+      ? ((valueForDelta - periodFlow - previousValueForDelta) / dailyDenominator) *
         100
       : 0;
 
@@ -995,7 +1070,6 @@ function portfolioFlowIntoBaseAmount(
         break;
       case "cashWithdrawal":
       case "transferOut":
-      case "accountTransferOut":
         flow -= transactionBaseAmount(transaction);
         break;
     }

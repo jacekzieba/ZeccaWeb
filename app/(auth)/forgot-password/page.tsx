@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ForgotPasswordForm } from "@/features/auth/forgot-password-form";
 import { COLORS, SHADOWS, SURFACES } from "@/lib/design-tokens";
@@ -41,7 +42,13 @@ export default function ForgotPasswordPage() {
                 boxShadow: SHADOWS.button,
               }}
             >
-              Z
+              <Image
+                src="/zecca-logo.png"
+                alt=""
+                width={32}
+                height={32}
+                style={{ width: "100%", height: "100%", display: "block", objectFit: "cover", borderRadius: "inherit" }}
+              />
             </div>
             <div>
               <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text }}>Zecca</div>
