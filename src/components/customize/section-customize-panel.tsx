@@ -1,10 +1,11 @@
 "use client";
 
-import { useId, useState } from "react";
-import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, RotateCcw } from "lucide-react";
+import { useId, useState, type DragEvent } from "react";
+import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, GripVertical, RotateCcw } from "lucide-react";
 import {
   mixHex,
   type SectionConfig,
+  type SectionDropPlacement,
   type SectionRegistry,
   type SectionSize,
 } from "@/components/customize/section-customization";
@@ -47,6 +48,7 @@ export function SectionCustomizePanel<Id extends string>({
   visibleSections,
   onToggle,
   onReorder,
+  onReorderTo,
   onResize,
   onReset,
   theme,
@@ -59,6 +61,7 @@ export function SectionCustomizePanel<Id extends string>({
   visibleSections: Set<Id>;
   onToggle: (id: Id) => void;
   onReorder: (id: Id, dir: -1 | 1) => void;
+  onReorderTo: (id: Id, targetId: Id, placement: SectionDropPlacement) => void;
   onResize: (id: Id, size: SectionSize) => void;
   onReset: () => void;
   theme: SectionPanelTheme;
@@ -68,6 +71,8 @@ export function SectionCustomizePanel<Id extends string>({
 }) {
   const categoryPanelId = useId();
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+  const [draggedSectionId, setDraggedSectionId] = useState<Id | null>(null);
+  const [dropTarget, setDropTarget] = useState<{ id: Id; placement: SectionDropPlacement } | null>(null);
   const sectionById = Object.fromEntries(registry.sections.map((s) => [s.id, s])) as Record<Id, (typeof registry.sections)[number]>;
   const categoryById = Object.fromEntries(registry.categories.map((c) => [c.id, c]));
   const grouped = registry.categoryOrder
@@ -81,6 +86,28 @@ export function SectionCustomizePanel<Id extends string>({
   const orderedVisible = config.sectionOrder.filter((id) => visibleSections.has(id));
   const toggleCategory = (categoryId: string) =>
     setExpandedCategories((current) => ({ ...current, [categoryId]: !current[categoryId] }));
+  const resetDragState = () => {
+    setDraggedSectionId(null);
+    setDropTarget(null);
+  };
+  const resolveDropPlacement = (event: DragEvent<HTMLElement>): SectionDropPlacement => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    return event.clientY < rect.top + rect.height / 2 ? "before" : "after";
+  };
+  const updateDropTarget = (event: DragEvent<HTMLElement>, sectionId: Id) => {
+    event.preventDefault();
+    if (!draggedSectionId || draggedSectionId === sectionId) {
+      setDropTarget(null);
+      return;
+    }
+    event.dataTransfer.dropEffect = "move";
+    const placement = resolveDropPlacement(event);
+    setDropTarget((current) => (
+      current?.id === sectionId && current.placement === placement
+        ? current
+        : { id: sectionId, placement }
+    ));
+  };
 
   return (
     <div
@@ -232,7 +259,41 @@ export function SectionCustomizePanel<Id extends string>({
               return (
                 <div
                   key={sectionId}
-                  style={{ display: "flex", alignItems: "center", gap: 10, border: `0.5px solid ${theme.line}`, borderRadius: 10, background: theme.card, padding: "8px 10px" }}
+                  data-testid={`section-layout-row-${String(sectionId)}`}
+                  draggable
+                  onDragStart={(event) => {
+                    setDraggedSectionId(sectionId);
+                    event.dataTransfer.effectAllowed = "move";
+                    event.dataTransfer.setData("text/plain", sectionId);
+                  }}
+                  onDragOver={(event) => updateDropTarget(event, sectionId)}
+                  onDragLeave={(event) => {
+                    const nextTarget = event.relatedTarget;
+                    if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) return;
+                    setDropTarget((current) => (current?.id === sectionId ? null : current));
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    const sourceId = draggedSectionId ?? (event.dataTransfer.getData("text/plain") as Id | "");
+                    const placement = dropTarget?.id === sectionId ? dropTarget.placement : resolveDropPlacement(event);
+                    if (sourceId && sourceId !== sectionId) onReorderTo(sourceId, sectionId, placement);
+                    resetDragState();
+                  }}
+                  onDragEnd={resetDragState}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    border: `0.5px solid ${
+                      dropTarget?.id === sectionId ? mixHex(theme.brand, 0.65) : theme.line
+                    }`,
+                    borderRadius: 10,
+                    background: dropTarget?.id === sectionId ? mixHex(theme.brand, 0.06) : theme.card,
+                    boxShadow: dropTarget?.id === sectionId ? `inset 0 ${dropTarget.placement === "before" ? 2 : -2}px 0 ${theme.brand}` : "none",
+                    opacity: draggedSectionId === sectionId ? 0.52 : 1,
+                    padding: "8px 10px",
+                    cursor: "grab",
+                  }}
                 >
                   <span style={{ fontFamily: theme.fontMono, fontSize: 11, fontWeight: 700, color: theme.muted, width: 18, textAlign: "right", flex: "0 0 auto" }}>
                     {position + 1}
@@ -242,6 +303,13 @@ export function SectionCustomizePanel<Id extends string>({
                   </span>
                   <span style={{ minWidth: 0, flex: 1, fontFamily: theme.fontUi, fontSize: 13, fontWeight: 600, color: theme.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {section.label}
+                  </span>
+                  <span
+                    aria-label={`Przeciągnij sekcję ${section.label}`}
+                    title="Przeciągnij"
+                    style={{ color: theme.muted, display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto" }}
+                  >
+                    <GripVertical size={16} strokeWidth={2} aria-hidden="true" />
                   </span>
                   <div style={{ display: "flex", gap: 6, flex: "0 0 auto" }}>
                     <button type="button" onClick={() => onReorder(sectionId, -1)} disabled={isFirst} aria-label={`Przesuń ${section.label} wyżej`} style={smallControlStyle(isFirst, theme)}>

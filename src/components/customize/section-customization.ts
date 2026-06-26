@@ -25,6 +25,7 @@ export type SectionConfig<Id extends string> = {
   sectionSizes: Partial<Record<Id, SectionSize>>;
   knownSections: Id[];
 };
+export type SectionDropPlacement = "before" | "after";
 
 export function mixHex(hex: string, pct: number) {
   const h = hex.replace("#", "");
@@ -59,6 +60,33 @@ export function reorderVisibleSection<Id extends string>(
   const next = [...order];
   [next[index], next[target]] = [next[target], next[index]];
   return next;
+}
+
+export function reorderVisibleSectionTo<Id extends string>(
+  order: Id[],
+  visible: Id[],
+  id: Id,
+  targetId: Id,
+  placement: SectionDropPlacement,
+): Id[] {
+  if (id === targetId) return order;
+  const visibleSet = new Set<Id>(visible);
+  if (!visibleSet.has(id) || !visibleSet.has(targetId)) return order;
+
+  const visibleOrder = order.filter((sectionId) => visibleSet.has(sectionId));
+  if (!visibleOrder.includes(id) || !visibleOrder.includes(targetId)) return order;
+
+  const nextVisibleOrder = visibleOrder.filter((sectionId) => sectionId !== id);
+  const targetIndex = nextVisibleOrder.indexOf(targetId);
+  if (targetIndex < 0) return order;
+
+  nextVisibleOrder.splice(placement === "before" ? targetIndex : targetIndex + 1, 0, id);
+  if (nextVisibleOrder.every((sectionId, index) => sectionId === visibleOrder[index])) return order;
+
+  let visibleIndex = 0;
+  return order.map((sectionId) => (
+    visibleSet.has(sectionId) ? nextVisibleOrder[visibleIndex++] : sectionId
+  ));
 }
 
 export function defaultSizes<Id extends string>(registry: SectionRegistry<Id>): Record<Id, SectionSize> {
@@ -186,16 +214,6 @@ export function useSectionCustomization<Id extends string>(registry: SectionRegi
       return { ...current, visibleSections: current.sectionOrder.filter((s) => visible.has(s)) };
     });
 
-  const move = (id: Id, dir: -1 | 1) =>
-    setConfig((current) => {
-      const order = [...current.sectionOrder];
-      const index = order.indexOf(id);
-      const nextIndex = index + dir;
-      if (index < 0 || nextIndex < 0 || nextIndex >= order.length) return current;
-      [order[index], order[nextIndex]] = [order[nextIndex], order[index]];
-      return { ...current, sectionOrder: order };
-    });
-
   // Reorders within the visible subsequence (skipping hidden sections), so the
   // flat "Układ" list can move a section across category boundaries.
   const reorder = (id: Id, dir: -1 | 1) =>
@@ -209,10 +227,22 @@ export function useSectionCustomization<Id extends string>(registry: SectionRegi
       ),
     }));
 
+  const reorderTo = (id: Id, targetId: Id, placement: SectionDropPlacement) =>
+    setConfig((current) => ({
+      ...current,
+      sectionOrder: reorderVisibleSectionTo(
+        current.sectionOrder,
+        current.visibleSections,
+        id,
+        targetId,
+        placement,
+      ),
+    }));
+
   const resize = (id: Id, size: SectionSize) =>
     setConfig((current) => ({ ...current, sectionSizes: { ...current.sectionSizes, [id]: size } }));
 
   const reset = () => setConfig(defaultConfig(registry));
 
-  return { config, toggle, move, reorder, resize, reset };
+  return { config, toggle, reorder, reorderTo, resize, reset };
 }

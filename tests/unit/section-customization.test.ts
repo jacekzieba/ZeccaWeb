@@ -6,6 +6,7 @@ import {
   saveConfig,
   mixHex,
   reorderVisibleSection,
+  reorderVisibleSectionTo,
   type SectionRegistry,
 } from "@/components/customize/section-customization";
 
@@ -111,6 +112,15 @@ describe("section-customization", () => {
   it("reorderVisibleSection is a no-op at the visible edges", () => {
     expect(reorderVisibleSection(["a", "b", "c"], ["a", "c"], "a", -1)).toEqual(["a", "b", "c"]);
     expect(reorderVisibleSection(["a", "b", "c"], ["a", "c"], "c", 1)).toEqual(["a", "b", "c"]);
+  });
+
+  it("reorderVisibleSectionTo moves a section before or after a target", () => {
+    expect(reorderVisibleSectionTo(["a", "b", "c"], ["a", "b", "c"], "c", "a", "before")).toEqual(["c", "a", "b"]);
+    expect(reorderVisibleSectionTo(["a", "b", "c"], ["a", "b", "c"], "a", "c", "after")).toEqual(["b", "c", "a"]);
+  });
+
+  it("reorderVisibleSectionTo keeps hidden sections in their stored slots", () => {
+    expect(reorderVisibleSectionTo(["a", "b", "c"], ["a", "c"], "c", "a", "before")).toEqual(["c", "b", "a"]);
   });
 
   it("mixHex turns a hex + alpha into rgba", () => {

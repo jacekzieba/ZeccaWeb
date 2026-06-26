@@ -824,7 +824,7 @@ export function DashboardOverview() {
   const lastSyncedAt = useSyncStore((state) => state.lastSyncedAt);
   const profile = useProfile();
   const [period, setPeriod] = useState<Period>("1Y");
-  const { config: dashboardConfig, toggle, reorder, resize, reset } = useSectionCustomization(DASHBOARD_REGISTRY);
+  const { config: dashboardConfig, toggle, reorder, reorderTo, resize, reset } = useSectionCustomization(DASHBOARD_REGISTRY);
   const [showCustomize, setShowCustomize] = useState(false);
   const isMobile = useMedia("(max-width: 720px)");
   const isTablet = useMedia("(max-width: 1140px)");
@@ -996,6 +996,7 @@ export function DashboardOverview() {
           visibleSections={visibleSections}
           onToggle={toggle}
           onReorder={reorder}
+          onReorderTo={reorderTo}
           onResize={resize}
           onReset={reset}
           theme={DASHBOARD_THEME}

@@ -19,7 +19,11 @@ test("dashboard customize stores section visibility and width, and preserves it 
 
   await expandCategory(page, "Dane");
 
-  await main.getByRole("button", { name: "Przesuń Instrumenty wyżej" }).click();
+  await main
+    .getByTestId("section-layout-row-holdings")
+    .dragTo(main.getByTestId("section-layout-row-valueVsDeposits"), {
+      targetPosition: { x: 40, y: 4 },
+    });
   await main.getByRole("radiogroup", { name: "Szerokość sekcji Instrumenty" }).getByRole("radio", { name: "4 kolumny" }).click();
   await expect.poll(async () => {
     return page.evaluate(() => {

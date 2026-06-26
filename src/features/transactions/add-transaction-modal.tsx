@@ -194,6 +194,7 @@ export type TransactionEditorDraft = {
   notes?: string;
   sourcePortfolioId?: string | null;
   transferKind?: string | null;
+  contributionTreatment?: string | null;
   updatedAt: string;
 };
 
@@ -236,6 +237,7 @@ export function AddTransactionModal({
   const [fxRateToBase, setFxRateToBase] = useState("");
   const [sourcePortfolioId, setSourcePortfolioId] = useState("");
   const [transferKind, setTransferKind] = useState<"cash" | "asset">("cash");
+  const [countAsContribution, setCountAsContribution] = useState(false);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -262,6 +264,9 @@ export function AddTransactionModal({
     setFxRateToBase(initialValue?.fxRateToBase != null ? String(initialValue.fxRateToBase) : "");
     setSourcePortfolioId(initialValue?.sourcePortfolioId ?? "");
     setTransferKind(initialValue?.transferKind === "asset" ? "asset" : "cash");
+    setCountAsContribution(
+      initialValue?.contributionTreatment === "countAsContribution",
+    );
     setNotes(initialValue?.notes ?? "");
     setSaving(false);
     setError(null);
@@ -465,6 +470,7 @@ export function AddTransactionModal({
     setFxRateToBase("");
     setSourcePortfolioId("");
     setTransferKind("cash");
+    setCountAsContribution(false);
     setNotes("");
     setError(null);
     setSaving(false);
@@ -577,6 +583,12 @@ export function AddTransactionModal({
         notes,
         sourcePortfolioID: txType === "accountTransferIn" && sourcePortfolioId ? sourcePortfolioId : null,
         transferKind: txType === "accountTransferIn" ? transferKind : null,
+        contributionTreatment:
+          txType === "accountTransferIn"
+            ? countAsContribution
+              ? "countAsContribution"
+              : "ignoreForContributions"
+            : null,
         instrumentID: txDef.needsInstrument && instrumentId ? instrumentId : null,
         quantity: quantityValue,
         price: priceValue,
@@ -891,6 +903,30 @@ export function AddTransactionModal({
                         ))}
                     </select>
                   </Field>
+                  <label
+                    style={{
+                      display: "flex",
+                      gap: 10,
+                      alignItems: "flex-start",
+                      marginTop: 12,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={countAsContribution}
+                      onChange={(e) => setCountAsContribution(e.target.checked)}
+                      style={{ marginTop: 2, accentColor: INK }}
+                    />
+                    <span style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.35 }}>
+                      <span style={{ fontWeight: 700, color: INK }}>Licz jako nową wpłatę</span>
+                      <br />
+                      Domyślnie transfer między własnymi portfelami jest neutralny dla
+                      „wpłat” (nie zawyża zainwestowanego kapitału). Zaznacz, jeśli to
+                      faktycznie nowy kapitał z zewnątrz. Wynik (TWR/XIRR) jest
+                      neutralizowany tak czy inaczej.
+                    </span>
+                  </label>
                 </div>
               )}
 
