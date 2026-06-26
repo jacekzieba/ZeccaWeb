@@ -59,6 +59,17 @@ const PRIVACY_ICONS: string[] = [
 
 // Investor-cell badge colours, aligned 1:1 with copy.investor.cells.
 const INVESTOR_BADGE_CLASSES = ["b-br", "b-bo", "b-eq", "b-go", "b-de", "b-br"];
+const FEATURE_LAYOUT_CLASSES = [
+  "feat-portfolios",
+  "feat-assets",
+  "feat-metrics",
+  "feat-real-return",
+  "feat-history",
+  "feat-income",
+  "feat-import",
+  "feat-backup",
+  "feat-sync",
+];
 
 // Showcase screenshots, aligned 1:1 with copy.showcase. `frame` picks the mock.
 const SHOWCASE_MEDIA = [
@@ -103,7 +114,7 @@ const featuresHtml = `
         .map((item, i) => {
           const icon = FEATURE_ICONS[i] ?? FEATURE_ICONS[0];
           const tags = item.tags.map((t) => `<span class="tag">${t}</span>`).join("");
-          return `<div class="feat reveal">
+          return `<div class="feat ${FEATURE_LAYOUT_CLASSES[i] ?? ""} reveal">
         <div class="ic" style="${icon.bg}">${icon.svg}</div>
         <h3>${item.title}</h3>
         <p>${item.desc}</p>

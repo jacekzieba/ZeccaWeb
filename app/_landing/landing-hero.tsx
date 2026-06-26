@@ -29,6 +29,19 @@ function getThirtyDayChange(series: number[]) {
   return ((series.at(-1)! - series[0]) / series[0]) * 100;
 }
 
+/** Compact charts preserve each portfolio's demonstrated return but distribute
+ * movement through the period, avoiding bookkeeping-style end-of-series jumps. */
+function createPortfolioTrend(changePct: number, seed: number) {
+  const points = 18;
+  const amplitude = 0.7 + seed * 0.12;
+  return Array.from({ length: points }, (_, index) => {
+    const progress = index / (points - 1);
+    const taper = Math.sin(Math.PI * progress);
+    const base = 100 * (1 + (changePct / 100) * progress);
+    return base + Math.sin((progress * 8 + seed) * Math.PI) * amplitude * taper;
+  });
+}
+
 function TiltCard({
   className,
   children,
@@ -131,7 +144,7 @@ export function LandingHero() {
                 value={snapshot.valuationSeries}
                 deposits={snapshot.netInvestedSeries}
                 currency="PLN"
-                height={236}
+                height={194}
                 periodLabels={PERIOD_LABELS}
               />
             </TiltCard>
@@ -148,6 +161,7 @@ export function LandingHero() {
               <div className="portfolio-preview-list">
                 {portfolios.map((portfolio, index) => {
                   const change = getThirtyDayChange(portfolio.sparkline);
+                  const trend = createPortfolioTrend(change, index + 1);
                   const colors = ["#234d38", "#9a7b3c", "#34699a"];
                   const color = colors[index] ?? "#234d38";
                   return (
@@ -160,7 +174,7 @@ export function LandingHero() {
                         </div>
                       </div>
                       <div className="portfolio-trend">
-                        <Sparkline data={portfolio.sparkline} color={color} width={58} height={22} />
+                        <Sparkline data={trend} color={color} width={68} height={24} strokeWidth={1.8} />
                         <b>{change >= 0 ? "+" : ""}{formatPercent(change)}</b>
                       </div>
                     </div>
