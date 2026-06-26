@@ -7,7 +7,11 @@ import {
   AddTransactionModal,
   type TransactionEditorDraft,
 } from "@/features/transactions/add-transaction-modal";
-import { deleteRecord, refreshSyncStore } from "@/sync/records/record-writer";
+import {
+  deleteRecord,
+  refreshSyncStore,
+  SyncConflictError,
+} from "@/sync/records/record-writer";
 import { isFakeSyncEnabled } from "@/lib/env";
 import {
   V2,
@@ -91,6 +95,19 @@ function fmtDate(iso: string) {
   });
 }
 
+// Turn a failed delete into a message the user can act on. Previously every
+// delete error was swallowed (the handlers were `void`-called with no `catch`),
+// so a failure looked identical to "nothing happened".
+function describeDeleteError(error: unknown) {
+  if (error instanceof SyncConflictError) {
+    return error.message;
+  }
+  if (error instanceof Error && error.message) {
+    return `Nie udało się usunąć transakcji: ${error.message}`;
+  }
+  return "Nie udało się usunąć transakcji. Spróbuj ponownie lub odśwież dane.";
+}
+
 export function TransactionsPage() {
   const records = useSyncStore((s) => s.records);
   const userDataKey = useSyncStore((s) => s.userDataKey);
@@ -110,6 +127,7 @@ export function TransactionsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const portfolios = useMemo(() => {
     const seen = new Map<string, string>();
@@ -299,6 +317,7 @@ export function TransactionsPage() {
     );
 
     setDeletingId(id);
+    setDeleteError(null);
 
     try {
       const result = await deleteRecord(supabase, "transaction", id, {
@@ -319,6 +338,8 @@ export function TransactionsPage() {
         next.delete(id);
         return next;
       });
+    } catch (error) {
+      setDeleteError(describeDeleteError(error));
     } finally {
       setDeletingId(null);
     }
@@ -350,8 +371,10 @@ export function TransactionsPage() {
     }
 
     setBulkDeleting(true);
+    setDeleteError(null);
     const queuedIds: string[] = [];
     const deletedIds: string[] = [];
+    let failure: unknown = null;
 
     try {
       for (const id of idsToDelete) {
@@ -361,29 +384,48 @@ export function TransactionsPage() {
             record.envelope.type === "transaction" &&
             record.id === id,
         );
-        const result = await deleteRecord(supabase, "transaction", id, {
-          baseUpdatedAt: sourceRecord?.updatedAt ?? null,
-        });
-        deletedIds.push(id);
-        if (result.queued) {
-          queuedIds.push(id);
+        try {
+          const result = await deleteRecord(supabase, "transaction", id, {
+            baseUpdatedAt: sourceRecord?.updatedAt ?? null,
+          });
+          deletedIds.push(id);
+          if (result.queued) {
+            queuedIds.push(id);
+          }
+        } catch (error) {
+          // Capture the first failure but keep deleting the rest so one bad
+          // record doesn't silently abort the whole batch.
+          failure ??= error;
         }
       }
 
-      if (queuedIds.length === 0) {
-        const { records: nextRecords, snapshot: nextSnapshot } = await refreshSyncStore(
-          supabase,
-          userDataKey,
-        );
-        setSync(nextRecords, nextSnapshot);
-      } else {
-        markTransactionsDeletedLocally(deletedIds);
+      if (deletedIds.length > 0) {
+        if (queuedIds.length === 0) {
+          const { records: nextRecords, snapshot: nextSnapshot } = await refreshSyncStore(
+            supabase,
+            userDataKey,
+          );
+          setSync(nextRecords, nextSnapshot);
+        } else {
+          markTransactionsDeletedLocally(deletedIds);
+        }
+        setSelectedIds((current) => {
+          const next = new Set(current);
+          for (const id of deletedIds) next.delete(id);
+          return next;
+        });
       }
-      setSelectedIds((current) => {
-        const next = new Set(current);
-        for (const id of deletedIds) next.delete(id);
-        return next;
-      });
+
+      if (failure) {
+        const remaining = idsToDelete.length - deletedIds.length;
+        setDeleteError(
+          `${describeDeleteError(failure)}${
+            remaining > 0 ? ` (nie usunięto ${remaining} z ${idsToDelete.length})` : ""
+          }`,
+        );
+      }
+    } catch (error) {
+      setDeleteError(describeDeleteError(error));
     } finally {
       setBulkDeleting(false);
     }
@@ -549,6 +591,42 @@ export function TransactionsPage() {
               {bulkDeleting ? "Usuwam…" : "Usuń zaznaczone"}
             </button>
           </div>
+        </div>
+      )}
+
+      {deleteError && (
+        <div
+          role="alert"
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 12,
+            padding: "10px 12px",
+            borderRadius: 10,
+            background: v2Mix(V2.loss, 0.08),
+            border: `0.5px solid ${v2Mix(V2.loss, 0.22)}`,
+          }}
+        >
+          <div style={{ fontFamily: V2_TYPE.ui, fontSize: 12.5, fontWeight: 600, color: V2.loss }}>
+            {deleteError}
+          </div>
+          <button
+            onClick={() => setDeleteError(null)}
+            style={{
+              padding: "5px 9px",
+              borderRadius: 8,
+              border: `0.5px solid ${v2Mix(V2.loss, 0.2)}`,
+              background: "transparent",
+              color: V2.loss,
+              fontSize: 12,
+              cursor: "pointer",
+              fontFamily: V2_TYPE.ui,
+              flexShrink: 0,
+            }}
+          >
+            Zamknij ×
+          </button>
         </div>
       )}
 

@@ -164,13 +164,35 @@ async function assertNoConflict(
     );
   }
 
-  if (remote.updated_at !== baseUpdatedAt || remote.deleted_at) {
+  if (remote.deleted_at || !timestampsMatchInstant(remote.updated_at, baseUpdatedAt)) {
     throw new SyncConflictError(
       "Rekord zmienił się na innym urządzeniu. Odśwież dane i ponów zmianę.",
       recordType,
       id,
     );
   }
+}
+
+// Compare two timestamps by the instant they represent, not by their raw string
+// form. The local `baseUpdatedAt` reaches us through different serializers than
+// the freshly-fetched `remote.updated_at` (the bootstrap API round-trips through
+// JSON, optimistic local writes use `Date#toISOString`, PostgREST returns the
+// Postgres text form), so a byte-for-byte comparison reports spurious conflicts
+// — e.g. `2026-06-07 14:54:08.1+00` vs `2026-06-07T14:54:08.100Z` — even though
+// the record is unchanged. Those false conflicts silently blocked every web
+// edit/delete of an existing record.
+function timestampsMatchInstant(a: string, b: string) {
+  if (a === b) {
+    return true;
+  }
+  const aMs = Date.parse(a);
+  const bMs = Date.parse(b);
+  if (Number.isNaN(aMs) || Number.isNaN(bMs)) {
+    // Fall back to strict equality when either value is unparseable rather than
+    // treating two unknowns as a match.
+    return false;
+  }
+  return aMs === bMs;
 }
 
 async function uploadEncryptedRecord(

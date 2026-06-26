@@ -17,10 +17,10 @@ export const landingCopy = {
   // ── Górna nawigacja ───────────────────────────────────────────────────────
   nav: {
     links: [
+      { label: "Jak działa", href: "#jak-dziala" },
       { label: "Funkcje", href: "#funkcje" },
       { label: "Prywatność", href: "#prywatnosc" },
-      { label: "Dla inwestora", href: "#inwestor" },
-      { label: "FAQ", href: "#faq" },
+      { label: "Lista beta", href: "#lista-beta" },
     ],
     login: { label: "Zaloguj się", href: "/login" },
   },
@@ -44,13 +44,73 @@ export const landingCopy = {
       label: "Powiadom mnie, gdy otworzymy zapisy",
       placeholder: "Twój adres e-mail",
       button: "Wkrótce",
-      note: "Zapisy uruchomimy wkrótce. Adres nie jest teraz zapisywany.",
+      note: "Pełne zapisy będą niżej na stronie. Ten formularz jest jeszcze nieaktywny.",
     },
     trust: [
       { title: "Dane szyfrowane end-to-end", desc: "Tylko Ty masz dostęp do swoich danych." },
       { title: "Działa lokalnie", desc: "Twoje dane zostają na Twoim urządzeniu." },
       { title: "Kursy walut z NBP", desc: "Aktualne kursy bezpośrednio z NBP." },
       { title: "Inflacja CPI z GUS", desc: "Oficjalne dane o inflacji prosto z GUS." },
+    ],
+  },
+
+  // ── P1 · Jak działa ──────────────────────────────────────────────────────
+  howItWorks: {
+    eyebrow: "P1 · JAK TO DZIAŁA",
+    title: "Od historii transakcji do spokojnego obrazu majątku.",
+    desc: "Zecca nie próbuje zgadywać Twojego portfela z jednego salda. Buduje go od źródła: transakcji, wpłat, wycen i oficjalnych danych.",
+    steps: [
+      {
+        label: "01",
+        title: "Dodajesz aktywa i historię",
+        desc: "Wprowadzasz transakcje ręcznie albo importujesz pliki od brokera. Możesz cofnąć się do pierwszej obligacji, lokaty albo ETF-u.",
+        meta: "Transakcje · import · aktywa ręczne",
+      },
+      {
+        label: "02",
+        title: "Silnik przelicza wartość",
+        desc: "Ten sam model liczy wpłaty, pozycje, kursy NBP, CPI, odsetki, dywidendy i wynik realny po inflacji.",
+        meta: "NBP · GUS · FIFO · XIRR",
+      },
+      {
+        label: "03",
+        title: "Widzisz portfele bez arkuszy",
+        desc: "IKE, IKZE i konto główne są osobno, ale możesz przełączyć się na widok całego majątku, alokacji i historii.",
+        meta: "Portfele · alokacja · historia",
+      },
+    ],
+  },
+
+  // ── P1 · Dlaczego nie arkusz ─────────────────────────────────────────────
+  spreadsheet: {
+    eyebrow: "P1 · DLACZEGO NIE ARKUSZ",
+    title: "Arkusz jest dobry na start. Potem zaczyna ukrywać błędy.",
+    desc: "Zecca ma robić za Ciebie te rzeczy, które w Excelu są kruche: przeliczenia walut, historia wpłat, realna stopa zwrotu i rozdzielenie wyniku od dopłat.",
+    lead: {
+      title: "Najważniejsze: rozdzielamy wpłaty od wyniku inwestycyjnego.",
+      desc: "Duży portfel nie znaczy jeszcze dobrego wyniku. Zecca pokazuje, co wynika z rynku, a co tylko z kolejnych dopłat.",
+    },
+    items: [
+      {
+        title: "Wpłaty vs wynik",
+        desc: "Historia wartości jest porównana ze skumulowanymi wpłatami, więc widzisz realny wkład inwestycji.",
+      },
+      {
+        title: "IKE, IKZE i konto główne",
+        desc: "Każdy portfel ma własną historię, ale bez ręcznego kopiowania formuł między arkuszami.",
+      },
+      {
+        title: "Inflacja CPI",
+        desc: "Wynik nominalny i realny są liczone z użyciem oficjalnych danych GUS, nie ręcznie wpisanych stawek.",
+      },
+      {
+        title: "Kursy NBP",
+        desc: "Aktywa walutowe i złoto są przeliczane po kursach z konkretnego dnia lub ostatniej publikacji.",
+      },
+      {
+        title: "Eksport i kopia lokalna",
+        desc: "Nie zamykamy danych w aplikacji. Eksportujesz CSV i backup JSON, kiedy potrzebujesz.",
+      },
     ],
   },
 
@@ -237,9 +297,36 @@ export const landingCopy = {
     ],
   },
 
-  // ── 05 · Feedback ─────────────────────────────────────────────────────────
+  // ── 05 · Lista beta ──────────────────────────────────────────────────────
+  betaList: {
+    eyebrow: "05 · LISTA BETA",
+    title: "Zapisy uruchomimy w kontrolowany sposób.",
+    desc: "Formularz jest gotowy pod Airtable i można go włączyć konfiguracją środowiska. Do tego momentu pozostaje czytelnym placeholderem bez wysyłania danych.",
+    form: {
+      emailLabel: "Email",
+      emailPlaceholder: "ty@przyklad.pl",
+      consentLabel:
+        "Chcę dostać jednorazową informację o starcie zapisów i rozumiem, że email trafi do listy beta.",
+      submit: "Dołącz do listy",
+      disabledSubmit: "Wkrótce",
+      noteEnabled: "Zapis trafia do listy beta. Nie zakładamy konta i nie wysyłamy danych portfela.",
+      noteDisabled:
+        "Zapisy nie są jeszcze aktywne. Formularz nie zapisuje danych, dopóki nie włączymy integracji.",
+      success: "Dzięki — zapisaliśmy email na liście beta.",
+      error: "Nie udało się zapisać. Spróbuj ponownie za chwilę.",
+      invalidEmail: "Podaj poprawny adres email.",
+      missingConsent: "Zaznacz zgodę, żeby dołączyć do listy.",
+    },
+    points: [
+      "oddzielny endpoint API zamiast logiki Airtable w UI",
+      "walidacja emaila, zgoda komunikacyjna i honeypot antyspamowy",
+      "zdarzenie analityczne po rzeczywistym zapisie, bez fałszywych potwierdzeń",
+    ],
+  },
+
+  // ── 06 · Feedback ─────────────────────────────────────────────────────────
   feedback: {
-    eyebrow: "05 · FEEDBACK",
+    eyebrow: "06 · FEEDBACK",
     title: "Pomóż nam dopracować <em>Zeccę</em>.",
     desc: "Zbieramy feedback od pierwszych użytkowników. Napisz, co działa, co nie i czego brakuje. Czytamy każdą wiadomość i to ona kształtuje kolejne wersje.",
     discordButton: "Dołącz do Discorda",

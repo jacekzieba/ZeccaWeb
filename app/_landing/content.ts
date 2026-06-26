@@ -84,6 +84,7 @@ const PLUS_SVG = `<svg class="pm" viewBox="0 0 24 24" fill="none" stroke="curren
 // ── Section builders ────────────────────────────────────────────────────────
 
 const c = landingCopy;
+const waitlistEnabled = process.env.NEXT_PUBLIC_BETA_WAITLIST_ENABLED === "1";
 
 const navHtml = `
 <nav class="nav">
@@ -99,6 +100,63 @@ const navHtml = `
     </div>
   </div>
 </nav>`;
+
+const how = c.howItWorks;
+const howItWorksHtml = `
+<section class="block how-work" id="jak-dziala">
+  <div class="wrap">
+    <div class="process-shell reveal">
+      <div class="process-copy">
+        <div class="sec-num">${how.eyebrow}</div>
+        <h2 class="sec-title">${how.title}</h2>
+        <p class="sec-desc">${how.desc}</p>
+      </div>
+      <div class="process-steps">
+        ${how.steps
+          .map(
+            (step) => `<article class="process-step">
+          <div class="step-index">${step.label}</div>
+          <div>
+            <h3>${step.title}</h3>
+            <p>${step.desc}</p>
+            <span>${step.meta}</span>
+          </div>
+        </article>`,
+          )
+          .join("\n        ")}
+      </div>
+    </div>
+  </div>
+</section>`;
+
+const sheet = c.spreadsheet;
+const spreadsheetHtml = `
+<section class="block sheet-section" id="dlaczego-nie-arkusz">
+  <div class="wrap">
+    <div class="sheet-grid">
+      <div class="sheet-lead reveal">
+        <div class="sec-num">${sheet.eyebrow}</div>
+        <h2 class="sec-title">${sheet.title}</h2>
+        <p class="sec-desc">${sheet.desc}</p>
+        <div class="sheet-proof">
+          <h3>${sheet.lead.title}</h3>
+          <p>${sheet.lead.desc}</p>
+        </div>
+      </div>
+      <div class="sheet-cards">
+        ${sheet.items
+          .map(
+            (item, i) => `<article class="sheet-card sheet-card-${i + 1} reveal">
+          <span>${String(i + 1).padStart(2, "0")}</span>
+          <h3>${item.title}</h3>
+          <p>${item.desc}</p>
+        </article>`,
+          )
+          .join("\n        ")}
+      </div>
+    </div>
+  </div>
+</section>`;
 
 const featuresHtml = `
 <section class="block" id="funkcje">
@@ -229,6 +287,42 @@ const faqHtml = `
   </div>
 </section>`;
 
+const beta = c.betaList;
+const betaListHtml = `
+<section class="block beta-list-section" id="lista-beta">
+  <div class="wrap beta-list-grid">
+    <div class="beta-list-copy reveal">
+      <div class="sec-num">${beta.eyebrow}</div>
+      <h2 class="sec-title">${beta.title}</h2>
+      <p class="sec-desc">${beta.desc}</p>
+      <ul class="beta-list-points">
+        ${beta.points.map((point) => `<li>${CHECK_SVG}${point}</li>`).join("\n        ")}
+      </ul>
+    </div>
+    <form class="beta-waitlist-form reveal" id="betaWaitlistForm" data-provider="airtable" data-enabled="${waitlistEnabled ? "true" : "false"}" data-status="${waitlistEnabled ? "ready" : "planned"}" aria-describedby="beta-waitlist-note beta-waitlist-status" novalidate>
+      <div class="field">
+        <label for="beta-email">${beta.form.emailLabel}</label>
+        <input id="beta-email" name="email" type="email" placeholder="${beta.form.emailPlaceholder}" autocomplete="email"${waitlistEnabled ? "" : " disabled"} />
+      </div>
+      <div class="field hp-field" aria-hidden="true">
+        <label for="beta-company">Firma</label>
+        <input id="beta-company" name="company" type="text" tabindex="-1" autocomplete="off" />
+      </div>
+      <label class="beta-consent" for="beta-consent">
+        <input id="beta-consent" name="consent" type="checkbox"${waitlistEnabled ? "" : " disabled"} />
+        <span>${beta.form.consentLabel}</span>
+      </label>
+      <button type="submit" class="btn btn-brand btn-lg"${waitlistEnabled ? "" : " disabled"}>${waitlistEnabled ? beta.form.submit : beta.form.disabledSubmit}</button>
+      <p id="beta-waitlist-note">${waitlistEnabled ? beta.form.noteEnabled : beta.form.noteDisabled}</p>
+      <p class="beta-waitlist-status" id="beta-waitlist-status" role="status" aria-live="polite"
+        data-success="${beta.form.success}"
+        data-error="${beta.form.error}"
+        data-invalid-email="${beta.form.invalidEmail}"
+        data-missing-consent="${beta.form.missingConsent}"></p>
+    </form>
+  </div>
+</section>`;
+
 const fb = c.feedback;
 const feedbackHtml = `
 <section class="block feedback" id="kontakt">
@@ -299,11 +393,14 @@ const footerHtml = `
 export const LANDING_NAV_HTML = navHtml;
 
 export const LANDING_BODY_HTML = `
+${howItWorksHtml}
+${spreadsheetHtml}
 ${featuresHtml}
 ${showcaseHtml}
 ${privacyHtml}
 ${investorHtml}
 ${faqHtml}
+${betaListHtml}
 ${feedbackHtml}
 ${footerHtml}
 `;

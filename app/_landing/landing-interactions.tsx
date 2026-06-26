@@ -11,6 +11,71 @@ import { useEffect } from "react";
  */
 export function LandingInteractions() {
   useEffect(() => {
+    // Beta waitlist → Airtable-backed API when explicitly enabled.
+    const betaForm = document.getElementById("betaWaitlistForm") as HTMLFormElement | null;
+    const betaStatus = document.getElementById("beta-waitlist-status");
+    const betaEmail = document.getElementById("beta-email") as HTMLInputElement | null;
+    const betaConsent = document.getElementById("beta-consent") as HTMLInputElement | null;
+    const betaHoneypot = document.getElementById("beta-company") as HTMLInputElement | null;
+    const betaButton = betaForm?.querySelector<HTMLButtonElement>('button[type="submit"]') ?? null;
+    const setBetaStatus = (message: string, type: "idle" | "success" | "error" = "idle") => {
+      if (!betaStatus) return;
+      betaStatus.textContent = message;
+      betaStatus.dataset.type = type;
+    };
+    const onBetaSubmit = async (event: Event) => {
+      event.preventDefault();
+      if (!betaForm || betaForm.dataset.enabled !== "true") {
+        return;
+      }
+
+      const email = betaEmail?.value.trim() ?? "";
+      const consent = Boolean(betaConsent?.checked);
+      const company = betaHoneypot?.value.trim() ?? "";
+      const labels = betaStatus?.dataset;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setBetaStatus(labels?.invalidEmail ?? "Podaj poprawny adres email.", "error");
+        betaEmail?.focus();
+        return;
+      }
+      if (!consent) {
+        setBetaStatus(labels?.missingConsent ?? "Zaznacz zgodę.", "error");
+        betaConsent?.focus();
+        return;
+      }
+
+      betaButton?.setAttribute("disabled", "true");
+      setBetaStatus("", "idle");
+      try {
+        const response = await fetch("/api/beta-waitlist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            consent,
+            company,
+            source: "landing",
+          }),
+        });
+        if (!response.ok) {
+          const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+          throw new Error(payload?.error ?? "waitlist_failed");
+        }
+        betaForm.reset();
+        setBetaStatus(labels?.success ?? "Dzięki — zapisaliśmy email na liście beta.", "success");
+        window.dispatchEvent(
+          new CustomEvent("zecca:beta-waitlist-signup", {
+            detail: { source: "landing" },
+          }),
+        );
+      } catch {
+        setBetaStatus(labels?.error ?? "Nie udało się zapisać. Spróbuj ponownie za chwilę.", "error");
+      } finally {
+        betaButton?.removeAttribute("disabled");
+      }
+    };
+    betaForm?.addEventListener("submit", onBetaSubmit);
+
     // Feedback form → mailto
     const form = document.getElementById("fbForm") as HTMLFormElement | null;
     const ok = document.getElementById("fbOk");
@@ -61,6 +126,7 @@ export function LandingInteractions() {
     }
 
     return () => {
+      betaForm?.removeEventListener("submit", onBetaSubmit);
       form?.removeEventListener("submit", onSubmit);
       io?.disconnect();
     };

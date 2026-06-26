@@ -261,6 +261,30 @@ describe("record writer", () => {
     });
   });
 
+  it("soft-deletes when the local and remote timestamps differ only in format", async () => {
+    // Regression: the local `baseUpdatedAt` reaches the writer via JSON (ISO
+    // form, e.g. from /api/sync/bootstrap) while the freshly-fetched remote
+    // `updated_at` is PostgREST's Postgres text form. Both describe the same
+    // instant, but a raw string comparison treated them as a conflict and
+    // silently blocked every web delete/edit of an existing record.
+    const { client, store } = createSupabaseStore({
+      metadata: {
+        id: recordId,
+        record_type: "transaction",
+        updated_at: "2026-06-07 14:54:08.1+00",
+        deleted_at: null,
+      },
+    });
+
+    const result = await deleteRecord(client, "transaction", recordId, {
+      baseUpdatedAt: "2026-06-07T14:54:08.100Z",
+    });
+
+    expect(result.queued).toBe(false);
+    expect(store.updates).toHaveLength(1);
+    expect(getPendingSyncOperations()).toHaveLength(0);
+  });
+
   it("rejects stale soft-deletes as conflicts", async () => {
     const { client, store } = createSupabaseStore({
       metadata: {

@@ -110,7 +110,7 @@ export function LandingHero() {
             <a className="btn btn-brand btn-lg hero-cta" href={hero.ctaPrimaryHref}>
               {hero.ctaPrimary}
             </a>
-            <div className="waitlist" id="lista-beta">
+            <div className="waitlist" id="lista-beta-hero">
               <label htmlFor="waitlist-email">{hero.waitlist.label}</label>
               <div className="waitlist-row">
                 <input
@@ -180,6 +180,10 @@ export function LandingHero() {
                     </div>
                   );
                 })}
+              </div>
+              <div className="portfolio-preview-total">
+                <span>Razem · {portfolios.length} konta</span>
+                <b>{formatCurrency(snapshot.totalValue, "PLN")}</b>
               </div>
             </TiltCard>
           </section>

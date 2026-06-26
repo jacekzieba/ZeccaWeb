@@ -41,7 +41,7 @@ export function AllocationDonut({ slices }: { slices: Slice[] }) {
   return (
     <div data-testid="allocation-donut">
       <div style={{ display: "flex", justifyContent: "center", padding: "6px 0 14px" }}>
-        <svg width={SIZE} height={SIZE}>
+        <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
           {slices.map((slice, i) => {
             const frac = slice.percent / total;
             const dash = frac * circ - 3;
