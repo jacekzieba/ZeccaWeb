@@ -105,6 +105,51 @@ export function LandingInteractions() {
     };
     form?.addEventListener("submit", onSubmit);
 
+    // Pointer tilt on feature cards — the same tactile lean as the hero cards,
+    // applied to the statically-injected `.feat` grid. Fine pointers only.
+    let teardownTilt = () => {};
+    const finePointer =
+      typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches;
+    const reduceMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (finePointer && !reduceMotion) {
+      const cards = Array.from(document.querySelectorAll<HTMLElement>(".zlanding .feat"));
+      const frames = new WeakMap<HTMLElement, number>();
+      const onTiltMove = (event: PointerEvent) => {
+        const el = event.currentTarget as HTMLElement;
+        const bounds = el.getBoundingClientRect();
+        const x = (event.clientX - bounds.left) / bounds.width - 0.5;
+        const y = (event.clientY - bounds.top) / bounds.height - 0.5;
+        cancelAnimationFrame(frames.get(el) ?? 0);
+        frames.set(
+          el,
+          requestAnimationFrame(() => {
+            el.style.setProperty("--tilt-x", `${(-y * 4).toFixed(2)}deg`);
+            el.style.setProperty("--tilt-y", `${(x * 5).toFixed(2)}deg`);
+            el.style.setProperty("--lift", "-5px");
+          }),
+        );
+      };
+      const onTiltLeave = (event: PointerEvent) => {
+        const el = event.currentTarget as HTMLElement;
+        cancelAnimationFrame(frames.get(el) ?? 0);
+        el.style.setProperty("--tilt-x", "0deg");
+        el.style.setProperty("--tilt-y", "0deg");
+        el.style.setProperty("--lift", "0px");
+      };
+      cards.forEach((card) => {
+        card.addEventListener("pointermove", onTiltMove);
+        card.addEventListener("pointerleave", onTiltLeave);
+      });
+      teardownTilt = () => {
+        cards.forEach((card) => {
+          card.removeEventListener("pointermove", onTiltMove);
+          card.removeEventListener("pointerleave", onTiltLeave);
+        });
+      };
+    }
+
     // Scroll reveal
     const els = Array.from(document.querySelectorAll<HTMLElement>(".zlanding .reveal"));
     let io: IntersectionObserver | null = null;
@@ -128,6 +173,7 @@ export function LandingInteractions() {
     return () => {
       betaForm?.removeEventListener("submit", onBetaSubmit);
       form?.removeEventListener("submit", onSubmit);
+      teardownTilt();
       io?.disconnect();
     };
   }, []);

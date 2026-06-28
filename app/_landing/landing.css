@@ -253,11 +253,11 @@
 
 /* ============ PRODUCT HERO ============ */
 .zlanding .landing-hero {
-  padding: 46px 0 34px;
+  padding: 30px 0 24px;
 }
 .zlanding .hero-layout {
   display: grid;
-  grid-template-columns: minmax(460px, 1fr) minmax(520px, 1fr);
+  grid-template-columns: minmax(440px, 1fr) minmax(520px, 1fr);
   align-items: center;
   gap: clamp(36px, 4vw, 54px);
 }
@@ -265,64 +265,150 @@
   min-width: 0;
 }
 .zlanding .hero-copy .beta-banner {
-  margin-bottom: 26px;
+  margin-bottom: 18px;
 }
 .zlanding .hero-copy h1 {
-  max-width: 14ch;
-  font-size: clamp(44px, 4.7vw, 66px);
+  max-width: 16ch;
+  margin-top: 12px;
+  font-size: clamp(40px, 4.1vw, 58px);
 }
 .zlanding .hero-copy .lede {
-  margin-top: 22px;
-  max-width: 43ch;
-  font-size: 16.5px;
+  margin-top: 16px;
+  max-width: 46ch;
+  font-size: 15.5px;
+  line-height: 1.56;
 }
-.zlanding .hero-cta {
-  margin-top: 30px;
-}
-.zlanding .waitlist {
-  margin-top: 22px;
-  max-width: 390px;
-}
-.zlanding .waitlist label {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-  margin-bottom: 7px;
-}
-.zlanding .waitlist-row {
+/* Almanac index line — the engine's real data sources, stamped under the lede. */
+.zlanding .hero-index {
   display: flex;
-  border: 0.5px solid var(--line);
-  border-radius: 11px;
-  overflow: hidden;
-  background: color-mix(in srgb, var(--card) 70%, transparent);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px 20px;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 0.5px solid var(--line);
+  list-style: none;
+  max-width: 46ch;
 }
-.zlanding .waitlist input {
-  width: 100%;
-  min-width: 0;
-  border: 0;
-  outline: 0;
-  padding: 11px 13px;
+.zlanding .hero-index li {
+  position: relative;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--subtle);
+}
+.zlanding .hero-index li + li::before {
+  content: "·";
+  position: absolute;
+  left: -12px;
+  color: var(--gold);
+}
+
+/* Hero call-to-action: prominent App Store / Mac App Store badges. */
+.zlanding .hero-actions {
+  margin-top: 24px;
+}
+.zlanding .store-badges {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.zlanding .store-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 20px 11px 16px;
+  border-radius: 14px;
+  background: var(--ink);
+  color: var(--on-brand);
+  position: relative;
+  box-shadow:
+    0 4px 14px rgba(26, 33, 27, 0.22),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.18);
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+.zlanding .store-badge:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 9px 24px rgba(26, 33, 27, 0.28),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.22);
+}
+.zlanding .store-badge:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+.zlanding .store-badge svg {
+  width: 25px;
+  height: 25px;
+  flex-shrink: 0;
+  margin-top: -2px;
+  opacity: 0.95;
+}
+.zlanding .store-badge .sb-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+.zlanding .store-badge .sb-top {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+.zlanding .store-badge .sb-main {
+  font-family: var(--ui);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.15;
+  margin-top: 2px;
+}
+.zlanding .store-badge .store-soon {
+  position: absolute;
+  top: -8px;
+  right: 10px;
+  font-family: var(--mono);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--brand-deep);
+  background: var(--gold);
+  padding: 2px 7px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(181, 134, 58, 0.32);
+}
+.zlanding .hero-beta-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  color: var(--brand);
+  font: 600 13.5px var(--ui);
+  transition: gap 0.16s ease;
+}
+.zlanding .hero-beta-link span {
+  transition: transform 0.16s ease;
+}
+.zlanding .hero-beta-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.zlanding .hero-beta-link:hover span {
+  transform: translateX(3px);
+}
+.zlanding .hero-note {
+  margin-top: 14px;
+  max-width: 44ch;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--subtle);
+}
+.zlanding .hero-note b {
   color: var(--muted);
-  background: transparent;
-  font: 13px var(--ui);
-  opacity: 1;
-  -webkit-text-fill-color: var(--subtle);
-}
-.zlanding .waitlist button {
-  border: 0;
-  border-left: 0.5px solid var(--line);
-  min-width: 102px;
-  padding: 0 15px;
-  background: color-mix(in srgb, var(--card-2) 78%, transparent);
-  color: var(--subtle);
-  font: 600 12px var(--ui);
-}
-.zlanding .waitlist p {
-  font-size: 11.5px;
-  line-height: 1.45;
-  color: var(--subtle);
-  margin-top: 7px;
+  font-weight: 600;
 }
 
 .zlanding .product-preview {
@@ -330,7 +416,7 @@
   grid-template-columns: minmax(0, 1.12fr) minmax(250px, 0.88fr);
   grid-template-rows: auto auto;
   align-items: start;
-  gap: 16px;
+  gap: 14px;
   perspective: 1300px;
   min-width: 0;
 }
@@ -377,12 +463,12 @@
   grid-column: span 2;
   align-self: start;
   z-index: 2;
-  padding: 24px 28px 20px;
+  padding: 20px 26px 16px;
 }
 .zlanding .allocation-card,
 .zlanding .portfolios-card {
   align-self: stretch;
-  padding: 20px 22px;
+  padding: 17px 20px;
 }
 .zlanding .allocation-card {
   z-index: 3;
@@ -449,7 +535,7 @@
 .zlanding .value-card > div:last-child {
   position: relative;
   z-index: 1;
-  margin-top: 13px;
+  margin-top: 10px;
 }
 .zlanding .allocation-card > *,
 .zlanding .portfolios-card > * {
@@ -554,7 +640,34 @@
 }
 
 .zlanding .trust-band {
-  padding: 0 0 60px;
+  padding: 0 0 44px;
+}
+.zlanding .trust-proof {
+  position: relative;
+  margin: 0 auto 22px;
+  padding-top: 26px;
+  max-width: 70ch;
+  font-family: var(--serif);
+  font-size: 16.5px;
+  line-height: 1.55;
+  color: var(--muted);
+  text-align: center;
+  text-wrap: balance;
+}
+.zlanding .trust-proof::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 48px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--gold);
+}
+.zlanding .trust-proof b {
+  color: var(--ink);
+  font-weight: 600;
 }
 .zlanding .trust-grid {
   display: grid;
@@ -595,76 +708,6 @@
   .zlanding .product-card {
     background: var(--card);
   }
-}
-
-.zlanding .cta-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-top: 34px;
-}
-.zlanding .store-badges {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-.zlanding .store-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 11px;
-  padding: 9px 16px 9px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--line);
-  background: var(--card-2);
-  color: var(--subtle);
-  opacity: 0.62;
-  cursor: not-allowed;
-  position: relative;
-}
-.zlanding .store-badge svg {
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-}
-.zlanding .store-badge .sb-top {
-  font-size: 9.5px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  line-height: 1.1;
-}
-.zlanding .store-badge .sb-main {
-  font-family: var(--ui);
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.1;
-  margin-top: 1px;
-  color: var(--muted);
-}
-.zlanding .store-soon {
-  font-family: var(--mono);
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--gold);
-  position: absolute;
-  top: -8px;
-  right: 8px;
-  background: var(--card);
-  padding: 1px 6px;
-  border-radius: 5px;
-  border: 0.5px solid var(--gold-tint);
-}
-.zlanding .cta-note {
-  font-size: 13px;
-  color: var(--subtle);
-  margin-top: 16px;
-}
-.zlanding .cta-note b {
-  color: var(--brand);
-  font-weight: 600;
 }
 
 /* macOS screenshot (zrzut ma własną ramkę okna) */
@@ -882,6 +925,9 @@
   margin-top: 48px;
 }
 .zlanding .feat {
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  --lift: 0px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -891,11 +937,15 @@
   border-radius: var(--r-lg);
   padding: 26px 24px 28px;
   box-shadow: var(--shadow-card);
-  transition: 0.2s;
+  transform: perspective(900px) translate3d(0, var(--lift), 0) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+  transform-style: preserve-3d;
+  transition: transform 180ms ease-out, box-shadow 220ms ease-out, border-color 220ms ease-out;
+  will-change: transform;
 }
 .zlanding .feat:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 14px 34px rgba(26, 33, 27, 0.1);
+  --lift: -4px;
+  border-color: color-mix(in srgb, var(--brand) 22%, var(--line));
+  box-shadow: 0 16px 36px rgba(26, 33, 27, 0.12);
 }
 .zlanding .feat-portfolios {
   grid-column: span 5;
@@ -1597,6 +1647,16 @@
   opacity: 1;
   transform: none;
 }
+/* Feature cards keep their scroll-reveal fade, but once revealed they own the
+   transform so the pointer tilt isn't cancelled by .reveal.in { transform:none }. */
+.zlanding .feat.reveal.in {
+  transform: perspective(900px) translate3d(0, var(--lift), 0) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+  transition:
+    opacity 0.6s cubic-bezier(0.2, 0.6, 0.2, 1),
+    transform 180ms ease-out,
+    box-shadow 220ms ease-out,
+    border-color 220ms ease-out;
+}
 
 @media (max-width: 920px) {
   .zlanding .landing-hero {
@@ -1787,7 +1847,10 @@
   .zlanding .product-card,
   .zlanding .product-card:hover,
   .zlanding .allocation-card,
-  .zlanding .portfolios-card {
+  .zlanding .portfolios-card,
+  .zlanding .feat,
+  .zlanding .feat:hover,
+  .zlanding .feat.reveal.in {
     transform: none;
     transition: none;
   }

@@ -18,11 +18,21 @@ import { ValueVsDepositsChart } from "@/components/charts/value-vs-deposits-char
 import { formatCurrency, formatPercent } from "@/lib/money";
 import { landingCopy } from "./copy";
 import { buildLandingDemoSnapshot } from "./landing-demo-data";
+import { useCountUp } from "./use-count-up";
 
 const PERIOD_LABELS = {
   "1Y": "1R",
   "2Y": "2L",
 } as const;
+
+/** Apple's wordmark glyph — the App Store badges read as native, not generic. */
+function AppleGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M16.365 1.43c0 1.14-.493 2.27-1.177 3.08-.744.9-1.99 1.57-2.987 1.57-.12 0-.23-.02-.3-.03-.01-.06-.04-.22-.04-.39 0-1.15.572-2.27 1.206-2.98.804-.94 2.142-1.64 3.248-1.68.03.13.05.28.05.43zm4.565 15.71c-.03.07-.463 1.58-1.518 3.12-.945 1.34-1.94 2.71-3.43 2.71-1.517 0-1.9-.88-3.63-.88-1.698 0-2.302.91-3.67.91-1.377 0-2.332-1.26-3.428-2.8-1.287-1.82-2.323-4.63-2.323-7.28 0-4.28 2.797-6.55 5.552-6.55 1.448 0 2.675.95 3.6.95.865 0 2.222-1.01 3.902-1.01.613 0 2.886.06 4.374 2.19-.13.09-2.383 1.37-2.383 4.19 0 3.26 2.854 4.42 2.955 4.45z" />
+    </svg>
+  );
+}
 
 function getThirtyDayChange(series: number[]) {
   if (series.length < 2 || series[0] === 0) return 0;
@@ -96,6 +106,9 @@ export function LandingHero() {
   const totalReturn = snapshot.metrics.totalReturnPct;
   const portfolios = snapshot.portfolios.slice(0, 3);
 
+  const animatedValue = useCountUp(snapshot.totalValue);
+  const animatedReturn = useCountUp(totalReturn);
+
   const trustIcons = [ShieldCheck, LaptopMinimal, Landmark, ChartNoAxesCombined];
 
   return (
@@ -107,24 +120,34 @@ export function LandingHero() {
             <div className="eyebrow">{hero.eyebrow}</div>
             <h1 dangerouslySetInnerHTML={{ __html: hero.title }} />
             <p className="lede" dangerouslySetInnerHTML={{ __html: hero.lede }} />
-            <a className="btn btn-brand btn-lg hero-cta" href={hero.ctaPrimaryHref}>
-              {hero.ctaPrimary}
-            </a>
-            <div className="waitlist" id="lista-beta-hero">
-              <label htmlFor="waitlist-email">{hero.waitlist.label}</label>
-              <div className="waitlist-row">
-                <input
-                  id="waitlist-email"
-                  type="email"
-                  placeholder={hero.waitlist.placeholder}
-                  disabled
-                  aria-describedby="waitlist-note"
-                />
-                <button type="button" disabled>
-                  {hero.waitlist.button}
-                </button>
+            <ul className="hero-index" aria-label="Źródła danych i metody liczenia">
+              {hero.sources.map((source) => (
+                <li key={source}>{source}</li>
+              ))}
+            </ul>
+            <div className="hero-actions">
+              <div className="store-badges">
+                {hero.storeBadges.map((badge) => (
+                  <a
+                    key={badge.main}
+                    className="store-badge"
+                    href={hero.ctaPrimaryHref}
+                    aria-label={`${badge.top} ${badge.main} — ${badge.soon}`}
+                  >
+                    <AppleGlyph />
+                    <span className="sb-text">
+                      <span className="sb-top">{badge.top}</span>
+                      <span className="sb-main">{badge.main}</span>
+                    </span>
+                    <span className="store-soon">{badge.soon}</span>
+                  </a>
+                ))}
               </div>
-              <p id="waitlist-note">{hero.waitlist.note}</p>
+              <a className="hero-beta-link" href={hero.ctaPrimaryHref}>
+                {hero.ctaPrimary}
+                <span aria-hidden="true">→</span>
+              </a>
+              <p className="hero-note" dangerouslySetInnerHTML={{ __html: hero.note }} />
             </div>
           </section>
 
@@ -133,9 +156,9 @@ export function LandingHero() {
               <div className="product-card-head">
                 <div>
                   <p className="product-kicker">Wartość portfela</p>
-                  <p className="product-value">{formatCurrency(snapshot.totalValue, "PLN")}</p>
+                  <p className="product-value">{formatCurrency(Math.round(animatedValue), "PLN")}</p>
                   <p className="product-change">
-                    {totalReturn >= 0 ? "+" : ""}{formatPercent(totalReturn)} <span>od początku</span>
+                    {animatedReturn >= 0 ? "+" : ""}{formatPercent(animatedReturn)} <span>od początku</span>
                   </p>
                 </div>
                 <span className="demo-status"><span /> Dane demonstracyjne</span>
@@ -144,8 +167,9 @@ export function LandingHero() {
                 value={snapshot.valuationSeries}
                 deposits={snapshot.netInvestedSeries}
                 currency="PLN"
-                height={194}
+                height={168}
                 periodLabels={PERIOD_LABELS}
+                animateOnView
               />
             </TiltCard>
 
@@ -191,19 +215,22 @@ export function LandingHero() {
       </header>
 
       <section className="trust-band" aria-label="Najważniejsze właściwości Zecca">
-        <div className="wrap trust-grid">
-          {hero.trust.map((item, index) => {
-            const Icon = trustIcons[index] ?? ShieldCheck;
-            return (
-              <div className="trust-item" key={item.title}>
-                <Icon aria-hidden="true" />
-                <div>
-                  <h2>{item.title}</h2>
-                  <p>{item.desc}</p>
+        <div className="wrap">
+          <p className="trust-proof" dangerouslySetInnerHTML={{ __html: hero.proof }} />
+          <div className="trust-grid">
+            {hero.trust.map((item, index) => {
+              const Icon = trustIcons[index] ?? ShieldCheck;
+              return (
+                <div className="trust-item" key={item.title}>
+                  <Icon aria-hidden="true" />
+                  <div>
+                    <h2>{item.title}</h2>
+                    <p>{item.desc}</p>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </section>
     </>

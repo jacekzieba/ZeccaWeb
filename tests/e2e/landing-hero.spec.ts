@@ -28,7 +28,9 @@ test("renders an interactive product hero without submitting the beta waitlist",
   await expect(betaSection.getByPlaceholder("ty@przyklad.pl")).toBeDisabled();
   await expect(betaSection.getByLabel("Chcę dostać jednorazową informację o starcie zapisów i rozumiem, że email trafi do listy beta.")).toBeDisabled();
   await expect(betaSection.getByText("Zapisy nie są jeszcze aktywne.")).toBeVisible();
-  await expect(page.getByPlaceholder("Twój adres e-mail")).toBeDisabled();
+  // The hero now leads with App Store / Mac App Store badges instead of an inline
+  // waitlist field; they point at the beta section and submit nothing.
+  await expect(page.locator(".landing-hero .store-badge")).toHaveCount(2);
   expect(waitlistRequests).toEqual([]);
 });
 

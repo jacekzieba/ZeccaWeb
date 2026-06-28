@@ -34,18 +34,16 @@ export const landingCopy = {
     lede: "Zecca prowadzi Twoje portfele: <b>IKE, IKZE, akcje, ETF-y, obligacje skarbowe i lokaty</b>, lokalnie i prywatnie. Wielkie, czytelne liczby zamiast zimnego dashboardu. Kursy z NBP, inflacja z GUS, pełna historia liczona od pierwszej transakcji.",
     ctaPrimary: "Dołącz do listy beta",
     ctaPrimaryHref: "#lista-beta",
+    // Realne wejścia silnika — krótki „stempel" pod ledem, nie ozdoba.
+    sources: ["Kursy NBP", "Inflacja GUS", "FIFO", "XIRR / TWR"],
+    proof:
+      "Sześć klas aktywów, konta <b>IKE</b> i <b>IKZE</b>, obligacje skarbowe i lokaty — liczone tym samym silnikiem co aplikacje na macOS i iOS. Zgodność co do grosza potwierdzają <b>wektory testowe</b>.",
     storeBadges: [
       { top: "Pobierz w", main: "App Store", soon: "wkrótce" },
       { top: "Pobierz w", main: "Mac App Store", soon: "wkrótce" },
     ],
     note: "<b>Darmowa w wersji beta.</b> Działa lokalnie, bez konta, jeśli nie chcesz synchronizacji.",
     imageAlt: "Zecca na macOS — raporty i statystyki",
-    waitlist: {
-      label: "Powiadom mnie, gdy otworzymy zapisy",
-      placeholder: "Twój adres e-mail",
-      button: "Wkrótce",
-      note: "Pełne zapisy będą niżej na stronie. Ten formularz jest jeszcze nieaktywny.",
-    },
     trust: [
       { title: "Dane szyfrowane end-to-end", desc: "Tylko Ty masz dostęp do swoich danych." },
       { title: "Działa lokalnie", desc: "Twoje dane zostają na Twoim urządzeniu." },
