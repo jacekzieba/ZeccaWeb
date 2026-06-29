@@ -17,6 +17,27 @@ function airtableConfig() {
   return token && baseId && tableId ? { token, baseId, tableId } : null;
 }
 
+function waitlistError(detail?: string) {
+  return NextResponse.json(
+    {
+      error: "Nie udało się zapisać na listę beta.",
+      ...(process.env.NODE_ENV !== "production" && detail ? { detail } : {}),
+    },
+    { status: 502 },
+  );
+}
+
+function unknownFieldName(detail: string) {
+  let message = detail;
+  try {
+    const parsed = JSON.parse(detail) as { error?: { message?: string } };
+    message = parsed.error?.message ?? detail;
+  } catch {
+    // Airtable usually returns JSON, but keep plain-text matching as a fallback.
+  }
+  return message.match(/Unknown field name: "([^"]+)"/)?.[1] ?? null;
+}
+
 export async function POST(request: NextRequest) {
   if (process.env.NEXT_PUBLIC_BETA_WAITLIST_ENABLED !== "1") {
     return NextResponse.json(
@@ -45,36 +66,63 @@ export async function POST(request: NextRequest) {
   }
 
   const now = new Date().toISOString();
+  const emailField = process.env.AIRTABLE_WAITLIST_EMAIL_FIELD ?? "Email";
+  const consentField = process.env.AIRTABLE_WAITLIST_CONSENT_FIELD ?? "Consent";
   const fields = {
-    [process.env.AIRTABLE_WAITLIST_EMAIL_FIELD ?? "Email"]: email,
-    [process.env.AIRTABLE_WAITLIST_CONSENT_FIELD ?? "Consent"]: consent,
+    [emailField]: email,
+    [consentField]: consent,
     [process.env.AIRTABLE_WAITLIST_SOURCE_FIELD ?? "Source"]: source ?? "landing",
     [process.env.AIRTABLE_WAITLIST_CREATED_AT_FIELD ?? "Created At"]: now,
     [process.env.AIRTABLE_WAITLIST_USER_AGENT_FIELD ?? "User Agent"]:
       request.headers.get("user-agent") ?? "",
   };
-
-  const response = await fetch(
-    `https://api.airtable.com/v0/${encodeURIComponent(config.baseId)}/${encodeURIComponent(config.tableId)}`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        records: [{ fields }],
-        typecast: true,
-      }),
-    },
+  const optionalFields = new Set(
+    Object.keys(fields).filter((field) => field !== emailField && field !== consentField),
   );
 
-  if (!response.ok) {
-    return NextResponse.json(
-      { error: "Nie udało się zapisać na listę beta." },
-      { status: 502 },
-    );
+  let response: Response;
+  let activeFields = fields;
+  const maxAttempts = optionalFields.size + 1;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      response = await fetch(
+        `https://api.airtable.com/v0/${encodeURIComponent(config.baseId)}/${encodeURIComponent(config.tableId)}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${config.token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            records: [{ fields: activeFields }],
+            typecast: true,
+          }),
+        },
+      );
+    } catch (error) {
+      console.error("Beta waitlist Airtable request failed", error);
+      return waitlistError("Airtable request failed before receiving a response.");
+    }
+
+    if (response.ok) {
+      return NextResponse.json({ ok: true });
+    }
+
+    const detail = await response.text().catch(() => "");
+    const missingField = unknownFieldName(detail);
+    if (missingField && optionalFields.has(missingField)) {
+      optionalFields.delete(missingField);
+      const { [missingField]: _removed, ...remainingFields } = activeFields;
+      activeFields = remainingFields;
+      continue;
+    }
+
+    console.warn("Beta waitlist Airtable rejected request", {
+      status: response.status,
+      detail,
+    });
+    return waitlistError(`Airtable ${response.status}: ${detail.slice(0, 500)}`);
   }
 
-  return NextResponse.json({ ok: true });
+  return waitlistError("Airtable rejected all retry attempts.");
 }

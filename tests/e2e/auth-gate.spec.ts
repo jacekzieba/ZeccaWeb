@@ -22,6 +22,26 @@ test("keeps public market data routes outside the auth gate", async ({ request }
   });
 });
 
+test("keeps beta waitlist API outside the auth gate", async ({ request }) => {
+  const response = await request.post("/api/beta-waitlist", {
+    data: {
+      email: "beta@example.com",
+      consent: true,
+      company: "e2e honeypot",
+      source: "e2e",
+    },
+  });
+
+  expect([200, 503]).toContain(response.status());
+  expect(response.headers()["content-type"]).toContain("application/json");
+  const body = await response.json();
+  expect(body).toEqual(
+    response.status() === 200
+      ? { ok: true }
+      : { error: "Zapisy nie są jeszcze aktywne." },
+  );
+});
+
 test("exposes market data provider status without auth", async ({ request }) => {
   const response = await request.get("/api/market-data/status");
 

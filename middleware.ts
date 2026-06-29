@@ -42,6 +42,10 @@ export async function middleware(request: NextRequest) {
   // Protect all app routes
   // /reset-password stays public: the recovery link may land without a session,
   // and the form itself explains how to request a fresh link.
+  const isPublicApiRoute =
+    pathname.startsWith("/api/health") ||
+    pathname.startsWith("/api/market-data/") ||
+    pathname === "/api/beta-waitlist";
   const isAppRoute =
     pathname !== "/" &&
     !pathname.startsWith("/login") &&
@@ -51,13 +55,14 @@ export async function middleware(request: NextRequest) {
     !pathname.startsWith("/privacy-policy") &&
     !pathname.startsWith("/faq") &&
     !pathname.startsWith("/auth/") &&
-    !pathname.startsWith("/api/health") &&
-    !pathname.startsWith("/api/market-data/") &&
+    !isPublicApiRoute &&
     !pathname.startsWith("/_next") &&
     pathname !== "/favicon.ico";
 
   if (!user && isAppRoute && !fakeSyncEnabled) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    const redirectUrl = new URL("/login", request.url);
+    redirectUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
+    return NextResponse.redirect(redirectUrl);
   }
 
   return supabaseResponse;

@@ -187,8 +187,11 @@ export function LandingInteractions() {
             source: "landing",
           }),
         });
-        if (!response.ok) {
-          const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        const contentType = response.headers.get("content-type") ?? "";
+        const payload = contentType.includes("application/json")
+          ? ((await response.json().catch(() => null)) as { error?: string; ok?: boolean } | null)
+          : null;
+        if (!response.ok || payload?.ok !== true) {
           throw new Error(payload?.error ?? "waitlist_failed");
         }
         betaForm.reset();
