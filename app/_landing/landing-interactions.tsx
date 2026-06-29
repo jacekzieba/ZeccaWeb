@@ -11,6 +11,136 @@ import { useEffect } from "react";
  */
 export function LandingInteractions() {
   useEffect(() => {
+    // Local copy-editing mode for reviewing landing text in place.
+    // Open the page with `?edit=1`; edits are saved only in this browser.
+    const editMode = new URLSearchParams(window.location.search).get("edit") === "1";
+    let teardownTextEditor = () => {};
+    if (editMode) {
+      document.body.classList.add("landing-copy-editing");
+      const root = document.querySelector<HTMLElement>(".zlanding");
+      const selector = [
+        ".zlanding h1",
+        ".zlanding h2",
+        ".zlanding h3",
+        ".zlanding p",
+        ".zlanding li",
+        ".zlanding .beta-banner",
+        ".zlanding .eyebrow",
+        ".zlanding .sec-num",
+        ".zlanding .kicker",
+        ".zlanding .tag",
+        ".zlanding .li",
+        ".zlanding .product-kicker",
+        ".zlanding .product-heading",
+        ".zlanding .portfolio-name strong",
+        ".zlanding .portfolio-preview-total span",
+        ".zlanding .nav-links a",
+        ".zlanding .store-badge span",
+        ".zlanding .hero-beta-link",
+      ].join(",");
+      const dynamicTextSelector = [
+        ".product-value",
+        ".product-change",
+        ".demo-status",
+        ".portfolio-name small",
+        ".portfolio-preview-total b",
+        ".portfolio-trend b",
+      ].join(",");
+      const editableElements = root
+        ? Array.from(root.querySelectorAll<HTMLElement>(selector))
+            .filter((element) => !element.closest(".landing-edit-toolbar"))
+            .filter((element) => !element.matches(dynamicTextSelector))
+        : [];
+
+      const saveHandlers: Array<[HTMLElement, EventListener]> = [];
+      const observers: MutationObserver[] = [];
+      editableElements.forEach((element, index) => {
+        const copyId = element.dataset.landingEditId ?? String(index);
+        const key = `zecca-landing-copy:${copyId}`;
+        const saved = window.localStorage.getItem(key);
+        element.dataset.landingEditKey = key;
+        element.dataset.landingEditId = copyId;
+        element.dataset.landingInitialHtml = element.innerHTML;
+        if (saved != null) {
+          element.innerHTML = saved;
+        }
+        element.setAttribute("contenteditable", "true");
+        element.setAttribute("spellcheck", "false");
+        element.setAttribute("tabindex", "0");
+        const persist = () => {
+          const html = element.innerHTML;
+          window.localStorage.setItem(key, html);
+          window.dispatchEvent(
+            new CustomEvent("zecca:landing-copy-edit", {
+              detail: { id: copyId, html },
+            }),
+          );
+        };
+        const onClick = (event: Event) => {
+          if (element instanceof HTMLAnchorElement) {
+            event.preventDefault();
+          }
+        };
+        const observer = new MutationObserver(persist);
+        observer.observe(element, { childList: true, characterData: true, subtree: true });
+        observers.push(observer);
+        element.addEventListener("input", persist);
+        element.addEventListener("keyup", persist);
+        element.addEventListener("blur", persist);
+        element.addEventListener("click", onClick);
+        saveHandlers.push([element, persist], [element, onClick]);
+      });
+
+      const toolbar = document.createElement("div");
+      toolbar.className = "landing-edit-toolbar";
+      toolbar.innerHTML = `
+        <strong>Tryb edycji tekstów</strong>
+        <span>${editableElements.length} pól</span>
+        <button type="button" data-action="reset">Reset</button>
+      `;
+      const onToolbarClick = (event: Event) => {
+        const target = event.target as HTMLElement | null;
+        if (target?.matches("button[data-action='reset']")) {
+          editableElements.forEach((element) => {
+            const key = element.dataset.landingEditKey;
+            if (key) window.localStorage.removeItem(key);
+            const html = element.dataset.landingInitialHtml ?? element.innerHTML;
+            element.innerHTML = html;
+            const copyId = element.dataset.landingEditId;
+            if (copyId) {
+              window.dispatchEvent(
+                new CustomEvent("zecca:landing-copy-edit", {
+                  detail: { id: copyId, html },
+                }),
+              );
+            }
+          });
+        }
+      };
+      toolbar.addEventListener("click", onToolbarClick);
+      (root ?? document.body).appendChild(toolbar);
+
+      teardownTextEditor = () => {
+        document.body.classList.remove("landing-copy-editing");
+        observers.forEach((observer) => observer.disconnect());
+        saveHandlers.forEach(([element, handler]) => {
+          element.removeEventListener("input", handler);
+          element.removeEventListener("keyup", handler);
+          element.removeEventListener("blur", handler);
+          element.removeEventListener("click", handler);
+        });
+        editableElements.forEach((element) => {
+          element.removeAttribute("contenteditable");
+          element.removeAttribute("spellcheck");
+          element.removeAttribute("tabindex");
+          delete element.dataset.landingEditKey;
+          delete element.dataset.landingInitialHtml;
+        });
+        toolbar.removeEventListener("click", onToolbarClick);
+        toolbar.remove();
+      };
+    }
+
     // Beta waitlist → Airtable-backed API when explicitly enabled.
     const betaForm = document.getElementById("betaWaitlistForm") as HTMLFormElement | null;
     const betaStatus = document.getElementById("beta-waitlist-status");
@@ -173,6 +303,7 @@ export function LandingInteractions() {
     return () => {
       betaForm?.removeEventListener("submit", onBetaSubmit);
       form?.removeEventListener("submit", onSubmit);
+      teardownTextEditor();
       teardownTilt();
       io?.disconnect();
     };

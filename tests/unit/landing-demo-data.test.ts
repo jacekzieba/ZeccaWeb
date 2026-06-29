@@ -10,7 +10,11 @@ describe("landing demo data", () => {
     expect(first.totalValue).toBe(second.totalValue);
     expect(first.valuationSeries).toEqual(second.valuationSeries);
     expect(first.netInvestedSeries).toHaveLength(first.valuationSeries.length);
-    expect(first.allocation.length).toBeGreaterThan(1);
+    expect(first.allocation.map((slice) => slice.label)).toEqual([
+      "Akcje / ETF",
+      "Kryptowaluty",
+      "Gotówka",
+    ]);
     expect(first.portfolios.map((portfolio) => portfolio.name)).toEqual(
       expect.arrayContaining(["IKE · długi termin", "IKZE · emerytura", "Portfel główny"]),
     );

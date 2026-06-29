@@ -8,8 +8,11 @@ import {
 } from "lucide-react";
 import {
   useCallback,
+  useEffect,
   useRef,
   useState,
+  type ElementType,
+  type HTMLAttributes,
   type PointerEvent,
 } from "react";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
@@ -24,6 +27,54 @@ const PERIOD_LABELS = {
   "1Y": "1R",
   "2Y": "2L",
 } as const;
+
+type LandingCopyEditEvent = CustomEvent<{ id: string; html: string }>;
+
+function useLandingCopyOverride(id: string, fallback: string) {
+  const [html, setHtml] = useState(fallback);
+
+  useEffect(() => {
+    const editMode = new URLSearchParams(window.location.search).get("edit") === "1";
+    if (!editMode) {
+      setHtml(fallback);
+      return;
+    }
+
+    const saved = window.localStorage.getItem(`zecca-landing-copy:${id}`);
+    setHtml(saved ?? fallback);
+
+    const onEdit = (event: Event) => {
+      const detail = (event as LandingCopyEditEvent).detail;
+      if (detail?.id === id) {
+        setHtml(detail.html);
+      }
+    };
+    window.addEventListener("zecca:landing-copy-edit", onEdit);
+    return () => window.removeEventListener("zecca:landing-copy-edit", onEdit);
+  }, [fallback, id]);
+
+  return html;
+}
+
+function EditableHtml({
+  as: Component,
+  copyId,
+  html,
+  ...props
+}: HTMLAttributes<HTMLElement> & {
+  as: ElementType;
+  copyId: string;
+  html: string;
+}) {
+  const renderedHtml = useLandingCopyOverride(copyId, html);
+  return (
+    <Component
+      {...props}
+      data-landing-edit-id={copyId}
+      dangerouslySetInnerHTML={{ __html: renderedHtml }}
+    />
+  );
+}
 
 /** Apple's wordmark glyph — the App Store badges read as native, not generic. */
 function AppleGlyph() {
@@ -104,7 +155,8 @@ export function LandingHero() {
   const [snapshot] = useState(buildLandingDemoSnapshot);
   const hero = landingCopy.hero;
   const totalReturn = snapshot.metrics.totalReturnPct;
-  const portfolios = snapshot.portfolios.slice(0, 3);
+  const portfolios = snapshot.portfolios.slice(0, 2);
+  const portfolioPreviewTotal = portfolios.reduce((total, portfolio) => total + portfolio.value, 0);
 
   const animatedValue = useCountUp(snapshot.totalValue);
   const animatedReturn = useCountUp(totalReturn);
@@ -116,13 +168,13 @@ export function LandingHero() {
       <header className="hero landing-hero" id="top">
         <div className="wrap hero-layout">
           <section className="hero-copy">
-            <span className="beta-banner" dangerouslySetInnerHTML={{ __html: hero.betaBanner }} />
-            <div className="eyebrow">{hero.eyebrow}</div>
-            <h1 dangerouslySetInnerHTML={{ __html: hero.title }} />
-            <p className="lede" dangerouslySetInnerHTML={{ __html: hero.lede }} />
+            <EditableHtml as="span" copyId="hero.betaBanner" className="beta-banner" html={hero.betaBanner} />
+            <EditableHtml as="div" copyId="hero.eyebrow" className="eyebrow" html={hero.eyebrow} />
+            <EditableHtml as="h1" copyId="hero.title" html={hero.title} />
+            <EditableHtml as="p" copyId="hero.lede" className="lede" html={hero.lede} />
             <ul className="hero-index" aria-label="Źródła danych i metody liczenia">
-              {hero.sources.map((source) => (
-                <li key={source}>{source}</li>
+              {hero.sources.map((source, index) => (
+                <EditableHtml as="li" copyId={`hero.sources.${index}`} html={source} key={source} />
               ))}
             </ul>
             <div className="hero-actions">
@@ -147,7 +199,7 @@ export function LandingHero() {
                 {hero.ctaPrimary}
                 <span aria-hidden="true">→</span>
               </a>
-              <p className="hero-note" dangerouslySetInnerHTML={{ __html: hero.note }} />
+              <EditableHtml as="p" copyId="hero.note" className="hero-note" html={hero.note} />
             </div>
           </section>
 
@@ -155,7 +207,7 @@ export function LandingHero() {
             <TiltCard className="value-card" label="Wartość portfela i historia wartości">
               <div className="product-card-head">
                 <div>
-                  <p className="product-kicker">Wartość portfela</p>
+                  <EditableHtml as="p" copyId="preview.value.kicker" className="product-kicker" html="Wartość portfela" />
                   <p className="product-value">{formatCurrency(Math.round(animatedValue), "PLN")}</p>
                   <p className="product-change">
                     {animatedReturn >= 0 ? "+" : ""}{formatPercent(animatedReturn)} <span>od początku</span>
@@ -174,14 +226,14 @@ export function LandingHero() {
             </TiltCard>
 
             <TiltCard className="allocation-card" label="Alokacja aktywów">
-              <p className="product-kicker">Alokacja</p>
-              <p className="product-heading">Struktura aktywów</p>
+              <EditableHtml as="p" copyId="preview.allocation.kicker" className="product-kicker" html="Alokacja" />
+              <EditableHtml as="p" copyId="preview.allocation.heading" className="product-heading" html="Struktura aktywów" />
               <AllocationDonut slices={snapshot.allocation} />
             </TiltCard>
 
             <TiltCard className="portfolios-card" label="Portfele demonstracyjne">
-              <p className="product-kicker">Portfele</p>
-              <p className="product-heading">Podział na konta</p>
+              <EditableHtml as="p" copyId="preview.portfolios.kicker" className="product-kicker" html="Portfele" />
+              <EditableHtml as="p" copyId="preview.portfolios.heading" className="product-heading" html="Podział na konta" />
               <div className="portfolio-preview-list">
                 {portfolios.map((portfolio, index) => {
                   const change = getThirtyDayChange(portfolio.sparkline);
@@ -207,7 +259,7 @@ export function LandingHero() {
               </div>
               <div className="portfolio-preview-total">
                 <span>Razem · {portfolios.length} konta</span>
-                <b>{formatCurrency(snapshot.totalValue, "PLN")}</b>
+                <b>{formatCurrency(portfolioPreviewTotal, "PLN")}</b>
               </div>
             </TiltCard>
           </section>
@@ -216,7 +268,7 @@ export function LandingHero() {
 
       <section className="trust-band" aria-label="Najważniejsze właściwości Zecca">
         <div className="wrap">
-          <p className="trust-proof" dangerouslySetInnerHTML={{ __html: hero.proof }} />
+          <EditableHtml as="p" copyId="hero.proof" className="trust-proof" html={hero.proof} />
           <div className="trust-grid">
             {hero.trust.map((item, index) => {
               const Icon = trustIcons[index] ?? ShieldCheck;
