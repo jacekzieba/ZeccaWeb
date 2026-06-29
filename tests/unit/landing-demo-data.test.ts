@@ -15,6 +15,7 @@ describe("landing demo data", () => {
       "Kryptowaluty",
       "Gotówka",
     ]);
+    expect(first.allocation.reduce((sum, slice) => sum + slice.percent, 0)).toBeCloseTo(100, 5);
     expect(first.portfolios.map((portfolio) => portfolio.name)).toEqual(
       expect.arrayContaining(["IKE · długi termin", "IKZE · emerytura", "Portfel główny"]),
     );

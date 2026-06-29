@@ -460,13 +460,10 @@
     0 42px 80px rgba(26, 33, 27, 0.12);
 }
 .landing-copy-editing .zlanding [contenteditable="true"] {
-  outline: 1px dashed color-mix(in srgb, var(--gold) 70%, transparent);
-  outline-offset: 3px;
   cursor: text;
 }
 .landing-copy-editing .zlanding [contenteditable="true"]:focus {
-  outline: 2px solid var(--gold);
-  background: color-mix(in srgb, var(--gold) 9%, transparent);
+  outline: none;
 }
 .landing-edit-toolbar {
   position: fixed;

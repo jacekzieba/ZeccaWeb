@@ -1,18 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { CHART_COLORS, COLORS, TYPOGRAPHY } from "@/lib/design-tokens";
+import { COLORS, TYPOGRAPHY } from "@/lib/design-tokens";
 
 type Slice = { label: string; percent: number };
 
 const PALETTE = [
-  CHART_COLORS.portfolio,
-  CHART_COLORS.comparison,
-  CHART_COLORS.benchmark,
-  CHART_COLORS.contribution,
-  CHART_COLORS.cash,
-  CHART_COLORS.crypto,
+  COLORS.equity,
+  COLORS.crypto,
+  COLORS.cash,
+  COLORS.bonds,
+  COLORS.profit,
+  COLORS.other,
   COLORS.plum,
+  COLORS.green,
 ];
 
 /** Truncate a label so it fits inside the donut hole. */

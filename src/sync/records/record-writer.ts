@@ -14,6 +14,7 @@ import type { BrowserSupabaseClient } from "@/supabase/client";
 
 const PENDING_SYNC_KEY = "investor-web-pending-sync-v1";
 export const PENDING_SYNC_CHANGED_EVENT = "investor-web-pending-sync-changed";
+export const SYNC_MUTATION_EVENT = "investor-web-sync-mutation";
 
 export type WriteRecordPayload = {
   id: string;
@@ -68,6 +69,13 @@ export type WriteRecordResult = {
   queued: boolean;
 };
 
+type SyncMutationDetail = {
+  operation: "upsert" | "delete";
+  recordType: string;
+  id: string;
+  queued: boolean;
+};
+
 function getPendingQueue(): PendingSyncOperation[] {
   if (typeof localStorage === "undefined") {
     return [];
@@ -110,6 +118,14 @@ function enqueuePendingOperation(operation: PendingSyncOperation) {
   );
   queue.push(operation);
   setPendingQueue(queue);
+}
+
+function dispatchSyncMutation(detail: SyncMutationDetail) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.dispatchEvent(new CustomEvent(SYNC_MUTATION_EVENT, { detail }));
 }
 
 export function getPendingSyncOperations() {
@@ -249,9 +265,21 @@ export async function saveRecord(
       encryptedRecord,
       error: error instanceof Error ? error.message : "Nie udało się wysłać zmiany.",
     });
+    dispatchSyncMutation({
+      operation: "upsert",
+      recordType,
+      id: payload.id,
+      queued: true,
+    });
     return { queued: true };
   }
 
+  dispatchSyncMutation({
+    operation: "upsert",
+    recordType,
+    id: payload.id,
+    queued: false,
+  });
   return { queued: false };
 }
 
@@ -299,9 +327,21 @@ export async function deleteRecord(
       updatedAt,
       error: error instanceof Error ? error.message : "Nie udało się wysłać usunięcia.",
     });
+    dispatchSyncMutation({
+      operation: "delete",
+      recordType,
+      id,
+      queued: true,
+    });
     return { queued: true };
   }
 
+  dispatchSyncMutation({
+    operation: "delete",
+    recordType,
+    id,
+    queued: false,
+  });
   return { queued: false };
 }
 
@@ -376,6 +416,12 @@ export async function forcePendingSyncOperation(
   }
 
   removePendingSyncOperation(operationId);
+  dispatchSyncMutation({
+    operation: operation.operation,
+    recordType: operation.recordType,
+    id: operation.id,
+    queued: false,
+  });
   return { forced: true };
 }
 

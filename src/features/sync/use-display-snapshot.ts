@@ -20,16 +20,20 @@ import { useSyncStore } from "@/sync/store/sync-store";
 export function useDisplaySnapshot(): InvestorDataSnapshot | null {
   const records = useSyncStore((s) => s.records);
   const marketFxRates = useSyncStore((s) => s.marketFxRates);
+  const marketQuotes = useSyncStore((s) => s.marketQuotes);
   const storeSnapshot = useSyncStore((s) => s.snapshot);
   const { displayCurrency } = useProfile();
 
   return useMemo(() => {
     if (!records) return storeSnapshot;
     return buildInvestorDataSnapshot(records, {
+      asOf: new Date(),
       fxRates: marketFxRates,
+      marketQuotes,
       historyGranularity: "daily",
+      useLatestTransactionFxRate: true,
       useMarketQuotes: true,
       displayCurrency,
     });
-  }, [records, marketFxRates, displayCurrency, storeSnapshot]);
+  }, [records, marketFxRates, marketQuotes, displayCurrency, storeSnapshot]);
 }

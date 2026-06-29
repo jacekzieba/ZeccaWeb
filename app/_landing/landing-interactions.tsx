@@ -53,7 +53,6 @@ export function LandingInteractions() {
         : [];
 
       const saveHandlers: Array<[HTMLElement, EventListener]> = [];
-      const observers: MutationObserver[] = [];
       editableElements.forEach((element, index) => {
         const copyId = element.dataset.landingEditId ?? String(index);
         const key = `zecca-landing-copy:${copyId}`;
@@ -68,24 +67,14 @@ export function LandingInteractions() {
         element.setAttribute("spellcheck", "false");
         element.setAttribute("tabindex", "0");
         const persist = () => {
-          const html = element.innerHTML;
-          window.localStorage.setItem(key, html);
-          window.dispatchEvent(
-            new CustomEvent("zecca:landing-copy-edit", {
-              detail: { id: copyId, html },
-            }),
-          );
+          window.localStorage.setItem(key, element.innerHTML);
         };
         const onClick = (event: Event) => {
           if (element instanceof HTMLAnchorElement) {
             event.preventDefault();
           }
         };
-        const observer = new MutationObserver(persist);
-        observer.observe(element, { childList: true, characterData: true, subtree: true });
-        observers.push(observer);
         element.addEventListener("input", persist);
-        element.addEventListener("keyup", persist);
         element.addEventListener("blur", persist);
         element.addEventListener("click", onClick);
         saveHandlers.push([element, persist], [element, onClick]);
@@ -122,10 +111,8 @@ export function LandingInteractions() {
 
       teardownTextEditor = () => {
         document.body.classList.remove("landing-copy-editing");
-        observers.forEach((observer) => observer.disconnect());
         saveHandlers.forEach(([element, handler]) => {
           element.removeEventListener("input", handler);
-          element.removeEventListener("keyup", handler);
           element.removeEventListener("blur", handler);
           element.removeEventListener("click", handler);
         });
