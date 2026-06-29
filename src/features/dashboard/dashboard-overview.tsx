@@ -42,11 +42,11 @@ import { TYPOGRAPHY } from "@/lib/design-tokens";
 import { formatAxisValue } from "@/lib/money";
 import {
   buildInstrumentList,
-  buildInvestorDataSnapshot,
   buildTransactionList,
 } from "@/sync/records/investor-snapshot";
 import { summarizeDecryptedRecords } from "@/sync/records/sync-summary";
 import { useSyncStore } from "@/sync/store/sync-store";
+import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
 import { firstName, useProfile } from "@/features/profile/profile-store";
 import {
   groupTreasuryBondSeries,
@@ -817,11 +817,11 @@ function DashboardLoading({
 }
 
 export function DashboardOverview() {
-  const storeSnapshot = useSyncStore((state) => state.snapshot);
   const records = useSyncStore((state) => state.records);
   const marketFxRates = useSyncStore((state) => state.marketFxRates);
   const marketQuotes = useSyncStore((state) => state.marketQuotes);
   const lastSyncedAt = useSyncStore((state) => state.lastSyncedAt);
+  const snapshot = useDisplaySnapshot();
   const profile = useProfile();
   const [period, setPeriod] = useState<Period>("1Y");
   const { config: dashboardConfig, toggle, reorder, reorderTo, resize, reset } = useSectionCustomization(DASHBOARD_REGISTRY);
@@ -829,21 +829,6 @@ export function DashboardOverview() {
   const isMobile = useMedia("(max-width: 720px)");
   const isTablet = useMedia("(max-width: 1140px)");
 
-  const snapshot = useMemo(
-    () =>
-      records
-        ? buildInvestorDataSnapshot(records, {
-            asOf: new Date(),
-            fxRates: marketFxRates,
-            marketQuotes,
-            historyGranularity: "daily",
-            useLatestTransactionFxRate: true,
-            useMarketQuotes: true,
-            displayCurrency: profile.displayCurrency,
-          })
-        : storeSnapshot,
-    [marketFxRates, marketQuotes, records, storeSnapshot, profile.displayCurrency],
-  );
   const syncSummary = records ? summarizeDecryptedRecords(records) : null;
   // Re-render every 30s so the relative "last sync" label stays fresh.
   const [, bumpSyncTick] = useState(0);
