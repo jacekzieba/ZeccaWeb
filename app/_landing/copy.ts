@@ -312,7 +312,7 @@ export const landingCopy = {
         "Zapisy nie są jeszcze aktywne. Formularz nie zapisuje danych, dopóki nie włączymy integracji.",
       success: "Dzięki — zapisaliśmy email na liście beta.",
       error: "Nie udało się zapisać. Spróbuj ponownie za chwilę.",
-      invalidEmail: "Podaj poprawny adres email.",
+      invalidEmail: "Podaj poprawny adres e-mail.",
       missingConsent: "Zaznacz zgodę, żeby dołączyć do listy.",
     },
     points: [
@@ -374,7 +374,7 @@ export const landingCopy = {
         links: [
           { label: "Discord", href: "#" },
           { label: "Feedback", href: "#kontakt" },
-          { label: "Email", href: "mailto:zecca.barista363@passmail.net" },
+          { label: "E-mail", href: "mailto:zecca.barista363@passmail.net" },
           { label: "Polityka prywatności", href: "/privacy-policy" },
         ],
       },

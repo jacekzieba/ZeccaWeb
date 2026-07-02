@@ -68,7 +68,7 @@ export default function ForgotPasswordPage() {
             Reset hasła
           </h1>
           <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 6, lineHeight: 1.5 }}>
-            Podaj adres email konta, a wyślemy link do ustawienia nowego hasła logowania.
+            Podaj adres e-mail konta, a wyślemy link do ustawienia nowego hasła logowania.
             Reset nie zmienia hasła szyfrującego (passphrase).
           </p>
         </div>

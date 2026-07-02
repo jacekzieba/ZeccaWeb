@@ -171,7 +171,7 @@ describe("GET /api/market-data/quote", () => {
   it("returns a validation error when symbol is missing", async () => {
     const response = await getQuote(request("http://localhost/api/market-data/quote"));
 
-    await expect(response.json()).resolves.toEqual({ error: "Missing symbol." });
+    await expect(response.json()).resolves.toEqual({ error: "Brak symbolu." });
     expect(response.status).toBe(400);
     expect(mockedFetchYahooQuote).not.toHaveBeenCalled();
   });
@@ -220,7 +220,7 @@ describe("GET /api/market-data/fx", () => {
   it("rejects invalid date formats before calling NBP", async () => {
     const response = await getFxRate(request("http://localhost/api/market-data/fx?code=USD&date=15-05-2026"));
 
-    await expect(response.json()).resolves.toEqual({ error: "Invalid date format." });
+    await expect(response.json()).resolves.toEqual({ error: "Nieprawidłowy format daty." });
     expect(response.status).toBe(400);
     expect(mockedFetchNbpFxRate).not.toHaveBeenCalled();
   });

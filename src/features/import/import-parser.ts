@@ -291,8 +291,8 @@ export function parseManualValuationTable(
 export function transactionCsvTemplate() {
   return [
     "date,portfolio,instrument,transactionType,quantity,price,grossAmount,currency,fees,taxes",
-    "2026-05-17,Main Portfolio,AAPL,buy,2,190.50,381,USD,0,0",
-    "2026-05-18,Main Portfolio,,cashDeposit,,,1000,PLN,0,0",
+    "2026-05-17,Portfel główny,AAPL,buy,2,190.50,381,USD,0,0",
+    "2026-05-18,Portfel główny,,cashDeposit,,,1000,PLN,0,0",
   ].join("\n");
 }
 

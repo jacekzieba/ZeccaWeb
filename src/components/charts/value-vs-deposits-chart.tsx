@@ -7,6 +7,7 @@ import type { ValuationPoint } from "@/domain/models/investor-data";
 
 const VALUE_COLOR = COLORS.accent;
 const DEPOSIT_COLOR = COLORS.bonds;
+const MIN_CHART_WIDTH = 240;
 
 const PERIOD_OPTIONS = ["1M", "3M", "6M", "1Y", "2Y", "MAX"] as const;
 type Period = (typeof PERIOD_OPTIONS)[number];
@@ -56,7 +57,7 @@ export function ValueVsDepositsChart({
   const { value, deposits } = cropByPeriod(valueProp, depositsProp, period);
 
   const wrapRef = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(600);
+  const [width, setWidth] = useState(MIN_CHART_WIDTH);
   const [hover, setHover] = useState<number | null>(null);
 
   const valueLineRef = useRef<SVGPolylineElement>(null);
@@ -66,7 +67,7 @@ export function ValueVsDepositsChart({
   useEffect(() => {
     if (!wrapRef.current) return;
     const ro = new ResizeObserver((entries) => {
-      for (const e of entries) setWidth(Math.max(280, e.contentRect.width));
+      for (const e of entries) setWidth(Math.max(MIN_CHART_WIDTH, e.contentRect.width));
     });
     ro.observe(wrapRef.current);
     return () => ro.disconnect();
@@ -145,7 +146,7 @@ export function ValueVsDepositsChart({
   const gain = hover != null ? valueVals[hover] - depositVals[hover] : 0;
 
   return (
-    <div ref={wrapRef} style={{ width: "100%", position: "relative" }} onMouseLeave={() => setHover(null)}>
+    <div ref={wrapRef} style={{ width: "100%", maxWidth: "100%", minWidth: 0, position: "relative" }} onMouseLeave={() => setHover(null)}>
       <div style={{ display: "flex", gap: 16, marginBottom: 8, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
           <Legend color={VALUE_COLOR} label="Wartość konta" />
@@ -183,7 +184,7 @@ export function ValueVsDepositsChart({
         height={height}
         viewBox={`0 0 ${width} ${height}`}
         onMouseMove={handleMove}
-        style={{ display: "block" }}
+        style={{ display: "block", maxWidth: "100%" }}
       >
         <defs>
           <linearGradient id="vvd-fill" x1="0" y1="0" x2="0" y2="1">

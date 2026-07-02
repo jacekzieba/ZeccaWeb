@@ -6,8 +6,10 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://zecca.pl"),
+  applicationName: "Zecca",
   title: "Zecca",
-  description: "Private web client for Zecca portfolios.",
+  description: "Prywatny klient webowy dla portfeli Zecca.",
   icons: {
     icon: [
       { url: "/favicon.ico" },

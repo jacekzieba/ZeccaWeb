@@ -180,7 +180,7 @@ export function LoginForm() {
       {/* Email/password form */}
       <form style={{ display: "flex", flexDirection: "column", gap: 16 }} onSubmit={handleSubmit}>
         <div>
-          <label style={labelStyle}>Email</label>
+          <label style={labelStyle}>E-mail</label>
           <input
             style={inputStyle}
             type="email"

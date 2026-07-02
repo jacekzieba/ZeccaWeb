@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   const yahooSymbol = yahooSymbolForInstrument(symbol, currency);
 
   if (!yahooSymbol) {
-    return NextResponse.json({ error: "Missing symbol." }, { status: 400 });
+    return NextResponse.json({ error: "Brak symbolu." }, { status: 400 });
   }
 
   const yahooCacheKey = `quote:yahoo:${yahooSymbol}`;
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    const yahooMessage = error instanceof Error ? error.message : "Market data error.";
+    const yahooMessage = error instanceof Error ? error.message : "Błąd danych rynkowych.";
     return NextResponse.json(
       { error: yahooMessage },
       { status: 502 },

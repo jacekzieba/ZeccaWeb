@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       !/^\d{4}-\d{2}-\d{2}$/.test(end)
     ) {
       return NextResponse.json(
-        { error: "start and end must both be YYYY-MM-DD." },
+        { error: "Parametry start i end muszą mieć format RRRR-MM-DD." },
         { status: 400 },
       );
     }
@@ -50,17 +50,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ data: entry.value, cache: { hit: false } });
     } catch (error) {
       return NextResponse.json(
-        { error: error instanceof Error ? error.message : "Market data error." },
+        { error: error instanceof Error ? error.message : "Błąd danych rynkowych." },
         { status: 502 },
       );
     }
   }
 
   if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    return NextResponse.json({ error: "Invalid date format." }, { status: 400 });
+    return NextResponse.json({ error: "Nieprawidłowy format daty." }, { status: 400 });
   }
   if ((yearText && !monthText) || (!yearText && monthText)) {
-    return NextResponse.json({ error: "Year and month must be provided together." }, { status: 400 });
+    return NextResponse.json({ error: "Rok i miesiąc muszą być podane razem." }, { status: 400 });
   }
   const year = yearText ? Number(yearText) : null;
   const month = monthText ? Number(monthText) : null;
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
       month < 1 ||
       month > 12)
   ) {
-    return NextResponse.json({ error: "Invalid FX month." }, { status: 400 });
+    return NextResponse.json({ error: "Nieprawidłowy miesiąc kursu walutowego." }, { status: 400 });
   }
 
   const periodKey = year && month ? `${year}-${String(month).padStart(2, "0")}` : date ?? "latest";
@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Market data error." },
+      { error: error instanceof Error ? error.message : "Błąd danych rynkowych." },
       { status: 502 },
     );
   }

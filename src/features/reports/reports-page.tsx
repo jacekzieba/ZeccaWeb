@@ -273,7 +273,7 @@ export function ReportsPage() {
             <Kpi label="Zarobki" value={`+${fmt(personalIncome.earningsPLN)} ${ccy}`} sub={`${personalIncome.earningCount} rekordów`} color={PROFIT} />
             <Kpi label="Obciążenia" value={`-${fmt(personalIncome.burdensPLN)} ${ccy}`} sub={`${personalIncome.burdenCount} rekordów`} color={LOSS} />
             <Kpi label="Netto" value={`${personalIncome.netPLN >= 0 ? "+" : ""}${fmt(personalIncome.netPLN)} ${ccy}`} color={personalIncome.netPLN >= 0 ? PROFIT : LOSS} />
-            <Kpi label="Razem wpisów" value={fmt(personalIncome.earningCount + personalIncome.burdenCount)} sub="income z sync" />
+            <Kpi label="Razem wpisów" value={fmt(personalIncome.earningCount + personalIncome.burdenCount)} sub="zsynchronizowane wpisy przychodów" />
           </div>
           <div style={{ ...card, padding: "20px 22px" }}>
             <SectionHead>Zarobki i obciążenia</SectionHead>

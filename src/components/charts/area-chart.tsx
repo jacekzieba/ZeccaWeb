@@ -5,6 +5,7 @@ import { COLORS, SHADOWS, TYPOGRAPHY } from "@/lib/design-tokens";
 import { formatAxisValue } from "@/lib/money";
 
 type Point = { label: string; value: number };
+const MIN_CHART_WIDTH = 240;
 
 export function AreaChart({
   data,
@@ -18,13 +19,13 @@ export function AreaChart({
   dotColor?: string;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(600);
+  const [width, setWidth] = useState(MIN_CHART_WIDTH);
   const [hover, setHover] = useState<number | null>(null);
 
   useEffect(() => {
     if (!wrapRef.current) return;
     const ro = new ResizeObserver((entries) => {
-      for (const e of entries) setWidth(Math.max(280, e.contentRect.width));
+      for (const e of entries) setWidth(Math.max(MIN_CHART_WIDTH, e.contentRect.width));
     });
     ro.observe(wrapRef.current);
     return () => ro.disconnect();
@@ -61,13 +62,13 @@ export function AreaChart({
   const tooltipX = hover != null ? Math.min(Math.max(tx(hover) - 60, 8), width - 128) : 0;
 
   return (
-    <div ref={wrapRef} style={{ width: "100%", position: "relative" }} onMouseLeave={() => setHover(null)}>
+    <div ref={wrapRef} style={{ width: "100%", maxWidth: "100%", minWidth: 0, position: "relative" }} onMouseLeave={() => setHover(null)}>
       <svg
         width={width}
         height={height}
         viewBox={`0 0 ${width} ${height}`}
         onMouseMove={handleMove}
-        style={{ display: "block" }}
+        style={{ display: "block", maxWidth: "100%" }}
       >
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">

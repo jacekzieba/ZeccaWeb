@@ -152,7 +152,7 @@ export async function fetchNbpMonthlyAverageFxRate(
     throw new Error("Currency code must use ISO 4217 format.");
   }
   if (!Number.isInteger(year) || year < 2001 || !Number.isInteger(month) || month < 1 || month > 12) {
-    throw new Error("Invalid FX month.");
+    throw new Error("Nieprawidłowy miesiąc kursu walutowego.");
   }
 
   const monthText = String(month).padStart(2, "0");

@@ -151,7 +151,7 @@ export function PendingSyncStatus() {
           fontFamily: "inherit",
         }}
       >
-        <span>{conflictCount > 0 ? "Konflikt" : "Pending"}</span>
+        <span>{conflictCount > 0 ? "Konflikt" : "Oczekuje"}</span>
         <span>{operations.length}</span>
       </button>
 

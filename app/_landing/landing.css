@@ -1826,11 +1826,14 @@
     padding: 36px 0 26px;
   }
   .zlanding .hero-copy h1 {
-    font-size: clamp(42px, 13vw, 56px);
-    max-width: 11ch;
+    font-size: 42px;
+    line-height: 1.06;
+    max-width: 100%;
+    text-wrap: balance;
   }
   .zlanding .hero-copy .lede {
-    font-size: 16px;
+    font-size: 15.5px;
+    line-height: 1.52;
   }
   .zlanding .product-preview {
     display: flex;
@@ -1876,6 +1879,15 @@
   }
   .zlanding section.block {
     padding: 56px 0;
+  }
+}
+@media (max-width: 380px) {
+  .zlanding .hero-copy h1 {
+    font-size: 39px;
+  }
+  .zlanding .store-badge {
+    width: 100%;
+    justify-content: flex-start;
   }
 }
 @media (prefers-reduced-motion: reduce) {

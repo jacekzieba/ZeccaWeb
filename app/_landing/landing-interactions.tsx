@@ -151,7 +151,7 @@ export function LandingInteractions() {
       const company = betaHoneypot?.value.trim() ?? "";
       const labels = betaStatus?.dataset;
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        setBetaStatus(labels?.invalidEmail ?? "Podaj poprawny adres email.", "error");
+        setBetaStatus(labels?.invalidEmail ?? "Podaj poprawny adres e-mail.", "error");
         betaEmail?.focus();
         return;
       }
@@ -209,7 +209,7 @@ export function LandingInteractions() {
       const subject = form?.dataset.subject ?? "";
       const lines: string[] = [];
       if (name) lines.push("Imię: " + name);
-      if (email) lines.push("Email: " + email);
+      if (email) lines.push("E-mail: " + email);
       lines.push("");
       lines.push(msg);
       const href =

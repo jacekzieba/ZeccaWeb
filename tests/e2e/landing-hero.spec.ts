@@ -24,10 +24,21 @@ test("renders an interactive product hero without submitting the beta waitlist",
 
   const betaSection = page.locator("#lista-beta");
   await expect(betaSection.getByRole("heading", { name: "Zapisy uruchomimy w kontrolowany sposób." })).toBeVisible();
-  await expect(betaSection.getByRole("button", { name: "Wkrótce" })).toBeDisabled();
-  await expect(betaSection.getByPlaceholder("ty@przyklad.pl")).toBeDisabled();
-  await expect(betaSection.getByLabel("Chcę dostać jednorazową informację o starcie zapisów i rozumiem, że email trafi do listy beta.")).toBeDisabled();
-  await expect(betaSection.getByText("Zapisy nie są jeszcze aktywne.")).toBeVisible();
+  const waitlistForm = betaSection.locator("#betaWaitlistForm");
+  const waitlistEnabled = await waitlistForm.getAttribute("data-enabled");
+  const emailField = betaSection.getByPlaceholder("ty@przyklad.pl");
+  const consentField = betaSection.getByLabel("Chcę dostać jednorazową informację o starcie zapisów i rozumiem, że email trafi do listy beta.");
+  if (waitlistEnabled === "true") {
+    await expect(betaSection.getByRole("button", { name: "Dołącz do listy" })).toBeEnabled();
+    await expect(emailField).toBeEnabled();
+    await expect(consentField).toBeEnabled();
+    await expect(betaSection.getByText("Zapis trafia do listy beta.")).toBeVisible();
+  } else {
+    await expect(betaSection.getByRole("button", { name: "Wkrótce" })).toBeDisabled();
+    await expect(emailField).toBeDisabled();
+    await expect(consentField).toBeDisabled();
+    await expect(betaSection.getByText("Zapisy nie są jeszcze aktywne.")).toBeVisible();
+  }
   // The hero now leads with App Store / Mac App Store badges instead of an inline
   // waitlist field; they point at the beta section and submit nothing.
   await expect(page.locator(".landing-hero .store-badge")).toHaveCount(2);

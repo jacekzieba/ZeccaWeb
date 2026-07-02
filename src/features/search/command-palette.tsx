@@ -27,7 +27,7 @@ const PAGES: SearchResult[] = [
   { id: "p-transactions", kind: "page", title: "Transakcje", subtitle: "Historia operacji", href: "/transactions", tag: "Strona" },
   { id: "p-instruments", kind: "page", title: "Instrumenty", subtitle: "Posiadane aktywa", href: "/instruments", tag: "Strona" },
   { id: "p-earnings", kind: "page", title: "Zarobki", subtitle: "Przychody i obciążenia", href: "/earnings", tag: "Strona" },
-  { id: "p-benchmark", kind: "page", title: "Porównanie", subtitle: "Benchmark", href: "/benchmark", tag: "Strona" },
+  { id: "p-benchmark", kind: "page", title: "Porównanie", subtitle: "Punkt odniesienia", href: "/benchmark", tag: "Strona" },
   { id: "p-reports", kind: "page", title: "Raporty", subtitle: "Zestawienia", href: "/reports", tag: "Strona" },
   { id: "p-settings", kind: "page", title: "Ustawienia", subtitle: "Konfiguracja", href: "/settings", tag: "Strona" },
 ];

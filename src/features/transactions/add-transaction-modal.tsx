@@ -1,7 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useState, useEffect, useMemo, type CSSProperties, type FormEvent, type ReactNode } from "react";
+import { useState, useEffect, useMemo, useRef, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import {
   ArrowLeftRight,
   Banknote,
@@ -37,6 +37,29 @@ import { buildPortfolioDetail } from "@/sync/records/investor-snapshot";
 import { TYPOGRAPHY } from "@/lib/design-tokens";
 import { parseAmount } from "@/lib/parse-amount";
 import { V2, v2Mix } from "@/lib/v2-design";
+import {
+  showsTaxField as showsTaxFieldRule,
+  showsFXSettlement as showsFXSettlementRule,
+  fxRateToBaseForSave,
+} from "./transaction-rules";
+
+// Fetches the NBP Table A mid rate (PLN per 1 unit of `code`) on `date`. The
+// API applies forward-fill server-side (latest published fixing on/before the
+// date), matching the native `resolveFXRate` forward-fill. Returns `null` when
+// unavailable (offline / no data) so the caller can fall back to manual entry.
+async function fetchNbpRateForDate(code: string, date: string): Promise<number | null> {
+  try {
+    const response = await fetch(
+      `/api/market-data/fx?code=${encodeURIComponent(code)}&date=${encodeURIComponent(date)}`,
+    );
+    const body = await response.json();
+    if (!response.ok) return null;
+    const rate = (body?.data as { rate?: number } | undefined)?.rate;
+    return typeof rate === "number" && Number.isFinite(rate) && rate > 0 ? rate : null;
+  } catch {
+    return null;
+  }
+}
 
 const INK = V2.ink;
 const MUTED = v2Mix(V2.ink, 0.58);
@@ -235,6 +258,9 @@ export function AddTransactionModal({
   const [targetCurrency, setTargetCurrency] = useState("USD");
   const [targetGrossAmount, setTargetGrossAmount] = useState("");
   const [fxRateToBase, setFxRateToBase] = useState("");
+  const [settleInPLN, setSettleInPLN] = useState(true);
+  const [fxRateLoading, setFxRateLoading] = useState(false);
+  const [fxRateFetchFailed, setFxRateFetchFailed] = useState(false);
   const [sourcePortfolioId, setSourcePortfolioId] = useState("");
   const [transferKind, setTransferKind] = useState<"cash" | "asset">("cash");
   const [countAsContribution, setCountAsContribution] = useState(false);
@@ -262,6 +288,16 @@ export function AddTransactionModal({
     setTargetCurrency(initialValue?.targetCurrency ?? "USD");
     setTargetGrossAmount(initialValue?.targetGrossAmount != null ? String(initialValue.targetGrossAmount) : "");
     setFxRateToBase(initialValue?.fxRateToBase != null ? String(initialValue.fxRateToBase) : "");
+    // For a foreign buy/sell being edited, PLN settlement is implied by a stored
+    // rate; a null rate means it was settled in the foreign currency. New/other
+    // transactions default to PLN settlement (native default).
+    const editingForeignBuySell =
+      Boolean(initialValue) &&
+      (initialValue?.transactionType === "buy" || initialValue?.transactionType === "sell") &&
+      (initialValue?.currency ?? "PLN").trim().toUpperCase() !== "PLN";
+    setSettleInPLN(editingForeignBuySell ? initialValue?.fxRateToBase != null : true);
+    setFxRateLoading(false);
+    setFxRateFetchFailed(false);
     setSourcePortfolioId(initialValue?.sourcePortfolioId ?? "");
     setTransferKind(initialValue?.transferKind === "asset" ? "asset" : "cash");
     setCountAsContribution(
@@ -275,15 +311,15 @@ export function AddTransactionModal({
   // Derive portfolio list from records
   const portfolios = useMemo(() => {
     if (!records) return [];
-    const seen = new Map<string, string>();
+    const seen = new Map<string, { name: string; accountType: string | null }>();
     for (const r of records) {
       if (r.deletedAt) continue;
       if (r.envelope.type === "account") {
-        const p = r.envelope.payload as { id: string; name: string };
-        seen.set(p.id, p.name);
+        const p = r.envelope.payload as { id: string; name: string; accountType?: string | null };
+        seen.set(p.id, { name: p.name, accountType: p.accountType ?? null });
       }
     }
-    return [...seen.entries()].map(([id, name]) => ({ id, name }));
+    return [...seen.entries()].map(([id, value]) => ({ id, name: value.name, accountType: value.accountType }));
   }, [records]);
 
   type InstrumentOption = {
@@ -291,6 +327,7 @@ export function AddTransactionModal({
     symbol: string;
     name: string;
     kind: string;
+    currency: string;
     maturityMs: number | null;
     issueMs: number | null;
   };
@@ -306,6 +343,7 @@ export function AddTransactionModal({
           symbol: string;
           name: string;
           kind?: string;
+          currency?: string;
           bondParams?: { issueDate?: number | string; maturityDate?: number | string } | null;
         };
         seen.set(a.id, {
@@ -313,6 +351,7 @@ export function AddTransactionModal({
           symbol: a.symbol,
           name: a.name,
           kind: a.kind ?? "stock",
+          currency: a.currency ?? "PLN",
           maturityMs: swiftDateToMs(a.bondParams?.maturityDate),
           issueMs: swiftDateToMs(a.bondParams?.issueDate),
         });
@@ -330,6 +369,13 @@ export function AddTransactionModal({
 
   const txDef = TX_TYPES.find((t) => t.value === txType) ?? TX_TYPES[0];
   const TxIcon = txDef.icon;
+
+  // Belka-tax visibility and FX-settlement visibility, keyed off the selected
+  // portfolio's type and the transaction currency — parity with the native
+  // `TransactionEditorLogic` rules.
+  const portfolioType = portfolios.find((p) => p.id === portfolioId)?.accountType ?? null;
+  const showsTax = showsTaxFieldRule(txType, portfolioType);
+  const showsFX = showsFXSettlementRule(txType, currency);
 
   const assetClassOptions = useMemo(() => {
     if (!txDef.kinds) return [];
@@ -410,6 +456,62 @@ export function AddTransactionModal({
     }
   }, [quantity, price, txDef.needsQty]);
 
+  // When a buy/sell instrument is chosen, align the transaction currency with
+  // the instrument's native currency (parity with native
+  // `currencyForSelectedInstrument`). This is what makes the FX-settlement
+  // block appear for a foreign-denominated instrument.
+  useEffect(() => {
+    if (txType !== "buy" && txType !== "sell") return;
+    if (!instrumentId) return;
+    const selected = instruments.find((inst) => inst.id === instrumentId);
+    if (selected && selected.currency && selected.currency !== currency) {
+      setCurrency(selected.currency);
+    }
+  }, [instrumentId, instruments, txType, currency]);
+
+  // Reset the tax field to 0 when it becomes hidden (e.g. switching to a
+  // non-taxed type). The save boundary independently forces 0 when hidden, so
+  // this is only a UI convenience.
+  useEffect(() => {
+    if (!showsTax) setTaxes("0");
+  }, [showsTax]);
+
+  // Auto-fetch the NBP mid rate for the transaction currency on the transaction
+  // date when settling in PLN. Race-safe: the cleanup flag discards a response
+  // whose currency/date/mode no longer match (a late reply for an old currency
+  // must not overwrite the field). `fxSignatureRef` distinguishes a
+  // currency/date change (force overwrite) from merely re-showing the block or
+  // toggling settlement (soft — keep a manually entered value).
+  const fxSignatureRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!showsFX || !settleInPLN) return;
+    const signature = `${currency}|${date}`;
+    const currencyOrDateChanged = fxSignatureRef.current !== signature;
+    // Soft refresh (block re-shown / toggled back to PLN) must not clobber an
+    // existing value; only a currency/date change forces an overwrite.
+    if (!currencyOrDateChanged && fxRateToBase.trim() !== "") return;
+    fxSignatureRef.current = signature;
+
+    let cancelled = false;
+    setFxRateLoading(true);
+    setFxRateFetchFailed(false);
+    fetchNbpRateForDate(currency, date).then((rate) => {
+      if (cancelled) return;
+      setFxRateLoading(false);
+      if (rate != null) {
+        setFxRateToBase(rate.toFixed(4));
+      } else {
+        setFxRateFetchFailed(true);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+    // fxRateToBase is intentionally read but not a dependency — it must not
+    // re-trigger the fetch when we write the fetched value back.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showsFX, settleInPLN, currency, date]);
+
   const recentTransactions = useMemo(() => {
     if (!records) return [];
     return records
@@ -468,6 +570,9 @@ export function AddTransactionModal({
     setTargetCurrency("USD");
     setTargetGrossAmount("");
     setFxRateToBase("");
+    setSettleInPLN(true);
+    setFxRateLoading(false);
+    setFxRateFetchFailed(false);
     setSourcePortfolioId("");
     setTransferKind("cash");
     setCountAsContribution(false);
@@ -519,14 +624,32 @@ export function AddTransactionModal({
       return;
     }
 
-    const taxAmount = taxes.trim() ? parseAmount(taxes) : 0;
-    if (taxAmount == null) {
-      setError("Podaj poprawną wartość podatku.");
-      return;
+    // Belka tax. CRITICAL: when the field is hidden (IKE/IKZE, or a non-taxed
+    // type) the saved tax MUST be 0, enforced here at the save boundary — not
+    // only by hiding the UI — so flipping the portfolio to IKE/IKZE after
+    // typing an amount can never persist a non-zero value (native parity).
+    let taxAmount = 0;
+    if (showsTax && taxes.trim()) {
+      const parsedTax = parseAmount(taxes);
+      if (parsedTax == null) {
+        setError("Podaj poprawną wartość podatku.");
+        return;
+      }
+      taxAmount = parsedTax;
     }
 
+    // FX settlement. For a foreign buy/sell in PLN mode a positive rate is
+    // required; in foreign mode fxRateToBase is null (cash settles from the FX
+    // pool). Other types keep the optional generic rate field.
     let fxRateValue: number | null = null;
-    if (fxRateToBase.trim()) {
+    if (showsFX) {
+      const parsedRate = parseAmount(fxRateToBase);
+      if (settleInPLN && (parsedRate == null || !(parsedRate > 0))) {
+        setError(`Podaj kurs ${currency}/PLN dla rozliczenia w PLN.`);
+        return;
+      }
+      fxRateValue = fxRateToBaseForSave({ type: txType, currency, settleInPLN, rate: parsedRate });
+    } else if (fxRateToBase.trim()) {
       fxRateValue = parseAmount(fxRateToBase);
       if (fxRateValue == null) {
         setError("Podaj poprawny kurs wymiany.");
@@ -1029,20 +1152,100 @@ export function AddTransactionModal({
                 </div>
               )}
 
+              {showsFX && (
+                <section style={{ marginTop: 18 }}>
+                  <div style={labelStyle}>Rozliczenie</div>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 4,
+                      padding: 3,
+                      borderRadius: 11,
+                      background: v2Mix(V2.ink, 0.06),
+                      width: "fit-content",
+                    }}
+                  >
+                    {[
+                      { value: true, label: "PLN" },
+                      { value: false, label: currency },
+                    ].map((option) => {
+                      const selected = settleInPLN === option.value;
+                      return (
+                        <button
+                          key={String(option.value)}
+                          type="button"
+                          onClick={() => setSettleInPLN(option.value)}
+                          style={{
+                            border: "none",
+                            borderRadius: 8,
+                            padding: "6px 16px",
+                            fontSize: 13,
+                            fontWeight: 700,
+                            fontFamily: "inherit",
+                            cursor: "pointer",
+                            color: selected ? INK : MUTED,
+                            background: selected ? PAPER : "transparent",
+                            boxShadow: selected ? "0 1px 3px rgba(22,29,24,0.12)" : "none",
+                          }}
+                        >
+                          {option.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {settleInPLN ? (
+                    <div style={{ marginTop: 12 }}>
+                      <Field label={`Kurs ${currency}/PLN (średni NBP)`}>
+                        <input
+                          type="number"
+                          step="any"
+                          min="0"
+                          placeholder="0.0000"
+                          value={fxRateToBase}
+                          onChange={(e) => {
+                            setFxRateFetchFailed(false);
+                            setFxRateToBase(e.target.value);
+                          }}
+                          style={inputStyle}
+                        />
+                      </Field>
+                      <div style={{ marginTop: 6, fontSize: 12, color: fxRateFetchFailed ? LOSS : MUTED, lineHeight: 1.35 }}>
+                        {fxRateLoading
+                          ? "Pobieram kurs NBP…"
+                          : fxRateFetchFailed
+                            ? "Nie udało się pobrać kursu — wpisz ręcznie."
+                            : `Ile PLN za 1 ${currency} w dniu transakcji. Możesz poprawić.`}
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: 10, fontSize: 12, color: MUTED, lineHeight: 1.35 }}>
+                      Rozliczenie w {currency} — gotówka schodzi z salda w tej walucie, bez przeliczenia na PLN.
+                    </div>
+                  )}
+                </section>
+              )}
+
               <details style={{ marginTop: 18 }}>
                 <summary style={{ cursor: "pointer", color: MUTED, fontSize: 13, fontWeight: 700, userSelect: "none" }}>
-                  Prowizja, podatek, notatka
+                  {showsTax ? "Prowizja, podatek, notatka" : "Prowizja, notatka"}
                 </summary>
                 <div className="transaction-form-grid" style={{ marginTop: 12 }}>
                   <Field label="Prowizja">
                     <input type="number" step="any" min="0" value={fees} onChange={(e) => setFees(e.target.value)} style={inputStyle} />
                   </Field>
-                  <Field label="Podatek">
-                    <input type="number" step="any" min="0" value={taxes} onChange={(e) => setTaxes(e.target.value)} style={inputStyle} />
-                  </Field>
-                  <Field label="Kurs do PLN">
-                    <input type="number" step="any" min="0" placeholder="opcjonalnie" value={fxRateToBase} onChange={(e) => setFxRateToBase(e.target.value)} style={inputStyle} />
-                  </Field>
+                  {showsTax && (
+                    <Field label="Podatek">
+                      <input type="number" step="any" min="0" value={taxes} onChange={(e) => setTaxes(e.target.value)} style={inputStyle} />
+                    </Field>
+                  )}
+                  {/* The dedicated FX-settlement block owns fxRateToBase for
+                      foreign buy/sell; the generic field stays for other types. */}
+                  {!showsFX && (
+                    <Field label="Kurs do PLN">
+                      <input type="number" step="any" min="0" placeholder="opcjonalnie" value={fxRateToBase} onChange={(e) => setFxRateToBase(e.target.value)} style={inputStyle} />
+                    </Field>
+                  )}
                   <Field label="Notatka">
                     <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} style={inputStyle} />
                   </Field>
