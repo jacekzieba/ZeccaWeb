@@ -95,7 +95,13 @@ export function TourOverlay({
       waited += ANCHOR_POLL_MS;
       if (waited >= ANCHOR_TIMEOUT_MS) {
         // Anchor never appeared (hidden section, changed UI) → skip forward.
-        const next = nextPresentStep(steps, stepIndex, 1, (a) => anchorEl(a) != null);
+        // Steps on other routes count as present: the controller navigates
+        // there first and this effect re-checks after the route change.
+        const next = nextPresentStep(steps, stepIndex, 1, (a) => {
+          const candidate = steps.find((s) => s.anchor === a);
+          if (candidate && candidate.route !== window.location.pathname) return true;
+          return anchorEl(a) != null;
+        });
         if (next === -1) onFinish();
         else onStepChange(next);
         return;
