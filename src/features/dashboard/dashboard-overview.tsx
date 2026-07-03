@@ -305,14 +305,18 @@ function Card({
   glass = false,
   pad = 22,
   style,
+  dataTour,
 }: {
   children: React.ReactNode;
   glass?: boolean;
   pad?: number;
   style?: CSSProperties;
+  /** Anchor id for the onboarding tour spotlight. */
+  dataTour?: string;
 }) {
   return (
     <div
+      data-tour={dataTour}
       style={{
         background: glass ? mix(PALETTE.card, 0.72) : PALETTE.card,
         backdropFilter: glass ? "blur(30px) saturate(170%)" : "none",
@@ -916,7 +920,7 @@ export function DashboardOverview() {
     if (KPI_SECTION_IDS.has(section)) {
       const tile = kpiTileById.get(section);
       if (!tile) return null;
-      return <KpiCard label={tile.label} value={tile.value} sub={tile.sub} color={tile.color} />;
+      return <KpiCard label={tile.label} value={tile.value} sub={tile.sub} color={tile.color} helpHref={tile.helpHref} />;
     }
     if (section === "valueVsDeposits") {
       return (
@@ -1057,7 +1061,7 @@ function SummaryCard({
   );
 
   return (
-    <Card glass pad={0}>
+    <Card glass pad={0} dataTour="dashboard-hero">
       <div style={{ display: "grid", gridTemplateColumns: isTablet ? "1fr" : "minmax(280px, 360px) 1fr" }}>
         <div
           style={{
@@ -1196,7 +1200,7 @@ function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobil
     });
   };
   return (
-    <Card pad={0}>
+    <Card pad={0} dataTour="dashboard-instruments">
       <div style={{ padding: "18px 22px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `0.5px solid ${PALETTE.line}` }}>
         <div>
           <Eyebrow>Instrumenty</Eyebrow>

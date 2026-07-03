@@ -347,6 +347,7 @@ export function PositionsPage() {
           </div>
         </V2Card>
       ) : (
+        <div data-tour="positions-table">
         <V2Card pad={0} style={{ overflow: "hidden" }}>
           {/* Stats header */}
           <div style={{ padding: "16px 22px", borderBottom: `0.5px solid ${V2.line}`, display: "flex", alignItems: "center", gap: 22, flexWrap: "wrap" }}>
@@ -434,6 +435,7 @@ export function PositionsPage() {
             </div>
           )}
         </V2Card>
+        </div>
       )}
 
       {selected && (
