@@ -202,6 +202,26 @@ export function SettingsPage() {
       <DisplaySection />
       <PrivacySection />
 
+      <Section eyebrow="Pomoc" title="Wprowadzenie do aplikacji">
+        <Row
+          label="Tour po interfejsie"
+          desc="Ponownie obejrzyj wprowadzenie: dashboard, portfele, pozycje i zarobki"
+          last
+          control={
+            <Link
+              href="/dashboard?tour=1"
+              style={{
+                fontFamily: V2_TYPE.ui, fontSize: 12.5, fontWeight: 600,
+                color: V2.brand, textDecoration: "none",
+                border: `1px solid ${V2.line}`, borderRadius: 9, padding: "8px 14px",
+              }}
+            >
+              Zobacz wprowadzenie →
+            </Link>
+          }
+        />
+      </Section>
+
       <DangerZone />
     </div>
   );
