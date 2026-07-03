@@ -38,6 +38,10 @@ import { TYPOGRAPHY } from "@/lib/design-tokens";
 import { parseAmount } from "@/lib/parse-amount";
 import { V2, v2Mix } from "@/lib/v2-design";
 import {
+  InstrumentEditorModal,
+  type SavedInstrumentDraft,
+} from "@/features/instruments/instrument-editor-modal";
+import {
   showsTaxField as showsTaxFieldRule,
   showsFXSettlement as showsFXSettlementRule,
   fxRateToBaseForSave,
@@ -221,6 +225,16 @@ export type TransactionEditorDraft = {
   updatedAt: string;
 };
 
+type InstrumentOption = {
+  id: string;
+  symbol: string;
+  name: string;
+  kind: string;
+  currency: string;
+  maturityMs: number | null;
+  issueMs: number | null;
+};
+
 export function AddTransactionModal({
   open: controlledOpen,
   initialValue,
@@ -267,6 +281,8 @@ export function AddTransactionModal({
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [instrumentEditorOpen, setInstrumentEditorOpen] = useState(false);
+  const [inlineInstrument, setInlineInstrument] = useState<InstrumentOption | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -306,6 +322,8 @@ export function AddTransactionModal({
     setNotes(initialValue?.notes ?? "");
     setSaving(false);
     setError(null);
+    setInstrumentEditorOpen(false);
+    setInlineInstrument(null);
   }, [initialValue, open, today]);
 
   // Derive portfolio list from records
@@ -322,43 +340,37 @@ export function AddTransactionModal({
     return [...seen.entries()].map(([id, value]) => ({ id, name: value.name, accountType: value.accountType }));
   }, [records]);
 
-  type InstrumentOption = {
-    id: string;
-    symbol: string;
-    name: string;
-    kind: string;
-    currency: string;
-    maturityMs: number | null;
-    issueMs: number | null;
-  };
-
   const instruments = useMemo<InstrumentOption[]>(() => {
-    if (!records) return [];
     const seen = new Map<string, InstrumentOption>();
-    for (const r of records) {
-      if (r.deletedAt) continue;
-      if (r.envelope.type === "asset") {
-        const a = r.envelope.payload as {
-          id: string;
-          symbol: string;
-          name: string;
-          kind?: string;
-          currency?: string;
-          bondParams?: { issueDate?: number | string; maturityDate?: number | string } | null;
-        };
-        seen.set(a.id, {
-          id: a.id,
-          symbol: a.symbol,
-          name: a.name,
-          kind: a.kind ?? "stock",
-          currency: a.currency ?? "PLN",
-          maturityMs: swiftDateToMs(a.bondParams?.maturityDate),
-          issueMs: swiftDateToMs(a.bondParams?.issueDate),
-        });
+    if (records) {
+      for (const r of records) {
+        if (r.deletedAt) continue;
+        if (r.envelope.type === "asset") {
+          const a = r.envelope.payload as {
+            id: string;
+            symbol: string;
+            name: string;
+            kind?: string;
+            currency?: string;
+            bondParams?: { issueDate?: number | string; maturityDate?: number | string } | null;
+          };
+          seen.set(a.id, {
+            id: a.id,
+            symbol: a.symbol,
+            name: a.name,
+            kind: a.kind ?? "stock",
+            currency: a.currency ?? "PLN",
+            maturityMs: swiftDateToMs(a.bondParams?.maturityDate),
+            issueMs: swiftDateToMs(a.bondParams?.issueDate),
+          });
+        }
       }
     }
+    if (inlineInstrument && !seen.has(inlineInstrument.id)) {
+      seen.set(inlineInstrument.id, inlineInstrument);
+    }
     return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name, "pl"));
-  }, [records]);
+  }, [inlineInstrument, records]);
 
   // Set default portfolio when list loads
   useEffect(() => {
@@ -384,6 +396,27 @@ export function AddTransactionModal({
       asset.kinds.some((kind) => allowedKinds.has(kind)),
     );
   }, [txDef.kinds]);
+
+  const newInstrumentDefaultKind = useMemo(() => {
+    if (!txDef.kinds) return "stock";
+    const allowedKinds = new Set<string>(txDef.kinds);
+
+    if (assetClass !== "all") {
+      const selected = ASSET_CLASSES.find((item) => item.key === assetClass);
+      const matchingKind = selected?.kinds.find((kind) => allowedKinds.has(kind));
+      if (matchingKind) return matchingKind;
+    }
+
+    return txDef.kinds[0] ?? "stock";
+  }, [assetClass, txDef.kinds]);
+
+  const newInstrumentDefaultValue = useMemo(
+    () => ({
+      kind: newInstrumentDefaultKind,
+      currency,
+    }),
+    [currency, newInstrumentDefaultKind],
+  );
 
   useEffect(() => {
     setAssetClass("all");
@@ -443,6 +476,48 @@ export function AddTransactionModal({
       setInstrumentId("");
     }
   }, [availableInstruments, instrumentId]);
+
+  function handleInlineInstrumentSaved(instrument: SavedInstrumentDraft) {
+    const option: InstrumentOption = {
+      id: instrument.id,
+      symbol: instrument.symbol,
+      name: instrument.name,
+      kind: instrument.kind,
+      currency: instrument.currency,
+      maturityMs: null,
+      issueMs: null,
+    };
+    setInlineInstrument(option);
+
+    if (!txDef.needsInstrument || txDef.kinds == null) {
+      return;
+    }
+
+    const allowedKinds = new Set<string>(txDef.kinds);
+    if (!allowedKinds.has(option.kind)) {
+      setError("Dodano instrument, ale jego klasa nie pasuje do wybranego typu transakcji.");
+      return;
+    }
+
+    if (txDef.heldOnly) {
+      setError("Dodano instrument, ale ten typ transakcji wymaga instrumentu już posiadanego w tym portfelu.");
+      return;
+    }
+
+    if (assetClass !== "all") {
+      const selected = ASSET_CLASSES.find((item) => item.key === assetClass);
+      const selectedKinds = new Set<string>(selected?.kinds ?? []);
+      if (!selectedKinds.has(option.kind)) {
+        setAssetClass("all");
+      }
+    }
+
+    setInstrumentId(option.id);
+    if ((txType === "buy" || txType === "sell") && option.currency !== currency) {
+      setCurrency(option.currency);
+    }
+    setError(null);
+  }
 
   // Auto-compute grossAmount from qty * price for buy/sell
   useEffect(() => {
@@ -579,6 +654,8 @@ export function AddTransactionModal({
     setNotes("");
     setError(null);
     setSaving(false);
+    setInstrumentEditorOpen(false);
+    setInlineInstrument(null);
   }
 
   function handleClose() {
@@ -1074,26 +1151,35 @@ export function AddTransactionModal({
                           ))}
                         </select>
                       </div>
-                      <a
-                        href="/instruments"
+                      <button
+                        type="button"
+                        onClick={() => setInstrumentEditorOpen(true)}
+                        disabled={txDef.heldOnly}
+                        title={
+                          txDef.heldOnly
+                            ? "Ten typ transakcji wymaga instrumentu już posiadanego w portfelu."
+                            : "Dodaj instrument bez opuszczania transakcji"
+                        }
                         style={{
                           height: 36,
                           padding: "0 13px",
+                          border: "none",
                           borderRadius: 10,
-                          background: v2Mix(V2.ink, 0.07),
-                          color: INK,
+                          background: txDef.heldOnly ? v2Mix(V2.ink, 0.04) : v2Mix(V2.ink, 0.07),
+                          color: txDef.heldOnly ? SUBTLE : INK,
                           display: "inline-flex",
                           alignItems: "center",
                           gap: 7,
-                          textDecoration: "none",
                           fontSize: 13,
                           fontWeight: 700,
+                          fontFamily: "inherit",
                           whiteSpace: "nowrap",
+                          cursor: txDef.heldOnly ? "not-allowed" : "pointer",
                         }}
                       >
                         <Plus size={15} strokeWidth={2.3} />
                         Nowy
-                      </a>
+                      </button>
                     </div>
                   </Field>
                 </div>
@@ -1327,6 +1413,14 @@ export function AddTransactionModal({
           </form>
         </div>
       </div>
+      <InstrumentEditorModal
+        open={instrumentEditorOpen}
+        initialValue={null}
+        defaultValue={newInstrumentDefaultValue}
+        onSaved={handleInlineInstrumentSaved}
+        onClose={() => setInstrumentEditorOpen(false)}
+        zIndex={240}
+      />
     </div>
   );
 

@@ -1,5 +1,3 @@
-"use client";
-
 import type { RecordType } from "@/domain/models/investor-data";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
 

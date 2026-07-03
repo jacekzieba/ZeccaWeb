@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/supabase/server";
 import { AppShell } from "@/components/layout/app-shell";
+import { Providers } from "@/providers/providers";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,11 @@ export default async function AuthenticatedLayout({
     process.env.NODE_ENV !== "production";
 
   if (fakeSyncEnabled) {
-    return <AppShell>{children}</AppShell>;
+    return (
+      <Providers>
+        <AppShell>{children}</AppShell>
+      </Providers>
+    );
   }
 
   const supabase = await createServerSupabaseClient();
@@ -27,8 +32,10 @@ export default async function AuthenticatedLayout({
   }
 
   return (
-    <AppShell initialUser={{ id: user.id, email: user.email }}>
-      {children}
-    </AppShell>
+    <Providers>
+      <AppShell initialUser={{ id: user.id, email: user.email }}>
+        {children}
+      </AppShell>
+    </Providers>
   );
 }

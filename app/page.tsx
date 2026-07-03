@@ -127,11 +127,11 @@ export default async function LandingPage() {
           __html: JSON.stringify(landingJsonLd).replace(/</g, "\\u003c"),
         }}
       />
-      <div className="zlanding">
+      <main className="zlanding">
         <div dangerouslySetInnerHTML={{ __html: LANDING_NAV_HTML }} />
         <LandingHero />
         <div dangerouslySetInnerHTML={{ __html: LANDING_BODY_HTML }} />
-      </div>
+      </main>
       <LandingInteractions />
     </>
   );

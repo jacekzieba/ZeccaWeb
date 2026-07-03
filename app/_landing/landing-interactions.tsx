@@ -225,6 +225,24 @@ export function LandingInteractions() {
     };
     form?.addEventListener("submit", onSubmit);
 
+    const chartRangeGroups = Array.from(
+      document.querySelectorAll<HTMLElement>(".zlanding .static-chart-ranges"),
+    );
+    const rangeHandlers: Array<[HTMLElement, EventListener]> = [];
+    chartRangeGroups.forEach((group) => {
+      const onRangeClick = (event: Event) => {
+        const button = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>(
+          "button[role='radio']",
+        );
+        if (!button || !group.contains(button)) return;
+        group.querySelectorAll<HTMLButtonElement>("button[role='radio']").forEach((item) => {
+          item.setAttribute("aria-checked", item === button ? "true" : "false");
+        });
+      };
+      group.addEventListener("click", onRangeClick);
+      rangeHandlers.push([group, onRangeClick]);
+    });
+
     // Pointer tilt on feature cards — the same tactile lean as the hero cards,
     // applied to the statically-injected `.feat` grid. Fine pointers only.
     let teardownTilt = () => {};
@@ -234,7 +252,9 @@ export function LandingInteractions() {
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (finePointer && !reduceMotion) {
-      const cards = Array.from(document.querySelectorAll<HTMLElement>(".zlanding .feat"));
+      const cards = Array.from(
+        document.querySelectorAll<HTMLElement>(".zlanding .feat, .zlanding .product-card"),
+      );
       const frames = new WeakMap<HTMLElement, number>();
       const onTiltMove = (event: PointerEvent) => {
         const el = event.currentTarget as HTMLElement;
@@ -293,6 +313,9 @@ export function LandingInteractions() {
     return () => {
       betaForm?.removeEventListener("submit", onBetaSubmit);
       form?.removeEventListener("submit", onSubmit);
+      rangeHandlers.forEach(([group, handler]) => {
+        group.removeEventListener("click", handler);
+      });
       teardownTextEditor();
       teardownTilt();
       io?.disconnect();

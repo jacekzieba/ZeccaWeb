@@ -33,6 +33,10 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
+  const isSeoAsset =
+    pathname === "/robots.txt" ||
+    pathname === "/sitemap.xml" ||
+    pathname === "/manifest.webmanifest";
 
   // Redirect authenticated users away from the auth pages
   if (user && (pathname === "/login" || pathname === "/register")) {
@@ -55,6 +59,7 @@ export async function middleware(request: NextRequest) {
     !pathname.startsWith("/privacy-policy") &&
     !pathname.startsWith("/faq") &&
     !pathname.startsWith("/auth/") &&
+    !isSeoAsset &&
     !isPublicApiRoute &&
     !pathname.startsWith("/_next") &&
     pathname !== "/favicon.ico";
@@ -70,6 +75,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml)$).*)",
   ],
 };

@@ -70,6 +70,16 @@ type InstrumentDraft = {
   updatedAt: string;
 };
 
+export type SavedInstrumentDraft = {
+  id: string;
+  symbol: string;
+  name: string;
+  kind: string;
+  currency: string;
+  category: string | null;
+  updatedAt: string;
+};
+
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
@@ -82,11 +92,17 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 export function InstrumentEditorModal({
   open,
   initialValue,
+  defaultValue,
   onClose,
+  onSaved,
+  zIndex = 200,
 }: {
   open: boolean;
   initialValue: InstrumentDraft | null;
+  defaultValue?: Partial<Pick<InstrumentDraft, "symbol" | "name" | "kind" | "currency" | "category">>;
   onClose(): void;
+  onSaved?: (instrument: SavedInstrumentDraft) => void;
+  zIndex?: number;
 }) {
   const userDataKey = useSyncStore((s) => s.userDataKey);
   const supabase = useSyncStore((s) => s.supabase);
@@ -103,20 +119,34 @@ export function InstrumentEditorModal({
 
   useEffect(() => setMounted(true), []);
 
+  const defaultSymbol = defaultValue?.symbol;
+  const defaultName = defaultValue?.name;
+  const defaultKind = defaultValue?.kind;
+  const defaultCurrency = defaultValue?.currency;
+  const defaultCategory = defaultValue?.category;
+
   useEffect(() => {
     if (!open) {
       return;
     }
 
-    setSymbol(initialValue?.symbol ?? "");
-    setName(initialValue?.name ?? "");
-    setKind(initialValue?.kind ?? "stock");
-    setCurrency(initialValue?.currency ?? "PLN");
-    setCategory(initialValue?.category ?? "");
+    setSymbol(initialValue?.symbol ?? defaultSymbol ?? "");
+    setName(initialValue?.name ?? defaultName ?? "");
+    setKind(initialValue?.kind ?? defaultKind ?? "stock");
+    setCurrency(initialValue?.currency ?? defaultCurrency ?? "PLN");
+    setCategory(initialValue?.category ?? defaultCategory ?? "");
     setSaving(false);
     setError(null);
     setCandidates([]);
-  }, [initialValue, open]);
+  }, [
+    defaultCategory,
+    defaultCurrency,
+    defaultKind,
+    defaultName,
+    defaultSymbol,
+    initialValue,
+    open,
+  ]);
 
   const applyCandidate = useCallback((candidate: InstrumentCandidate) => {
     setSymbol(candidate.symbol);
@@ -191,17 +221,26 @@ export function InstrumentEditorModal({
 
     try {
       const id = initialValue?.id ?? crypto.randomUUID();
+      const savedInstrument: SavedInstrumentDraft = {
+        id,
+        symbol: trimmedSymbol,
+        name: trimmedName,
+        kind,
+        currency,
+        category: category.trim() || null,
+        updatedAt: new Date().toISOString(),
+      };
       const result = await saveRecord(
         supabase,
         userDataKey,
         "asset",
         makeAssetPayload({
-          id,
-          kind,
-          symbol: trimmedSymbol,
-          name: trimmedName,
-          currency,
-          category: category.trim() || null,
+          id: savedInstrument.id,
+          kind: savedInstrument.kind,
+          symbol: savedInstrument.symbol,
+          name: savedInstrument.name,
+          currency: savedInstrument.currency,
+          category: savedInstrument.category,
         }),
         { baseUpdatedAt: initialValue?.updatedAt ?? null },
       );
@@ -209,6 +248,7 @@ export function InstrumentEditorModal({
         const { records, snapshot } = await refreshSyncStore(supabase, userDataKey);
         setSync(records, snapshot);
       }
+      onSaved?.(savedInstrument);
       onClose();
     } catch (submitError) {
       setError(
@@ -229,7 +269,7 @@ export function InstrumentEditorModal({
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 200,
+        zIndex,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
