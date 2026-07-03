@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import { buildFakeSyncRecords } from "@/sync/dev/fake-sync";
+import { isFakeSyncEnabled } from "@/lib/env";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { V2, V2_TYPE } from "@/lib/v2-design";
 import { OnboardingCard } from "./onboarding-card";
@@ -37,11 +38,16 @@ export function OnboardingDemoGate({ children }: { children: React.ReactNode }) 
   const phase = useOnboardingStore((s) => s.phase);
   const startedRef = useRef(false);
 
-  const entry = resolveOnboardingEntry({
-    hasRecords: false,
-    completed: isOnboardingCompleted(),
-    tourParam: false,
-  });
+  // Fake-sync seeds records asynchronously — this branch renders briefly even
+  // though data is on the way, so never auto-start the demo there (the tour is
+  // still reachable via ?tour=1, which is what the e2e suite exercises).
+  const entry = isFakeSyncEnabled()
+    ? "none"
+    : resolveOnboardingEntry({
+        hasRecords: false,
+        completed: isOnboardingCompleted(),
+        tourParam: false,
+      });
 
   useEffect(() => {
     if (entry === "demo-start" && !startedRef.current) {
