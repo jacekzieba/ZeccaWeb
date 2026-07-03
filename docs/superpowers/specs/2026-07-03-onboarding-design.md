@@ -43,7 +43,11 @@ interfejsu jest ważniejsza niż pełna kontrola narracji.
 6. **Pozycje i transakcje** — tour nawiguje na `/positions`; spotlight na
    tabelę pozycji: co posiadasz, skąd bierze się P/L; wzmianka o zakładce
    Transakcje.
-7. **Połącz swoje dane** (finał) — karta centralna, trzy stany:
+7. **Zarobki** — tour nawiguje na `/earnings`; spotlight na podsumowanie
+   KPI modułu: rejestr dochodów (etat, B2B, obciążenia) miesiąc po miesiącu,
+   średnia miesięczna po obciążeniach — pełny obraz finansów, nie tylko
+   inwestycje.
+8. **Połącz swoje dane** (finał) — karta centralna, trzy stany:
    - sync odblokowany → gratulacje + „Przejdź do dashboardu",
    - snapshot istnieje, nieodblokowany → osadzony `SyncUnlockPanel`,
    - brak danych → instrukcja pobrania Zecca na macOS/iOS + linki/QR.
@@ -55,7 +59,11 @@ Esc lub „Pomiń tour" zawsze dostępne. Kroki mogą nawigować między trasami
 ## Mechanika spotlight
 
 - Elementy UI oznaczone atrybutem `data-tour="<id>"` (KPI strip, sekcja
-  wykresów, grupa „Portfele" w sidebarze, tabela pozycji, status synca).
+  wykresów, grupa „Portfele" w sidebarze, tabela pozycji, podsumowanie
+  zarobków, status synca).
+- Wygląd warstw onboardingu (karty, spotlight, typografia) odwzorowuje
+  produkcyjny interfejs zecca.pl — mockup storyboardu bazuje na screenshocie
+  z produkcji z 2026-07-03.
 - Overlay: przyciemnienie całej strony z „wycięciem" wokół elementu-kotwicy
   (box-shadow trick albo SVG mask), podświetlony element pozostaje widoczny
   i nieinteraktywny podczas touru.
@@ -110,8 +118,8 @@ komponentów.
 - Unit (Vitest): logika bramki (redirect / replay / skip), sekwencja kroków
   z pomijaniem brakujących kotwic, wybór stanu kroku finałowego.
 - E2E (Playwright, config fake-sync): przejście całego touru łącznie z
-  nawigacją dashboard → positions; weryfikacja, że po ukończeniu drugie
-  wejście nie pokazuje touru.
+  nawigacją dashboard → positions → earnings; weryfikacja, że po ukończeniu
+  drugie wejście nie pokazuje touru.
 
 ## Zależności / materiały od użytkownika
 
