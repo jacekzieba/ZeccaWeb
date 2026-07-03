@@ -979,6 +979,30 @@ describe("InvestorDataSnapshot mapper", () => {
     expect(snapshot.metrics.inflationPct).toBe(5);
   });
 
+  it("falls back to PL CPI when macOS settings do not sync an explicit inflation rate", () => {
+    const records = [
+      record("account", accountID, {
+        recordType: "account",
+        id: accountID,
+        name: "Core",
+        baseCurrency: "PLN",
+      }),
+      record("settings", "88888888-8888-4888-8888-888888888888", {
+        recordType: "settings",
+        id: "B2AA7BD4-A95D-4D80-90F9-787B8A1EC401",
+        baseCurrency: "PLN",
+        inflationRegion: "PL",
+        updatedAt: "2025-08-25T00:00:00.000Z",
+      }),
+    ];
+
+    const snapshot = buildInvestorDataSnapshot(records, {
+      asOf: new Date("2025-08-25T00:00:00.000Z"),
+    });
+
+    expect(snapshot.metrics.inflationPct).toBe(2.9);
+  });
+
   it("states real return on an annualised basis (real CAGR), not cumulative", () => {
     const records = [
       record("account", accountID, {

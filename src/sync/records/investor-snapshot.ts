@@ -35,6 +35,7 @@ import {
   type PositionValuationDataset,
   type FxRateInput,
 } from "@/domain/valuation/position-valuator";
+import { CPI_YOY } from "@/domain/valuation/bond-rates";
 import {
   resolveFxRate,
   type MarketQuoteInput,
@@ -632,7 +633,7 @@ function buildMetrics(
   }
 
   const xirr = computeXirr(cashflows);
-  const inflationPct = getInflationPct(dataset);
+  const inflationPct = getInflationPct(dataset, asOf);
   const totalReturnPct = computePerformanceReturnPct(performanceSeries);
   const cagrPct = computeCagrPct(performanceSeries);
   // Real return is stated on an ANNUAL basis: deflate the annualised nominal
@@ -804,14 +805,40 @@ function computePerformanceReturnPct(
   return computeTotalReturnPct(last.value, first.value);
 }
 
-function getInflationPct(dataset: ParsedDataset): number {
+function getInflationPct(dataset: ParsedDataset, asOf: Date): number {
   // Pick the rate from the most recently updated settings record, consistent
   // with how base currency and the telemetry gate resolve "latest" — array
   // order is not reliable, so sort by `updatedAt`.
-  const latest = getLatestSettings(dataset)?.inflationRate;
-  if (latest == null) return 0;
-  // Stored either as a fraction (0.035) or a percentage (3.5).
-  return Math.abs(latest) <= 1 ? latest * 100 : latest;
+  const latestSettings = getLatestSettings(dataset);
+  const latest = latestSettings?.inflationRate;
+  if (latest != null) {
+    // Stored either as a fraction (0.035) or a percentage (3.5).
+    return Math.abs(latest) <= 1 ? latest * 100 : latest;
+  }
+
+  if ((latestSettings?.inflationRegion ?? "PL").toUpperCase() === "PL") {
+    return latestCpiYoyOnOrBefore(asOf) ?? 0;
+  }
+
+  return 0;
+}
+
+function latestCpiYoyOnOrBefore(asOf: Date): number | null {
+  const asOfMonth = Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth(), 1);
+  let bestTime = Number.NEGATIVE_INFINITY;
+  let bestRate: number | null = null;
+
+  for (const [key, rate] of Object.entries(CPI_YOY)) {
+    const match = /^(\d{4})-(\d{2})$/.exec(key);
+    if (!match) continue;
+    const time = Date.UTC(Number(match[1]), Number(match[2]) - 1, 1);
+    if (time <= asOfMonth && time > bestTime) {
+      bestTime = time;
+      bestRate = rate;
+    }
+  }
+
+  return bestRate;
 }
 
 function parseDataset(
