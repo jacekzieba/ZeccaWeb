@@ -85,7 +85,7 @@ describe("realised P&L (FIFO)", () => {
     expect(snapshot.metrics.realizedPnl).toBeCloseTo(120, 5);
   });
 
-  it("subtracts fees and taxes from the realised proceeds", () => {
+  it("keeps fees and taxes out of realised P&L, matching native cost buckets", () => {
     const snapshot = buildInvestorDataSnapshot([
       ...baseRecords(),
       record("transaction", "55555555-5555-4555-8555-555555555556", {
@@ -104,11 +104,12 @@ describe("realised P&L (FIFO)", () => {
       }),
     ]);
 
-    // 520 − 5 − 3 − 400 = 112
-    expect(snapshot.metrics.realizedPnl).toBeCloseTo(112, 5);
+    // Native LedgerEngine reports realised P&L as gross proceeds − FIFO cost;
+    // fees and taxes are reported separately by the cost/tax KPIs.
+    expect(snapshot.metrics.realizedPnl).toBeCloseTo(120, 5);
   });
 
-  it("capitalises the buy commission into the cost basis", () => {
+  it("does not capitalise buy commission into realised P&L cost basis", () => {
     const snapshot = buildInvestorDataSnapshot([
       record("account", accountID, {
         recordType: "account",
@@ -165,9 +166,9 @@ describe("realised P&L (FIFO)", () => {
       }),
     ]);
 
-    // Cost basis = 10×100 + 10 buy commission = 1010; proceeds 1300 → 290
-    // (not 300, which would ignore the entry cost the exit side already nets).
-    expect(snapshot.metrics.realizedPnl).toBeCloseTo(290, 5);
+    // Native FIFO lot cost is quantity × price. Entry commission is tracked in
+    // fees, not capitalised into realised P&L.
+    expect(snapshot.metrics.realizedPnl).toBeCloseTo(300, 5);
   });
 
   it("is zero while no position has been closed", () => {

@@ -13,6 +13,7 @@ import {
   ChartNoAxesColumn,
   FileText,
   FolderOpen,
+  HelpCircle,
   Landmark,
   LayoutDashboard,
   ListCollapse,
@@ -25,6 +26,7 @@ import { buildParitySnapshot } from "@/sync/records/parity-snapshot";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
 import { AddTransactionModal } from "@/features/transactions/add-transaction-modal";
+import { OnboardingController, OnboardingDemoGate } from "@/features/onboarding/onboarding-controller";
 import { TelemetryConsentBanner } from "@/features/telemetry/telemetry-consent-banner";
 import { CommandPalette } from "@/features/search/command-palette";
 import { PendingSyncStatus } from "@/features/sync/pending-sync-status";
@@ -143,6 +145,7 @@ const NAV_GROUPS: NavGroup[] = [
     sec: "System",
     items: [
       { id: "import", label: "Import / Eksport", icon: ArrowDownUp, href: "/import" },
+      { id: "faq", label: "FAQ", icon: HelpCircle, href: "/faq" },
       { id: "settings", label: "Ustawienia", icon: Settings, href: "/settings" },
     ],
   },
@@ -246,7 +249,11 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
       <nav style={{ padding: "6px 10px 4px" }}>
         {navGroups.map((group, gi) => (
-          <div key={gi} style={{ marginBottom: 8 }}>
+          <div
+            key={gi}
+            style={{ marginBottom: 8 }}
+            data-tour={group.sec === "Portfele" ? "sidebar-portfolios" : undefined}
+          >
             {group.sec && (
               <div
                 style={{
@@ -442,7 +449,9 @@ export function AppShell({
   if (!records) {
     return (
       <AppLock>
-        <SyncUnlockGate initialUser={initialUser} onSyncLoaded={handleSyncLoaded} />
+        <OnboardingDemoGate>
+          <SyncUnlockGate initialUser={initialUser} onSyncLoaded={handleSyncLoaded} />
+        </OnboardingDemoGate>
       </AppLock>
     );
   }
@@ -675,6 +684,7 @@ export function AppShell({
       <AddTransactionModal />
       <TelemetryConsentBanner />
       <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <OnboardingController />
       {paritySnapshot && (
         <script
           id="investor-web-parity-snapshot"

@@ -111,6 +111,8 @@ describe("InvestorDataSnapshot mapper", () => {
     ]);
     expect(snapshot.allocation[0]?.percent).toBeCloseTo(88.2295, 4);
     expect(snapshot.allocation[1]?.percent).toBeCloseTo(11.7705, 4);
+    expect(snapshot.metrics.unrealizedPnl).toBeCloseTo(200, 5);
+    expect(snapshot.metrics.unrealizedPnlPct).toBeCloseTo(20, 5);
     expect(snapshot.valuationSeries.at(-1)).toEqual({
       label: "maj",
       date: "2026-05-15T10:00:00.000Z",
@@ -944,6 +946,48 @@ describe("InvestorDataSnapshot mapper", () => {
     // ~100000% the previous `gain / previousValue` formula produced.
     expect(snapshot.metrics.totalReturnPct).toBeCloseTo(1, 0);
     expect(snapshot.metrics.totalReturnPct).toBeLessThan(5);
+  });
+
+  it("treats corrections as external flow for performance and net invested parity", () => {
+    const records = [
+      record("account", accountID, {
+        recordType: "account",
+        id: accountID,
+        name: "Core",
+        baseCurrency: "PLN",
+      }),
+      record("transaction", "33333333-3333-4333-8333-333333333333", {
+        recordType: "transaction",
+        id: "33333333-3333-4333-8333-333333333333",
+        date: "2026-05-01T10:00:00.000Z",
+        portfolioID: accountID,
+        transactionType: "cashDeposit",
+        grossAmount: 1_000,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+      record("transaction", "44444444-4444-4444-8444-444444444444", {
+        recordType: "transaction",
+        id: "44444444-4444-4444-8444-444444444444",
+        date: "2026-05-02T10:00:00.000Z",
+        portfolioID: accountID,
+        transactionType: "correction",
+        grossAmount: 100,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+    ];
+
+    const snapshot = buildInvestorDataSnapshot(records, {
+      asOf: new Date("2026-05-02T12:00:00.000Z"),
+      historyGranularity: "daily",
+    });
+
+    expect(snapshot.totalValue).toBe(1_100);
+    expect(snapshot.metrics.netInvested).toBe(1_100);
+    expect(snapshot.metrics.totalReturnPct).toBeCloseTo(0, 5);
   });
 
   it("reads the inflation rate from the latest settings by updatedAt", () => {

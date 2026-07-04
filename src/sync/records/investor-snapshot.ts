@@ -240,6 +240,7 @@ type OpenLot = {
   quantity: number;
   costPerUnit: number;
   currency: string;
+  fxRateToBase?: number | null;
 };
 
 type ParsedDataset = {
@@ -278,7 +279,9 @@ export type SnapshotBuildOptions = {
 
 type PortfolioValuation = {
   totalValue: number;
+  holdingsValue: number;
   cashValue: number;
+  costBasis: number;
   positionCount: number;
   allocationValues: Map<string, number>;
 };
@@ -326,6 +329,12 @@ export function buildInvestorDataSnapshot(
     valuationSeries,
     baseToPln,
   );
+  const openPositionStats = buildOpenPositionStats(
+    accounts,
+    dataset,
+    asOf,
+    baseToPln,
+  );
   const metrics = buildMetrics(
     accounts,
     dataset,
@@ -333,6 +342,7 @@ export function buildInvestorDataSnapshot(
     totalValue,
     performanceSeries,
     baseToPln,
+    openPositionStats,
   );
 
   return {
@@ -517,6 +527,8 @@ function externalCashflowBaseAmount(
     case "cashWithdrawal":
     case "transferOut":
       return base;
+    case "correction":
+      return -base;
     default:
       return null;
   }
@@ -544,6 +556,8 @@ function contributionBaseAmount(
     case "cashWithdrawal":
     case "transferOut":
       return base;
+    case "correction":
+      return -base;
     default:
       return null;
   }
@@ -554,6 +568,38 @@ function transactionBaseAmount(transaction: TransactionPayload): number {
     return transaction.grossAmount;
   }
   return transaction.grossAmount * transaction.fxRateToBase;
+}
+
+function lotBaseCost(lot: OpenLot): number {
+  const rate = lot.currency === "PLN" ? 1 : lot.fxRateToBase && lot.fxRateToBase > 0 ? lot.fxRateToBase : 1;
+  return lot.quantity * lot.costPerUnit * rate;
+}
+
+function buildOpenPositionStats(
+  accounts: AccountPayload[],
+  dataset: ParsedDataset,
+  asOf: Date,
+  baseToPln: BaseToPln,
+): { unrealizedPnl: number; unrealizedPnlPct: number } {
+  let holdingsValue = 0;
+  let costBasis = 0;
+
+  for (const account of accounts) {
+    const ledger = computeLedger(
+      transactionsForPortfolio(dataset.transactions, account.id),
+      asOf,
+    );
+    const valuation = valuePortfolio(ledger, dataset, asOf);
+    holdingsValue += valuation.holdingsValue;
+    costBasis += valuation.costBasis;
+  }
+
+  const asOfRate = baseToPln(asOf);
+  const unrealizedPnlBase = holdingsValue - costBasis;
+  return {
+    unrealizedPnl: unrealizedPnlBase / asOfRate,
+    unrealizedPnlPct: costBasis > EPSILON ? (unrealizedPnlBase / costBasis) * 100 : 0,
+  };
 }
 
 /** Cumulative net external capital (contributions − withdrawals) at each
@@ -601,6 +647,7 @@ function buildMetrics(
   totalValue: number,
   performanceSeries: InvestorDataSnapshot["performanceSeries"],
   baseToPln: BaseToPln,
+  openPositionStats: { unrealizedPnl: number; unrealizedPnlPct: number },
 ): PortfolioMetrics {
   const accountIds = new Set(accounts.map((account) => account.id));
   const cashflows: CashflowPoint[] = [];
@@ -649,6 +696,8 @@ function buildMetrics(
 
   return {
     netInvested: Math.max(netInvested, 0),
+    unrealizedPnl: openPositionStats.unrealizedPnl,
+    unrealizedPnlPct: openPositionStats.unrealizedPnlPct,
     totalReturnPct,
     cagrPct,
     realReturnPct,
@@ -747,12 +796,7 @@ function buildRealizedPnl(
         const costPerUnit =
           transaction.price ??
           (quantity > EPSILON ? transaction.grossAmount / quantity : 0);
-        pushLot(
-          transaction.instrumentID,
-          quantity,
-          costPerUnit * fx,
-          transaction.fees * fx,
-        );
+        pushLot(transaction.instrumentID, quantity, costPerUnit * fx);
         break;
       }
       case "depositOpen":
@@ -778,18 +822,15 @@ function buildRealizedPnl(
         }
         break;
       case "sell":
-      case "bondRedemption":
-      case "depositClose": {
-        const exitQty =
-          transaction.transactionType === "depositClose" && quantity <= EPSILON
-            ? 1
-            : quantity;
-        const costBase = consume(transaction.instrumentID, exitQty);
-        const proceedsBase =
-          (transaction.grossAmount - transaction.fees - transaction.taxes) * fx;
+      case "bondRedemption": {
+        const costBase = consume(transaction.instrumentID, quantity);
+        const proceedsBase = transaction.grossAmount * fx;
         realizedBase += proceedsBase - costBase;
         break;
       }
+      case "depositClose":
+        consume(transaction.instrumentID, quantity <= EPSILON ? 1 : quantity);
+        break;
     }
   }
 
@@ -1169,10 +1210,10 @@ function applyTransaction(ledger: Ledger, transaction: TransactionPayload) {
     case "dividend":
     case "interest":
     case "bondCoupon":
-      addCash(ledger, currency, grossAmount - fees - taxes);
+      addCash(ledger, currency, grossAmount - taxes);
       break;
     case "bondRedemption":
-      addCash(ledger, currency, grossAmount - fees - taxes);
+      addCash(ledger, currency, grossAmount - taxes);
       addPosition(ledger, transaction.instrumentID, -(transaction.quantity ?? 0));
       consumeLots(ledger, transaction.instrumentID, transaction.quantity ?? 0);
       break;
@@ -1186,7 +1227,7 @@ function applyTransaction(ledger: Ledger, transaction: TransactionPayload) {
       });
       break;
     case "depositClose":
-      addCash(ledger, currency, grossAmount - fees - taxes);
+      addCash(ledger, currency, grossAmount - taxes);
       addPosition(ledger, transaction.instrumentID, -(transaction.quantity ?? 1));
       consumeLots(ledger, transaction.instrumentID, transaction.quantity ?? 1);
       break;
@@ -1234,6 +1275,7 @@ function addAssetTransfer(ledger: Ledger, transaction: TransactionPayload) {
         quantity: lot.quantity,
         costPerUnit: lot.unitCost,
         currency: lot.currency,
+        fxRateToBase: lot.fxRateToBase,
       })),
     );
     ledger.openLots.set(instrumentID, openLots);
@@ -1291,6 +1333,7 @@ function addLot(ledger: Ledger, transaction: TransactionPayload) {
     quantity,
     costPerUnit,
     currency: transaction.currency,
+    fxRateToBase: transaction.fxRateToBase,
   });
   ledger.openLots.set(instrumentID, lots);
 }
@@ -1330,6 +1373,7 @@ function valuePortfolio(
   const valuationDataset = toPositionValuationDataset(dataset);
   const allocationValues = new Map<string, number>();
   let holdingsValue = 0;
+  let costBasis = 0;
   let positionCount = 0;
 
   for (const [instrumentID, quantity] of ledger.positions) {
@@ -1356,6 +1400,10 @@ function valuePortfolio(
     }
 
     holdingsValue += marketValue;
+    costBasis += (ledger.openLots.get(instrumentID) ?? []).reduce(
+      (sum, lot) => sum + lotBaseCost(lot),
+      0,
+    );
     positionCount += 1;
     const assetClass = assetClassLabel(asset?.kind);
     allocationValues.set(
@@ -1375,7 +1423,9 @@ function valuePortfolio(
 
   return {
     totalValue: holdingsValue + cashValue,
+    holdingsValue,
     cashValue,
+    costBasis,
     positionCount,
     allocationValues,
   };
@@ -1773,6 +1823,7 @@ export function buildPortfolioDetail(
     totalValue,
     performanceSeries,
     baseToPln,
+    buildOpenPositionStats([account], dataset, asOf, baseToPln),
   );
 
   return {

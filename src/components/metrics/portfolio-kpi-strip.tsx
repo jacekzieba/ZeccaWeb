@@ -1,6 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
+import { CircleHelp } from "lucide-react";
 import type { CashflowSummary, PortfolioMetrics } from "@/domain/models/investor-data";
 import { V2, V2_TYPE, v2Mix } from "@/lib/v2-design";
 
@@ -30,26 +31,58 @@ export function KpiCard({
   value,
   sub,
   color = V2.ink,
+  helpHref,
 }: {
   label: string;
   value: string;
   sub?: string;
   color?: string;
+  helpHref?: string;
 }) {
   return (
     <div style={cardStyle}>
       <div
         style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+          marginBottom: 6,
+        }}
+      >
+        <span
+          style={{
           fontFamily: V2_TYPE.ui,
           fontSize: 10.5,
           fontWeight: 700,
           color: V2.subtle,
           textTransform: "uppercase",
           letterSpacing: ".10em",
-          marginBottom: 6,
-        }}
-      >
-        {label}
+          }}
+        >
+          {label}
+        </span>
+        {helpHref && (
+          <a
+            href={helpHref}
+            aria-label={`Wyjaśnienie metryki: ${label}`}
+            title={`Wyjaśnienie metryki: ${label}`}
+            style={{
+              width: 20,
+              height: 20,
+              borderRadius: 6,
+              color: V2.subtle,
+              background: v2Mix(V2.ink, 0.05),
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              textDecoration: "none",
+            }}
+          >
+            <CircleHelp size={13} strokeWidth={1.9} aria-hidden="true" />
+          </a>
+        )}
       </div>
       <div
         style={{
@@ -98,7 +131,25 @@ export const KPI_TILE_META: { id: KpiTileId; label: string; desc: string }[] = [
   { id: "kpiOpenPositions", label: "Otwarte pozycje", desc: "Liczba aktywnych pozycji." },
 ];
 
-export type KpiTile = { id: KpiTileId; label: string; value: string; sub?: string; color: string };
+export const KPI_HELP_HREFS: Partial<Record<KpiTileId, string>> = {
+  kpiUnrealized: "/faq#metryki-zysk",
+  kpiXirr: "/faq#metryki-xirr",
+  kpiTwr: "/faq#metryki-twr",
+  kpiCagr: "/faq#metryki-cagr",
+  kpiRealReturn: "/faq#metryki-wynik-realny",
+  kpiMaxDd: "/faq#metryki-obsuniecie",
+  kpiRealized: "/faq#metryki-zysk",
+  kpiInvested: "/faq#metryki-wartosc-vs-wplaty",
+};
+
+export type KpiTile = {
+  id: KpiTileId;
+  label: string;
+  value: string;
+  sub?: string;
+  color: string;
+  helpHref?: string;
+};
 
 export type PortfolioKpiInput = {
   metrics: PortfolioMetrics;
@@ -111,11 +162,10 @@ export type PortfolioKpiInput = {
 /** Computes every KPI tile from values the snapshot already produces. Single
  * source of truth for the Portfel strip and the per-tile Dashboard sections. */
 export function getKpiTiles(input: PortfolioKpiInput): KpiTile[] {
-  const { metrics, cashflows, totalValue, openPositions, currency } = input;
-  const unrealized = totalValue - metrics.netInvested;
+  const { metrics, cashflows, openPositions, currency } = input;
   const xirr = metrics.xirrPct;
-  return [
-    { id: "kpiUnrealized", label: "Zysk niezrealizowany", value: `${fmtSigned(unrealized)} ${currency}`, color: unrealized >= 0 ? V2.profit : V2.loss },
+  const tiles: KpiTile[] = [
+    { id: "kpiUnrealized", label: "Zysk niezrealizowany", value: `${fmtSigned(metrics.unrealizedPnl)} ${currency}`, sub: `${fmtPct(metrics.unrealizedPnlPct)} od zakupu`, color: metrics.unrealizedPnl >= 0 ? V2.profit : V2.loss },
     { id: "kpiXirr", label: "MWR · XIRR", value: xirr == null ? "—" : fmtPct(xirr), sub: "rocznie", color: (xirr ?? 0) >= 0 ? V2.profit : V2.loss },
     { id: "kpiTwr", label: "Zwrot (TWR)", value: fmtPct(metrics.totalReturnPct), sub: "bez wpłat", color: metrics.totalReturnPct >= 0 ? V2.profit : V2.loss },
     { id: "kpiCagr", label: "CAGR", value: fmtPct(metrics.cagrPct), sub: "rocznie, TWR", color: metrics.cagrPct >= 0 ? V2.profit : V2.loss },
@@ -126,5 +176,6 @@ export function getKpiTiles(input: PortfolioKpiInput): KpiTile[] {
     { id: "kpiDividends", label: "Dywidendy", value: `+${fmt(cashflows.dividends)} ${currency}`, color: V2.profit },
     { id: "kpiOpenPositions", label: "Otwarte pozycje", value: String(openPositions), color: V2.ink },
   ];
-}
 
+  return tiles.map((tile) => ({ ...tile, helpHref: KPI_HELP_HREFS[tile.id] }));
+}

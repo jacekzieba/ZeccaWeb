@@ -553,7 +553,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
     if (id === "kpiValue") return <KpiCard label="Wartość portfela" value={`${fmt(detail.totalValue)} ${displayCurrency}`} />;
     if (id === "kpiCash") return <KpiCard label="Gotówka" value={`${fmt(detail.cashValue)} ${displayCurrency}`} />;
     const kpi = kpiById.get(id as KpiTileId);
-    if (kpi) return <KpiCard label={kpi.label} value={kpi.value} sub={kpi.sub} color={kpi.color} />;
+    if (kpi) return <KpiCard label={kpi.label} value={kpi.value} sub={kpi.sub} color={kpi.color} helpHref={kpi.helpHref} />;
     if (id === "history") return (
       <HistoryCard
         detail={detail}

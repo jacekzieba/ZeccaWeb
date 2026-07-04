@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type CSSProperties } from "react";
+import { CircleHelp } from "lucide-react";
 import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
 import { useProfile } from "@/features/profile/profile-store";
 import { useSampleDataSignal } from "@/features/telemetry/use-sample-data-signal";
@@ -8,6 +9,7 @@ import { sampleSnapshot } from "@/features/dashboard/sample-data";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
 import { AreaChart } from "@/components/charts/area-chart";
 import { ValueVsDepositsChart } from "@/components/charts/value-vs-deposits-chart";
+import { KPI_HELP_HREFS, type KpiTileId } from "@/components/metrics/portfolio-kpi-strip";
 import type { ValuationPoint } from "@/domain/models/investor-data";
 import { V2, V2_TYPE, v2Mix } from "@/lib/v2-design";
 
@@ -100,14 +102,53 @@ const REPORTS = [
 ] as const;
 type ReportId = (typeof REPORTS)[number]["id"];
 
-function Kpi({ label, value, sub, color = INK }: { label: string; value: string; sub?: string; color?: string }) {
+function Kpi({
+  label,
+  value,
+  sub,
+  color = INK,
+  helpHref,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  color?: string;
+  helpHref?: string;
+}) {
   return (
     <div style={{ ...card, padding: "18px 20px" }}>
-      <div style={{ fontFamily: UI, fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 6 }}>{label}</div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+        <span style={{ fontFamily: UI, fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>{label}</span>
+        {helpHref && (
+          <a
+            href={helpHref}
+            aria-label={`Wyjaśnienie metryki: ${label}`}
+            title={`Wyjaśnienie metryki: ${label}`}
+            style={{
+              width: 20,
+              height: 20,
+              borderRadius: 6,
+              color: SUBTLE,
+              background: v2Mix(V2.ink, 0.05),
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              textDecoration: "none",
+            }}
+          >
+            <CircleHelp size={13} strokeWidth={1.9} aria-hidden="true" />
+          </a>
+        )}
+      </div>
       <div style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 500, color, fontVariantNumeric: "tabular-nums" }}>{value}</div>
       {sub && <div style={{ fontFamily: UI, fontSize: 12, color: MUTED, marginTop: 3 }}>{sub}</div>}
     </div>
   );
+}
+
+function helpFor(id: KpiTileId) {
+  return KPI_HELP_HREFS[id];
 }
 
 function SectionHead({ children }: { children: React.ReactNode }) {
@@ -171,11 +212,11 @@ export function ReportsPage() {
       {report === "performance" && (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
-            <Kpi label="Łączny zwrot (TWR)" value={fmtPct(metrics.totalReturnPct)} sub={`${absGain >= 0 ? "+" : ""}${fmt(absGain)} ${ccy} ponad wpłaty`} color={metrics.totalReturnPct >= 0 ? PROFIT : LOSS} />
-            <Kpi label="CAGR" value={fmtPct(metrics.cagrPct)} sub="rocznie, ważony czasem" color={metrics.cagrPct >= 0 ? PROFIT : LOSS} />
-            <Kpi label="MWR · XIRR" value={metrics.xirrPct == null ? "—" : fmtPct(metrics.xirrPct)} sub="rocznie, ważony kapitałem" color={(metrics.xirrPct ?? 0) >= 0 ? PROFIT : LOSS} />
-            <Kpi label="Maks. obsunięcie" value={`${fmt(metrics.maxDrawdownPct, 2)}%`} sub="od szczytu" color={LOSS} />
-            <Kpi label="Zysk zrealizowany" value={`${metrics.realizedPnl >= 0 ? "+" : ""}${fmt(metrics.realizedPnl)} ${ccy}`} sub="zamknięte pozycje" color={metrics.realizedPnl >= 0 ? PROFIT : LOSS} />
+            <Kpi label="Łączny zwrot (TWR)" value={fmtPct(metrics.totalReturnPct)} sub={`${absGain >= 0 ? "+" : ""}${fmt(absGain)} ${ccy} ponad wpłaty`} color={metrics.totalReturnPct >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiTwr")} />
+            <Kpi label="CAGR" value={fmtPct(metrics.cagrPct)} sub="rocznie, ważony czasem" color={metrics.cagrPct >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiCagr")} />
+            <Kpi label="MWR · XIRR" value={metrics.xirrPct == null ? "—" : fmtPct(metrics.xirrPct)} sub="rocznie, ważony kapitałem" color={(metrics.xirrPct ?? 0) >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiXirr")} />
+            <Kpi label="Maks. obsunięcie" value={`${fmt(metrics.maxDrawdownPct, 2)}%`} sub="od szczytu" color={LOSS} helpHref={helpFor("kpiMaxDd")} />
+            <Kpi label="Zysk zrealizowany" value={`${metrics.realizedPnl >= 0 ? "+" : ""}${fmt(metrics.realizedPnl)} ${ccy}`} sub="zamknięte pozycje" color={metrics.realizedPnl >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiRealized")} />
             <Kpi label="Wartość portfela" value={fmt(snapshot.totalValue)} sub={ccy} />
           </div>
 

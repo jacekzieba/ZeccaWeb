@@ -20,6 +20,7 @@ export const landingCopy = {
       { label: "Jak działa", href: "#jak-dziala" },
       { label: "Funkcje", href: "#funkcje" },
       { label: "Prywatność", href: "#prywatnosc" },
+      { label: "FAQ", href: "/faq" },
       { label: "Lista beta", href: "#lista-beta" },
     ],
     login: { label: "Zaloguj się", href: "/login" },

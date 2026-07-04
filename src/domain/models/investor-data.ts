@@ -40,6 +40,10 @@ export type IncomeSummary = {
 export type PortfolioMetrics = {
   /** Net external capital contributed (deposits − withdrawals), base currency. */
   netInvested: number;
+  /** Open-position market value minus FIFO cost basis, base/display currency. */
+  unrealizedPnl: number;
+  /** Open-position unrealized P&L relative to FIFO cost basis, percent. */
+  unrealizedPnlPct: number;
   /** Time-weighted total return, percent, neutral to deposits/withdrawals. */
   totalReturnPct: number;
   /** Annualised time-weighted return (CAGR) over the valuation span, percent. */

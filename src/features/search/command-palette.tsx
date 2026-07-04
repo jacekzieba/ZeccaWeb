@@ -29,6 +29,7 @@ const PAGES: SearchResult[] = [
   { id: "p-earnings", kind: "page", title: "Zarobki", subtitle: "Przychody i obciążenia", href: "/earnings", tag: "Strona" },
   { id: "p-benchmark", kind: "page", title: "Porównanie", subtitle: "Punkt odniesienia", href: "/benchmark", tag: "Strona" },
   { id: "p-reports", kind: "page", title: "Raporty", subtitle: "Zestawienia", href: "/reports", tag: "Strona" },
+  { id: "p-faq", kind: "page", title: "FAQ", subtitle: "Metryki i przykłady", href: "/faq", tag: "Pomoc" },
   { id: "p-settings", kind: "page", title: "Ustawienia", subtitle: "Konfiguracja", href: "/settings", tag: "Strona" },
 ];
 
