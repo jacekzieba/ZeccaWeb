@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { V2, V2_TYPE } from "@/lib/v2-design";
 import { nextPresentStep, type TourStep } from "./steps";
 
@@ -9,6 +9,10 @@ const ANCHOR_TIMEOUT_MS = 2000;
 const ANCHOR_POLL_MS = 50;
 const SPOT_PAD = 6;
 const TIP_W = 320;
+const EASE = "cubic-bezier(.4,0,.2,1)";
+// Glide the spotlight/tooltip between steps; opacity fades the first appearance.
+const GLIDE = `top .4s ${EASE}, left .4s ${EASE}, width .4s ${EASE}, height .4s ${EASE}, opacity .3s ease`;
+const TIP_GLIDE = `top .4s ${EASE}, left .4s ${EASE}, opacity .3s ease`;
 
 function anchorEl(anchor: string): HTMLElement | null {
   return document.querySelector<HTMLElement>(`[data-tour="${anchor}"]`);
@@ -36,7 +40,14 @@ export function TourOverlay({
   onSkip: () => void;
 }) {
   const step = steps[stepIndex];
+  // `rect` persists across steps so the spotlight glides to the next target
+  // instead of blinking through a full-screen state.
   const [rect, setRect] = useState<Rect | null>(null);
+  // Glide on step changes, but follow scroll/resize instantly (no lag).
+  const [animate, setAnimate] = useState(false);
+  // Fade the very first spotlight in once its anchor has been measured.
+  const [shown, setShown] = useState(false);
+  const shownRef = useRef(false);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -65,31 +76,57 @@ export function TourOverlay({
   // Wait for the anchor, measure it, keep the measurement fresh.
   useEffect(() => {
     if (!step) return;
-    setRect(null);
+    // Entering a step: any position change from here should glide. We keep the
+    // previous rect on screen (dimmed with its cut-out) until the new anchor is
+    // measured, then the box slides to it — no full-screen blink between steps.
+    setAnimate(true);
     let cancelled = false;
     let timer = 0;
     let waited = 0;
     let unsubscribe: (() => void) | null = null;
 
-    const measure = () => {
-      const el = anchorEl(step.anchor);
-      if (!el) return;
+    const applyRect = (el: HTMLElement, instant: boolean) => {
       const r = el.getBoundingClientRect();
+      if (instant) setAnimate(false); // scroll/resize follow, no easing
       setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
+      if (!shownRef.current) {
+        shownRef.current = true;
+        // One frame at opacity 0 → transition to 1 (fade the first spotlight in).
+        requestAnimationFrame(() => {
+          if (!cancelled) setShown(true);
+        });
+      }
+    };
+
+    const settleAndMeasure = (el: HTMLElement) => {
+      el.scrollIntoView({ block: "center" });
+      // Measure only after layout + scroll settle. Reading synchronously here
+      // can catch a pre-layout, full-width rect that then snaps to real size.
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          if (cancelled) return;
+          const current = anchorEl(step.anchor);
+          if (!current) return;
+          applyRect(current, false);
+          const follow = () => {
+            const live = anchorEl(step.anchor);
+            if (live) applyRect(live, true);
+          };
+          window.addEventListener("scroll", follow, { passive: true, capture: true });
+          window.addEventListener("resize", follow);
+          unsubscribe = () => {
+            window.removeEventListener("scroll", follow, { capture: true });
+            window.removeEventListener("resize", follow);
+          };
+        }),
+      );
     };
 
     const tick = () => {
       if (cancelled) return;
       const el = anchorEl(step.anchor);
       if (el) {
-        el.scrollIntoView({ block: "center" });
-        measure();
-        window.addEventListener("scroll", measure, { passive: true, capture: true });
-        window.addEventListener("resize", measure);
-        unsubscribe = () => {
-          window.removeEventListener("scroll", measure, { capture: true });
-          window.removeEventListener("resize", measure);
-        };
+        settleAndMeasure(el);
         return;
       }
       waited += ANCHOR_POLL_MS;
@@ -179,7 +216,17 @@ export function TourOverlay({
       {/* Blocks interaction with the app while the tour runs. */}
       <div style={{ position: "fixed", inset: 0 }} aria-hidden="true" />
 
-      {spot ? (
+      {/* Full-screen dim shown only before the first anchor is measured; it
+          fades out as the spotlight cut-out fades in. */}
+      <div
+        style={{
+          position: "fixed", inset: 0, background: DIM, pointerEvents: "none",
+          opacity: spot && shown ? 0 : 1,
+          transition: "opacity .3s ease",
+        }}
+      />
+
+      {spot && (
         <div
           style={{
             position: "fixed",
@@ -187,12 +234,13 @@ export function TourOverlay({
             borderRadius: 14,
             boxShadow: `0 0 0 9999px ${DIM}`,
             pointerEvents: "none",
+            opacity: shown ? 1 : 0,
+            transition: animate ? GLIDE : "opacity .3s ease",
           }}
         />
-      ) : (
-        <div style={{ position: "fixed", inset: 0, background: DIM, pointerEvents: "none" }} />
       )}
 
+      {shown && (
       <div
         role="dialog"
         aria-label={step.title}
@@ -206,6 +254,8 @@ export function TourOverlay({
           padding: "18px 20px",
           fontFamily: V2_TYPE.ui,
           color: V2.ink,
+          opacity: shown ? 1 : 0,
+          transition: animate ? TIP_GLIDE : "opacity .3s ease",
         }}
       >
         <div style={{ fontFamily: V2_TYPE.mono, fontSize: 10, letterSpacing: ".08em", color: V2.gold }}>
@@ -233,6 +283,7 @@ export function TourOverlay({
           </button>
         </div>
       </div>
+      )}
     </div>
   );
 }
