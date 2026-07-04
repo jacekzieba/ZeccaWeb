@@ -16,20 +16,24 @@ test("shows macOS-style income records and supports fake-sync CRUD", async ({ pa
   await main.getByRole("button", { name: "Wszystko" }).click();
 
   await main.getByRole("button", { name: "Dodaj wynagrodzenie" }).click();
-  await expect(page.getByText("Nowy wpis zarobku")).toBeVisible();
-  await page.getByLabel("Rok").fill("2026");
-  await page.getByLabel("Miesiąc").selectOption("6");
-  await page.getByLabel("Dochód").fill("12345");
-  await page.getByPlaceholder("np. Wynagrodzenie, Faktura miesięczna").fill("E2E Salary");
-  await page.getByRole("button", { name: "Zapisz" }).click();
+  // Scope to the modal dialog — the month-pagination buttons in the chart
+  // behind it ("Pokaż nowsze/starsze miesiące") also match "Miesiąc".
+  const addDialog = page.getByRole("dialog", { name: "Nowy wpis zarobku" });
+  await expect(addDialog).toBeVisible();
+  await addDialog.getByLabel("Rok").fill("2026");
+  await addDialog.getByLabel("Miesiąc").selectOption("6");
+  await addDialog.getByLabel("Dochód").fill("12345");
+  await addDialog.getByPlaceholder("np. Wynagrodzenie, Faktura miesięczna").fill("E2E Salary");
+  await addDialog.getByRole("button", { name: "Zapisz" }).click();
 
   await expect(main.getByText("Zarobek zapisany lokalnie w fake sync.")).toBeVisible();
   await expect(main.getByText("E2E Salary")).toBeVisible();
 
   await main.getByLabel("Edytuj").first().click();
-  await expect(page.getByText("Edycja zarobku")).toBeVisible();
-  await page.getByPlaceholder("np. Wynagrodzenie, Faktura miesięczna").fill("E2E Salary edited");
-  await page.getByRole("button", { name: "Zapisz" }).click();
+  const editDialog = page.getByRole("dialog", { name: "Edycja zarobku" });
+  await expect(editDialog).toBeVisible();
+  await editDialog.getByPlaceholder("np. Wynagrodzenie, Faktura miesięczna").fill("E2E Salary edited");
+  await editDialog.getByRole("button", { name: "Zapisz" }).click();
 
   await expect(main.getByText("E2E Salary edited")).toBeVisible();
   await expect(main.getByText("E2E Salary", { exact: true })).toBeHidden();
