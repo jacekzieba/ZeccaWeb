@@ -35,7 +35,7 @@ import {
   type PositionValuationDataset,
   type FxRateInput,
 } from "@/domain/valuation/position-valuator";
-import { CPI_YOY } from "@/domain/valuation/bond-rates";
+import { CPI_YOY, type CpiSeries } from "@/domain/valuation/bond-rates";
 import {
   resolveFxRate,
   type MarketQuoteInput,
@@ -258,6 +258,9 @@ type ParsedDataset = {
   fxRates: FxRateInput[];
   useMarketQuotes: boolean;
   useLatestTransactionFxRate: boolean;
+  /** Optional CPI override for inflation-indexed bond valuation; see
+   * `SnapshotBuildOptions.cpi`. Undefined → hardcoded GUS table. */
+  cpi?: CpiSeries;
 };
 
 export type SnapshotBuildOptions = {
@@ -275,6 +278,12 @@ export type SnapshotBuildOptions = {
    * from `fxRates`; percentages, allocation and the performance index stay
    * currency-consistent because flows and values convert together. */
   displayCurrency?: string;
+  /** CPI series (klucz "RRRR-MM" → CPI r/r %) for pricing inflation-indexed
+   * treasury bonds. When omitted, the hardcoded GUS table in `bond-rates` is
+   * used. Injecting a series lets callers value bonds against a specific
+   * inflation path — e.g. cross-platform parity with the native engine, which
+   * takes its CPI series as an explicit parameter. */
+  cpi?: CpiSeries;
 };
 
 type PortfolioValuation = {
@@ -898,6 +907,7 @@ function parseDataset(
     fxRates: options.fxRates ?? [],
     useMarketQuotes: options.useMarketQuotes ?? false,
     useLatestTransactionFxRate: options.useLatestTransactionFxRate ?? false,
+    cpi: options.cpi,
   };
 
   for (const record of records) {
@@ -1462,6 +1472,7 @@ function toPositionValuationDataset(
     | "fxRates"
     | "useMarketQuotes"
     | "useLatestTransactionFxRate"
+    | "cpi"
   >,
 ): PositionValuationDataset {
   return {
@@ -1495,6 +1506,7 @@ function toPositionValuationDataset(
     })),
     fxRates: dataset.fxRates,
     useLatestTransactionFxRate: dataset.useLatestTransactionFxRate,
+    cpi: dataset.cpi,
   };
 }
 
