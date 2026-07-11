@@ -2,6 +2,25 @@
 
 import { useEffect } from "react";
 
+function getStableCopyId(element: HTMLElement) {
+  if (element.dataset.landingEditId) return element.dataset.landingEditId;
+
+  // Copy saved by a numeric DOM position breaks as soon as a section is moved.
+  // Hash the source element instead, so old positional edits cannot land in an
+  // unrelated card and new edits stay associated with their original text.
+  const source = [
+    element.closest("section, header, footer")?.id ?? "landing",
+    element.tagName,
+    element.className,
+    element.textContent?.trim() ?? "",
+  ].join("|");
+  let hash = 5381;
+  for (let index = 0; index < source.length; index += 1) {
+    hash = (hash * 33) ^ source.charCodeAt(index);
+  }
+  return `auto-${(hash >>> 0).toString(36)}`;
+}
+
 /**
  * Client-side behaviour for the landing page:
  *  - scroll-reveal for `.reveal` elements (IntersectionObserver)
@@ -53,8 +72,8 @@ export function LandingInteractions() {
         : [];
 
       const saveHandlers: Array<[HTMLElement, EventListener]> = [];
-      editableElements.forEach((element, index) => {
-        const copyId = element.dataset.landingEditId ?? String(index);
+      editableElements.forEach((element) => {
+        const copyId = getStableCopyId(element);
         const key = `zecca-landing-copy:${copyId}`;
         const saved = window.localStorage.getItem(key);
         element.dataset.landingEditKey = key;
@@ -63,11 +82,16 @@ export function LandingInteractions() {
         if (saved != null) {
           element.innerHTML = saved;
         }
+        const syncEmptyState = () => {
+          element.classList.toggle("landing-copy-empty", !element.textContent?.trim());
+        };
+        syncEmptyState();
         element.setAttribute("contenteditable", "true");
         element.setAttribute("spellcheck", "false");
         element.setAttribute("tabindex", "0");
         const persist = () => {
           window.localStorage.setItem(key, element.innerHTML);
+          syncEmptyState();
         };
         const onClick = (event: Event) => {
           if (element instanceof HTMLAnchorElement) {
@@ -95,6 +119,7 @@ export function LandingInteractions() {
             if (key) window.localStorage.removeItem(key);
             const html = element.dataset.landingInitialHtml ?? element.innerHTML;
             element.innerHTML = html;
+            element.classList.remove("landing-copy-empty");
             const copyId = element.dataset.landingEditId;
             if (copyId) {
               window.dispatchEvent(
@@ -120,6 +145,7 @@ export function LandingInteractions() {
           element.removeAttribute("contenteditable");
           element.removeAttribute("spellcheck");
           element.removeAttribute("tabindex");
+          element.classList.remove("landing-copy-empty");
           delete element.dataset.landingEditKey;
           delete element.dataset.landingInitialHtml;
         });
@@ -225,22 +251,43 @@ export function LandingInteractions() {
     };
     form?.addEventListener("submit", onSubmit);
 
-    const chartRangeGroups = Array.from(
-      document.querySelectorAll<HTMLElement>(".zlanding .static-chart-ranges"),
-    );
-    const rangeHandlers: Array<[HTMLElement, EventListener]> = [];
-    chartRangeGroups.forEach((group) => {
-      const onRangeClick = (event: Event) => {
-        const button = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>(
-          "button[role='radio']",
-        );
-        if (!button || !group.contains(button)) return;
-        group.querySelectorAll<HTMLButtonElement>("button[role='radio']").forEach((item) => {
-          item.setAttribute("aria-checked", item === button ? "true" : "false");
+    const platformTabHandlers: Array<[HTMLElement, "click" | "keydown", EventListener]> = [];
+    document.querySelectorAll<HTMLElement>("[data-platform-gallery]").forEach((gallery) => {
+      const tabs = Array.from(gallery.querySelectorAll<HTMLButtonElement>("[data-platform-target]"));
+      const panels = Array.from(gallery.querySelectorAll<HTMLElement>("[data-platform-panel]"));
+      const stories = Array.from(gallery.querySelectorAll<HTMLElement>("[data-platform-copy]"));
+      const activate = (target: string, focus = false) => {
+        tabs.forEach((tab) => {
+          const active = tab.dataset.platformTarget === target;
+          tab.setAttribute("aria-selected", active ? "true" : "false");
+          tab.tabIndex = active ? 0 : -1;
+          if (active && focus) tab.focus();
+        });
+        panels.forEach((panel) => {
+          panel.hidden = panel.dataset.platformPanel !== target;
+        });
+        stories.forEach((story) => {
+          story.hidden = story.dataset.platformCopy !== target;
         });
       };
-      group.addEventListener("click", onRangeClick);
-      rangeHandlers.push([group, onRangeClick]);
+
+      tabs.forEach((tab, index) => {
+        const onClick = () => activate(tab.dataset.platformTarget ?? "");
+        const onKeydown = (event: Event) => {
+          const keyboardEvent = event as KeyboardEvent;
+          if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(keyboardEvent.key)) return;
+          keyboardEvent.preventDefault();
+          let nextIndex = index;
+          if (keyboardEvent.key === "ArrowLeft") nextIndex = (index - 1 + tabs.length) % tabs.length;
+          if (keyboardEvent.key === "ArrowRight") nextIndex = (index + 1) % tabs.length;
+          if (keyboardEvent.key === "Home") nextIndex = 0;
+          if (keyboardEvent.key === "End") nextIndex = tabs.length - 1;
+          activate(tabs[nextIndex]?.dataset.platformTarget ?? "", true);
+        };
+        tab.addEventListener("click", onClick);
+        tab.addEventListener("keydown", onKeydown);
+        platformTabHandlers.push([tab, "click", onClick], [tab, "keydown", onKeydown]);
+      });
     });
 
     // Pointer tilt on feature cards — the same tactile lean as the hero cards,
@@ -313,8 +360,8 @@ export function LandingInteractions() {
     return () => {
       betaForm?.removeEventListener("submit", onBetaSubmit);
       form?.removeEventListener("submit", onSubmit);
-      rangeHandlers.forEach(([group, handler]) => {
-        group.removeEventListener("click", handler);
+      platformTabHandlers.forEach(([element, eventName, handler]) => {
+        element.removeEventListener(eventName, handler);
       });
       teardownTextEditor();
       teardownTilt();

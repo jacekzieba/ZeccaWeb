@@ -49,12 +49,30 @@ const FEATURE_ICONS: { bg: string; svg: string }[] = [
   },
 ];
 
-// Privacy-card icons, aligned 1:1 with copy.privacy.cards.
-const PRIVACY_ICONS: string[] = [
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="5"/><path d="M11.5 11.5L21 21M17 17l2-2M14 14l2-2"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg>`,
+// Compare-table row icons, aligned 1:1 with copy.comparison.rows.
+const COMPARE_ROW_ICONS: string[] = [
+  // Cena
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 9.3c0-1.1 1.2-1.9 2.8-1.9s2.8.8 2.8 1.9c0 1.6-5.6 1.4-5.6 4 0 1.1 1.2 1.9 2.8 1.9s2.8-.8 2.8-1.9M12 6v1.3M12 16.7V18"/></svg>`,
+  // Import transakcji od brokera
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v10m0 0l-3.5-3.5M12 13l3.5-3.5"/><path d="M4 15v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg>`,
+  // IKE i IKZE jako osobne portfele
   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg>`,
+  // Obligacje detaliczne
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>`,
+  // Kursy walut z NBP
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h11m0 0l-3.5-3.5M18 7l-3.5 3.5"/><path d="M17 17H6m0 0l3.5-3.5M6 17l3.5 3.5"/></svg>`,
+  // Inflacja CPI z GUS
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 4 5-7 4 5"/><path d="M3 21h18"/></svg>`,
+  // XIRR / TWR / CAGR
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>`,
+  // Szyfrowanie end-to-end
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>`,
+  // Aplikacja natywna macOS / iOS
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="14" height="10" rx="1.5"/><path d="M1 16.5h16"/><rect x="18.5" y="5" width="4" height="14" rx="1"/><path d="M20.2 16.3h.1"/></svg>`,
+  // Pełna personalizacja
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h8M16 6h4M4 12h4M10 12h10M4 18h11M19 18h1"/><circle cx="12" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>`,
+  // Ryzyko błędu przy utrzymaniu
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l9.5 16.5H2.5z"/><path d="M12 9.5v5"/><circle cx="12" cy="17.2" r="0.9" fill="currentColor" stroke="none"/></svg>`,
 ];
 
 // Investor-cell badge colours, aligned 1:1 with copy.investor.cells.
@@ -71,11 +89,11 @@ const FEATURE_LAYOUT_CLASSES = [
   "feat-sync",
 ];
 
-// Showcase screenshots, aligned 1:1 with copy.showcase. `frame` picks the mock.
-const SHOWCASE_MEDIA = [
-  { frame: "mac", src: "/landing/showcase-mac.webp", width: 2200, height: 1359 },
-  { frame: "iphone", src: "/landing/ios.webp", width: 600, height: 1305 },
-] as const;
+const SHOWCASE_MEDIA = {
+  macos: { src: "/landing/showcase-mac.webp", width: 2200, height: 1359, device: "desktop" },
+  web: { src: "/landing/hero-mac.webp", width: 2000, height: 1157, device: "desktop" },
+  ios: { src: "/landing/ios.webp", width: 600, height: 1305, device: "phone" },
+} as const;
 
 const DISCORD_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19.3 5.3A16 16 0 0015.4 4l-.2.4a12 12 0 014 .9 13 13 0 00-14.6 0c1.2-.5 2.6-.8 4-.9L8.6 4a16 16 0 00-3.9 1.3C2.2 9 1.5 12.6 1.8 16.2a16 16 0 004.9 2.5l.6-1c-.5-.2-1-.4-1.5-.7l.4-.3a11.5 11.5 0 009.8 0l.4.3c-.5.3-1 .5-1.5.7l.6 1a16 16 0 004.9-2.5c.4-4.2-.7-7.8-3-11zM8.9 14.3c-1 0-1.7-.9-1.7-1.9s.8-1.9 1.7-1.9 1.8.9 1.7 1.9c0 1-.8 1.9-1.7 1.9zm6.2 0c-1 0-1.7-.9-1.7-1.9s.8-1.9 1.7-1.9 1.8.9 1.7 1.9c0 1-.8 1.9-1.7 1.9z"/></svg>`;
 const CHECK_SVG = `<svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>`;
@@ -85,6 +103,7 @@ const PLUS_SVG = `<svg class="pm" viewBox="0 0 24 24" fill="none" stroke="curren
 
 const c = landingCopy;
 const waitlistEnabled = process.env.NEXT_PUBLIC_BETA_WAITLIST_ENABLED === "1";
+const showcasePlatforms = [...c.showcase.desktop, c.showcase.ios];
 
 const navHtml = `
 <nav class="nav">
@@ -129,35 +148,6 @@ const howItWorksHtml = `
   </div>
 </section>`;
 
-const sheet = c.spreadsheet;
-const spreadsheetHtml = `
-<section class="block sheet-section" id="dlaczego-nie-arkusz">
-  <div class="wrap">
-    <div class="sheet-grid">
-      <div class="sheet-lead reveal">
-        <div class="sec-num">${sheet.eyebrow}</div>
-        <h2 class="sec-title">${sheet.title}</h2>
-        <p class="sec-desc">${sheet.desc}</p>
-        <div class="sheet-proof">
-          <h3>${sheet.lead.title}</h3>
-          <p>${sheet.lead.desc}</p>
-        </div>
-      </div>
-      <div class="sheet-cards">
-        ${sheet.items
-          .map(
-            (item, i) => `<article class="sheet-card sheet-card-${i + 1} reveal">
-          <span>${String(i + 1).padStart(2, "0")}</span>
-          <h3>${item.title}</h3>
-          <p>${item.desc}</p>
-        </article>`,
-          )
-          .join("\n        ")}
-      </div>
-    </div>
-  </div>
-</section>`;
-
 const featuresHtml = `
 <section class="block" id="funkcje">
   <div class="wrap">
@@ -185,64 +175,72 @@ const featuresHtml = `
 </section>`;
 
 const showcaseHtml = `
-<div class="showcase">
+<section class="platform-showcase" id="aplikacje">
   <div class="wrap">
-    ${c.showcase
-      .map((row, i) => {
-        const media = SHOWCASE_MEDIA[i] ?? SHOWCASE_MEDIA[0];
-        const points = row.points
-          .map((p) => `<div class="li">${CHECK_SVG}${p}</div>`)
-          .join("\n          ");
-        const art =
-          media.frame === "iphone"
-            ? `<div class="iphone">
-          <div class="island"></div>
-          <div class="screen">
-            <img class="ph-shot" src="${media.src}" width="${media.width}" height="${media.height}" loading="lazy" decoding="async" alt="${row.imageAlt}"/>
-          </div>
-        </div>`
-            : `<div class="macwin" style="margin-top:0;width:100%;">
-          <img class="mac-shot" src="${media.src}" width="${media.width}" height="${media.height}" loading="lazy" decoding="async" alt="${row.imageAlt}"/>
-        </div>`;
-        return `<div class="show-row${i % 2 === 1 ? " flip" : ""}">
-      <div class="show-copy reveal">
-        <div class="kicker">${row.kicker}</div>
-        <h3>${row.title}</h3>
-        <p>${row.desc}</p>
-        <div class="show-list">
-          ${points}
+    <header class="platform-showcase-head reveal">
+      <div>
+        <div class="kicker">${c.showcase.eyebrow}</div>
+        <h2>${c.showcase.title}</h2>
+      </div>
+      <div>
+        <p>${c.showcase.desc}</p>
+        <div class="platform-promise"><span></span> Jeden model danych na każdym ekranie</div>
+      </div>
+    </header>
+
+    <article class="platform-stage reveal" data-platform-gallery>
+      <div class="platform-stage-bar">
+        <div class="platform-stage-brand"><span class="platform-stage-mark">Z</span><span>Zecca</span><small>jeden portfel</small></div>
+        <div class="platform-tabs" role="tablist" aria-label="Wybierz platformę Zecca">
+          ${showcasePlatforms
+            .map(
+              (screen, index) => `<button type="button" role="tab" id="platform-tab-${screen.id}" aria-controls="platform-panel-${screen.id}" aria-selected="${index === 0 ? "true" : "false"}" tabindex="${index === 0 ? "0" : "-1"}" data-platform-target="${screen.id}"><span>${String(index + 1).padStart(2, "0")}</span>${screen.tab}</button>`,
+            )
+            .join("")}
+        </div>
+        <div class="platform-sync"><span></span> Sync</div>
+      </div>
+
+      <div class="platform-stage-main">
+        <div class="platform-visual">
+          <div class="platform-orbit" aria-hidden="true"></div>
+          <div class="platform-visual-label"><span>Podgląd produktu</span><strong>macOS · Web · iOS</strong></div>
+          ${showcasePlatforms
+            .map((screen, index) => {
+              const media = SHOWCASE_MEDIA[screen.id];
+              const preview =
+                media.device === "phone"
+                  ? `<div class="phone-preview"><div class="iphone" aria-label="Podgląd aplikacji Zecca na iPhonie"><div class="island"></div><div class="screen"><img class="ph-shot" src="${media.src}" width="${media.width}" height="${media.height}" loading="lazy" decoding="async" alt="${screen.imageAlt}" /></div></div><span class="phone-preview-note">Najważniejsze dane<br />zawsze pod ręką</span></div>`
+                  : `<div class="desktop-preview"><div class="desktop-preview-chrome"><span></span><span></span><span></span><small>${screen.id === "web" ? "app.zecca.pl" : "Zecca dla macOS"}</small></div><img src="${media.src}" width="${media.width}" height="${media.height}" loading="lazy" decoding="async" alt="${screen.imageAlt}" /></div>`;
+              return `<figure id="platform-panel-${screen.id}" role="tabpanel" aria-labelledby="platform-tab-${screen.id}" data-platform-panel="${screen.id}" data-device="${media.device}"${index === 0 ? "" : " hidden"}>${preview}</figure>`;
+            })
+            .join("\n          ")}
+          <div class="platform-data-chip"><span>${CHECK_SVG}</span><div><strong>Ten sam portfel</strong><small>Spójne dane i historia</small></div></div>
+        </div>
+
+        <div class="platform-stories">
+          ${showcasePlatforms
+            .map(
+              (screen, index) => `<div class="platform-story" data-platform-copy="${screen.id}"${index === 0 ? "" : " hidden"}>
+            <div class="platform-story-index">${String(index + 1).padStart(2, "0")} <span>/ 03</span></div>
+            <div class="kicker">${screen.kicker}</div>
+            <h3>${screen.title}</h3>
+            <p>${screen.desc}</p>
+            <div class="show-list">
+              ${screen.points.map((point) => `<div class="li">${CHECK_SVG}${point}</div>`).join("\n              ")}
+            </div>
+          </div>`,
+            )
+            .join("\n          ")}
         </div>
       </div>
-      <div class="show-art reveal">
-        ${art}
+
+      <div class="platform-stage-foot" aria-label="Wspólne cechy platform">
+        <span><strong>01</strong> Jedna historia transakcji</span>
+        <span><strong>02</strong> Te same metryki i wyniki</span>
+        <span><strong>03</strong> Widok dopasowany do urządzenia</span>
       </div>
-    </div>`;
-      })
-      .join("\n    ")}
-  </div>
-</div>`;
-
-const privacyHtml = `
-<section class="block privacy" id="prywatnosc">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <div class="sec-num">${c.privacy.eyebrow}</div>
-      <h2 class="sec-title">${c.privacy.title}</h2>
-      <p class="sec-desc">${c.privacy.desc}</p>
-    </div>
-
-    <div class="priv-grid">
-      ${c.privacy.cards
-        .map(
-          (card, i) => `<div class="priv-card reveal">
-        <div class="ic">${PRIVACY_ICONS[i] ?? PRIVACY_ICONS[0]}</div>
-        <h3>${card.title}</h3>
-        <p>${card.desc}</p>
-      </div>`,
-        )
-        .join("\n      ")}
-    </div>
-    <p class="priv-foot">${c.privacy.footnote}</p>
+    </article>
   </div>
 </section>`;
 
@@ -266,6 +264,55 @@ const investorHtml = `
         )
         .join("\n      ")}
     </div>
+  </div>
+</section>`;
+
+const cmp = c.comparison;
+const comparisonHtml = `
+<section class="block compare-section" id="porownanie">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="sec-num">${cmp.eyebrow}</div>
+      <h2 class="sec-title">${cmp.title}</h2>
+      <p class="sec-desc">${cmp.desc}</p>
+    </div>
+
+    <div class="compare-scroll reveal">
+      <table class="compare-table">
+        <colgroup>
+          <col class="compare-col-label" />
+          ${cmp.columns.map((_, i) => `<col class="${i === 0 ? "compare-us" : ""}" />`).join("\n          ")}
+        </colgroup>
+        <thead>
+          <tr>
+            <th scope="col" class="compare-col-label"><span class="sr-only">Kryterium</span></th>
+            ${cmp.columns
+              .map(
+                (col, i) =>
+                  `<th scope="col" class="${i === 0 ? "compare-us" : ""}">${i === 0 ? '<span class="compare-tag">Polecane</span>' : ""}${col}</th>`,
+              )
+              .join("\n            ")}
+          </tr>
+        </thead>
+        <tbody>
+          ${cmp.rows
+            .map(
+              (row, r) => `<tr>
+            <th scope="row" class="compare-col-label">
+              <span class="compare-row-label">
+                <span class="compare-row-ic">${COMPARE_ROW_ICONS[r] ?? ""}</span>
+                <span>${row.label}</span>
+              </span>
+            </th>
+            ${row.values.map((value, i) => `<td class="${i === 0 ? "compare-us" : ""}">${value}</td>`).join("\n            ")}
+          </tr>`,
+            )
+            .join("\n          ")}
+        </tbody>
+      </table>
+    </div>
+    <p class="compare-hint">Przesuń w bok, aby zobaczyć wszystkie kolumny →</p>
+    <p class="compare-foot">${cmp.footnote}</p>
   </div>
 </section>`;
 
@@ -299,7 +346,7 @@ const betaListHtml = `
         ${beta.points.map((point) => `<li>${CHECK_SVG}${point}</li>`).join("\n        ")}
       </ul>
     </div>
-    <form class="beta-waitlist-form reveal" id="betaWaitlistForm" data-provider="airtable" data-enabled="${waitlistEnabled ? "true" : "false"}" data-status="${waitlistEnabled ? "ready" : "planned"}" aria-describedby="beta-waitlist-note beta-waitlist-status" novalidate>
+    <form class="beta-waitlist-form reveal" id="betaWaitlistForm" data-provider="airtable" data-enabled="${waitlistEnabled ? "true" : "false"}" data-status="${waitlistEnabled ? "ready" : "planned"}" aria-describedby="beta-waitlist-status" novalidate>
       <div class="field">
         <label for="beta-email">${beta.form.emailLabel}</label>
         <input id="beta-email" name="email" type="email" placeholder="${beta.form.emailPlaceholder}" autocomplete="email"${waitlistEnabled ? "" : " disabled"} />
@@ -313,7 +360,6 @@ const betaListHtml = `
         <span>${beta.form.consentLabel}</span>
       </label>
       <button type="submit" class="btn btn-brand btn-lg"${waitlistEnabled ? "" : " disabled"}>${waitlistEnabled ? beta.form.submit : beta.form.disabledSubmit}</button>
-      <p id="beta-waitlist-note">${waitlistEnabled ? beta.form.noteEnabled : beta.form.noteDisabled}</p>
       <p class="beta-waitlist-status" id="beta-waitlist-status" role="status" aria-live="polite"
         data-success="${beta.form.success}"
         data-error="${beta.form.error}"
@@ -393,14 +439,13 @@ const footerHtml = `
 export const LANDING_NAV_HTML = navHtml;
 
 export const LANDING_BODY_HTML = `
+${betaListHtml}
 ${howItWorksHtml}
-${spreadsheetHtml}
 ${featuresHtml}
 ${showcaseHtml}
-${privacyHtml}
 ${investorHtml}
+${comparisonHtml}
 ${faqHtml}
-${betaListHtml}
 ${feedbackHtml}
 ${footerHtml}
 `;
