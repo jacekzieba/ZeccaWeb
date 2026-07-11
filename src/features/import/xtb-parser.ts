@@ -425,6 +425,16 @@ export function parseXtbXlsx(
     }
   }
 
+  // Surface interest taxes that never paired with an interest row (parity with
+  // native's final taxesByDay sweep).
+  for (const [, list] of taxesByDay) {
+    for (const entry of list) {
+      if (consumedTax.has(entry.idx)) continue;
+      const r = cashRows[entry.idx];
+      warnings.push(`Wiersz ${r.rowIndex}: ${r.typeRaw} bez pary — pominięto`);
+    }
+  }
+
   return {
     kind: "transaction",
     rows: txRows,

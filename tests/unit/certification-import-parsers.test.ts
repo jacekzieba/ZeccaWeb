@@ -172,6 +172,16 @@ describe("certification import parity", () => {
     expect(hasDuplicated).toBe(false);
   });
 
+  it("XTB: warns about an interest tax with no matching interest", () => {
+    const rows: unknown[][] = [
+      ["ID", "Type", "Time", "Ticker", "Instrument", "Comment", "Amount"],
+      [200001, "IKE Deposit", new Date("2026-01-05T10:00:00Z"), "", "", "Deposit", 1000],
+      [200002, "Free funds interest tax", new Date("2026-05-01T10:00:00Z"), "", "", "Interest tax", -1.9],
+    ];
+    const preview = parseXtbXlsx(rows, PORTFOLIO, references);
+    expect(preview.warnings.some((w) => w.includes("bez pary"))).toBe(true);
+  });
+
   it("PKO: buys + synthetic funding + early redemption with fee + interest + withdrawal", () => {
     const preview = parsePkoBondsXls(PKO_ROWS, PORTFOLIO, references);
     expect(preview.errorRows).toHaveLength(0);
