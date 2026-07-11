@@ -91,7 +91,7 @@ const headerAliases: Record<string, string> = {
 
 export type ImportReferenceData = {
   portfolios: { id: string; name: string }[];
-  instruments: { id: string; symbol: string; name: string }[];
+  instruments: { id: string; symbol: string; name: string; currency: string }[];
   existingTransactionIds: Set<string>;
   existingManualValuationIds: Set<string>;
 };
@@ -147,7 +147,7 @@ export function buildImportReferenceData(
   records: DecryptedRecord[] | null,
 ): ImportReferenceData {
   const portfolios = new Map<string, { id: string; name: string }>();
-  const instruments = new Map<string, { id: string; symbol: string; name: string }>();
+  const instruments = new Map<string, { id: string; symbol: string; name: string; currency: string }>();
   const existingTransactionIds = new Set<string>();
   const existingManualValuationIds = new Set<string>();
 
@@ -166,12 +166,14 @@ export function buildImportReferenceData(
         id?: string;
         symbol?: string;
         name?: string;
+        currency?: string;
       };
       if (payload.id && payload.symbol && payload.name) {
         instruments.set(payload.id, {
           id: payload.id,
           symbol: payload.symbol,
           name: payload.name,
+          currency: payload.currency ?? "PLN",
         });
       }
     }

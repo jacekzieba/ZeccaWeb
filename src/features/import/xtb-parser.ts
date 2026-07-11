@@ -177,12 +177,16 @@ export function parseXtbXlsx(
   const consumedTax = new Set<number>();
 
   // Instrument resolver — tries known instruments first, falls back to creating new ones
-  const instrumentCache = new Map<string, string>(); // ticker → instrumentID
+  const instrumentCache = new Map<string, { id: string; currency: string }>(); // ticker → instrument
   const newInstrumentPayloads: WriteRecordPayload[] = [];
 
-  function resolveOrCreateInstrument(ticker: string, name: string): string {
+  function resolveOrCreateInstrument(
+    ticker: string,
+    name: string,
+  ): { id: string; currency: string } {
     const upper = ticker.toUpperCase();
-    if (instrumentCache.has(upper)) return instrumentCache.get(upper)!;
+    const cached = instrumentCache.get(upper);
+    if (cached) return cached;
 
     // Try known instruments (exact match, then base ticker without exchange suffix)
     const base = upper.split(".")[0];
@@ -190,11 +194,14 @@ export function parseXtbXlsx(
       references.instruments.find((i) => i.symbol.toUpperCase() === upper) ??
       references.instruments.find((i) => i.symbol.toUpperCase() === base);
     if (known) {
-      instrumentCache.set(upper, known.id);
-      return known.id;
+      const resolved = { id: known.id, currency: known.currency };
+      instrumentCache.set(upper, resolved);
+      return resolved;
     }
 
-    // Create a new provisional instrument
+    // Create a new provisional instrument. Its currency is unknown from the XTB
+    // export alone ("?"); a non-PLN marker still lets the buy/sell path capture
+    // the observed FX rate so the PLN cost is preserved.
     const newId = crypto.randomUUID();
     const kind = guessKind(upper);
     const exchange = upper.includes(".") ? upper.split(".").pop() : undefined;
@@ -210,8 +217,9 @@ export function parseXtbXlsx(
       isin: null,
       category: null,
     });
-    instrumentCache.set(upper, newId);
-    return newId;
+    const resolved = { id: newId, currency: "?" };
+    instrumentCache.set(upper, resolved);
+    return resolved;
   }
 
   const txRows: TransactionImportRow[] = [];
@@ -234,7 +242,7 @@ export function parseXtbXlsx(
         continue;
       }
 
-      const instrumentId = resolveOrCreateInstrument(r.ticker, r.instrumentName);
+      const { id: instrumentId, currency } = resolveOrCreateInstrument(r.ticker, r.instrumentName);
       const tickerKey = r.ticker.toUpperCase();
 
       // Attach nearest commission within 5 minutes
@@ -254,7 +262,15 @@ export function parseXtbXlsx(
       }
       if (bestCommIdx !== null) consumedCommission.add(bestCommIdx);
 
-      const grossAmount = parsed.quantity * parsed.price;
+      // The comment gives quantity/price in the instrument's own currency; the
+      // Amount column is the PLN cash impact. For a non-PLN instrument the FX
+      // rate is the ratio of the two, so grossAmount and fees stay in native
+      // currency and grossAmount × fxRateToBase recovers the PLN amount (parity
+      // with the native XTBImporter). PLN instruments keep fx = 1 implicitly.
+      const grossNative = parsed.quantity * parsed.price;
+      const observedFx = grossNative > 0 ? Math.abs(r.amount) / grossNative : 0;
+      const fxRateToBase = currency !== "PLN" && observedFx > 0 ? observedFx : undefined;
+      const fees = fxRateToBase ? feesInPLN / fxRateToBase : feesInPLN;
       const id = crypto.randomUUID();
       const payload = {
         id,
@@ -265,10 +281,11 @@ export function parseXtbXlsx(
         transactionType: isSell ? "sell" : "buy",
         quantity: parsed.quantity,
         price: parsed.price,
-        grossAmount,
-        currency: "PLN",
-        fees: feesInPLN,
+        grossAmount: grossNative,
+        currency,
+        fees,
         taxes: 0,
+        ...(fxRateToBase ? { fxRateToBase } : {}),
         ...(r.externalId ? { externalImportID: r.externalId } : {}),
         note: r.comment,
       };
@@ -276,7 +293,7 @@ export function parseXtbXlsx(
 
     } else if (t.includes("dividend")) {
       if (!r.ticker) continue;
-      const instrumentId = resolveOrCreateInstrument(r.ticker, r.instrumentName);
+      const { id: instrumentId } = resolveOrCreateInstrument(r.ticker, r.instrumentName);
       const id = crypto.randomUUID();
       const payload = {
         id,
