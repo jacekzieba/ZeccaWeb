@@ -60,6 +60,26 @@ function guessKind(ticker: string): string {
   return "etf";
 }
 
+// Exchange suffixes whose trading currency is unambiguous. `.UK` and `.IE` are
+// deliberately excluded — a `.UK` listing can be USD (CSPX.UK) or GBP (IEML.UK),
+// so a suffix guess there would silently mislabel the currency.
+const EXCHANGE_CURRENCY: Record<string, string> = {
+  DE: "EUR",
+  NL: "EUR",
+  FR: "EUR",
+  IT: "EUR",
+  ES: "EUR",
+  US: "USD",
+  PL: "PLN",
+};
+
+// Dividend comments carry the instrument's own currency, e.g.
+// "CSPX.UK USD 10.5/SHR" — capture the ISO code preceding the per-share amount.
+function harvestDividendCurrency(comment: string): string | null {
+  const m = /\b([A-Za-z]{3})\s+[\d.]+\s*\/\s*SHR\b/i.exec(comment);
+  return m ? m[1].toUpperCase() : null;
+}
+
 export type XtbImportPreview = TransactionImportPreview & {
   newInstrumentPayloads: WriteRecordPayload[];
   warnings: string[];
@@ -176,6 +196,16 @@ export function parseXtbXlsx(
   }
   const consumedTax = new Set<number>();
 
+  // Pre-pass: harvest each ticker's currency from its dividend comment. Dividend
+  // rows can appear after the buy/sell for the same ticker, so this must run
+  // before instrument resolution.
+  const dividendCurrencyByTicker = new Map<string, string>();
+  for (const r of cashRows) {
+    if (!r.type.includes("dividend") || !r.ticker) continue;
+    const ccy = harvestDividendCurrency(r.comment);
+    if (ccy) dividendCurrencyByTicker.set(r.ticker.toUpperCase(), ccy);
+  }
+
   // Instrument resolver — tries known instruments first, falls back to creating new ones
   const instrumentCache = new Map<string, { id: string; currency: string }>(); // ticker → instrument
   const newInstrumentPayloads: WriteRecordPayload[] = [];
@@ -199,25 +229,36 @@ export function parseXtbXlsx(
       return resolved;
     }
 
-    // Create a new provisional instrument. Its currency is unknown from the XTB
-    // export alone ("?"); a non-PLN marker still lets the buy/sell path capture
-    // the observed FX rate so the PLN cost is preserved.
+    // Create a new provisional instrument. The XTB export doesn't state the
+    // instrument's currency directly, so resolve it best-effort: harvested
+    // dividend currency first (most reliable — it's XTB's own data), then an
+    // unambiguous exchange suffix. If neither applies, keep the "?" placeholder
+    // and warn — never guess. A non-PLN currency (including "?") still lets the
+    // buy/sell path capture the observed FX rate, so the PLN cost is preserved.
+    const exchange = upper.includes(".") ? upper.split(".").pop() : undefined;
+    const currency =
+      dividendCurrencyByTicker.get(upper) ??
+      (exchange ? EXCHANGE_CURRENCY[exchange] : undefined) ??
+      "?";
+    if (currency === "?") {
+      warnings.push(`Instrument ${upper}: nie ustalono waluty (zagraniczny) — ustaw ręcznie`);
+    }
+
     const newId = crypto.randomUUID();
     const kind = guessKind(upper);
-    const exchange = upper.includes(".") ? upper.split(".").pop() : undefined;
     newInstrumentPayloads.push({
       id: newId,
       recordType: "asset",
       kind,
       symbol: upper,
       name: name || upper,
-      currency: "?",
+      currency,
       exchange: exchange ?? null,
       country: null,
       isin: null,
       category: null,
     });
-    const resolved = { id: newId, currency: "?" };
+    const resolved = { id: newId, currency };
     instrumentCache.set(upper, resolved);
     return resolved;
   }
