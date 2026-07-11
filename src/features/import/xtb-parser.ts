@@ -10,6 +10,7 @@
 
 import type { ImportReferenceData, TransactionImportPreview, TransactionImportRow } from "./import-parser";
 import type { WriteRecordPayload } from "@/sync/records/record-writer";
+import type { EtfCatalog } from "./etf-catalog";
 
 const APPLE_REFERENCE_DATE_UNIX_MS = Date.UTC(2001, 0, 1);
 
@@ -83,15 +84,22 @@ function harvestDividendCurrency(comment: string): string | null {
 export type XtbImportPreview = TransactionImportPreview & {
   newInstrumentPayloads: WriteRecordPayload[];
   warnings: string[];
+  /**
+   * Observed FX (|Amount| / (qty × price)) and date for each newly created
+   * instrument whose currency stayed "?" — the input for the async FX-inference
+   * phase (D2) that resolves the settlement currency from NBP rates.
+   */
+  fxObservations: { symbol: string; fxObserved: number; date: string }[];
 };
 
 export function parseXtbXlsx(
   rows: unknown[][],
   portfolioId: string,
   references: ImportReferenceData,
+  options?: { catalog?: EtfCatalog },
 ): XtbImportPreview {
   if (rows.length < 2) {
-    return { kind: "transaction", rows: [], validRows: [], errorRows: [], newInstrumentPayloads: [], warnings: [] };
+    return { kind: "transaction", rows: [], validRows: [], errorRows: [], newInstrumentPayloads: [], warnings: [], fxObservations: [] };
   }
 
   // Find the header row (contains "Type")
@@ -123,10 +131,13 @@ export function parseXtbXlsx(
       errorRows: [{ rowNumber: 1, values: {}, payload: null, errors: ["Brak wymaganych kolumn: Type, Time, Amount"], warnings: [] }],
       newInstrumentPayloads: [],
       warnings: [],
+      fxObservations: [],
     };
   }
 
   const warnings: string[] = [];
+  // Observed FX per unresolved ("?") instrument, for the async D2 phase.
+  const fxObservations = new Map<string, { fxObserved: number; date: string }>();
 
   // Parse raw rows
   const cashRows: CashRow[] = [];
@@ -244,6 +255,10 @@ export function parseXtbXlsx(
       warnings.push(`Instrument ${upper}: nie ustalono waluty (zagraniczny) — ustaw ręcznie`);
     }
 
+    // Enrich identity (ISIN, name, domicile) from the ETF catalog when
+    // available. Currency is NOT taken from the catalog — its currency column is
+    // the fund's base currency, not the settlement currency (see etf-catalog).
+    const enrich = options?.catalog?.lookup(upper) ?? null;
     const newId = crypto.randomUUID();
     const kind = guessKind(upper);
     newInstrumentPayloads.push({
@@ -251,11 +266,11 @@ export function parseXtbXlsx(
       recordType: "asset",
       kind,
       symbol: upper,
-      name: name || upper,
+      name: name || enrich?.name || upper,
       currency,
       exchange: exchange ?? null,
-      country: null,
-      isin: null,
+      country: enrich?.domicile ?? null,
+      isin: enrich?.isin ?? null,
       category: null,
     });
     const resolved = { id: newId, currency };
@@ -311,6 +326,11 @@ export function parseXtbXlsx(
       const grossNative = parsed.quantity * parsed.price;
       const observedFx = grossNative > 0 ? Math.abs(r.amount) / grossNative : 0;
       const fxRateToBase = currency !== "PLN" && observedFx > 0 ? observedFx : undefined;
+      // Unresolved currency: record the observed FX (first trade wins) so the
+      // async D2 phase can infer the ISO code from NBP rates on that date.
+      if (currency === "?" && observedFx > 0 && !fxObservations.has(tickerKey)) {
+        fxObservations.set(tickerKey, { fxObserved: observedFx, date: r.date.toISOString().slice(0, 10) });
+      }
       const fees = fxRateToBase ? feesInPLN / fxRateToBase : feesInPLN;
       const id = crypto.randomUUID();
       const payload = {
@@ -411,6 +431,7 @@ export function parseXtbXlsx(
     errorRows: txRows.filter((row) => row.errors.length > 0),
     newInstrumentPayloads,
     warnings,
+    fxObservations: [...fxObservations.entries()].map(([symbol, o]) => ({ symbol, ...o })),
   };
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildEtfCatalog } from "@/features/import/etf-catalog";
+import { buildEtfCatalog, loadEtfCatalog } from "@/features/import/etf-catalog";
 
 // The catalog enriches new import instruments with identity (ISIN, full name,
 // domicile). Lookup is by base ticker — XTB symbols carry an exchange suffix
@@ -27,5 +27,14 @@ describe("buildEtfCatalog lookup", () => {
 
   it("returns null for an unknown ticker", () => {
     expect(catalog.lookup("ZZZZ.XX")).toBeNull();
+  });
+});
+
+describe("loadEtfCatalog (bundled data)", () => {
+  it("loads the real catalog and resolves a known ticker by XTB symbol", async () => {
+    const cat = await loadEtfCatalog();
+    const hit = cat.lookup("VWCE.DE");
+    expect(hit?.isin).toBe("IE00BK5BQT80");
+    expect(hit?.domicile).toBe("Irlandia");
   });
 });

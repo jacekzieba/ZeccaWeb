@@ -10,6 +10,8 @@ import {
   type CsvImportPreview,
 } from "@/features/import/import-parser";
 import { parseXtbXlsx } from "@/features/import/xtb-parser";
+import { loadEtfCatalog } from "@/features/import/etf-catalog";
+import { resolveObservedCurrencies } from "@/features/import/xtb-currency-resolver";
 import { parsePkoBondsXls } from "@/features/import/pko-parser";
 import { readSpreadsheet } from "@/features/import/read-spreadsheet";
 import type { RecordType } from "@/domain/models/investor-data";
@@ -109,6 +111,20 @@ type ExtendedPreview = CsvImportPreview & {
   parserWarnings?: string[];
 };
 
+// Client-side FX lookup for the XTB currency-inference phase, via the internal
+// NBP proxy route (avoids calling NBP directly from the browser). Returns null
+// on any failure so inference simply skips that currency.
+async function fetchFxRateViaApi(code: string, date: string): Promise<number | null> {
+  try {
+    const res = await fetch(`/api/market-data/fx?code=${encodeURIComponent(code)}&date=${encodeURIComponent(date)}`);
+    if (!res.ok) return null;
+    const json = (await res.json()) as { data?: { rate?: unknown } };
+    return typeof json.data?.rate === "number" ? json.data.rate : null;
+  } catch {
+    return null;
+  }
+}
+
 export function ImportPage() {
   const records = useSyncStore((s) => s.records);
   const userDataKey = useSyncStore((s) => s.userDataKey);
@@ -153,7 +169,14 @@ export function ImportPage() {
           setError("Wybierz portfel docelowy przed importem XTB.");
           return;
         }
-        setPreview(parseXtbXlsx(rows, portfolioId, references) as ExtendedPreview);
+        const catalog = await loadEtfCatalog();
+        const xtbPreview = parseXtbXlsx(rows, portfolioId, references, { catalog });
+        // D2: resolve any currencies the parser left "?" by inferring them from
+        // the observed FX and NBP rates on the trade date.
+        if (xtbPreview.fxObservations.length > 0) {
+          await resolveObservedCurrencies(xtbPreview, fetchFxRateViaApi);
+        }
+        setPreview(xtbPreview as ExtendedPreview);
         return;
       }
 

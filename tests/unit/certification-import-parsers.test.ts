@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseXtbXlsx } from "@/features/import/xtb-parser";
+import { buildEtfCatalog } from "@/features/import/etf-catalog";
 import { parsePkoBondsXls } from "@/features/import/pko-parser";
 import type { ImportReferenceData } from "@/features/import/import-parser";
 import type { TransactionImportRow } from "@/features/import/import-parser";
@@ -133,6 +134,28 @@ describe("certification import parity", () => {
     expect(payloadCcy("VWCE.DE")).toBe("EUR");
     expect(payloadCcy("CSPX.UK")).toBe("USD");
     expect(payloadCcy("IEML.UK")).toBe("?");
+  });
+
+  it("XTB: surfaces fx observations for unresolved instruments and enriches from catalog", () => {
+    const catalog = buildEtfCatalog([
+      { ticker: "VWCE", isin: "IE00BK5BQT80", name: "Vanguard FTSE All-World", domicile: "Irlandia" },
+    ]);
+    const preview = parseXtbXlsx(XTB_ROWS, PORTFOLIO, { ...references, instruments: [] }, { catalog });
+
+    // Only IEML.UK stays "?" (no dividend, ambiguous .UK) → surfaced for the D2
+    // FX-inference phase with its observed rate and trade date.
+    const iemlObs = preview.fxObservations.find((o) => o.symbol === "IEML.UK")!;
+    expect(iemlObs.fxObserved).toBeCloseTo(5.2, 4);
+    expect(iemlObs.date).toBe("2026-03-02");
+    // Resolved instruments (VWCE via suffix, CSPX via harvest) are not surfaced.
+    expect(preview.fxObservations.some((o) => o.symbol === "VWCE.DE")).toBe(false);
+    expect(preview.fxObservations.some((o) => o.symbol === "CSPX.UK")).toBe(false);
+
+    // Catalog fills identity (ISIN, domicile) without touching the resolved currency.
+    const vwce = preview.newInstrumentPayloads.find((p) => p.symbol === "VWCE.DE") as Payload;
+    expect(vwce.isin).toBe("IE00BK5BQT80");
+    expect(vwce.country).toBe("Irlandia");
+    expect(vwce.currency).toBe("EUR");
   });
 
   it("PKO: buys + synthetic funding + early redemption with fee + interest + withdrawal", () => {
