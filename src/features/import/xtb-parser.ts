@@ -230,11 +230,14 @@ export function parseXtbXlsx(
     const cached = instrumentCache.get(upper);
     if (cached) return cached;
 
-    // Try known instruments (exact match, then base ticker without exchange suffix)
+    // Try known instruments (exact match, then base ticker without exchange suffix, then case-insensitive name)
     const base = upper.split(".")[0];
     const known =
       references.instruments.find((i) => i.symbol.toUpperCase() === upper) ??
-      references.instruments.find((i) => i.symbol.toUpperCase() === base);
+      references.instruments.find((i) => i.symbol.toUpperCase() === base) ??
+      (name
+        ? references.instruments.find((i) => i.name.toLowerCase() === name.toLowerCase())
+        : undefined);
     if (known) {
       const resolved = { id: known.id, currency: known.currency };
       instrumentCache.set(upper, resolved);

@@ -201,4 +201,24 @@ describe("certification import parity", () => {
     expect(byType.get("interest")![0].grossAmount).toBe(95);
     expect(byType.get("cashWithdrawal")![0].grossAmount).toBe(500);
   });
+
+  it("XTB: resolves a known instrument by name when the ticker differs", () => {
+    const refs: ImportReferenceData = {
+      ...references,
+      instruments: [
+        // Registered under a different symbol but the same display name.
+        { id: "99999999-9999-4999-8999-999999999999", symbol: "VWRA.UK", name: "Vanguard FTSE All-World", currency: "USD" },
+      ],
+    };
+    const rows: unknown[][] = [
+      ["ID", "Type", "Time", "Ticker", "Instrument", "Comment", "Amount"],
+      [300001, "Stock purchase", new Date("2026-01-10T10:00:00Z"), "VWCE.DE", "Vanguard FTSE All-World", "OPEN BUY 10 @ 100.00", -4500],
+    ];
+    const preview = parseXtbXlsx(rows, PORTFOLIO, refs);
+    // Matched by name → reuses the registered instrument, creates none.
+    expect(preview.newInstrumentPayloads).toHaveLength(0);
+    const buy = preview.validRows.find((r) => String((payloadOf(r) as Payload).transactionType) === "buy")!;
+    expect((payloadOf(buy) as Payload).instrumentID).toBe("99999999-9999-4999-8999-999999999999");
+    expect((payloadOf(buy) as Payload).currency).toBe("USD");
+  });
 });
