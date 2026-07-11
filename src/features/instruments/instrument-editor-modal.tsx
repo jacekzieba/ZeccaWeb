@@ -12,6 +12,8 @@ import {
 import { useSyncStore } from "@/sync/store/sync-store";
 import { refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
 import { makeAssetPayload } from "@/sync/records/macos-payloads";
+import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
+import { isFakeSyncEnabled } from "@/lib/env";
 import type { InstrumentCandidate } from "@/market-data/types";
 
 const SEARCH_DEBOUNCE_MS = 350;
@@ -106,6 +108,7 @@ export function InstrumentEditorModal({
 }) {
   const userDataKey = useSyncStore((s) => s.userDataKey);
   const supabase = useSyncStore((s) => s.supabase);
+  const records = useSyncStore((s) => s.records);
   const setSync = useSyncStore((s) => s.setSync);
   const [mounted, setMounted] = useState(false);
   const [symbol, setSymbol] = useState("");
@@ -230,23 +233,20 @@ export function InstrumentEditorModal({
         category: category.trim() || null,
         updatedAt: new Date().toISOString(),
       };
-      const result = await saveRecord(
-        supabase,
-        userDataKey,
-        "asset",
-        makeAssetPayload({
-          id: savedInstrument.id,
-          kind: savedInstrument.kind,
-          symbol: savedInstrument.symbol,
-          name: savedInstrument.name,
-          currency: savedInstrument.currency,
-          category: savedInstrument.category,
-        }),
-        { baseUpdatedAt: initialValue?.updatedAt ?? null },
-      );
-      if (!result.queued) {
-        const { records, snapshot } = await refreshSyncStore(supabase, userDataKey);
-        setSync(records, snapshot);
+      const payload = makeAssetPayload({ id: savedInstrument.id, kind: savedInstrument.kind, symbol: savedInstrument.symbol, name: savedInstrument.name, currency: savedInstrument.currency, category: savedInstrument.category });
+      if (isFakeSyncEnabled() && records) {
+        const now = new Date().toISOString();
+        const nextRecords = [
+          ...records.filter((record) => record.id !== id),
+          { id, deviceId: "fake-sync-web", updatedAt: now, deletedAt: null, envelope: { type: "asset" as const, payloadVersion: 1, schemaVersion: 1, payload } },
+        ];
+        setSync(nextRecords, buildInvestorDataSnapshot(nextRecords, { asOf: new Date(), historyGranularity: "daily", useLatestTransactionFxRate: true, useMarketQuotes: true }));
+      } else {
+        const result = await saveRecord(supabase, userDataKey, "asset", payload, { baseUpdatedAt: initialValue?.updatedAt ?? null });
+        if (!result.queued) {
+          const { records, snapshot } = await refreshSyncStore(supabase, userDataKey);
+          setSync(records, snapshot);
+        }
       }
       onSaved?.(savedInstrument);
       onClose();

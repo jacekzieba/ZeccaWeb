@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useMemo, useState, type CSSProperties } from "react";
 import { PortfolioEditorModal } from "@/features/portfolios/portfolio-editor-modal";
 import { deleteRecord, refreshSyncStore } from "@/sync/records/record-writer";
+import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
+import { isFakeSyncEnabled } from "@/lib/env";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
 import { useProfile } from "@/features/profile/profile-store";
@@ -105,6 +107,11 @@ export function PortfolioListPage() {
     setDeletingId(id);
 
     try {
+      if (isFakeSyncEnabled()) {
+        const nextRecords = records.filter((record) => record.id !== id);
+        setSync(nextRecords, buildInvestorDataSnapshot(nextRecords, { asOf: new Date(), historyGranularity: "daily", useLatestTransactionFxRate: true, useMarketQuotes: true }));
+        return;
+      }
       const sourceRecord = records.find(
         (record) =>
           !record.deletedAt &&

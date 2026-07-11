@@ -33,7 +33,8 @@ import {
   makeTransactionPayload,
   swiftReferenceSeconds,
 } from "@/sync/records/macos-payloads";
-import { buildPortfolioDetail } from "@/sync/records/investor-snapshot";
+import { buildInvestorDataSnapshot, buildPortfolioDetail } from "@/sync/records/investor-snapshot";
+import { isFakeSyncEnabled } from "@/lib/env";
 import { TYPOGRAPHY } from "@/lib/design-tokens";
 import { parseAmount } from "@/lib/parse-amount";
 import { V2, v2Mix } from "@/lib/v2-design";
@@ -794,17 +795,45 @@ export function AddTransactionModal({
         price: priceValue,
       });
 
-      const result = await saveRecord(
-        supabase,
-        userDataKey,
-        "transaction",
-        payload,
-        { baseUpdatedAt: initialValue?.updatedAt ?? null },
-      );
+      if (isFakeSyncEnabled() && records) {
+        const now = new Date().toISOString();
+        const nextRecords = [
+          ...records.filter((record) => record.id !== id),
+          {
+            id,
+            deviceId: "fake-sync-web",
+            updatedAt: now,
+            deletedAt: null,
+            envelope: {
+              type: "transaction" as const,
+              payloadVersion: 1,
+              schemaVersion: 1,
+              payload,
+            },
+          },
+        ];
+        setSync(
+          nextRecords,
+          buildInvestorDataSnapshot(nextRecords, {
+            asOf: new Date(),
+            historyGranularity: "daily",
+            useLatestTransactionFxRate: true,
+            useMarketQuotes: true,
+          }),
+        );
+      } else {
+        const result = await saveRecord(
+          supabase,
+          userDataKey,
+          "transaction",
+          payload,
+          { baseUpdatedAt: initialValue?.updatedAt ?? null },
+        );
 
-      if (!result.queued) {
-        const { records: newRecords, snapshot } = await refreshSyncStore(supabase, userDataKey);
-        setSync(newRecords, snapshot);
+        if (!result.queued) {
+          const { records: newRecords, snapshot } = await refreshSyncStore(supabase, userDataKey);
+          setSync(newRecords, snapshot);
+        }
       }
 
       if (!initialValue) {

@@ -5,8 +5,9 @@ const expandCategory = (page: Page, name: string) =>
 
 test("portfolio detail customize toggles, resizes and persists per its own key", async ({ page }) => {
   await page.goto("/portfolios");
-  // Navigate into the first portfolio detail.
-  await page.getByRole("main").locator("a[href^='/portfolios/']").first().click();
+  // Wait for fake-sync to hydrate, then use a named portfolio rather than the
+  // first matching link (which can be a transient shell link during hydration).
+  await page.getByRole("main").getByRole("link", { name: "IKE · długi termin" }).click();
   await expect(page).toHaveURL(/\/portfolios\/.+/);
 
   const main = page.getByRole("main");
