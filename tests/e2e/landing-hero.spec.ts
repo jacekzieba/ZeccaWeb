@@ -3,17 +3,26 @@ import { expect, test } from "@playwright/test";
 test("renders an interactive product hero without submitting the beta waitlist", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: "Wszystkie Twoje inwestycje, czytane jak rocznik finansowy." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Wszystkie Twoje inwestycje w jednym miejscu" })).toBeVisible();
   await expect(page.locator(".product-card")).toHaveCount(3);
   await expect(page.locator(".trust-item")).toHaveCount(4);
-  await expect(page.getByRole("heading", { name: "Od historii transakcji do spokojnego obrazu majątku." })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Arkusz jest dobry na start. Potem zaczyna ukrywać błędy." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Zecca prezentuje dane i wykresy dotyczące wszystkich Twoich inwestycji" })).toBeVisible();
   await expect(page.locator(".process-step")).toHaveCount(3);
-  await expect(page.locator(".sheet-card")).toHaveCount(5);
+  await expect(page.getByRole("heading", { name: "Ten sam portfel. Dokładnie tam, gdzie go potrzebujesz." })).toBeVisible();
+  await expect(page.locator("[data-platform-panel]")).toHaveCount(3);
+  const webTab = page.getByRole("tab", { name: "Web" });
+  await webTab.click();
+  await expect(webTab).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator('[data-platform-panel="web"]')).toBeVisible();
+  const iosTab = page.getByRole("tab", { name: "iOS" });
+  await iosTab.click();
+  await expect(iosTab).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator('[data-platform-panel="ios"] .iphone')).toBeVisible();
 
   const range = page.getByRole("radio", { name: "1R" });
   await range.click();
   await expect(range).toHaveAttribute("aria-checked", "true");
+  await expect(page.locator('.static-vvd-chart svg')).toHaveAttribute("data-chart-range", "1Y");
 
   const waitlistRequests: string[] = [];
   page.on("request", (request) => {
@@ -32,12 +41,10 @@ test("renders an interactive product hero without submitting the beta waitlist",
     await expect(betaSection.getByRole("button", { name: "Dołącz do listy" })).toBeEnabled();
     await expect(emailField).toBeEnabled();
     await expect(consentField).toBeEnabled();
-    await expect(betaSection.getByText("Zapis trafia do listy beta.")).toBeVisible();
   } else {
     await expect(betaSection.getByRole("button", { name: "Wkrótce" })).toBeDisabled();
     await expect(emailField).toBeDisabled();
     await expect(consentField).toBeDisabled();
-    await expect(betaSection.getByText("Zapisy nie są jeszcze aktywne.")).toBeVisible();
   }
   // The hero now leads with App Store / Mac App Store badges instead of an inline
   // waitlist field; they point at the beta section and submit nothing.

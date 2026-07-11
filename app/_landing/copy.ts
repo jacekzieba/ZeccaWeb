@@ -17,10 +17,9 @@ export const landingCopy = {
   // ── Górna nawigacja ───────────────────────────────────────────────────────
   nav: {
     links: [
-      { label: "Jak działa", href: "#jak-dziala" },
+      { label: "Działanie", href: "#jak-dziala" },
       { label: "Funkcje", href: "#funkcje" },
-      { label: "Prywatność", href: "#prywatnosc" },
-      { label: "FAQ", href: "/faq" },
+      { label: "Beta", href: "/faq" },
       { label: "Lista beta", href: "#lista-beta" },
     ],
     login: { label: "Zaloguj się", href: "/login" },
@@ -28,87 +27,53 @@ export const landingCopy = {
 
   // ── Sekcja główna (hero) ──────────────────────────────────────────────────
   hero: {
-    betaBanner:
-      "Trwają beta testy. Aplikacja jest w pełni używalna, ale&nbsp;<b>mogą zdarzyć się błędy</b>.",
-    eyebrow: "Natywnie na macOS i iOS",
-    title: "Wszystkie Twoje inwestycje, <em>czytane</em> jak rocznik finansowy.",
-    lede: "Zecca prowadzi Twoje portfele: <b>IKE, IKZE, akcje, ETF-y, obligacje skarbowe i lokaty</b>, lokalnie i prywatnie. Wielkie, czytelne liczby zamiast zimnego dashboardu. Kursy z NBP, inflacja z GUS, pełna historia liczona od pierwszej transakcji.",
+    betaBanner: "Trwają beta testy, które mają na celu eliminację ewentualnych błędów.",
+    eyebrow: "Natywnie na macOS i iOS oraz przez przeglądarkę",
+    title: "Wszystkie Twoje inwestycje w jednym miejscu",
+    lede: "W aplikacji Zecca możesz śledzić swoje portfele inwestycyjne oraz monitorować wartość Twoich akcji, ETF-ów, obligacji i innych aktywów. Program samodzielnie przelicza całą historię Twoich inwestycji.",
     ctaPrimary: "Dołącz do listy beta",
     ctaPrimaryHref: "#lista-beta",
     // Realne wejścia silnika — krótki „stempel" pod ledem, nie ozdoba.
-    sources: ["Kursy NBP", "Inflacja GUS", "FIFO", "XIRR / TWR"],
+    sources: ["Kursy NBP", "Inflacja GUS", "XIRR / TWR"],
     proof:
-      "Sześć klas aktywów, konta <b>IKE</b> i <b>IKZE</b>, obligacje skarbowe i lokaty — liczone tym samym silnikiem co aplikacje na macOS i iOS. Zgodność co do grosza potwierdzają <b>wektory testowe</b>.",
+      "Monitoruj swój główny portfel inwestycyjny oraz konta&nbsp;<b>IKE</b> i <b>IKZE.</b>",
     storeBadges: [
       { top: "Pobierz w", main: "App Store", soon: "wkrótce" },
-      { top: "Pobierz w", main: "Mac App Store", soon: "wkrótce" },
+      { top: "Pobierz w", main: "Mac App Store", soon: "Wkrótce" },
     ],
-    note: "<b>Darmowa w wersji beta.</b> Działa lokalnie, bez konta, jeśli nie chcesz synchronizacji.",
+    note: "Synchronizuj dane między urządzeniami lub korzystaj z trybu offline.",
     imageAlt: "Zecca na macOS — raporty i statystyki",
     trust: [
-      { title: "Dane szyfrowane end-to-end", desc: "Tylko Ty masz dostęp do swoich danych." },
-      { title: "Działa lokalnie", desc: "Twoje dane zostają na Twoim urządzeniu." },
-      { title: "Kursy walut z NBP", desc: "Aktualne kursy bezpośrednio z NBP." },
-      { title: "Inflacja CPI z GUS", desc: "Oficjalne dane o inflacji prosto z GUS." },
+      { title: "Dane szyfrowane end-to-end", desc: "Dbamy o Twoje bezpieczeństwo" },
+      { title: "Wybierz wersję offline lub synchronizację online", desc: "Decyduj, czy i jak synchronizować dane między urządzeniami" },
+      { title: "Aktualne kursy walut, akcji, ETF i obligacji.", desc: "Korzystamy z rzetelnych źródeł aby zapewnić aktualne dane" },
+      { title: "Inflacja CPI z GUS", desc: "Oficjalne dane o inflacji prosto z GUS, aby policzyć realny wynik inwestycji" },
     ],
   },
 
   // ── P1 · Jak działa ──────────────────────────────────────────────────────
   howItWorks: {
-    eyebrow: "P1 · JAK TO DZIAŁA",
-    title: "Od historii transakcji do spokojnego obrazu majątku.",
+    eyebrow: "Obraz Twojego majątku",
+    title: "Zecca prezentuje dane i wykresy dotyczące wszystkich Twoich inwestycji",
     desc: "Zecca nie próbuje zgadywać Twojego portfela z jednego salda. Buduje go od źródła: transakcji, wpłat, wycen i oficjalnych danych.",
     steps: [
       {
         label: "01",
-        title: "Dodajesz aktywa i historię",
-        desc: "Wprowadzasz transakcje ręcznie albo importujesz pliki od brokera. Możesz cofnąć się do pierwszej obligacji, lokaty albo ETF-u.",
+        title: "Wprowadzasz transakcje ręcznie albo importujesz pliki od Twojego brokera&nbsp;",
+        desc: "Możesz cofnąć się do pierwszej obligacji, lokaty albo ETF-u.",
         meta: "Transakcje · import · aktywa ręczne",
       },
       {
         label: "02",
-        title: "Silnik przelicza wartość",
-        desc: "Ten sam model liczy wpłaty, pozycje, kursy NBP, CPI, odsetki, dywidendy i wynik realny po inflacji.",
+        title: "Nasz model obliczeniowy przelicza transakcje, kursy, odsetki, dywidendy i wynik realny po inflacji.",
+        desc: "Dołożyliśmy starań, abyś mógł zobaczyć wiarygodne i rzetelne wyniki swoich inwestycji.",
         meta: "NBP · GUS · FIFO · XIRR",
       },
       {
         label: "03",
-        title: "Widzisz portfele bez arkuszy",
-        desc: "IKE, IKZE i konto główne są osobno, ale możesz przełączyć się na widok całego majątku, alokacji i historii.",
+        title: "Wszystko w jednym miejscu",
+        desc: "Koniec z logowaniem się do kilku miejsc aby zobaczyć IKE, IKZE, obligacje i inne aktywa. Koniec z Excelem. Prezentujemy wszystko, czego potrzebujesz by inwestować skutecznie.",
         meta: "Portfele · alokacja · historia",
-      },
-    ],
-  },
-
-  // ── P1 · Dlaczego nie arkusz ─────────────────────────────────────────────
-  spreadsheet: {
-    eyebrow: "P1 · DLACZEGO NIE ARKUSZ",
-    title: "Arkusz jest dobry na start. Potem zaczyna ukrywać błędy.",
-    desc: "Zecca ma robić za Ciebie te rzeczy, które w Excelu są kruche: przeliczenia walut, historia wpłat, realna stopa zwrotu i rozdzielenie wyniku od dopłat.",
-    lead: {
-      title: "Najważniejsze: rozdzielamy wpłaty od wyniku inwestycyjnego.",
-      desc: "Duży portfel nie znaczy jeszcze dobrego wyniku. Zecca pokazuje, co wynika z rynku, a co tylko z kolejnych dopłat.",
-    },
-    items: [
-      {
-        title: "Wpłaty vs wynik",
-        desc: "Historia wartości jest porównana ze skumulowanymi wpłatami, więc widzisz realny wkład inwestycji.",
-      },
-      {
-        title: "IKE, IKZE i konto główne",
-        desc: "Każdy portfel ma własną historię, ale bez ręcznego kopiowania formuł między arkuszami.",
-      },
-      {
-        title: "Inflacja CPI",
-        desc: "Wynik nominalny i realny są liczone z użyciem oficjalnych danych GUS, nie ręcznie wpisanych stawek.",
-      },
-      {
-        title: "Kursy NBP",
-        desc: "Aktywa walutowe i złoto są przeliczane po kursach z konkretnego dnia lub ostatniej publikacji.",
-      },
-      {
-        title: "Eksport i kopia lokalna",
-        desc: "Nie zamykamy danych w aplikacji. Eksportujesz CSV i backup JSON, kiedy potrzebujesz.",
       },
     ],
   },
@@ -167,62 +132,57 @@ export const landingCopy = {
     ],
   },
 
-  // ── Showcase (zrzuty: 1 = macOS, 2 = iOS) ─────────────────────────────────
-  showcase: [
-    {
-      kicker: "macOS · Dashboard",
-      title: "Spokojny dashboard, nie ściana wykresów.",
-      desc: "Ciepłe, papierowe tło i wielkie szeryfowe liczby. Najważniejsze metryki są pierwsze, reszta czeka, aż jej poszukasz.",
-      points: [
-        "Wartość całości, dzienna i miesięczna zmiana",
-        "Alokacja klas aktywów i odchylenie od celu",
-        "Znacznik świeżości danych: wiesz, co jest aktualne",
-      ],
-      imageAlt: "Zecca na macOS — raporty i statystyki",
-    },
-    {
-      kicker: "iOS · Dashboard w kieszeni",
-      title: "Cały portfel pod ręką, gdziekolwiek jesteś.",
-      desc: "Natywna aplikacja iOS z tym samym modelem danych co macOS. Łączna wartość, wykres historii, zysk i dywidendy, alokacja klas aktywów — wszystko w zasięgu kciuka.",
-      points: [
-        "Łączna wartość i zmiana w oknie 1M / 1Y / MAX",
-        "Zysk niezrealizowany, dywidendy i alokacja na jednym ekranie",
-        "Dashboard, Pozycje, Transakcje i Zarobki w zasięgu kciuka",
-      ],
-      imageAlt: "Zecca na iOS — dashboard portfela",
-    },
-  ],
-
-  // ── 02 · Prywatność (4 karty) ─────────────────────────────────────────────
-  privacy: {
-    eyebrow: "02 · PRYWATNOŚĆ",
-    title: "Twoje liczby nie opuszczają Ciebie w&nbsp;<em>czytelnej</em> formie.",
-    desc: "Zecca jest zaprojektowana lokalnie i prywatnie. Szyfrowanie jest domyślne, nie opcjonalne, a klucz znasz tylko Ty.",
-    cards: [
+  // ── Showcase platform ─────────────────────────────────────────────────────
+  showcase: {
+    eyebrow: "Jedno Zecca · trzy platformy",
+    title: "Ten sam portfel. Dokładnie tam, gdzie go potrzebujesz.",
+    desc: "Pracuj głęboko na Macu, otwieraj portfel bez instalacji w przeglądarce i zaglądaj do najważniejszych liczb na iPhonie. Zmieniasz ekran, nie sposób liczenia ani kontekst.",
+    desktop: [
       {
-        title: "Szyfrowanie end-to-end",
-        desc: "Wszystko jest szyfrowane na Twoim urządzeniu. Na serwer trafia wyłącznie szyfrogram. Nie widzimy Twoich pozycji ani wartości.",
+        id: "macos",
+        tab: "macOS",
+        kicker: "macOS · natywna aplikacja",
+        title: "Pełny warsztat inwestora na dużym ekranie.",
+        desc: "Raporty, alokacja, wyniki realne i historia portfeli są ułożone tak, aby dało się przejść od ogólnego obrazu do szczegółów bez gubienia kontekstu.",
+        points: [
+          "Rozbudowane raporty i statystyki w jednym widoku",
+          "Wygodna praca z wieloma portfelami i długą historią",
+          "Natywny interfejs dopasowany do pracy na Macu",
+        ],
+        imageAlt: "Zecca na macOS — raporty, statystyki i alokacja portfela",
       },
       {
-        title: "Klucz znasz tylko Ty",
-        desc: "Dane odblokowuje Twoja fraza. Bez niej nikt, łącznie z nami, nie odczyta portfela. To także oznacza: zapamiętaj ją dobrze.",
-      },
-      {
-        title: "Lokalnie najpierw",
-        desc: "Aplikacja działa w pełni lokalnie. Synchronizacja między urządzeniami jest opcjonalna i również w całości zaszyfrowana.",
-      },
-      {
-        title: "Te same reguły wszędzie",
-        desc: "Web Crypto w przeglądarce i CryptoKit na urządzeniach Apple liczą identycznie, a zgodność potwierdzają wektory testowe.",
+        id: "web",
+        tab: "Web",
+        kicker: "Web · bez instalacji",
+        title: "Twój portfel dostępny również w przeglądarce.",
+        desc: "Wersja webowa daje szybki dostęp do tych samych portfeli, raportów i wykresów na dowolnym komputerze — z zachowaniem spójnego modelu danych Zecca.",
+        points: [
+          "Dostęp z aktualnej przeglądarki na komputerze",
+          "Te same portfele, metryki i historia inwestycji",
+          "Czytelny układ dostosowany do szerokości ekranu",
+        ],
+        imageAlt: "Zecca w przeglądarce — raporty i alokacja portfela",
       },
     ],
-    footnote:
-      "Na backendzie przechowujemy wyłącznie zaszyfrowane rekordy, izolowane regułami dostępu per użytkownik (RLS). Klucze i fraza nigdy nie opuszczają Twojego urządzenia w postaci jawnej.",
+    ios: {
+      id: "ios",
+      tab: "iOS",
+      kicker: "iOS · dashboard w kieszeni",
+      title: "Sprawdzasz portfel w chwili, w której tego potrzebujesz.",
+      desc: "Mobilny widok nie próbuje pomieścić całego desktopu. Pokazuje wartość, zmianę, wynik, dywidendy i alokację w kolejności stworzonej do szybkiego sprawdzenia.",
+      points: [
+        "Wartość i historia portfela w zakresach 1M–MAX",
+        "Wynik, dywidendy i alokacja na jednym ekranie",
+        "Natywna nawigacja zaprojektowana pod obsługę kciukiem",
+      ],
+      imageAlt: "Zecca na iOS — mobilny dashboard portfela",
+    },
   },
 
-  // ── 03 · Dla polskiego inwestora (6 kafli) ────────────────────────────────
+  // ── 02 · Dla polskiego inwestora (6 kafli) ────────────────────────────────
   investor: {
-    eyebrow: "03 · DLA POLSKIEGO INWESTORA",
+    eyebrow: "02 · DLA POLSKIEGO INWESTORA",
     title: "Zbudowane pod <em>polskie</em> realia.",
     desc: "Nie kalka zagranicznego trackera. IKE i IKZE, detaliczne obligacje skarbowe, kursy NBP i inflacja GUS są tu pierwszej klasy obywatelami.",
     cells: [
@@ -257,6 +217,106 @@ export const landingCopy = {
         desc: "Waluta bazowa PLN i osobna waluta wyświetlania: PLN, EUR lub USD. Pozycje zagraniczne przeliczane po kursach NBP, także historycznie.",
       },
     ],
+  },
+
+  // ── 03 · Porównanie (Zecca vs MyFund vs arkusz) ───────────────────────────
+  comparison: {
+    eyebrow: "03 · PORÓWNANIE",
+    title: "Zecca kontra MyFund i arkusz kalkulacyjny.",
+    desc: "Uczciwe porównanie trzech sposobów monitorowania portfela — łącznie z zaawansowanymi, darmowymi szablonami arkuszy, nie tylko podstawowym Excelem.",
+    columns: ["Zecca", "MyFund", "Arkusz (Excel / Sheets)"],
+    rows: [
+      {
+        label: "Cena",
+        values: [
+          "Bezpłatna w wersji beta",
+          "Od 4,49 zł/mies. (płatne portfele od pierwszego)",
+          "Darmowy — nawet zaawansowane szablony społecznościowe",
+        ],
+      },
+      {
+        label: "Import transakcji od brokera",
+        values: [
+          "Automatyczny, z plików XTB i PKO Obligacje",
+          "Import operacji z e-maila od planu Pro",
+          "Brak — każdą transakcję wpisujesz ręcznie",
+        ],
+      },
+      {
+        label: "IKE i IKZE jako osobne portfele",
+        values: [
+          "Tak, wbudowane od zera",
+          "Tak, ale limity wpłat tylko w płatnych planach",
+          "Da się zbudować, ale limity i podział pilnujesz sam",
+        ],
+      },
+      {
+        label: "Obligacje detaliczne (ROD, EDO, COI…)",
+        values: [
+          "Automatyczne naliczanie wg serii i marży",
+          "Wymaga ręcznego wprowadzenia parametrów serii",
+          "Da się policzyć, ale każda nowa seria to nowa formuła",
+        ],
+      },
+      {
+        label: "Kursy walut z NBP",
+        values: [
+          "Automatycznie, także historycznie",
+          "Automatycznie",
+          "Tylko w Google Sheets (nie działa w Excelu)",
+        ],
+      },
+      {
+        label: "Inflacja CPI z GUS",
+        values: [
+          "Automatycznie, dla całego portfela",
+          "Brak wprost — liczysz samodzielnie",
+          "Tylko dla obligacji indeksowanych w najlepszych szablonach",
+        ],
+      },
+      {
+        label: "XIRR / TWR / CAGR",
+        values: [
+          "Wszystkie trzy, liczone natywnie",
+          "XIRR i porównania z benchmarkiem od planu Standard",
+          "XIRR zwykle tak, TWR i CAGR trzeba dobudować",
+        ],
+      },
+      {
+        label: "Szyfrowanie end-to-end",
+        values: [
+          "Tak, domyślnie",
+          "Brak informacji o szyfrowaniu end-to-end",
+          "Zależy od zabezpieczeń Twojego konta Google/Microsoft",
+        ],
+      },
+      {
+        label: "Aplikacja natywna macOS / iOS",
+        values: [
+          "Tak",
+          "iPhone / Android od planu Pro, brak macOS",
+          "Brak — tylko przeglądarka",
+        ],
+      },
+      {
+        label: "Pełna personalizacja pod własne potrzeby",
+        values: [
+          "Ograniczona do funkcji aplikacji",
+          "Ograniczona do funkcji aplikacji",
+          "Pełna — zmieniasz dowolną formułę i widok",
+        ],
+      },
+      {
+        label: "Ryzyko błędu przy utrzymaniu",
+        values: [
+          "Niskie — silnik liczy za Ciebie",
+          "Niskie — liczy dostawca",
+          "Wysokie — jedna zepsuta formuła psuje cały portfel bez ostrzeżenia",
+        ],
+      },
+    ],
+    footnote:
+      "Ceny i zakres funkcji MyFund wg cennika dostawcy w dniu publikacji — mogą się zmienić. Kolumna „Arkusz” uwzględnia też zaawansowane, darmowe szablony społecznościowe, nie tylko podstawowy Excel.",
   },
 
   // ── 04 · FAQ (`open: true` = rozwinięte na starcie) ───────────────────────
@@ -308,9 +368,6 @@ export const landingCopy = {
         "Chcę dostać jednorazową informację o starcie zapisów i rozumiem, że email trafi do listy beta.",
       submit: "Dołącz do listy",
       disabledSubmit: "Wkrótce",
-      noteEnabled: "Zapis trafia do listy beta. Nie zakładamy konta i nie wysyłamy danych portfela.",
-      noteDisabled:
-        "Zapisy nie są jeszcze aktywne. Formularz nie zapisuje danych, dopóki nie włączymy integracji.",
       success: "Dzięki — zapisaliśmy email na liście beta.",
       error: "Nie udało się zapisać. Spróbuj ponownie za chwilę.",
       invalidEmail: "Podaj poprawny adres e-mail.",
@@ -356,8 +413,8 @@ export const landingCopy = {
         title: "Produkt",
         links: [
           { label: "Funkcje", href: "#funkcje" },
-          { label: "Prywatność", href: "#prywatnosc" },
           { label: "Dla inwestora", href: "#inwestor" },
+          { label: "Porównanie", href: "#porownanie" },
           { label: "FAQ", href: "#faq" },
         ],
       },

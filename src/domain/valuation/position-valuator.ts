@@ -7,7 +7,7 @@ import {
   type ManualValuationInput,
   type PriceTransactionInput,
 } from "@/domain/valuation/price-resolver";
-import { bondPeriodRate } from "@/domain/valuation/bond-rates";
+import { bondPeriodRate, type CpiSeries } from "@/domain/valuation/bond-rates";
 
 export type { FxRateInput } from "@/domain/valuation/price-resolver";
 
@@ -42,6 +42,13 @@ export type PositionValuationDataset = {
   transactions: ValuationTransactionInput[];
   fxRates: FxRateInput[];
   useLatestTransactionFxRate?: boolean;
+  /**
+   * Optional CPI series (klucz "RRRR-MM" → CPI r/r %) used to price
+   * inflation-indexed treasury bonds. When omitted, the hardcoded GUS table
+   * in `bond-rates` is used. Injecting a series lets callers value bonds
+   * against a specific/synthetic inflation path (e.g. cross-platform parity).
+   */
+  cpi?: CpiSeries;
 };
 
 export type PositionValuation = {
@@ -117,7 +124,12 @@ export function valueInstrumentPosition(input: {
       (sum, lot) =>
         sum +
         lot.quantity *
-          dirtyTreasuryBondPrice(asset.bondParams!, lot.purchaseDate, asOf),
+          dirtyTreasuryBondPrice(
+            asset.bondParams!,
+            lot.purchaseDate,
+            asOf,
+            dataset.cpi,
+          ),
       0,
     );
     const price = quantity > EPSILON ? marketValue / quantity : 0;
@@ -186,6 +198,7 @@ function dirtyTreasuryBondPrice(
   params: BondParamsInput,
   purchaseDate: Date,
   asOf: Date,
+  cpi?: CpiSeries,
 ) {
   const effectiveAsOf =
     asOf.getTime() < params.maturityDate.getTime() ? asOf : params.maturityDate;
@@ -200,7 +213,7 @@ function dirtyTreasuryBondPrice(
 
   while (periodStart.getTime() < effectiveAsOf.getTime()) {
     const periodEnd = addYears(periodStart, 1);
-    const annualRate = bondPeriodRate(params, periodIndex, periodStart) / 100;
+    const annualRate = bondPeriodRate(params, periodIndex, periodStart, cpi) / 100;
 
     if (effectiveAsOf.getTime() < periodEnd.getTime()) {
       const totalDays = Math.max(1, daysBetween(periodStart, periodEnd));

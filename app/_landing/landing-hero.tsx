@@ -1,17 +1,8 @@
 import type { ElementType, HTMLAttributes, ReactNode } from "react";
-import type { ValuationPoint } from "@/domain/models/investor-data";
 import { formatCurrency, formatPercent } from "@/lib/money";
 import { landingCopy } from "./copy";
 import { buildLandingDemoSnapshot } from "./landing-demo-data";
-
-const PERIOD_OPTIONS = ["1M", "3M", "6M", "1Y", "2Y", "MAX"] as const;
-const PERIOD_LABELS: Partial<Record<(typeof PERIOD_OPTIONS)[number], string>> = {
-  "1Y": "1R",
-  "2Y": "2L",
-};
-
-const VALUE_COLOR = "#214A35";
-const DEPOSIT_COLOR = "#8C6F30";
+import { StaticValueChart } from "./static-value-chart";
 const ALLOCATION_COLORS = ["#34699A", "#7E5AA5", "#56677D", "#8C6F30"];
 const PORTFOLIO_COLORS = ["#234d38", "#9a7b3c", "#34699a"];
 
@@ -82,116 +73,6 @@ function makePolyline(values: number[], width: number, height: number, pad = 2) 
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");
-}
-
-function compactAxis(value: number) {
-  if (Math.abs(value) >= 1_000_000) {
-    return `${(value / 1_000_000).toLocaleString("pl-PL", { maximumFractionDigits: 1 })} mln`;
-  }
-  if (Math.abs(value) >= 1_000) {
-    return `${Math.round(value / 1_000).toLocaleString("pl-PL")} tys.`;
-  }
-  return value.toLocaleString("pl-PL", { maximumFractionDigits: 0 });
-}
-
-function downsamplePair(value: ValuationPoint[], deposits: ValuationPoint[], maxPoints = 72) {
-  const n = Math.min(value.length, deposits.length);
-  if (n < 2) {
-    return { value: [], deposits: [] };
-  }
-  if (n <= maxPoints) {
-    return {
-      value: value.slice(0, n).map((point) => point.value),
-      deposits: deposits.slice(0, n).map((point) => point.value),
-    };
-  }
-
-  const indexes = new Set<number>([0, n - 1]);
-  const step = (n - 1) / (maxPoints - 1);
-  for (let i = 1; i < maxPoints - 1; i += 1) {
-    indexes.add(Math.round(i * step));
-  }
-  const ordered = [...indexes].sort((left, right) => left - right);
-  return {
-    value: ordered.map((index) => value[index].value),
-    deposits: ordered.map((index) => deposits[index].value),
-  };
-}
-
-function StaticValueChart({
-  value,
-  deposits,
-}: {
-  value: ValuationPoint[];
-  deposits: ValuationPoint[];
-}) {
-  const chartWidth = 640;
-  const chartHeight = 168;
-  const pl = 58;
-  const pr = 16;
-  const pt = 18;
-  const pb = 32;
-  const innerWidth = chartWidth - pl - pr;
-  const innerHeight = chartHeight - pt - pb;
-  const sampled = downsamplePair(value, deposits);
-  if (sampled.value.length < 2 || sampled.deposits.length < 2) return null;
-
-  const all = [...sampled.value, ...sampled.deposits];
-  const min = Math.min(...all) * 0.985;
-  const max = Math.max(...all) * 1.015;
-  const range = max - min || 1;
-  const y = (entry: number) => pt + innerHeight - ((entry - min) / range) * innerHeight;
-  const pointString = (series: number[]) =>
-    series
-      .map((entry, index) => {
-        const x = pl + (index / (series.length - 1)) * innerWidth;
-        return `${x.toFixed(1)},${y(entry).toFixed(1)}`;
-      })
-      .join(" ");
-  const valuePoints = pointString(sampled.value);
-  const depositPoints = pointString(sampled.deposits);
-  const yTicks = [0, 0.33, 0.66, 1].map((factor) => min + factor * range);
-
-  return (
-    <div className="static-vvd-chart">
-      <div className="static-chart-head">
-        <div className="static-chart-legend">
-          <span><i style={{ background: VALUE_COLOR }} />Wartość konta</span>
-          <span><i style={{ background: DEPOSIT_COLOR }} />Wpłaty</span>
-        </div>
-        <div role="radiogroup" aria-label="Zakres wykresu wartość vs wpłaty" className="static-chart-ranges">
-          {PERIOD_OPTIONS.map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="radio"
-              aria-checked={option === "MAX" ? "true" : "false"}
-              data-chart-range={option}
-            >
-              {PERIOD_LABELS[option] ?? option}
-            </button>
-          ))}
-        </div>
-      </div>
-      <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} role="img" aria-label="Wykres wartości konta i wpłat">
-        <defs>
-          <linearGradient id="landing-vvd-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={VALUE_COLOR} stopOpacity="0.16" />
-            <stop offset="100%" stopColor={VALUE_COLOR} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        {yTicks.map((tick) => (
-          <g key={tick}>
-            <line x1={pl} x2={pl + innerWidth} y1={y(tick)} y2={y(tick)} />
-            <text x={pl - 8} y={y(tick) + 4}>{compactAxis(tick)}</text>
-          </g>
-        ))}
-        <path d={`M${pl},${pt + innerHeight} L${valuePoints} L${pl + innerWidth},${pt + innerHeight} Z`} />
-        <polyline className="deposit-line" points={depositPoints} />
-        <polyline className="value-line" points={valuePoints} />
-      </svg>
-    </div>
-  );
 }
 
 function StaticAllocationDonut({ slices }: { slices: Array<{ label: string; percent: number }> }) {
@@ -302,8 +183,13 @@ export function LandingHero() {
             <EditableHtml as="h1" copyId="hero.title" html={hero.title} />
             <EditableHtml as="p" copyId="hero.lede" className="lede" html={hero.lede} />
             <ul className="hero-index" aria-label="Źródła danych i metody liczenia">
-              {hero.sources.map((source, index) => (
-                <EditableHtml as="li" copyId={`hero.sources.${index}`} html={source} key={source} />
+              {hero.sources.map((source) => (
+                <EditableHtml
+                  as="li"
+                  copyId={`hero.sources.${source.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                  html={source}
+                  key={source}
+                />
               ))}
             </ul>
             <div className="hero-actions">
@@ -323,7 +209,9 @@ export function LandingHero() {
                 {hero.ctaPrimary}
                 <span aria-hidden="true">→</span>
               </a>
-              <EditableHtml as="p" copyId="hero.note" className="hero-note" html={hero.note} />
+              {hero.note.trim() ? (
+                <EditableHtml as="p" copyId="hero.note" className="hero-note" html={hero.note} />
+              ) : null}
             </div>
           </section>
 
