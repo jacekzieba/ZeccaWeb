@@ -33,3 +33,10 @@ export type InstrumentCandidate = {
   currency: string | null;
   kind: "stock" | "etf";
 };
+
+/** Monthly CPI r/r reading (%) for a given month, keyed by `date` = "RRRR-MM-01". */
+export type CpiObservation = {
+  provider: "gus";
+  date: string;
+  yoyRate: number;
+};

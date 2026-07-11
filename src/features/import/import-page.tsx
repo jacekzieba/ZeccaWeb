@@ -115,6 +115,7 @@ export function ImportPage() {
   const supabase = useSyncStore((s) => s.supabase);
   const setSync = useSyncStore((s) => s.setSync);
   const marketFxRates = useSyncStore((s) => s.marketFxRates);
+  const marketCpi = useSyncStore((s) => s.marketCpi);
   const references = useMemo(() => buildImportReferenceData(records), [records]);
   const snapshot = useSyncStore((s) => s.snapshot);
 
@@ -232,6 +233,7 @@ export function ImportPage() {
         historyGranularity: "daily",
         useLatestTransactionFxRate: true,
         useMarketQuotes: true,
+        cpi: marketCpi,
       });
       setSync(nextRecords, nextSnapshot);
       setResult(`Zaimportowano ${preview.validRows.length - queued} rekordów${queued > 0 ? `, ${queued} czeka w kolejce sync` : ""}.`);
@@ -319,6 +321,7 @@ export function ImportPage() {
       fxRates: marketFxRates,
       useLatestTransactionFxRate: true,
       useMarketQuotes: true,
+      cpi: marketCpi,
     });
     const active = instruments.filter((i) => i.totalQuantity > 0);
     const header = "symbol,name,kind,quantity,lastPrice,currency,marketValue,portfolioPercent,valuationSource";
@@ -348,7 +351,7 @@ export function ImportPage() {
     ? buildTransactionList(records).filter((t) => ["dividend", "interest", "bondCoupon"].includes(t.transactionType)).length
     : 0;
   const positionCount = records
-    ? buildInstrumentList(records, { asOf: new Date(), fxRates: marketFxRates, useLatestTransactionFxRate: true, useMarketQuotes: true })
+    ? buildInstrumentList(records, { asOf: new Date(), fxRates: marketFxRates, useLatestTransactionFxRate: true, useMarketQuotes: true, cpi: marketCpi })
         .filter((i) => i.totalQuantity > 0).length
     : 0;
 

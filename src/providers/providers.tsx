@@ -5,6 +5,7 @@ import { useState } from "react";
 import { FakeSyncBootstrap } from "@/sync/dev/fake-sync-bootstrap";
 import { MarketFxBootstrap } from "@/features/sync/market-fx-bootstrap";
 import { MarketQuoteBootstrap } from "@/features/sync/market-quote-bootstrap";
+import { MarketCpiBootstrap } from "@/features/sync/market-cpi-bootstrap";
 import { BackgroundSyncBootstrap } from "@/features/sync/background-sync-bootstrap";
 import { TelemetryBootstrap } from "@/features/telemetry/telemetry-bootstrap";
 
@@ -27,6 +28,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <BackgroundSyncBootstrap />
       <MarketFxBootstrap />
       <MarketQuoteBootstrap />
+      <MarketCpiBootstrap />
       <TelemetryBootstrap />
       {children}
     </QueryClientProvider>

@@ -7,10 +7,12 @@ import {
   fetchNbpMonthlyAverageFxRate,
 } from "@/market-data/providers/nbp";
 import { fetchYahooQuote, fetchYahooSearch } from "@/market-data/providers/yahoo";
+import { fetchGusCpiSeries } from "@/market-data/providers/gus";
 import { GET as getFxRate } from "../../app/api/market-data/fx/route";
 import { GET as getQuote } from "../../app/api/market-data/quote/route";
 import { GET as getSearch } from "../../app/api/market-data/search/route";
 import { GET as getMarketDataStatus } from "../../app/api/market-data/status/route";
+import { GET as getCpi } from "../../app/api/market-data/cpi/route";
 
 vi.mock("@/market-data/providers/nbp", () => ({
   fetchNbpFxRate: vi.fn(),
@@ -22,10 +24,15 @@ vi.mock("@/market-data/providers/yahoo", () => ({
   fetchYahooSearch: vi.fn(),
 }));
 
+vi.mock("@/market-data/providers/gus", () => ({
+  fetchGusCpiSeries: vi.fn(),
+}));
+
 const mockedFetchNbpFxRate = vi.mocked(fetchNbpFxRate);
 const mockedFetchNbpMonthlyAverageFxRate = vi.mocked(fetchNbpMonthlyAverageFxRate);
 const mockedFetchYahooQuote = vi.mocked(fetchYahooQuote);
 const mockedFetchYahooSearch = vi.mocked(fetchYahooSearch);
+const mockedFetchGusCpiSeries = vi.mocked(fetchGusCpiSeries);
 
 function request(url: string) {
   return new NextRequest(url);
@@ -333,6 +340,57 @@ describe("GET /api/market-data/search", () => {
     }
 
     expect(lastStatus).toBe(429);
+  });
+});
+
+describe("GET /api/market-data/cpi", () => {
+  it("fetches a GUS CPI series once and then serves the cached value", async () => {
+    mockedFetchGusCpiSeries.mockResolvedValue([
+      { provider: "gus", date: "2026-01-01", yoyRate: 3.0 },
+    ]);
+
+    const first = await getCpi(
+      request("http://localhost/api/market-data/cpi?start=2026-01-01&end=2026-01-31"),
+    );
+    const second = await getCpi(
+      request("http://localhost/api/market-data/cpi?start=2026-01-01&end=2026-01-31"),
+    );
+
+    await expect(first.json()).resolves.toEqual({
+      data: [{ provider: "gus", date: "2026-01-01", yoyRate: 3.0 }],
+      cache: { hit: false },
+    });
+    await expect(second.json()).resolves.toEqual({
+      data: [{ provider: "gus", date: "2026-01-01", yoyRate: 3.0 }],
+      cache: { hit: true },
+    });
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    expect(mockedFetchGusCpiSeries).toHaveBeenCalledTimes(1);
+    expect(mockedFetchGusCpiSeries).toHaveBeenCalledWith("2026-01-01", "2026-01-31");
+  });
+
+  it("rejects invalid date formats before calling GUS", async () => {
+    const response = await getCpi(
+      request("http://localhost/api/market-data/cpi?start=2026-01&end=2026-01-31"),
+    );
+
+    await expect(response.json()).resolves.toEqual({
+      error: "Parametry start i end muszą mieć format RRRR-MM-DD.",
+    });
+    expect(response.status).toBe(400);
+    expect(mockedFetchGusCpiSeries).not.toHaveBeenCalled();
+  });
+
+  it("returns a 502 when the GUS fetch fails", async () => {
+    mockedFetchGusCpiSeries.mockRejectedValue(new Error("GUS BDL returned 500."));
+
+    const response = await getCpi(
+      request("http://localhost/api/market-data/cpi?start=2026-01-01&end=2026-01-31"),
+    );
+
+    await expect(response.json()).resolves.toEqual({ error: "GUS BDL returned 500." });
+    expect(response.status).toBe(502);
   });
 });
 
