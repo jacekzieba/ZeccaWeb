@@ -322,6 +322,11 @@ export function InstrumentsPage() {
     setDeletingId(id);
 
     try {
+      if (isFakeSyncEnabled()) {
+        const nextRecords = records.filter((record) => record.id !== id);
+        setSync(nextRecords, buildInvestorDataSnapshot(nextRecords, { asOf: new Date(), historyGranularity: "daily", useLatestTransactionFxRate: true, useMarketQuotes: true }));
+        return;
+      }
       const sourceRecord = records.find(
         (record) =>
           !record.deletedAt &&

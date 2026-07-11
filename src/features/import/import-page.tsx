@@ -11,6 +11,7 @@ import {
 } from "@/features/import/import-parser";
 import { parseXtbXlsx } from "@/features/import/xtb-parser";
 import { parsePkoBondsXls } from "@/features/import/pko-parser";
+import { readSpreadsheet } from "@/features/import/read-spreadsheet";
 import type { RecordType } from "@/domain/models/investor-data";
 import { saveRecord } from "@/sync/records/record-writer";
 import { buildParitySnapshot } from "@/sync/records/parity-snapshot";
@@ -26,6 +27,7 @@ import {
   telemetryRowBucket,
 } from "@/lib/telemetry";
 import { useSyncStore } from "@/sync/store/sync-store";
+import { isFakeSyncEnabled } from "@/lib/env";
 import { V2, V2Card, V2ScreenHead, V2_TYPE, v2Mix } from "@/lib/v2-design";
 
 const UI = V2_TYPE.ui;
@@ -144,14 +146,8 @@ export function ImportPage() {
       const extension = file.name.split(".").pop()?.toLowerCase();
 
       if (importFormat === "xtb") {
-        const { readSheet } = await import("read-excel-file/browser");
-        // XTB exports may have multiple sheets; try "Cash Operations" first
-        let rows: unknown[][];
-        try {
-          rows = await (readSheet as (f: File, opts: Record<string, unknown>) => Promise<unknown[][]>)(file, { sheet: "Cash Operations" });
-        } catch {
-          rows = await readSheet(file);
-        }
+        // XTB exports may have multiple sheets; prefer "Cash Operations".
+        const rows = await readSpreadsheet(file, { sheet: "Cash Operations" });
         if (!portfolioId) {
           setError("Wybierz portfel docelowy przed importem XTB.");
           return;
@@ -161,8 +157,7 @@ export function ImportPage() {
       }
 
       if (importFormat === "pko") {
-        const { readSheet } = await import("read-excel-file/browser");
-        const rows = await readSheet(file);
+        const rows = await readSpreadsheet(file);
         if (!portfolioId) {
           setError("Wybierz portfel docelowy przed importem PKO Obligacje.");
           return;
@@ -173,8 +168,7 @@ export function ImportPage() {
 
       // Generic
       if (extension === "xlsx" || extension === "xls") {
-        const { readSheet } = await import("read-excel-file/browser");
-        const rows = await readSheet(file);
+        const rows = await readSpreadsheet(file);
         setPreview(parseImportTable(rows, references));
       } else {
         const text = await file.text();
@@ -215,15 +209,19 @@ export function ImportPage() {
 
       // Save new instruments first
       for (const instrPayload of preview.newInstrumentPayloads ?? []) {
-        await saveRecord(supabase, userDataKey, instrPayload.recordType, instrPayload, { baseUpdatedAt: null });
+        if (!isFakeSyncEnabled()) {
+          await saveRecord(supabase, userDataKey, instrPayload.recordType, instrPayload, { baseUpdatedAt: null });
+        }
         localPayloads.push(instrPayload);
       }
 
       // Save transactions
       for (const row of preview.validRows) {
         if (!row.payload) continue;
-        const saveResult = await saveRecord(supabase, userDataKey, row.payload.recordType, row.payload, { baseUpdatedAt: null });
-        if (saveResult.queued) queued += 1;
+        if (!isFakeSyncEnabled()) {
+          const saveResult = await saveRecord(supabase, userDataKey, row.payload.recordType, row.payload, { baseUpdatedAt: null });
+          if (saveResult.queued) queued += 1;
+        }
         localPayloads.push(row.payload);
       }
 

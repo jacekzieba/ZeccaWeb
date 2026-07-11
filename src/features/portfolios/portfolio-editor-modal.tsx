@@ -11,6 +11,8 @@ import {
 import { useSyncStore } from "@/sync/store/sync-store";
 import { refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
 import { makeAccountPayload } from "@/sync/records/macos-payloads";
+import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
+import { isFakeSyncEnabled } from "@/lib/env";
 
 const INK = "#1C3144";
 const MUTED = "rgba(28,49,68,0.58)";
@@ -78,6 +80,7 @@ export function PortfolioEditorModal({
 }) {
   const userDataKey = useSyncStore((s) => s.userDataKey);
   const supabase = useSyncStore((s) => s.supabase);
+  const records = useSyncStore((s) => s.records);
   const setSync = useSyncStore((s) => s.setSync);
   const [mounted, setMounted] = useState(false);
   const [name, setName] = useState("");
@@ -116,23 +119,27 @@ export function PortfolioEditorModal({
 
     try {
       const id = initialValue?.id ?? crypto.randomUUID();
-      const result = await saveRecord(
-        supabase,
-        userDataKey,
-        "account",
-        makeAccountPayload({
-          id,
-          name: trimmedName,
-          baseCurrency,
-          accountType: initialValue?.accountType,
-          colorHex: initialValue?.colorHex,
-          targetAllocation: initialValue?.targetAllocation,
-        }),
-        { baseUpdatedAt: initialValue?.updatedAt ?? null },
-      );
-      if (!result.queued) {
-        const { records, snapshot } = await refreshSyncStore(supabase, userDataKey);
-        setSync(records, snapshot);
+      const payload = makeAccountPayload({
+        id,
+        name: trimmedName,
+        baseCurrency,
+        accountType: initialValue?.accountType,
+        colorHex: initialValue?.colorHex,
+        targetAllocation: initialValue?.targetAllocation,
+      });
+      if (isFakeSyncEnabled() && records) {
+        const now = new Date().toISOString();
+        const nextRecords = [
+          ...records.filter((record) => record.id !== id),
+          { id, deviceId: "fake-sync-web", updatedAt: now, deletedAt: null, envelope: { type: "account" as const, payloadVersion: 1, schemaVersion: 1, payload } },
+        ];
+        setSync(nextRecords, buildInvestorDataSnapshot(nextRecords, { asOf: new Date(), historyGranularity: "daily", useLatestTransactionFxRate: true, useMarketQuotes: true }));
+      } else {
+        const result = await saveRecord(supabase, userDataKey, "account", payload, { baseUpdatedAt: initialValue?.updatedAt ?? null });
+        if (!result.queued) {
+          const { records, snapshot } = await refreshSyncStore(supabase, userDataKey);
+          setSync(records, snapshot);
+        }
       }
       onClose();
     } catch (submitError) {
