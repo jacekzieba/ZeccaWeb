@@ -10,6 +10,11 @@ import {
   parseYahooSearch,
 } from "@/market-data/providers/yahoo";
 import { fetchNbpFxRate } from "@/market-data/providers/nbp";
+import {
+  fetchGusCpiSeries,
+  parseGusCpi,
+  parseOfficialMonthlyCpiPage,
+} from "@/market-data/providers/gus";
 
 afterEach(() => {
   vi.useRealTimers();
@@ -309,6 +314,135 @@ describe("fetchNbpFxRate", () => {
     expect(requestedUrl).toBe(
       "https://api.nbp.pl/api/exchangerates/rates/a/EUR/?format=json",
     );
+  });
+});
+
+describe("parseGusCpi", () => {
+  it("keeps only monthly readings within range and converts index to yoy %", () => {
+    const observations = parseGusCpi(
+      {
+        results: [
+          {
+            values: [
+              { year: 2026, val: 103.0, period: "M01" },
+              { year: 2026, val: 102.5, period: "M02" },
+              // Quarterly/annual readings for the same variable must be skipped.
+              { year: 2026, val: 102.8, period: "K1" },
+              { year: 2026, val: 102.9, period: "0" },
+              // Outside the requested window.
+              { year: 2025, val: 102.4, period: "M12" },
+            ],
+          },
+        ],
+      },
+      "2026-01-01",
+      "2026-02-28",
+    );
+
+    expect(observations).toEqual([
+      { provider: "gus", date: "2026-01-01", yoyRate: 3.0 },
+      { provider: "gus", date: "2026-02-01", yoyRate: 2.5 },
+    ]);
+  });
+});
+
+const monthlyCpiPageFixture = `
+<html><body>
+<table>
+<tr><th colspan="13">Analogiczny miesiąc poprzedniego roku = 100</th></tr>
+<tr><td>2026</td><td>102,1</td><td>102,1</td><td>103,0</td><td>103,2</td><td>103,1</td></tr>
+<tr><td>2025</td><td>104,9</td><td>104,9</td><td>104,9</td><td>104,3</td><td>104,0</td><td>104,1</td></tr>
+</table>
+<table>
+<tr><th colspan="13">Analogiczny okres narastający poprzedniego roku = 100</th></tr>
+<tr><td>2026</td><td>102,1</td></tr>
+</table>
+</body></html>
+`;
+
+describe("parseOfficialMonthlyCpiPage", () => {
+  it("parses the 'analogiczny miesiąc' table and converts index to yoy %, filtered by range", () => {
+    const observations = parseOfficialMonthlyCpiPage(
+      monthlyCpiPageFixture,
+      "2026-01-01",
+      "2026-12-31",
+    );
+
+    expect(observations).toEqual([
+      { provider: "gus", date: "2026-01-01", yoyRate: 2.1 },
+      { provider: "gus", date: "2026-02-01", yoyRate: 2.1 },
+      { provider: "gus", date: "2026-03-01", yoyRate: 3.0 },
+      { provider: "gus", date: "2026-04-01", yoyRate: 3.2 },
+      { provider: "gus", date: "2026-05-01", yoyRate: 3.1 },
+    ]);
+  });
+
+  it("returns an empty array when the expected section heading is missing", () => {
+    expect(parseOfficialMonthlyCpiPage("<html>no data here</html>", "2026-01-01", "2026-12-31")).toEqual(
+      [],
+    );
+  });
+});
+
+describe("fetchGusCpiSeries", () => {
+  it("queries the BDL API for the requested year span and parses the response", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          results: [
+            { values: [{ year: 2026, val: 103.0, period: "M01" }] },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    );
+
+    const series = await fetchGusCpiSeries("2026-01-01", "2026-01-31");
+
+    expect(series).toEqual([{ provider: "gus", date: "2026-01-01", yoyRate: 3.0 }]);
+    const requestedUrl = String(fetchMock.mock.calls[0][0]);
+    expect(requestedUrl).toContain("bdl.stat.gov.pl/api/v1/data/by-variable/217230");
+    expect(requestedUrl).toContain("year=2026");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("falls back to the official monthly CPI page when BDL has no monthly reading (annual-only)", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        // BDL's headline CPI variable is published annually, not monthly:
+        // no `period` field, so parseGusCpi filters it out entirely.
+        new Response(
+          JSON.stringify({ results: [{ values: [{ year: "2026", val: 103.6 }] }] }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+      )
+      .mockResolvedValueOnce(new Response(monthlyCpiPageFixture, { status: 200 }));
+
+    const series = await fetchGusCpiSeries("2026-01-01", "2026-02-28");
+
+    expect(series).toEqual([
+      { provider: "gus", date: "2026-01-01", yoyRate: 2.1 },
+      { provider: "gus", date: "2026-02-01", yoyRate: 2.1 },
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(String(fetchMock.mock.calls[1][0])).toContain("stat.gov.pl");
+  });
+
+  it("rejects a malformed date range without calling the API", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+
+    await expect(fetchGusCpiSeries("2026-01", "2026-02-28")).rejects.toThrow();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("throws when the BDL API responds with an error status, without falling back", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response("", { status: 500 }));
+
+    await expect(fetchGusCpiSeries("2026-01-01", "2026-01-31")).rejects.toThrow("500");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -21,6 +21,7 @@ export function useDisplaySnapshot(): InvestorDataSnapshot | null {
   const records = useSyncStore((s) => s.records);
   const marketFxRates = useSyncStore((s) => s.marketFxRates);
   const marketQuotes = useSyncStore((s) => s.marketQuotes);
+  const marketCpi = useSyncStore((s) => s.marketCpi);
   const storeSnapshot = useSyncStore((s) => s.snapshot);
   const { displayCurrency } = useProfile();
 
@@ -30,10 +31,11 @@ export function useDisplaySnapshot(): InvestorDataSnapshot | null {
       asOf: new Date(),
       fxRates: marketFxRates,
       marketQuotes,
+      cpi: marketCpi,
       historyGranularity: "daily",
       useLatestTransactionFxRate: true,
       useMarketQuotes: true,
       displayCurrency,
     });
-  }, [records, marketFxRates, marketQuotes, displayCurrency, storeSnapshot]);
+  }, [records, marketFxRates, marketQuotes, marketCpi, displayCurrency, storeSnapshot]);
 }

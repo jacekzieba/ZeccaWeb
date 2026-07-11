@@ -102,6 +102,39 @@ describe("certification import parity", () => {
     expect(byType.get("cashDeposit")![0].grossAmount).toBeCloseTo(100_000, 2);
   });
 
+  it("XTB: unknown instruments resolve currency via dividend harvest / suffix / placeholder", () => {
+    const noInstruments: ImportReferenceData = { ...references, instruments: [] };
+    const preview = parseXtbXlsx(XTB_ROWS, PORTFOLIO, noInstruments);
+    expect(preview.errorRows).toHaveLength(0);
+
+    const byType = groupByType(preview.validRows);
+    const buys = byType.get("buy")!;
+    expect(buys).toHaveLength(3);
+
+    // VWCE.DE → EUR from the unambiguous .DE exchange suffix.
+    const vwceBuy = buys.find((p) => p.grossAmount === 10_000)!;
+    expect(vwceBuy.currency).toBe("EUR");
+    expect(vwceBuy.fxRateToBase).toBeCloseTo(4.5, 4);
+
+    // CSPX.UK → USD harvested from the dividend comment "CSPX.UK USD 10.5/SHR"
+    // (.UK is ambiguous, so the suffix map must NOT resolve it).
+    const cspxBuy = buys.find((p) => p.fxRateToBase != null && Math.abs((p.fxRateToBase as number) - 4.2) < 1e-4)!;
+    expect(cspxBuy.currency).toBe("USD");
+
+    // IEML.UK → no dividend, ambiguous .UK suffix → explicit placeholder + warning.
+    const iemlBuy = buys.find((p) => p.fxRateToBase != null && Math.abs((p.fxRateToBase as number) - 5.2) < 1e-4)!;
+    expect(iemlBuy.currency).toBe("?");
+    expect(iemlBuy.fxRateToBase).toBeCloseTo(5.2, 4); // PLN cost still preserved
+    expect(preview.warnings.some((w) => w.includes("IEML.UK"))).toBe(true);
+
+    // New instrument payloads carry the same resolved currencies.
+    const payloadCcy = (sym: string) =>
+      (preview.newInstrumentPayloads.find((p) => p.symbol === sym) as Payload | undefined)?.currency;
+    expect(payloadCcy("VWCE.DE")).toBe("EUR");
+    expect(payloadCcy("CSPX.UK")).toBe("USD");
+    expect(payloadCcy("IEML.UK")).toBe("?");
+  });
+
   it("PKO: buys + synthetic funding + early redemption with fee + interest + withdrawal", () => {
     const preview = parsePkoBondsXls(PKO_ROWS, PORTFOLIO, references);
     expect(preview.errorRows).toHaveLength(0);

@@ -123,6 +123,7 @@ function buildFakeQuote(inst: { symbol: string; currency: string }): MarketQuote
 export function InstrumentsPage() {
   const records = useSyncStore((s) => s.records);
   const marketFxRates = useSyncStore((s) => s.marketFxRates);
+  const marketCpi = useSyncStore((s) => s.marketCpi);
   const userDataKey = useSyncStore((s) => s.userDataKey);
   const supabase = useSyncStore((s) => s.supabase);
   const setSync = useSyncStore((s) => s.setSync);
@@ -137,9 +138,10 @@ export function InstrumentsPage() {
             useLatestTransactionFxRate: true,
             useMarketQuotes: true,
             displayCurrency,
+            cpi: marketCpi,
           })
         : [],
-    [marketFxRates, records, displayCurrency],
+    [marketFxRates, marketCpi, records, displayCurrency],
   );
 
   const [search, setSearch] = useState("");
@@ -324,7 +326,7 @@ export function InstrumentsPage() {
     try {
       if (isFakeSyncEnabled()) {
         const nextRecords = records.filter((record) => record.id !== id);
-        setSync(nextRecords, buildInvestorDataSnapshot(nextRecords, { asOf: new Date(), historyGranularity: "daily", useLatestTransactionFxRate: true, useMarketQuotes: true }));
+        setSync(nextRecords, buildInvestorDataSnapshot(nextRecords, { asOf: new Date(), historyGranularity: "daily", useLatestTransactionFxRate: true, useMarketQuotes: true, cpi: marketCpi }));
         return;
       }
       const sourceRecord = records.find(
@@ -418,6 +420,7 @@ export function InstrumentsPage() {
           historyGranularity: "daily",
           useLatestTransactionFxRate: true,
           useMarketQuotes: true,
+          cpi: marketCpi,
         }),
       );
       setQuotePreview(null);
