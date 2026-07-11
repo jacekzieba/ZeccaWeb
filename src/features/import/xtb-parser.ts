@@ -164,6 +164,7 @@ export function parseXtbXlsx(
 
     const rawId = idCol >= 0 ? String(cells[idCol] ?? "").trim() : "";
     const externalId = rawId ? `xtb:${rawId}` : null;
+    if (externalId && references.existingExternalImportIds?.has(externalId)) continue;
     const comment = commentCol >= 0 ? String(cells[commentCol] ?? "").trim() : "";
     const ticker = tickerCol >= 0 ? String(cells[tickerCol] ?? "").trim() : "";
     const instrumentName = instrumentCol >= 0 ? String(cells[instrumentCol] ?? "").trim() : "";

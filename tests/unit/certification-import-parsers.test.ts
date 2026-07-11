@@ -158,6 +158,20 @@ describe("certification import parity", () => {
     expect(vwce.currency).toBe("EUR");
   });
 
+  it("XTB: skips rows already imported (dedup by externalImportID)", () => {
+    const refs: ImportReferenceData = {
+      ...references,
+      existingExternalImportIds: new Set(["xtb:100002"]), // VWCE buy already imported
+    };
+    const preview = parseXtbXlsx(XTB_ROWS, PORTFOLIO, refs);
+    const byType = groupByType(preview.validRows);
+    expect(byType.get("buy")).toHaveLength(2); // was 3
+    const hasDuplicated = preview.validRows.some(
+      (r) => (payloadOf(r) as Payload).externalImportID === "xtb:100002",
+    );
+    expect(hasDuplicated).toBe(false);
+  });
+
   it("PKO: buys + synthetic funding + early redemption with fee + interest + withdrawal", () => {
     const preview = parsePkoBondsXls(PKO_ROWS, PORTFOLIO, references);
     expect(preview.errorRows).toHaveLength(0);
