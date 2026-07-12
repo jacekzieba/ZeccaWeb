@@ -11,14 +11,15 @@
     "check:sync-compat": "node scripts/check-sync-compat.mjs",
     "check:rls-smoke": "node scripts/check-rls-smoke.mjs",
     "compare:parity": "node scripts/compare-parity-snapshot.mjs",
-    "preflight:staging": "npm run check:staging-env && npm run check:sync-compat && npm run test:e2e:staging-smoke",
+    "preflight:staging": "npm run check:staging-env && npm run check:sync-compat && SUPABASE_RLS_REQUIRE_TWO_USERS=1 npm run check:rls-smoke && npm run test:e2e:staging-smoke",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:fake-sync": "playwright test --config playwright.fake-sync.config.ts",
     "test:e2e:auth": "playwright test --config playwright.auth-e2e.config.ts",
-    "test:e2e:staging-smoke": "playwright test --config playwright.staging-smoke.config.ts"
+    "test:e2e:staging-smoke": "playwright test --config playwright.staging-smoke.config.ts",
+    "test:e2e:staging-destructive": "playwright test --config playwright.staging-destructive.config.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
