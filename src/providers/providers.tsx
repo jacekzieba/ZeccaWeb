@@ -8,6 +8,7 @@ import { MarketQuoteBootstrap } from "@/features/sync/market-quote-bootstrap";
 import { MarketCpiBootstrap } from "@/features/sync/market-cpi-bootstrap";
 import { BackgroundSyncBootstrap } from "@/features/sync/background-sync-bootstrap";
 import { TelemetryBootstrap } from "@/features/telemetry/telemetry-bootstrap";
+import { LanguageBootstrap } from "@/features/i18n/language-bootstrap";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -24,6 +25,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <LanguageBootstrap />
       <FakeSyncBootstrap />
       <BackgroundSyncBootstrap />
       <MarketFxBootstrap />

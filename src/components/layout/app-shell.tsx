@@ -40,6 +40,7 @@ import { V2, v2Glass, v2Mix } from "@/lib/v2-design";
 import { clearCachedUserDataKey } from "@/sync/encryption/key-cache";
 import { initials, useProfile } from "@/features/profile/profile-store";
 import { AppLock } from "@/features/auth/app-lock";
+import { useTranslation } from "@/features/i18n/translate";
 
 declare global {
   interface Window {
@@ -168,17 +169,18 @@ async function handleLogout() {
   window.location.assign("/login");
 }
 
-function fmtNavNumber(value: number, digits = 0) {
-  return value.toLocaleString("pl-PL", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+function fmtNavNumber(value: number, locale: string, digits = 0) {
+  return value.toLocaleString(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
 // Compact value shown next to each portfolio in the sidebar (matches the
 // design's `wFmtK`: e.g. "1,23 mln", "31,2 tys.", "950").
-function fmtNavCompact(value: number) {
+function fmtNavCompact(value: number, locale: string) {
   const abs = Math.abs(value);
-  if (abs >= 1e6) return `${(value / 1e6).toFixed(2).replace(".", ",")} mln`;
-  if (abs >= 1e4) return `${(value / 1e3).toFixed(1).replace(".", ",")} tys.`;
-  return fmtNavNumber(value);
+  const decimal = locale === "pl-PL" ? "," : ".";
+  if (abs >= 1e6) return `${(value / 1e6).toFixed(2).replace(".", decimal)} ${locale === "pl-PL" ? "mln" : "m"}`;
+  if (abs >= 1e4) return `${(value / 1e3).toFixed(1).replace(".", decimal)} ${locale === "pl-PL" ? "tys." : "k"}`;
+  return fmtNavNumber(value, locale);
 }
 
 function isNavItemActive(item: NavItem, pathname: string) {
@@ -189,6 +191,8 @@ function isNavItemActive(item: NavItem, pathname: string) {
 // ── Sidebar content ──────────────────────────────────────────────
 function SidebarContent({ onNav }: { onNav?: () => void }) {
   const pathname = usePathname();
+  const { language, t } = useTranslation();
+  const numberLocale = language === "en" ? "en-US" : "pl-PL";
   const snapshot = useDisplaySnapshot();
   const { displayCurrency } = useProfile();
   const totalValue = snapshot?.totalValue ?? null;
@@ -263,7 +267,7 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
                   padding: "12px 12px 6px",
                 }}
               >
-                {group.sec}
+                {t(group.sec)}
               </div>
             )}
             {group.items.map((item) => {
@@ -304,7 +308,7 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
                     <Icon size={15.5} strokeWidth={1.8} aria-hidden="true" />
                   </span>
                   <span style={{ fontSize: 13, fontWeight: active ? 600 : 500, flex: 1, fontFamily: TYPOGRAPHY.system, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {item.label}
+                    {t(item.label)}
                   </span>
                   {item.value != null && (
                     <span
@@ -315,7 +319,7 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
                         flexShrink: 0,
                       }}
                     >
-                      {fmtNavCompact(item.value)}
+                      {fmtNavCompact(item.value, numberLocale)}
                     </span>
                   )}
                 </Link>
@@ -338,18 +342,18 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
           }}
         >
           <div style={{ fontSize: 9.5, fontWeight: 700, color: "rgba(244,242,230,0.62)", textTransform: "uppercase", letterSpacing: ".13em", position: "relative" }}>
-            Łączna wartość
+            {t("Łączna wartość")}
           </div>
           <div style={{ fontFamily: TYPOGRAPHY.serif, fontSize: 27, fontWeight: 500, marginTop: 5, position: "relative", fontVariantNumeric: "tabular-nums", letterSpacing: "-.01em" }}>
-            {totalValue == null ? "—" : fmtNavNumber(totalValue)}
+            {totalValue == null ? "—" : fmtNavNumber(totalValue, numberLocale)}
             <span style={{ fontSize: 13, fontStyle: "italic", opacity: 0.6, marginLeft: 5 }}>{displayCurrency}</span>
           </div>
           <div style={{ fontSize: 11.5, color: "#7FD9A8", fontWeight: 600, marginTop: 4, fontVariantNumeric: "tabular-nums", position: "relative" }}>
             {changePLN == null || changePct == null
-              ? "Ładowanie danych"
-              : `${changeSign}${fmtNavNumber(changePLN)} ${displayCurrency} (${changePct >= 0 ? "+" : ""}${fmtNavNumber(changePct, 2)}%)`}
+              ? t("Ładowanie danych")
+              : `${changeSign}${fmtNavNumber(changePLN, numberLocale)} ${displayCurrency} (${changePct >= 0 ? "+" : ""}${fmtNavNumber(changePct, numberLocale, 2)}%)`}
           </div>
-          <div style={{ fontSize: 10.5, color: "rgba(244,242,230,0.50)", marginTop: 1, position: "relative" }}>vs 30 dni temu</div>
+          <div style={{ fontSize: 10.5, color: "rgba(244,242,230,0.50)", marginTop: 1, position: "relative" }}>{t("vs 30 dni temu")}</div>
         </div>
       </div>
 

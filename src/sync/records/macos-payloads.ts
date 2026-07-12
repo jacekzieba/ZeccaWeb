@@ -18,6 +18,7 @@ export function makeSettingsPayload(input: {
   existing?: Record<string, unknown> | null;
   telemetryEnabled?: boolean;
   hasAcknowledgedPrivacyDisclosure?: boolean;
+  appLanguage?: "pl" | "en";
   updatedAt?: number | string;
 }) {
   return {
@@ -30,6 +31,7 @@ export function makeSettingsPayload(input: {
     ...(input.hasAcknowledgedPrivacyDisclosure !== undefined
       ? { hasAcknowledgedPrivacyDisclosure: input.hasAcknowledgedPrivacyDisclosure }
       : {}),
+    ...(input.appLanguage !== undefined ? { appLanguage: input.appLanguage } : {}),
     updatedAt: input.updatedAt ?? nowSwiftReferenceSeconds(),
   };
 }
