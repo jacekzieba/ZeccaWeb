@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseXtbXlsx } from "@/features/import/xtb-parser";
+import { buildEtfCatalog } from "@/features/import/etf-catalog";
 import { parsePkoBondsXls } from "@/features/import/pko-parser";
 import type { ImportReferenceData } from "@/features/import/import-parser";
 import type { TransactionImportRow } from "@/features/import/import-parser";
@@ -135,6 +136,65 @@ describe("certification import parity", () => {
     expect(payloadCcy("IEML.UK")).toBe("?");
   });
 
+  it("XTB: surfaces fx observations for unresolved instruments and enriches from catalog", () => {
+    const catalog = buildEtfCatalog([
+      { ticker: "VWCE", isin: "IE00BK5BQT80", name: "Vanguard FTSE All-World", domicile: "Irlandia" },
+    ]);
+    const preview = parseXtbXlsx(XTB_ROWS, PORTFOLIO, { ...references, instruments: [] }, { catalog });
+
+    // Only IEML.UK stays "?" (no dividend, ambiguous .UK) → surfaced for the D2
+    // FX-inference phase with its observed rate and trade date.
+    const iemlObs = preview.fxObservations.find((o) => o.symbol === "IEML.UK")!;
+    expect(iemlObs.fxObserved).toBeCloseTo(5.2, 4);
+    expect(iemlObs.date).toBe("2026-03-02");
+    // Resolved instruments (VWCE via suffix, CSPX via harvest) are not surfaced.
+    expect(preview.fxObservations.some((o) => o.symbol === "VWCE.DE")).toBe(false);
+    expect(preview.fxObservations.some((o) => o.symbol === "CSPX.UK")).toBe(false);
+
+    // Catalog fills identity (ISIN, domicile) without touching the resolved currency.
+    const vwce = preview.newInstrumentPayloads.find((p) => p.symbol === "VWCE.DE") as Payload;
+    expect(vwce.isin).toBe("IE00BK5BQT80");
+    expect(vwce.country).toBe("Irlandia");
+    expect(vwce.currency).toBe("EUR");
+  });
+
+  it("XTB: skips rows already imported (dedup by externalImportID)", () => {
+    const refs: ImportReferenceData = {
+      ...references,
+      existingExternalImportIds: new Set(["xtb:100002"]), // VWCE buy already imported
+    };
+    const preview = parseXtbXlsx(XTB_ROWS, PORTFOLIO, refs);
+    const byType = groupByType(preview.validRows);
+    expect(byType.get("buy")).toHaveLength(2); // was 3
+    const hasDuplicated = preview.validRows.some(
+      (r) => (payloadOf(r) as Payload).externalImportID === "xtb:100002",
+    );
+    expect(hasDuplicated).toBe(false);
+  });
+
+  it("XTB: deduped parents don't orphan-warn their commission/tax on re-import", () => {
+    // Re-import: previously-saved trades + interest are known by externalImportID;
+    // their commission/tax rows were never saved separately, so they'd otherwise
+    // resurface as false "bez dopasowanej" / "bez pary" warnings.
+    const refs: ImportReferenceData = {
+      ...references,
+      existingExternalImportIds: new Set(["xtb:100002", "xtb:100009", "xtb:100007"]),
+    };
+    const preview = parseXtbXlsx(XTB_ROWS, PORTFOLIO, refs);
+    expect(preview.warnings.some((w) => w.includes("bez dopasowanej"))).toBe(false);
+    expect(preview.warnings.some((w) => w.includes("bez pary"))).toBe(false);
+  });
+
+  it("XTB: warns about an interest tax with no matching interest", () => {
+    const rows: unknown[][] = [
+      ["ID", "Type", "Time", "Ticker", "Instrument", "Comment", "Amount"],
+      [200001, "IKE Deposit", new Date("2026-01-05T10:00:00Z"), "", "", "Deposit", 1000],
+      [200002, "Free funds interest tax", new Date("2026-05-01T10:00:00Z"), "", "", "Interest tax", -1.9],
+    ];
+    const preview = parseXtbXlsx(rows, PORTFOLIO, references);
+    expect(preview.warnings.some((w) => w.includes("bez pary"))).toBe(true);
+  });
+
   it("PKO: buys + synthetic funding + early redemption with fee + interest + withdrawal", () => {
     const preview = parsePkoBondsXls(PKO_ROWS, PORTFOLIO, references);
     expect(preview.errorRows).toHaveLength(0);
@@ -153,5 +213,25 @@ describe("certification import parity", () => {
     expect(sell.fees).toBe(20);
     expect(byType.get("interest")![0].grossAmount).toBe(95);
     expect(byType.get("cashWithdrawal")![0].grossAmount).toBe(500);
+  });
+
+  it("XTB: resolves a known instrument by name when the ticker differs", () => {
+    const refs: ImportReferenceData = {
+      ...references,
+      instruments: [
+        // Registered under a different symbol but the same display name.
+        { id: "99999999-9999-4999-8999-999999999999", symbol: "VWRA.UK", name: "Vanguard FTSE All-World", currency: "USD" },
+      ],
+    };
+    const rows: unknown[][] = [
+      ["ID", "Type", "Time", "Ticker", "Instrument", "Comment", "Amount"],
+      [300001, "Stock purchase", new Date("2026-01-10T10:00:00Z"), "VWCE.DE", "Vanguard FTSE All-World", "OPEN BUY 10 @ 100.00", -4500],
+    ];
+    const preview = parseXtbXlsx(rows, PORTFOLIO, refs);
+    // Matched by name → reuses the registered instrument, creates none.
+    expect(preview.newInstrumentPayloads).toHaveLength(0);
+    const buy = preview.validRows.find((r) => String((payloadOf(r) as Payload).transactionType) === "buy")!;
+    expect((payloadOf(buy) as Payload).instrumentID).toBe("99999999-9999-4999-8999-999999999999");
+    expect((payloadOf(buy) as Payload).currency).toBe("USD");
   });
 });

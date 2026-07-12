@@ -94,6 +94,7 @@ export type ImportReferenceData = {
   instruments: { id: string; symbol: string; name: string; currency: string }[];
   existingTransactionIds: Set<string>;
   existingManualValuationIds: Set<string>;
+  existingExternalImportIds?: Set<string>;
 };
 
 export type TransactionImportRow = {
@@ -150,6 +151,7 @@ export function buildImportReferenceData(
   const instruments = new Map<string, { id: string; symbol: string; name: string; currency: string }>();
   const existingTransactionIds = new Set<string>();
   const existingManualValuationIds = new Set<string>();
+  const existingExternalImportIds = new Set<string>();
 
   for (const record of records ?? []) {
     if (record.deletedAt) continue;
@@ -180,6 +182,8 @@ export function buildImportReferenceData(
 
     if (record.envelope.type === "transaction") {
       existingTransactionIds.add(record.id);
+      const txPayload = record.envelope.payload as { externalImportID?: string | null };
+      if (txPayload.externalImportID) existingExternalImportIds.add(txPayload.externalImportID);
     }
 
     if (record.envelope.type === "manualValuation") {
@@ -196,6 +200,7 @@ export function buildImportReferenceData(
     ),
     existingTransactionIds,
     existingManualValuationIds,
+    existingExternalImportIds,
   };
 }
 

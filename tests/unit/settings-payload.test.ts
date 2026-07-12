@@ -61,4 +61,21 @@ describe("makeSettingsPayload", () => {
     expect(Object.keys(payload)).not.toContain("amount");
     expect(Object.keys(payload)).not.toContain("plnAmount");
   });
+
+  it("updates the shared app language without dropping native settings", () => {
+    const payload = makeSettingsPayload({
+      id: "settings-1",
+      existing: { recordType: "settings", baseCurrency: "PLN", useFIFO: true },
+      appLanguage: "en",
+      updatedAt: 300,
+    });
+
+    expect(payload).toMatchObject({
+      recordType: "settings",
+      baseCurrency: "PLN",
+      useFIFO: true,
+      appLanguage: "en",
+      updatedAt: 300,
+    });
+  });
 });

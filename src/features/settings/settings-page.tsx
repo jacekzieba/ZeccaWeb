@@ -29,6 +29,11 @@ import { useTelemetryConsent } from "@/features/telemetry/use-telemetry-consent"
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { clearCachedUserDataKey } from "@/sync/encryption/key-cache";
 import { clearPendingSyncOperations } from "@/sync/records/record-writer";
+import { saveRecord } from "@/sync/records/record-writer";
+import { makeSettingsPayload } from "@/sync/records/macos-payloads";
+import { isFakeSyncEnabled } from "@/lib/env";
+import { languageName, setAppLanguage, useAppLanguage, type AppLanguage } from "@/features/i18n/language-store";
+import { useTranslation } from "@/features/i18n/translate";
 
 function portfolioCountLabel(count: number) {
   const lastDigit = count % 10;
@@ -167,8 +172,36 @@ function Row({
 export function SettingsPage() {
   const profile = useProfile();
   const snapshot = useSyncStore((s) => s.snapshot);
+  const records = useSyncStore((s) => s.records);
+  const userDataKey = useSyncStore((s) => s.userDataKey);
+  const supabase = useSyncStore((s) => s.supabase);
+  const language = useAppLanguage();
+  const { t } = useTranslation();
 
   const accounts = snapshot?.portfolios ?? [];
+
+  function changeLanguage(nextLanguage: AppLanguage) {
+    setAppLanguage(nextLanguage);
+
+    const settings = records?.find((record) => record.envelope.type === "settings");
+    if (!settings || !userDataKey || !supabase || isFakeSyncEnabled()) return;
+
+    const existing = settings.envelope.payload as Record<string, unknown>;
+    void saveRecord(
+      supabase,
+      userDataKey,
+      "settings",
+      makeSettingsPayload({
+        id: settings.id,
+        existing,
+        appLanguage: nextLanguage,
+      }),
+      { baseUpdatedAt: settings.updatedAt },
+    ).catch(() => {
+      // The local language preference remains available and the normal sync
+      // retry flow handles transient network failures for encrypted settings.
+    });
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: V2_TYPE.ui, color: V2.ink }}>
@@ -178,7 +211,7 @@ export function SettingsPage() {
 
       <Section eyebrow="Regionalne" title="Waluta i format">
         <Row label="Waluta bazowa" desc="Przeliczenia portfela i raportów wg kursów NBP z danego dnia" control={<Segmented options={[{ value: "PLN", label: "PLN" }, { value: "EUR", label: "EUR" }, { value: "USD", label: "USD" }]} value={profile.displayCurrency} onChange={(v) => updateProfile({ displayCurrency: v as Profile["displayCurrency"] })} />} />
-        <Row label="Język interfejsu" desc="Wersja produkcyjna web działa obecnie po polsku." control={<Segmented options={[{ value: "pl", label: "Polski" }]} value="pl" onChange={() => {}} />} last />
+        <Row label={t("Język interfejsu")} desc={t("Zmiana jest stosowana od razu i synchronizowana z aplikacjami Zecca.")} control={<Segmented options={[{ value: "pl", label: languageName("pl") }, { value: "en", label: languageName("en") }]} value={language} onChange={(value) => changeLanguage(value as AppLanguage)} />} last />
       </Section>
 
       <Section eyebrow="Podatki" title="Rozliczenia podatkowe">

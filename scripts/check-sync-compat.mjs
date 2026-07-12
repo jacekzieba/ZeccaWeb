@@ -19,6 +19,7 @@ const writer = read("src/sync/records/record-writer.ts");
 const syncStore = read("src/sync/records/supabase-sync-store.ts");
 const syncUnlockPanel = read("src/features/sync/sync-unlock-panel.tsx");
 const migration = read("supabase/migrations/0001_initial_sync.sql");
+const schemaSecurityMigration = read("supabase/migrations/0006_reproduce_sync_schema_security.sql");
 
 const recordTypes = [
   "account",
@@ -84,6 +85,25 @@ const checks = [
       syncStore.includes("registerWebDevice") &&
       syncStore.includes('from("user_devices")') &&
       syncUnlockPanel.includes("registerWebDevice"),
+  },
+  {
+    name: "device upsert conflict target is unique",
+    ok:
+      migration.includes("primary key (user_id, device_id)") &&
+      schemaSecurityMigration.includes("unique (user_id, device_id)"),
+  },
+  {
+    name: "sync tables are explicitly granted to authenticated Data API clients",
+    ok: ["profiles", "user_devices", "encrypted_records", "encrypted_key_backups"].every((table) =>
+      schemaSecurityMigration.includes(`on table public.${table} to authenticated`),
+    ),
+  },
+  {
+    name: "sync RLS policies explicitly target authenticated users",
+    ok:
+      schemaSecurityMigration.includes("to authenticated") &&
+      schemaSecurityMigration.includes("(select auth.uid()) = user_id") &&
+      schemaSecurityMigration.includes("(select auth.uid()) = id"),
   },
 ];
 
