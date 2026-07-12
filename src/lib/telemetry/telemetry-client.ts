@@ -14,9 +14,8 @@ export class NoopTelemetryClient implements TelemetryClient {
 }
 
 /**
- * Wraps the TelemetryDeck JS SDK. `clientUser` is a per-browser anonymous id;
- * the SDK hashes it with a salt before sending, so the server never sees it.
- * It is NOT the Supabase user id (that is reserved for RevenueCat).
+ * Wraps the TelemetryDeck JS SDK. `clientUser` exists only for this browser
+ * session; the SDK hashes it before sending. It is NOT the Supabase user id.
  */
 export class TelemetryDeckClient implements TelemetryClient {
   private td: TelemetryDeck | null = null;
@@ -43,20 +42,11 @@ export class TelemetryDeckClient implements TelemetryClient {
   }
 }
 
-const ANON_ID_KEY = "iw_td_anon";
-
-/** Stable per-browser anonymous id, persisted so retention works across
- * sessions. Random — carries no user identity. */
-export function getOrCreateAnonymousId(): string {
-  if (typeof window === "undefined") return "ssr";
-  try {
-    const existing = window.localStorage.getItem(ANON_ID_KEY);
-    if (existing) return existing;
-    const id = crypto.randomUUID();
-    window.localStorage.setItem(ANON_ID_KEY, id);
-    return id;
-  } catch {
-    // localStorage blocked (private mode / disabled) — fall back to ephemeral.
-    return crypto.randomUUID();
-  }
+/**
+ * A fresh, in-memory identifier. Deliberately never written to cookies,
+ * localStorage, sessionStorage, or IndexedDB so product telemetry itself does
+ * not need a cookie-consent banner.
+ */
+export function createEphemeralAnonymousId(): string {
+  return crypto.randomUUID();
 }

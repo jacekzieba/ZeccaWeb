@@ -310,14 +310,12 @@ function DisplaySection() {
 
 // ── Privacy / diagnostics ─────────────────────────────────────────
 function PrivacySection() {
-  const { enabled, acknowledged, canWrite, saving, error, setConsent } =
+  const { enabled, canWrite, saving, error, setConsent } =
     useTelemetryConsent();
 
   const desc = !canWrite
-    ? "Odblokuj synchronizację, aby zmienić zgodę na produktową telemetrię TelemetryDeck."
-    : !acknowledged
-      ? "Pomóż ulepszyć aplikację — wysyłaj anonimowe zdarzenia produktowe TelemetryDeck. Żadne dane finansowe nie są przesyłane."
-      : "Steruje anonimową telemetrią produktową TelemetryDeck. Niezależna telemetria techniczna Vercel Analytics i Speed Insights mierzy działanie weba i jest opisana w polityce prywatności.";
+    ? "Odblokuj synchronizację, aby zmienić ustawienie telemetrii produktowej TelemetryDeck."
+    : "Steruje anonimową telemetrią produktową TelemetryDeck. Nie używa ona cookies ani trwałego identyfikatora przeglądarki; szczegóły są w polityce prywatności.";
 
   return (
     <Section eyebrow="Prywatność" title="Bezpieczeństwo i diagnostyka">
@@ -329,7 +327,7 @@ function PrivacySection() {
         desc={error ?? desc}
         control={
           <Switch
-            on={canWrite && acknowledged && enabled}
+            on={canWrite && enabled}
             label="Telemetria produktowa TelemetryDeck"
             onChange={(v) => {
               if (!canWrite || saving) return;
@@ -340,7 +338,7 @@ function PrivacySection() {
       />
       <Row
         label="Pliki cookie"
-        desc="Aplikacja używa niezbędnych cookies sesji Supabase, które utrzymują zalogowanie. Vercel może przetwarzać techniczne dane wydajności i odwiedzin weba bez danych portfela."
+        desc="Aplikacja używa wyłącznie niezbędnych cookies sesji Supabase, które utrzymują zalogowanie. TelemetryDeck nie używa cookies ani localStorage; dane o portfelu nie trafiają do analityki."
         control={<span />}
       />
       <Row

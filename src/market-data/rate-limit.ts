@@ -30,8 +30,18 @@ export type RateLimitResult = {
   retryAfterSeconds: number;
 };
 
-export function checkRateLimit(request: NextRequest): RateLimitResult {
-  const key = clientKey(request);
+export type RateLimitOptions = {
+  // Separates the counter keyspace so unrelated endpoints don't share a budget.
+  namespace?: string;
+  max?: number;
+};
+
+export function checkRateLimit(
+  request: NextRequest,
+  options: RateLimitOptions = {},
+): RateLimitResult {
+  const { namespace = "", max = MAX_REQUESTS_PER_WINDOW } = options;
+  const key = `${namespace}:${clientKey(request)}`;
   const now = Date.now();
   const existing = windows.get(key);
 
@@ -41,7 +51,7 @@ export function checkRateLimit(request: NextRequest): RateLimitResult {
   }
 
   existing.count += 1;
-  if (existing.count > MAX_REQUESTS_PER_WINDOW) {
+  if (existing.count > max) {
     return {
       limited: true,
       retryAfterSeconds: Math.max(1, Math.ceil((existing.resetAt - now) / 1000)),
@@ -53,10 +63,13 @@ export function checkRateLimit(request: NextRequest): RateLimitResult {
 
 /**
  * Returns a 429 response when the caller is over the limit, otherwise null so
- * the route can proceed. Call at the top of each public market-data handler.
+ * the route can proceed. Call at the top of each public handler.
  */
-export function rateLimitResponse(request: NextRequest): NextResponse | null {
-  const result = checkRateLimit(request);
+export function rateLimitResponse(
+  request: NextRequest,
+  options: RateLimitOptions = {},
+): NextResponse | null {
+  const result = checkRateLimit(request, options);
   if (!result.limited) return null;
 
   return NextResponse.json(

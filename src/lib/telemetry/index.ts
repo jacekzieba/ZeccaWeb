@@ -1,5 +1,5 @@
 import {
-  getOrCreateAnonymousId,
+  createEphemeralAnonymousId,
   NoopTelemetryClient,
   TelemetryDeckClient,
   type TelemetryClient,
@@ -16,7 +16,12 @@ export type { TelemetryClient } from "./telemetry-client";
 
 const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "0.1.0";
 const BUILD = process.env.NEXT_PUBLIC_BUILD_SHA ?? "dev";
-const APP_ID = process.env.NEXT_PUBLIC_TELEMETRYDECK_APP_ID ?? null;
+// App IDs are public identifiers. Keep the environment override for separate
+// staging apps, while making the supplied production integration work by
+// default.
+const APP_ID =
+  process.env.NEXT_PUBLIC_TELEMETRYDECK_APP_ID ??
+  "0B524246-D7D6-4A77-9685-129DE5604015";
 
 /** True when signals must be suppressed: e2e/fake-sync runs and explicit opt-out. */
 function isForcedOff(): boolean {
@@ -28,7 +33,11 @@ function isForcedOff(): boolean {
 
 function createClient(): TelemetryClient {
   if (typeof window === "undefined" || !APP_ID) return new NoopTelemetryClient();
-  return new TelemetryDeckClient(getOrCreateAnonymousId());
+  return new TelemetryDeckClient(createEphemeralAnonymousId(), {
+    testMode:
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1",
+  });
 }
 
 let singleton: TelemetryService | null = null;

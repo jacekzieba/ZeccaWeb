@@ -10,9 +10,9 @@ import {
 import { useSyncStore } from "@/sync/store/sync-store";
 
 /**
- * Reads and writes the telemetry consent flags on the synced `settings` record.
- * Setting consent always marks the privacy disclosure acknowledged, mirroring
- * native: acknowledging is separate from opting in. See docs/TELEMETRY_CONTRACT.md.
+ * Reads and writes the product-telemetry preference on the synced `settings`
+ * record. Writing it also acknowledges the existing native privacy disclosure,
+ * keeping the shared record compatible across platforms.
  */
 export function useTelemetryConsent() {
   const settings = useSyncStore((s) => s.snapshot?.settings);
@@ -85,7 +85,6 @@ export function useTelemetryConsent() {
 
   return {
     enabled: settings?.telemetryEnabled ?? true,
-    acknowledged: settings?.hasAcknowledgedPrivacyDisclosure ?? false,
     canWrite,
     saving,
     error,

@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
+import { rateLimitResponse } from "@/market-data/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -39,6 +40,11 @@ function unknownFieldName(detail: string) {
 }
 
 export async function POST(request: NextRequest) {
+  // Unauthenticated write endpoint: cap per-IP submissions so bots that slip
+  // past the honeypot can't flood Airtable or burn its API quota.
+  const limited = rateLimitResponse(request, { namespace: "beta-waitlist", max: 5 });
+  if (limited) return limited;
+
   if (process.env.NEXT_PUBLIC_BETA_WAITLIST_ENABLED !== "1") {
     return NextResponse.json(
       { error: "Zapisy nie są jeszcze aktywne." },

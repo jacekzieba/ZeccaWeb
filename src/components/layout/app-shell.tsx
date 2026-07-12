@@ -27,7 +27,6 @@ import { useSyncStore } from "@/sync/store/sync-store";
 import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
 import { AddTransactionModal } from "@/features/transactions/add-transaction-modal";
 import { OnboardingController, OnboardingDemoGate } from "@/features/onboarding/onboarding-controller";
-import { TelemetryConsentBanner } from "@/features/telemetry/telemetry-consent-banner";
 import { CommandPalette } from "@/features/search/command-palette";
 import { PendingSyncStatus } from "@/features/sync/pending-sync-status";
 import {
@@ -686,7 +685,6 @@ export function AppShell({
 
       {/* Global modal */}
       <AddTransactionModal />
-      <TelemetryConsentBanner />
       <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
       <OnboardingController />
       {paritySnapshot && (

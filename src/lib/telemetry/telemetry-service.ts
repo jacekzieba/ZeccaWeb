@@ -16,7 +16,6 @@ export type TelemetryBuildInfo = {
 /** Gate inputs, sourced from the synced settings record (SnapshotSettings). */
 export type TelemetryGateSettings = {
   telemetryEnabled: boolean;
-  hasAcknowledgedPrivacyDisclosure: boolean;
   syncMode: string | null;
 };
 
@@ -36,7 +35,6 @@ export class TelemetryService {
   private didInitialize = false;
   private didTrackLaunch = false;
   private telemetryEnabled = true;
-  private hasAcknowledgedPrivacyDisclosure = false;
   private telemetryForcedOff = false;
   private syncMode = "none";
 
@@ -56,8 +54,6 @@ export class TelemetryService {
   update(settings: TelemetryGateSettings, forcedOff?: boolean): void {
     if (forcedOff !== undefined) this.telemetryForcedOff = forcedOff;
     this.telemetryEnabled = settings.telemetryEnabled;
-    this.hasAcknowledgedPrivacyDisclosure =
-      settings.hasAcknowledgedPrivacyDisclosure;
     this.syncMode = settings.syncMode ?? "none";
     this.trackLaunchIfAllowed();
   }
@@ -84,7 +80,6 @@ export class TelemetryService {
     return (
       this.appID !== null &&
       this.telemetryEnabled &&
-      this.hasAcknowledgedPrivacyDisclosure &&
       !this.telemetryForcedOff
     );
   }

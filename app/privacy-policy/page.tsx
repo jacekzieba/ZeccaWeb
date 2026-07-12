@@ -22,7 +22,7 @@ export default function PrivacyPolicyPage() {
           </h1>
 
           <p style={{ fontSize: 13, color: COLORS.textMuted, marginBottom: 24 }}>
-            <strong>Data wejścia w życie:</strong> 17 czerwca 2026
+            <strong>Data wejścia w życie:</strong> 12 lipca 2026
           </p>
 
           <div style={{ marginBottom: 24 }}>
@@ -82,11 +82,11 @@ export default function PrivacyPolicyPage() {
           </h2>
 
           <p style={{ marginBottom: 16 }}>
-            Zecca może zbierać <strong>anonimową</strong> telemetrię produktową przez TelemetryDeck: użycie ekranów, importy, akcje synchronizacji, wersję i numer kompilacji aplikacji, platformę oraz wybrany tryb synchronizacji.
+            Zecca może zbierać <strong>zanonimizowaną</strong> telemetrię produktową przez TelemetryDeck GmbH (Augsburg, Niemcy): użycie ekranów, importy, akcje synchronizacji, wersję i numer kompilacji aplikacji, platformę oraz wybrany tryb synchronizacji.
           </p>
 
           <p style={{ marginBottom: 16 }}>
-            Telemetria <strong>nie zawiera</strong> kwot, tickerów, adresów e-mail ani identyfikatorów portfeli. Można ją wyłączyć w ustawieniach.
+            Telemetria <strong>nie zawiera</strong> kwot, tickerów, adresów e-mail, identyfikatorów portfeli ani identyfikatora konta synchronizacji. Na webie TelemetryDeck otrzymuje wyłącznie losowy identyfikator istniejący w pamięci bieżącej karty; nie zapisujemy go w cookies, localStorage, sessionStorage ani IndexedDB. Można ją wyłączyć w ustawieniach.
           </p>
 
           <p style={{ marginBottom: 16 }}>
@@ -98,7 +98,11 @@ export default function PrivacyPolicyPage() {
           </h2>
 
           <p style={{ marginBottom: 16 }}>
-            Zecca używa cookies i mechanizmów sesji Supabase do logowania, odświeżania sesji i ochrony dostępu do prywatnych route’ów aplikacji. Nie używamy cookies reklamowych.
+            Zecca używa cookies sesji Supabase wyłącznie do logowania, odświeżania sesji i ochrony dostępu do prywatnych części aplikacji. Są one niezbędne do usługi, o którą prosisz. Nie używamy cookies reklamowych, remarketingowych ani cookies TelemetryDeck.
+          </p>
+
+          <p style={{ marginBottom: 16 }}>
+            Dlatego nie wyświetlamy baneru cookies dla TelemetryDeck. Pozostałe lokalne magazyny przeglądarki służą wyłącznie działaniu funkcji wybranych przez użytkownika: ustawieniom interfejsu, kolejce zaszyfrowanej synchronizacji i — gdy to wybierzesz — lokalnie zapamiętanemu kluczowi odszyfrowywania. Nie służą reklamie ani śledzeniu między witrynami. Jeżeli w przyszłości dodamy opcjonalne technologie wymagające zgody, poprosimy o nią przed ich użyciem.
           </p>
 
           <h2 style={{ fontSize: 22, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>

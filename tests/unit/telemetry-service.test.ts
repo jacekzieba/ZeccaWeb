@@ -32,9 +32,8 @@ function makeService(client: TelemetryClient, forcedOff = false) {
   });
 }
 
-const consented: TelemetryGateSettings = {
+const enabled: TelemetryGateSettings = {
   telemetryEnabled: true,
-  hasAcknowledgedPrivacyDisclosure: true,
   syncMode: "supabase",
 };
 
@@ -45,10 +44,10 @@ describe("TelemetryService", () => {
     client = new MockTelemetryClient();
   });
 
-  it("emits app_launched once the gate is open, only once", () => {
+  it("emits app_launched once telemetry is enabled, only once", () => {
     const service = makeService(client);
-    service.bootstrap(consented);
-    service.update(consented); // second open must not re-launch
+    service.bootstrap(enabled);
+    service.update(enabled); // second update must not re-launch
 
     const launches = client.signals.filter(
       (s) => s.name === TelemetryEvent.appLaunched,
@@ -59,24 +58,26 @@ describe("TelemetryService", () => {
 
   it("stays silent when telemetry is disabled", () => {
     const service = makeService(client);
-    service.bootstrap({ ...consented, telemetryEnabled: false });
+    service.bootstrap({ ...enabled, telemetryEnabled: false });
     service.signal(TelemetryEvent.dashboardViewed);
 
     expect(client.signals).toHaveLength(0);
     expect(client.initialized).toBeNull();
   });
 
-  it("stays silent before the privacy disclosure is acknowledged", () => {
+  it("does not require a blocking privacy acknowledgement", () => {
     const service = makeService(client);
-    service.bootstrap({ ...consented, hasAcknowledgedPrivacyDisclosure: false });
+    service.bootstrap(enabled);
     service.signal(TelemetryEvent.dashboardViewed);
 
-    expect(client.signals).toHaveLength(0);
+    expect(client.signals.map((signal) => signal.name)).toContain(
+      TelemetryEvent.dashboardViewed,
+    );
   });
 
   it("respects the forcedOff kill switch (e2e/UI tests)", () => {
     const service = makeService(client, true);
-    service.bootstrap(consented);
+    service.bootstrap(enabled);
     service.signal(TelemetryEvent.dashboardViewed);
 
     expect(client.signals).toHaveLength(0);
@@ -84,7 +85,7 @@ describe("TelemetryService", () => {
 
   it("attaches the common metadata to every signal", () => {
     const service = makeService(client);
-    service.bootstrap(consented);
+    service.bootstrap(enabled);
     service.signal(TelemetryEvent.dashboardViewed, { screen: "dashboard" });
 
     const viewed = client.signals.find(
@@ -100,12 +101,12 @@ describe("TelemetryService", () => {
     });
   });
 
-  it("re-opens the gate when consent is granted after launch", () => {
+  it("opens telemetry when the user enables it in settings", () => {
     const service = makeService(client);
-    service.bootstrap({ ...consented, telemetryEnabled: false });
+    service.bootstrap({ ...enabled, telemetryEnabled: false });
     expect(client.signals).toHaveLength(0);
 
-    service.update(consented);
+    service.update(enabled);
     expect(
       client.signals.map((s) => s.name),
     ).toContain(TelemetryEvent.appLaunched);
@@ -113,7 +114,7 @@ describe("TelemetryService", () => {
 
   it("never sends financial keys in the payload", () => {
     const service = makeService(client);
-    service.bootstrap(consented);
+    service.bootstrap(enabled);
     service.signal(TelemetryEvent.transactionAdded, {
       type: "buy",
       entry_method: "manual",
@@ -142,7 +143,7 @@ describe("TelemetryService", () => {
       client,
       buildInfo: { platform: "web", appVersion: "1.2.3", build: "abc123" },
     });
-    service.bootstrap(consented);
+    service.bootstrap(enabled);
     service.signal(TelemetryEvent.dashboardViewed);
 
     expect(client.signals).toHaveLength(0);
