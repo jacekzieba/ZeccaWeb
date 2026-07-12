@@ -172,6 +172,19 @@ describe("certification import parity", () => {
     expect(hasDuplicated).toBe(false);
   });
 
+  it("XTB: deduped parents don't orphan-warn their commission/tax on re-import", () => {
+    // Re-import: previously-saved trades + interest are known by externalImportID;
+    // their commission/tax rows were never saved separately, so they'd otherwise
+    // resurface as false "bez dopasowanej" / "bez pary" warnings.
+    const refs: ImportReferenceData = {
+      ...references,
+      existingExternalImportIds: new Set(["xtb:100002", "xtb:100009", "xtb:100007"]),
+    };
+    const preview = parseXtbXlsx(XTB_ROWS, PORTFOLIO, refs);
+    expect(preview.warnings.some((w) => w.includes("bez dopasowanej"))).toBe(false);
+    expect(preview.warnings.some((w) => w.includes("bez pary"))).toBe(false);
+  });
+
   it("XTB: warns about an interest tax with no matching interest", () => {
     const rows: unknown[][] = [
       ["ID", "Type", "Time", "Ticker", "Instrument", "Comment", "Amount"],

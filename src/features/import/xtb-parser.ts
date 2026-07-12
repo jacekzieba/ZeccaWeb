@@ -139,6 +139,12 @@ export function parseXtbXlsx(
   // Observed FX per unresolved ("?") instrument, for the async D2 phase.
   const fxObservations = new Map<string, { fxObserved: number; date: string }>();
 
+  // Tickers/days of parent rows dropped by dedup — used to suppress the false
+  // orphan warnings their (never-separately-saved) commission/tax children would
+  // otherwise raise on re-import.
+  const dedupedTradeTickers = new Set<string>();
+  const dedupedInterestDays = new Set<string>();
+
   // Parse raw rows
   const cashRows: CashRow[] = [];
   for (let i = headerRowIdx + 1; i < rows.length; i++) {
@@ -164,7 +170,16 @@ export function parseXtbXlsx(
 
     const rawId = idCol >= 0 ? String(cells[idCol] ?? "").trim() : "";
     const externalId = rawId ? `xtb:${rawId}` : null;
-    if (externalId && references.existingExternalImportIds?.has(externalId)) continue;
+    if (externalId && references.existingExternalImportIds?.has(externalId)) {
+      // Remember this parent so its paired commission/tax doesn't false-orphan.
+      const tl = typeRaw.toLowerCase();
+      if (tl.includes("stock purchase") || tl.includes("stock sell") || tl.includes("stock sale")) {
+        dedupedTradeTickers.add((tickerCol >= 0 ? String(cells[tickerCol] ?? "").trim() : "").toUpperCase());
+      } else if ((tl.includes("free funds interest") || tl.includes("free-funds interest")) && !tl.includes("tax")) {
+        dedupedInterestDays.add(date.toISOString().slice(0, 10));
+      }
+      continue;
+    }
     const comment = commentCol >= 0 ? String(cells[commentCol] ?? "").trim() : "";
     const ticker = tickerCol >= 0 ? String(cells[tickerCol] ?? "").trim() : "";
     const instrumentName = instrumentCol >= 0 ? String(cells[instrumentCol] ?? "").trim() : "";
@@ -418,7 +433,11 @@ export function parseXtbXlsx(
       txRows.push({ rowNumber: r.rowIndex, values: rowValues(r), payload, errors: [], warnings: [] });
 
     } else if (t.includes("commission")) {
-      warnings.push(`Wiersz ${r.rowIndex}: Commission ${r.ticker} bez dopasowanej transakcji — pominięto`);
+      // A trade for this ticker was deduped → its commission is an expected
+      // (not genuine) orphan; stay silent.
+      if (!dedupedTradeTickers.has(r.ticker.toUpperCase())) {
+        warnings.push(`Wiersz ${r.rowIndex}: Commission ${r.ticker} bez dopasowanej transakcji — pominięto`);
+      }
 
     } else if (t.includes("close trade") || t.includes("free funds interest tax") || t.includes("free-funds interest tax")) {
       // consumed via pairing or irrelevant
@@ -434,6 +453,8 @@ export function parseXtbXlsx(
     for (const entry of list) {
       if (consumedTax.has(entry.idx)) continue;
       const r = cashRows[entry.idx];
+      // An interest row for this day was deduped → its tax is an expected orphan.
+      if (dedupedInterestDays.has(r.date.toISOString().slice(0, 10))) continue;
       warnings.push(`Wiersz ${r.rowIndex}: ${r.typeRaw} bez pary — pominięto`);
     }
   }
