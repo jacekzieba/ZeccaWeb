@@ -118,6 +118,7 @@ const navHtml = `
       <a class="btn btn-ghost nav-login" href="${c.nav.login.href}">${c.nav.login.label}</a>
     </div>
   </div>
+  <span class="nav-progress" aria-hidden="true"></span>
 </nav>`;
 
 const how = c.howItWorks;
@@ -133,7 +134,7 @@ const howItWorksHtml = `
       <div class="process-steps">
         ${how.steps
           .map(
-            (step) => `<article class="process-step">
+            (step, index) => `<article class="process-step" style="--process-order:${index}">
           <div class="step-index">${step.label}</div>
           <div>
             <h3>${step.title}</h3>
@@ -157,12 +158,13 @@ const featuresHtml = `
       <p class="sec-desc">${c.features.desc}</p>
     </div>
 
+    <input class="feature-toggle-input sr-only" type="checkbox" id="feature-toggle" />
     <div class="feat-grid">
       ${c.features.items
         .map((item, i) => {
           const icon = FEATURE_ICONS[i] ?? FEATURE_ICONS[0];
           const tags = item.tags.map((t) => `<span class="tag">${t}</span>`).join("");
-          return `<div class="feat ${FEATURE_LAYOUT_CLASSES[i] ?? ""} reveal">
+          return `<div class="feat ${FEATURE_LAYOUT_CLASSES[i] ?? ""} reveal" data-feature-index="${i}" style="--feature-order:${i}">
         <div class="ic" style="${icon.bg}">${icon.svg}</div>
         <h3>${item.title}</h3>
         <p>${item.desc}</p>
@@ -171,6 +173,11 @@ const featuresHtml = `
         })
         .join("\n      ")}
     </div>
+    <label class="feature-more" for="feature-toggle">
+      <span class="feature-more-expand">${c.features.expandLabel}</span>
+      <span class="feature-more-collapse">${c.features.collapseLabel}</span>
+      <b aria-hidden="true">↓</b>
+    </label>
   </div>
 </section>`;
 
@@ -191,7 +198,7 @@ const showcaseHtml = `
     <article class="platform-stage reveal" data-platform-gallery>
       <div class="platform-stage-bar">
         <div class="platform-stage-brand"><span class="platform-stage-mark">Z</span><span>Zecca</span><small>jeden portfel</small></div>
-        <div class="platform-tabs" role="tablist" aria-label="Wybierz platformę Zecca">
+        <div class="platform-tabs" role="tablist" aria-label="Wybierz platformę Zecca" style="--platform-index:0">
           ${showcasePlatforms
             .map(
               (screen, index) => `<button type="button" role="tab" id="platform-tab-${screen.id}" aria-controls="platform-panel-${screen.id}" aria-selected="${index === 0 ? "true" : "false"}" tabindex="${index === 0 ? "0" : "-1"}" data-platform-target="${screen.id}"><span>${String(index + 1).padStart(2, "0")}</span>${screen.tab}</button>`,

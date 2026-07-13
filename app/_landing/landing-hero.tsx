@@ -1,5 +1,6 @@
-import type { ElementType, HTMLAttributes, ReactNode } from "react";
+import type { CSSProperties, ElementType, HTMLAttributes, ReactNode } from "react";
 import { formatCurrency, formatPercent } from "@/lib/money";
+import { AnimatedCurrencyMetric, AnimatedPercentMetric } from "./animated-metric";
 import { landingCopy } from "./copy";
 import { buildLandingDemoSnapshot } from "./landing-demo-data";
 import { StaticValueChart } from "./static-value-chart";
@@ -107,7 +108,9 @@ function StaticAllocationDonut({ slices }: { slices: Array<{ label: string; perc
                 style={{
                   transform: `rotate(${rotation}deg)`,
                   transformOrigin: `${center}px ${center}px`,
-                }}
+                  animationDelay: `${180 + index * 90}ms`,
+                  "--donut-length": circumference,
+                } as CSSProperties}
               />
             );
           })}
@@ -220,9 +223,9 @@ export function LandingHero() {
               <div className="product-card-head">
                 <div>
                   <EditableHtml as="p" copyId="preview.value.kicker" className="product-kicker" html="Wartość portfela" />
-                  <p className="product-value">{formatCurrency(Math.round(snapshot.totalValue), "PLN")}</p>
+                  <p className="product-value"><AnimatedCurrencyMetric value={snapshot.totalValue} /></p>
                   <p className="product-change">
-                    {totalReturn >= 0 ? "+" : ""}{formatPercent(totalReturn)} <span>od początku</span>
+                    <AnimatedPercentMetric value={totalReturn} /> <span>od początku</span>
                   </p>
                 </div>
                 <span className="demo-status"><span /> Dane demonstracyjne</span>
@@ -230,42 +233,44 @@ export function LandingHero() {
               <StaticValueChart value={snapshot.valuationSeries} deposits={snapshot.netInvestedSeries} />
             </ProductCard>
 
-            <ProductCard className="allocation-card" label="Alokacja aktywów">
-              <EditableHtml as="p" copyId="preview.allocation.kicker" className="product-kicker" html="Alokacja" />
-              <EditableHtml as="p" copyId="preview.allocation.heading" className="product-heading" html="Struktura aktywów" />
-              <StaticAllocationDonut slices={snapshot.allocation} />
-            </ProductCard>
+            <div className="product-preview-secondary">
+              <ProductCard className="allocation-card" label="Alokacja aktywów">
+                <EditableHtml as="p" copyId="preview.allocation.kicker" className="product-kicker" html="Alokacja" />
+                <EditableHtml as="p" copyId="preview.allocation.heading" className="product-heading" html="Struktura aktywów" />
+                <StaticAllocationDonut slices={snapshot.allocation} />
+              </ProductCard>
 
-            <ProductCard className="portfolios-card" label="Portfele demonstracyjne">
-              <EditableHtml as="p" copyId="preview.portfolios.kicker" className="product-kicker" html="Portfele" />
-              <EditableHtml as="p" copyId="preview.portfolios.heading" className="product-heading" html="Podział na konta" />
-              <div className="portfolio-preview-list">
-                {portfolios.map((portfolio, index) => {
-                  const change = getThirtyDayChange(portfolio.sparkline);
-                  const trend = createPortfolioTrend(change, index + 1);
-                  const color = PORTFOLIO_COLORS[index] ?? PORTFOLIO_COLORS[0];
-                  return (
-                    <div className="portfolio-preview-row" key={portfolio.id}>
-                      <div className="portfolio-name">
-                        <span style={{ backgroundColor: color }} />
-                        <div>
-                          <strong>{portfolio.name}</strong>
-                          <small>{formatCurrency(portfolio.value, "PLN")}</small>
+              <ProductCard className="portfolios-card" label="Portfele demonstracyjne">
+                <EditableHtml as="p" copyId="preview.portfolios.kicker" className="product-kicker" html="Portfele" />
+                <EditableHtml as="p" copyId="preview.portfolios.heading" className="product-heading" html="Podział na konta" />
+                <div className="portfolio-preview-list">
+                  {portfolios.map((portfolio, index) => {
+                    const change = getThirtyDayChange(portfolio.sparkline);
+                    const trend = createPortfolioTrend(change, index + 1);
+                    const color = PORTFOLIO_COLORS[index] ?? PORTFOLIO_COLORS[0];
+                    return (
+                      <div className="portfolio-preview-row" key={portfolio.id}>
+                        <div className="portfolio-name">
+                          <span style={{ backgroundColor: color }} />
+                          <div>
+                            <strong>{portfolio.name}</strong>
+                            <small>{formatCurrency(portfolio.value, "PLN")}</small>
+                          </div>
+                        </div>
+                        <div className="portfolio-trend">
+                          <SparklineSvg data={trend} color={color} />
+                          <b>{change >= 0 ? "+" : ""}{formatPercent(change)}</b>
                         </div>
                       </div>
-                      <div className="portfolio-trend">
-                        <SparklineSvg data={trend} color={color} />
-                        <b>{change >= 0 ? "+" : ""}{formatPercent(change)}</b>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="portfolio-preview-total">
-                <span>Razem · {portfolios.length} konta</span>
-                <b>{formatCurrency(portfolioPreviewTotal, "PLN")}</b>
-              </div>
-            </ProductCard>
+                    );
+                  })}
+                </div>
+                <div className="portfolio-preview-total">
+                  <span>Razem · {portfolios.length} konta</span>
+                  <b>{formatCurrency(portfolioPreviewTotal, "PLN")}</b>
+                </div>
+              </ProductCard>
+            </div>
           </section>
         </div>
       </header>

@@ -251,12 +251,14 @@ export function LandingInteractions() {
     };
     form?.addEventListener("submit", onSubmit);
 
-    const platformTabHandlers: Array<[HTMLElement, "click" | "keydown", EventListener]> = [];
+    const platformTabHandlers: Array<[HTMLElement, string, EventListener]> = [];
     document.querySelectorAll<HTMLElement>("[data-platform-gallery]").forEach((gallery) => {
       const tabs = Array.from(gallery.querySelectorAll<HTMLButtonElement>("[data-platform-target]"));
       const panels = Array.from(gallery.querySelectorAll<HTMLElement>("[data-platform-panel]"));
       const stories = Array.from(gallery.querySelectorAll<HTMLElement>("[data-platform-copy]"));
       const activate = (target: string, focus = false) => {
+        const activeIndex = Math.max(0, tabs.findIndex((tab) => tab.dataset.platformTarget === target));
+        gallery.querySelector<HTMLElement>(".platform-tabs")?.style.setProperty("--platform-index", String(activeIndex));
         tabs.forEach((tab) => {
           const active = tab.dataset.platformTarget === target;
           tab.setAttribute("aria-selected", active ? "true" : "false");
@@ -288,7 +290,68 @@ export function LandingInteractions() {
         tab.addEventListener("keydown", onKeydown);
         platformTabHandlers.push([tab, "click", onClick], [tab, "keydown", onKeydown]);
       });
+
+      let touchStartX = 0;
+      let touchStartY = 0;
+      const onTouchStart = (event: Event) => {
+        const touch = (event as TouchEvent).changedTouches[0];
+        touchStartX = touch?.clientX ?? 0;
+        touchStartY = touch?.clientY ?? 0;
+      };
+      const onTouchEnd = (event: Event) => {
+        const touch = (event as TouchEvent).changedTouches[0];
+        if (!touch) return;
+        const deltaX = touch.clientX - touchStartX;
+        const deltaY = touch.clientY - touchStartY;
+        if (Math.abs(deltaX) < 55 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
+        const currentIndex = tabs.findIndex((tab) => tab.getAttribute("aria-selected") === "true");
+        const nextIndex = Math.min(tabs.length - 1, Math.max(0, currentIndex + (deltaX < 0 ? 1 : -1)));
+        if (nextIndex !== currentIndex) activate(tabs[nextIndex]?.dataset.platformTarget ?? "");
+      };
+      gallery.addEventListener("touchstart", onTouchStart, { passive: true });
+      gallery.addEventListener("touchend", onTouchEnd, { passive: true });
+      platformTabHandlers.push([gallery, "touchstart", onTouchStart], [gallery, "touchend", onTouchEnd]);
     });
+
+    const navProgress = document.querySelector<HTMLElement>(".zlanding .nav-progress");
+    const navLinks = Array.from(
+      document.querySelectorAll<HTMLAnchorElement>(".zlanding .nav-links a.lnk[href^='#']"),
+    );
+    const navSections = navLinks
+      .map((link) => {
+        const href = link.getAttribute("href") ?? "";
+        return { link, section: href ? document.querySelector<HTMLElement>(href) : null };
+      })
+      .filter((entry): entry is { link: HTMLAnchorElement; section: HTMLElement } => Boolean(entry.section));
+    let navFrame = 0;
+    const updateNav = () => {
+      navFrame = 0;
+      const scrollRange = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      navProgress?.style.setProperty("--scroll-progress", String(Math.min(1, window.scrollY / scrollRange)));
+      const navOffset = 120;
+      let active: HTMLAnchorElement | null = null;
+      let activeTop = Number.NEGATIVE_INFINITY;
+      navSections.forEach((entry) => {
+        const sectionTop = entry.section.getBoundingClientRect().top + window.scrollY;
+        if (sectionTop <= window.scrollY + navOffset && sectionTop > activeTop) {
+          active = entry.link;
+          activeTop = sectionTop;
+        }
+      });
+      navSections.forEach((entry) => {
+        const isActive = entry.link === active;
+        entry.link.classList.toggle("is-active", isActive);
+        if (isActive) entry.link.setAttribute("aria-current", "location");
+        else entry.link.removeAttribute("aria-current");
+      });
+    };
+    const onScroll = () => {
+      if (!navFrame) navFrame = requestAnimationFrame(updateNav);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    updateNav();
+    navFrame = requestAnimationFrame(updateNav);
+    window.addEventListener("hashchange", onScroll);
 
     // Pointer tilt on feature cards — the same tactile lean as the hero cards,
     // applied to the statically-injected `.feat` grid. Fine pointers only.
@@ -365,6 +428,9 @@ export function LandingInteractions() {
       });
       teardownTextEditor();
       teardownTilt();
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("hashchange", onScroll);
+      cancelAnimationFrame(navFrame);
       io?.disconnect();
     };
   }, []);

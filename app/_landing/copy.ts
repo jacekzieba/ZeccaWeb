@@ -83,6 +83,8 @@ export const landingCopy = {
     eyebrow: "01 · FUNKCJE",
     title: "Jeden spokojny widok na <em>cały</em> Twój majątek.",
     desc: "Od pierwszej obligacji kupionej lata temu po dzisiejszy ETF. Zecca składa to w jedną, odtwarzalną historię wartości.",
+    expandLabel: "Pokaż wszystkie funkcje",
+    collapseLabel: "Pokaż mniej",
     items: [
       {
         title: "Wiele portfeli i grup",

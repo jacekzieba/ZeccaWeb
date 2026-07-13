@@ -75,6 +75,18 @@
   -webkit-backdrop-filter: blur(20px) saturate(160%);
   border-bottom: 1px solid rgba(26, 33, 27, 0.09);
 }
+.zlanding .nav-progress {
+  --scroll-progress: 0;
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--gold), var(--brand));
+  transform: scaleX(var(--scroll-progress));
+  transform-origin: left;
+  transition: transform 80ms linear;
+}
 .zlanding .nav-in {
   max-width: 1180px;
   margin: 0 auto;
@@ -139,6 +151,10 @@
 .zlanding .nav-links a.lnk:hover {
   color: var(--ink);
   background: rgba(26, 33, 27, 0.05);
+}
+.zlanding .nav-links a.lnk.is-active {
+  color: var(--brand);
+  background: var(--brand-tint);
 }
 .zlanding .btn {
   font-family: var(--ui);
@@ -254,12 +270,40 @@
 /* ============ PRODUCT HERO ============ */
 .zlanding .landing-hero {
   padding: 30px 0 24px;
+  isolation: isolate;
+  overflow: hidden;
+}
+.zlanding .landing-hero::before,
+.zlanding .landing-hero::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+}
+.zlanding .landing-hero::before {
+  inset: 0;
+  background:
+    radial-gradient(circle at 78% 24%, rgba(255, 255, 255, 0.58), transparent 30%),
+    radial-gradient(circle at 18% 82%, rgba(181, 134, 58, 0.08), transparent 28%);
+}
+.zlanding .landing-hero::after {
+  top: 6%;
+  right: -16%;
+  width: min(720px, 60vw);
+  aspect-ratio: 1;
+  border: 1px solid color-mix(in srgb, var(--brand) 10%, transparent);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 70px color-mix(in srgb, var(--brand) 3.5%, transparent),
+    0 0 0 140px color-mix(in srgb, var(--gold) 2.5%, transparent);
 }
 .zlanding .hero-layout {
   display: grid;
   grid-template-columns: minmax(440px, 1fr) minmax(520px, 1fr);
   align-items: center;
   gap: clamp(36px, 4vw, 54px);
+  position: relative;
+  z-index: 1;
 }
 .zlanding .hero-copy {
   min-width: 0;
@@ -413,11 +457,16 @@
 
 .zlanding .product-preview {
   display: grid;
-  grid-template-columns: minmax(0, 1.12fr) minmax(250px, 0.88fr);
-  grid-template-rows: auto auto;
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: 14px;
   perspective: 1300px;
+  min-width: 0;
+}
+.zlanding .product-preview-secondary {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(250px, 0.88fr);
+  gap: 14px;
   min-width: 0;
 }
 .zlanding .product-card {
@@ -502,7 +551,6 @@
   font: 700 11px var(--ui);
 }
 .zlanding .value-card {
-  grid-column: span 2;
   align-self: start;
   z-index: 2;
   padding: 20px 26px 16px;
@@ -513,6 +561,21 @@
   min-height: 224px;
   padding: 16px 20px;
 }
+.zlanding .landing-hero .hero-copy > * {
+  animation: hero-copy-in 620ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.zlanding .landing-hero .hero-copy > :nth-child(1) { animation-delay: 40ms; }
+.zlanding .landing-hero .hero-copy > :nth-child(2) { animation-delay: 100ms; }
+.zlanding .landing-hero .hero-copy > :nth-child(3) { animation-delay: 160ms; }
+.zlanding .landing-hero .hero-copy > :nth-child(4) { animation-delay: 230ms; }
+.zlanding .landing-hero .hero-copy > :nth-child(5) { animation-delay: 300ms; }
+.zlanding .landing-hero .hero-copy > :nth-child(6) { animation-delay: 370ms; }
+.zlanding .landing-hero .product-card {
+  animation: hero-card-in 720ms cubic-bezier(0.2, 0.72, 0.2, 1) both;
+}
+.zlanding .landing-hero .value-card { animation-delay: 250ms; }
+.zlanding .landing-hero .allocation-card { animation-delay: 350ms; }
+.zlanding .landing-hero .portfolios-card { animation-delay: 430ms; }
 .zlanding .allocation-card {
   z-index: 3;
   transform: translate3d(0, calc(var(--lift) - 6px), 0) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
@@ -649,6 +712,7 @@
 }
 .zlanding .static-vvd-chart path {
   fill: url(#landing-vvd-fill);
+  animation: chart-area-in 760ms 420ms ease-out both;
 }
 .zlanding .static-vvd-chart polyline {
   fill: none;
@@ -659,10 +723,14 @@
   stroke: #8c6f30;
   stroke-width: 2;
   stroke-dasharray: 5 4;
+  animation: chart-deposit-in 680ms 340ms ease-out both;
 }
 .zlanding .static-vvd-chart .value-line {
   stroke: #214a35;
   stroke-width: 2.4;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: chart-line-in 980ms 300ms cubic-bezier(0.2, 0.65, 0.2, 1) both;
 }
 .zlanding .allocation-card > *,
 .zlanding .portfolios-card > * {
@@ -681,6 +749,9 @@
 .zlanding .allocation-card [data-testid="allocation-donut"] svg {
   max-width: 104px;
   height: auto;
+}
+.zlanding .allocation-card [data-testid="allocation-donut"] circle {
+  animation: donut-sweep-in 780ms cubic-bezier(0.2, 0.72, 0.2, 1) both;
 }
 .zlanding .allocation-card [data-testid="allocation-donut"] > div:first-child {
   padding: 0 0 4px;
@@ -855,6 +926,13 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52);
 }
 .zlanding .trust-item {
+  transition: background 180ms ease, transform 180ms ease;
+}
+.zlanding .trust-item:hover {
+  background: rgba(255, 255, 255, 0.24);
+  transform: translateY(-2px);
+}
+.zlanding .trust-item {
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -890,6 +968,28 @@
 /* ============ SECTION SCAFFOLD ============ */
 .zlanding section.block {
   padding: 76px 0;
+}
+.zlanding #funkcje {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 92% 18%, color-mix(in srgb, var(--brand) 6%, transparent), transparent 25%),
+    var(--board);
+}
+.zlanding #funkcje::before {
+  content: "";
+  position: absolute;
+  top: 110px;
+  right: -150px;
+  z-index: -1;
+  width: 390px;
+  aspect-ratio: 1;
+  border: 1px solid color-mix(in srgb, var(--brand) 9%, transparent);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 52px color-mix(in srgb, var(--brand) 2.5%, transparent),
+    0 0 0 104px color-mix(in srgb, var(--gold) 2%, transparent);
 }
 .zlanding .sec-head {
   max-width: 62ch;
@@ -944,6 +1044,23 @@
 .zlanding .process-steps {
   display: grid;
   gap: 12px;
+  position: relative;
+}
+.zlanding .process-steps::before {
+  content: "";
+  position: absolute;
+  top: 28px;
+  bottom: 28px;
+  left: 26px;
+  z-index: 0;
+  width: 2px;
+  border-radius: 99px;
+  background: linear-gradient(var(--gold), var(--brand));
+  transform: scaleY(0);
+  transform-origin: top;
+}
+.zlanding .process-shell.in .process-steps::before {
+  animation: process-line-in 820ms 180ms cubic-bezier(0.2, 0.72, 0.2, 1) forwards;
 }
 .zlanding .process-step {
   display: grid;
@@ -951,10 +1068,22 @@
   gap: 18px;
   align-items: start;
   padding: 20px;
-  border: 0.5px solid rgba(255, 255, 255, 0.58);
+  border: 0.5px solid var(--line);
   border-radius: 18px;
-  background: rgba(250, 247, 237, 0.62);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+  position: relative;
+  z-index: 1;
+  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+.zlanding .process-shell.in .process-step {
+  animation: process-step-in 560ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(220ms + var(--process-order) * 110ms);
+}
+.zlanding .process-step:hover {
+  border-color: color-mix(in srgb, var(--brand) 22%, transparent);
+  background: color-mix(in srgb, var(--brand) 3%, var(--card));
+  transform: translateX(4px);
 }
 .zlanding .step-index {
   width: 54px;
@@ -963,10 +1092,17 @@
   display: grid;
   place-items: center;
   color: var(--brand);
-  background: var(--brand-tint);
-  border: 0.5px solid color-mix(in srgb, var(--brand) 16%, transparent);
+  background: color-mix(in srgb, var(--brand) 10%, var(--card));
+  border: 0.5px solid color-mix(in srgb, var(--brand) 18%, var(--card));
   font: 700 13px var(--mono);
   letter-spacing: 0.05em;
+  box-shadow: 0 0 0 7px var(--card);
+  transition: color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+.zlanding .process-step:hover .step-index {
+  color: var(--on-brand);
+  background: var(--brand);
+  transform: scale(1.04);
 }
 .zlanding .process-step h3 {
   font-family: var(--serif);
@@ -997,6 +1133,9 @@
   gap: 16px;
   margin-top: 48px;
 }
+.zlanding .feature-more {
+  display: none;
+}
 .zlanding .feat {
   --tilt-x: 0deg;
   --tilt-y: 0deg;
@@ -1019,6 +1158,13 @@
   --lift: -4px;
   border-color: color-mix(in srgb, var(--brand) 22%, var(--line));
   box-shadow: 0 16px 36px rgba(26, 33, 27, 0.12);
+}
+.zlanding .feat.reveal.in > * {
+  animation: feature-content-in 480ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--feature-order) * 45ms);
+}
+.zlanding .feat:hover .ic {
+  transform: translateY(-2px) rotate(-3deg) scale(1.05);
 }
 /* Bento rhythm: row 1 is the wide hero pair (7+5=12), row 2 is an even trio
    (4+4+4=12), row 3 is a dense quartet (3+3+3+3=12). Every row fills exactly
@@ -1063,6 +1209,7 @@
   align-items: center;
   justify-content: center;
   margin-bottom: 18px;
+  transition: transform 180ms ease, box-shadow 180ms ease;
 }
 .zlanding .feat .ic svg {
   width: 21px;
@@ -1124,10 +1271,27 @@
 
 /* ============ SHOWCASE ============ */
 .zlanding .platform-showcase {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   padding: clamp(72px, 8vw, 108px) 0;
-  background: var(--page);
-  border-top: 0.5px solid var(--line);
-  border-bottom: 0.5px solid var(--line);
+  background:
+    radial-gradient(circle at 10% 18%, rgba(211, 176, 95, 0.14), transparent 28%),
+    radial-gradient(circle at 92% 82%, rgba(75, 137, 100, 0.22), transparent 32%),
+    var(--brand-deep);
+  border-top: 0.5px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+}
+.zlanding .platform-showcase::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.28;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 64px 64px;
 }
 .zlanding .platform-showcase-head {
   display: grid;
@@ -1137,7 +1301,7 @@
   align-items: end;
 }
 .zlanding .platform-showcase .kicker {
-  color: var(--gold);
+  color: #d7b777;
   font: 600 11.5px var(--mono);
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -1147,9 +1311,10 @@
   margin-top: 14px;
   font: 400 clamp(34px, 4.5vw, 54px)/1.04 var(--serif);
   letter-spacing: -0.02em;
+  color: var(--on-brand);
 }
 .zlanding .platform-showcase-head p {
-  color: var(--muted);
+  color: rgba(244, 242, 230, 0.68);
   font-size: 16px;
   line-height: 1.65;
 }
@@ -1158,7 +1323,7 @@
   align-items: center;
   gap: 9px;
   margin-top: 22px;
-  color: var(--ink);
+  color: rgba(244, 242, 230, 0.92);
   font: 600 12px var(--mono);
   letter-spacing: 0.02em;
 }
@@ -1212,12 +1377,27 @@
   font: 600 15px var(--serif);
 }
 .zlanding .platform-tabs {
+  --platform-index: 0;
+  position: relative;
   display: inline-flex;
   gap: 4px;
   padding: 4px;
   border: 0.5px solid var(--line-2);
   border-radius: 14px;
   background: var(--card-2);
+}
+.zlanding .platform-tabs::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / 3);
+  border-radius: 10px;
+  background: var(--card);
+  box-shadow: 0 3px 12px rgba(26, 33, 27, 0.1);
+  transform: translateX(calc(var(--platform-index) * 100%));
+  transition: transform 320ms cubic-bezier(0.2, 0.72, 0.2, 1);
 }
 .zlanding .platform-tabs button {
   min-width: 94px;
@@ -1233,15 +1413,17 @@
   cursor: pointer;
   font: 650 12px var(--ui);
   transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+  position: relative;
+  z-index: 1;
 }
 .zlanding .platform-tabs button span {
   color: var(--subtle);
   font: 600 8.5px var(--mono);
 }
 .zlanding .platform-tabs button[aria-selected="true"] {
-  background: var(--card);
+  background: transparent;
   color: var(--ink);
-  box-shadow: 0 3px 12px rgba(26, 33, 27, 0.1);
+  box-shadow: none;
 }
 .zlanding .platform-tabs button[aria-selected="true"] span {
   color: var(--gold);
@@ -1259,6 +1441,9 @@
   font: 600 10px var(--mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+.zlanding .platform-sync > span {
+  animation: sync-pulse 2.4s ease-out infinite;
 }
 .zlanding .platform-stage-main {
   min-height: 650px;
@@ -1288,6 +1473,7 @@
   border: 1px solid rgba(255,255,255,0.11);
   border-radius: 50%;
   box-shadow: 0 0 0 60px rgba(255,255,255,0.025), 0 0 0 122px rgba(255,255,255,0.018);
+  animation: orbit-breathe 7s ease-in-out infinite;
 }
 .zlanding .platform-visual-label {
   position: absolute;
@@ -1313,7 +1499,7 @@
   position: relative;
   z-index: 1;
   margin: 0;
-  animation: platform-shot-in 0.3s ease-out;
+  animation: platform-shot-in 480ms cubic-bezier(0.2, 0.72, 0.2, 1);
 }
 .zlanding .desktop-preview {
   width: min(100%, 820px);
@@ -1417,8 +1603,16 @@
   flex-direction: column;
   justify-content: center;
   padding: clamp(42px, 5vw, 70px);
-  animation: platform-shot-in 0.3s ease-out;
+  animation: platform-copy-in 480ms cubic-bezier(0.2, 0.72, 0.2, 1);
 }
+.zlanding .platform-story > * {
+  animation: platform-copy-item-in 420ms ease-out both;
+}
+.zlanding .platform-story > :nth-child(1) { animation-delay: 80ms; }
+.zlanding .platform-story > :nth-child(2) { animation-delay: 120ms; }
+.zlanding .platform-story > :nth-child(3) { animation-delay: 160ms; }
+.zlanding .platform-story > :nth-child(4) { animation-delay: 200ms; }
+.zlanding .platform-story > :nth-child(5) { animation-delay: 240ms; }
 .zlanding .platform-story-index {
   margin-bottom: auto;
   color: var(--gold);
@@ -1525,8 +1719,8 @@
   display: none;
 }
 @keyframes platform-shot-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; scale: 0.985; translate: 0 10px; filter: blur(2px); }
+  to { opacity: 1; scale: 1; translate: 0 0; filter: blur(0); }
 }
 
 /* ============ POLISH INVESTOR ============ */
@@ -1632,6 +1826,7 @@
   vertical-align: top;
   border-bottom: 0.5px solid var(--line);
   line-height: 1.52;
+  transition: background 160ms ease, color 160ms ease;
 }
 .zlanding .compare-table thead th {
   position: sticky;
@@ -1769,6 +1964,11 @@
   font-size: 20px;
   font-weight: 500;
   color: var(--ink);
+  transition: color 180ms ease, padding-left 180ms ease;
+}
+.zlanding details.faq summary:hover {
+  color: var(--brand);
+  padding-left: 8px;
 }
 .zlanding details.faq summary::-webkit-details-marker {
   display: none;
@@ -1790,6 +1990,9 @@
   color: var(--muted);
   padding: 0 40px 24px 0;
   max-width: 72ch;
+}
+.zlanding details.faq[open] .ans {
+  animation: faq-answer-in 260ms ease-out both;
 }
 .zlanding details.faq .ans b {
   color: var(--ink);
@@ -2114,6 +2317,62 @@
     border-color 220ms ease-out;
 }
 
+@keyframes hero-copy-in {
+  from { opacity: 0; translate: 0 14px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes hero-card-in {
+  from { opacity: 0; translate: 0 20px; scale: 0.985; }
+  to { opacity: 1; translate: 0 0; scale: 1; }
+}
+@keyframes chart-area-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes chart-line-in {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes chart-deposit-in {
+  from { opacity: 0; translate: 0 5px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes donut-sweep-in {
+  from { stroke-dashoffset: var(--donut-length); opacity: 0.35; }
+  to { stroke-dashoffset: 0; opacity: 1; }
+}
+@keyframes process-line-in {
+  to { transform: scaleY(1); }
+}
+@keyframes process-step-in {
+  from { opacity: 0; translate: 18px 0; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes feature-content-in {
+  from { opacity: 0; translate: 0 8px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes platform-copy-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes platform-copy-item-in {
+  from { opacity: 0; translate: 0 8px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes sync-pulse {
+  0%, 60%, 100% { box-shadow: 0 0 0 5px rgba(54, 160, 107, 0.12); }
+  30% { box-shadow: 0 0 0 9px rgba(54, 160, 107, 0.03); }
+}
+@keyframes orbit-breathe {
+  0%, 100% { scale: 1; opacity: 0.8; }
+  50% { scale: 1.035; opacity: 1; }
+}
+@keyframes faq-answer-in {
+  from { opacity: 0; translate: 0 -5px; }
+  to { opacity: 1; translate: 0 0; }
+}
+
 @media (max-width: 920px) {
   .zlanding .compare-hint {
     display: block;
@@ -2130,7 +2389,7 @@
     max-width: 62ch;
   }
   .zlanding .product-preview {
-    grid-template-columns: minmax(0, 1.1fr) minmax(270px, 0.9fr);
+    grid-template-columns: minmax(0, 1fr);
     max-width: 760px;
   }
   .zlanding .trust-grid {
@@ -2203,6 +2462,16 @@
   .zlanding .nav-links a.lnk {
     display: none;
   }
+  .zlanding .nav-links a.lnk[href="#lista-beta"] {
+    display: inline-flex;
+    padding: 9px 11px;
+    color: var(--on-brand);
+    background: var(--brand);
+  }
+  .zlanding .nav-login {
+    margin-left: 0;
+    padding-inline: 11px;
+  }
   .zlanding .process-shell {
     padding: 24px 18px;
     border-radius: 21px;
@@ -2211,6 +2480,9 @@
     grid-template-columns: 1fr;
     gap: 12px;
     padding: 18px;
+  }
+  .zlanding .process-steps::before {
+    left: 41px;
   }
   .zlanding .step-index {
     width: 46px;
@@ -2227,6 +2499,46 @@
   }
   .zlanding .feat-portfolios {
     grid-column: span 1;
+  }
+  .zlanding .feature-toggle-input:not(:checked) ~ .feat-grid .feat[data-feature-index="5"],
+  .zlanding .feature-toggle-input:not(:checked) ~ .feat-grid .feat[data-feature-index="6"],
+  .zlanding .feature-toggle-input:not(:checked) ~ .feat-grid .feat[data-feature-index="7"],
+  .zlanding .feature-toggle-input:not(:checked) ~ .feat-grid .feat[data-feature-index="8"] {
+    display: none;
+  }
+  .zlanding .feature-more {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    margin-top: 18px;
+    padding: 13px 18px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--card) 76%, transparent);
+    color: var(--brand);
+    cursor: pointer;
+    font: 650 13px var(--ui);
+  }
+  .zlanding .feature-more-collapse {
+    display: none;
+  }
+  .zlanding .feature-toggle-input:checked ~ .feature-more .feature-more-expand {
+    display: none;
+  }
+  .zlanding .feature-toggle-input:checked ~ .feature-more .feature-more-collapse {
+    display: inline;
+  }
+  .zlanding .feature-toggle-input:focus-visible ~ .feature-more {
+    outline: 2px solid var(--brand);
+    outline-offset: 3px;
+  }
+  .zlanding .feature-more b {
+    transition: transform 180ms ease;
+  }
+  .zlanding .feature-toggle-input:checked ~ .feature-more b {
+    transform: rotate(180deg);
   }
   .zlanding .landing-hero {
     padding: 36px 0 26px;
@@ -2245,6 +2557,27 @@
     display: flex;
     flex-direction: column;
     gap: 15px;
+  }
+  .zlanding .product-preview-secondary {
+    display: flex;
+    gap: 12px;
+    width: calc(100% + 20px);
+    max-width: calc(100vw - 20px);
+    min-width: 0;
+    margin-right: -20px;
+    padding: 4px 20px 12px 0;
+    overflow-x: auto;
+    scroll-padding-left: 0;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+  .zlanding .product-preview-secondary::-webkit-scrollbar {
+    display: none;
+  }
+  .zlanding .product-preview-secondary .product-card {
+    flex: 0 0 min(82vw, 310px);
+    min-height: 250px;
+    scroll-snap-align: start;
   }
   .zlanding .value-card,
   .zlanding .allocation-card,
@@ -2273,6 +2606,7 @@
   }
   .zlanding .platform-stage {
     border-radius: 23px;
+    touch-action: pan-y;
   }
   .zlanding .platform-stage-bar {
     grid-template-columns: 1fr;
@@ -2357,19 +2691,47 @@
     padding: 56px 0;
   }
 }
-@media (max-width: 380px) {
-  .zlanding .hero-copy h1 {
-    font-size: 39px;
+@media (max-width: 440px) {
+  .zlanding .store-badges {
+    display: grid;
+    grid-template-columns: 1fr;
   }
   .zlanding .store-badge {
     width: 100%;
     justify-content: flex-start;
   }
+  .zlanding .beta-pill {
+    display: none;
+  }
+}
+@media (max-width: 380px) {
+  .zlanding .hero-copy h1 {
+    font-size: 39px;
+  }
+  .zlanding .nav-links a.lnk[href="#lista-beta"] {
+    display: none;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .zlanding .platform-visual figure,
-  .zlanding .platform-story {
+  .zlanding .platform-story,
+  .zlanding .platform-story > *,
+  .zlanding .platform-sync > span,
+  .zlanding .platform-orbit,
+  .zlanding .landing-hero .hero-copy > *,
+  .zlanding .landing-hero .product-card,
+  .zlanding .static-vvd-chart path,
+  .zlanding .static-vvd-chart polyline,
+  .zlanding .allocation-card circle,
+  .zlanding .process-shell.in .process-steps::before,
+  .zlanding .process-shell.in .process-step,
+  .zlanding .feat.reveal.in > *,
+  .zlanding details.faq[open] .ans {
     animation: none;
+    opacity: 1;
+    translate: none;
+    scale: none;
+    filter: none;
   }
   .zlanding .reveal {
     opacity: 1;
@@ -2384,6 +2746,11 @@
   .zlanding .feat:hover,
   .zlanding .feat.reveal.in {
     transform: none;
+    transition: none;
+  }
+  .zlanding .platform-tabs::before,
+  .zlanding .nav-progress,
+  .zlanding .feature-more b {
     transition: none;
   }
 }

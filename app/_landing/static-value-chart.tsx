@@ -119,6 +119,7 @@ export function StaticValueChart({
         </div>
       </div>
       <svg
+        key={period}
         data-chart-range={period}
         viewBox={`0 0 ${chartWidth} ${chartHeight}`}
         role="img"
@@ -137,8 +138,8 @@ export function StaticValueChart({
           </g>
         ))}
         <path d={`M${pl},${pt + innerHeight} L${valuePoints} L${pl + innerWidth},${pt + innerHeight} Z`} />
-        <polyline className="deposit-line" points={depositPoints} />
-        <polyline className="value-line" points={valuePoints} />
+        <polyline className="deposit-line" pathLength="1" points={depositPoints} />
+        <polyline className="value-line" pathLength="1" points={valuePoints} />
       </svg>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 const prefersReducedMotion = () =>
   typeof window !== "undefined" &&
@@ -14,12 +14,9 @@ const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
  * jumping straight to the target. Returns the current (possibly fractional)
  * value — format it at the call site. */
 export function useCountUp(target: number, durationMs = 1150) {
-  const [value, setValue] = useState(() => (prefersReducedMotion() ? target : 0));
-  const started = useRef(false);
+  const [value, setValue] = useState(0);
 
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
     if (prefersReducedMotion()) {
       setValue(target);
       return;
