@@ -1,13 +1,14 @@
 import type { MetadataRoute } from "next";
 
 const SITE_URL = "https://zecca.pl";
+const LANDING_LAST_MODIFIED = new Date("2026-07-13");
 const LAST_MODIFIED = new Date("2026-07-02");
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
       url: SITE_URL,
-      lastModified: LAST_MODIFIED,
+      lastModified: LANDING_LAST_MODIFIED,
       changeFrequency: "weekly",
       priority: 1,
     },
