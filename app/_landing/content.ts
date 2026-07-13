@@ -90,9 +90,35 @@ const FEATURE_LAYOUT_CLASSES = [
 ];
 
 const SHOWCASE_MEDIA = {
-  macos: { src: "/landing/showcase-mac.webp", width: 2200, height: 1359, device: "desktop" },
-  web: { src: "/landing/hero-mac.webp", width: 2000, height: 1157, device: "desktop" },
-  ios: { src: "/landing/ios.webp", width: 600, height: 1305, device: "phone" },
+  macos: {
+    device: "desktop",
+    shots: [
+      { label: "Pulpit", src: "/landing/screenshots/macos/dashboard.png", width: 2560, height: 1640, alt: "Pulpit natywnej aplikacji Zecca na macOS" },
+      { label: "Pozycje", src: "/landing/screenshots/macos/positions.png", width: 2560, height: 1640, alt: "Pozycje portfela w natywnej aplikacji Zecca na macOS" },
+      { label: "Transakcje", src: "/landing/screenshots/macos/transactions.png", width: 2560, height: 1640, alt: "Historia transakcji w natywnej aplikacji Zecca na macOS" },
+      { label: "Raporty", src: "/landing/screenshots/macos/reports.png", width: 2560, height: 1640, alt: "Raporty inwestycyjne w natywnej aplikacji Zecca na macOS" },
+      { label: "Import", src: "/landing/screenshots/macos/import.png", width: 2560, height: 1640, alt: "Import danych w natywnej aplikacji Zecca na macOS" },
+    ],
+  },
+  web: {
+    device: "desktop",
+    shots: [
+      { label: "Pulpit", src: "/landing/screenshots/web/dashboard.jpg", width: 2530, height: 1424, alt: "Pulpit Zecca w przeglądarce" },
+      { label: "Pozycje", src: "/landing/screenshots/web/positions.jpg", width: 2530, height: 1424, alt: "Pozycje portfela Zecca w przeglądarce" },
+      { label: "Transakcje", src: "/landing/screenshots/web/transactions.jpg", width: 2530, height: 1424, alt: "Historia transakcji Zecca w przeglądarce" },
+      { label: "Raporty", src: "/landing/screenshots/web/reports.jpg", width: 2530, height: 1424, alt: "Raporty inwestycyjne Zecca w przeglądarce" },
+    ],
+  },
+  ios: {
+    device: "phone",
+    shots: [
+      { label: "Pulpit", src: "/landing/screenshots/ios/dashboard.png", width: 1206, height: 2622, alt: "Pulpit aplikacji Zecca na iPhonie" },
+      { label: "Pozycje", src: "/landing/screenshots/ios/positions.png", width: 1206, height: 2622, alt: "Pozycje portfela w aplikacji Zecca na iPhonie" },
+      { label: "Transakcje", src: "/landing/screenshots/ios/transactions.png", width: 1206, height: 2622, alt: "Historia transakcji w aplikacji Zecca na iPhonie" },
+      { label: "Zarobki", src: "/landing/screenshots/ios/earnings.png", width: 1206, height: 2622, alt: "Zarobki i wyniki roczne w aplikacji Zecca na iPhonie" },
+      { label: "Raporty", src: "/landing/screenshots/ios/reports.png", width: 1206, height: 2622, alt: "Raporty inwestycyjne w aplikacji Zecca na iPhonie" },
+    ],
+  },
 } as const;
 
 const DISCORD_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19.3 5.3A16 16 0 0015.4 4l-.2.4a12 12 0 014 .9 13 13 0 00-14.6 0c1.2-.5 2.6-.8 4-.9L8.6 4a16 16 0 00-3.9 1.3C2.2 9 1.5 12.6 1.8 16.2a16 16 0 004.9 2.5l.6-1c-.5-.2-1-.4-1.5-.7l.4-.3a11.5 11.5 0 009.8 0l.4.3c-.5.3-1 .5-1.5.7l.6 1a16 16 0 004.9-2.5c.4-4.2-.7-7.8-3-11zM8.9 14.3c-1 0-1.7-.9-1.7-1.9s.8-1.9 1.7-1.9 1.8.9 1.7 1.9c0 1-.8 1.9-1.7 1.9zm6.2 0c-1 0-1.7-.9-1.7-1.9s.8-1.9 1.7-1.9 1.8.9 1.7 1.9c0 1-.8 1.9-1.7 1.9z"/></svg>`;
@@ -215,11 +241,20 @@ const showcaseHtml = `
           ${showcasePlatforms
             .map((screen, index) => {
               const media = SHOWCASE_MEDIA[screen.id];
+              const firstShot = media.shots[0];
+              const shotNavigation =
+                media.shots.length > 1
+                  ? `<div class="platform-shot-nav" role="group" aria-label="Widoki ${screen.tab}">${media.shots
+                      .map(
+                        (shot, shotIndex) => `<button type="button" aria-pressed="${shotIndex === 0 ? "true" : "false"}" data-platform-shot-target data-src="${shot.src}" data-width="${shot.width}" data-height="${shot.height}" data-alt="${shot.alt}">${shot.label}</button>`,
+                      )
+                      .join("")}</div>`
+                  : "";
               const preview =
                 media.device === "phone"
-                  ? `<div class="phone-preview"><div class="iphone" aria-label="Podgląd aplikacji Zecca na iPhonie"><div class="island"></div><div class="screen"><img class="ph-shot" src="${media.src}" width="${media.width}" height="${media.height}" loading="lazy" decoding="async" alt="${screen.imageAlt}" /></div></div><span class="phone-preview-note">Najważniejsze dane<br />zawsze pod ręką</span></div>`
-                  : `<div class="desktop-preview"><div class="desktop-preview-chrome"><span></span><span></span><span></span><small>${screen.id === "web" ? "app.zecca.pl" : "Zecca dla macOS"}</small></div><img src="${media.src}" width="${media.width}" height="${media.height}" loading="lazy" decoding="async" alt="${screen.imageAlt}" /></div>`;
-              return `<figure id="platform-panel-${screen.id}" role="tabpanel" aria-labelledby="platform-tab-${screen.id}" data-platform-panel="${screen.id}" data-device="${media.device}"${index === 0 ? "" : " hidden"}>${preview}</figure>`;
+                  ? `<div class="phone-preview"><img class="ios-shot" data-platform-shot src="${firstShot.src}" width="${firstShot.width}" height="${firstShot.height}" loading="lazy" decoding="async" alt="${firstShot.alt}" /><span class="phone-preview-note">Najważniejsze dane<br />zawsze pod ręką</span></div>`
+                  : `<div class="desktop-preview"><div class="desktop-preview-chrome"><span></span><span></span><span></span><small>${screen.id === "web" ? "app.zecca.pl" : "Zecca dla macOS"}</small></div><img data-platform-shot src="${firstShot.src}" width="${firstShot.width}" height="${firstShot.height}" loading="lazy" decoding="async" alt="${firstShot.alt}" /></div>`;
+              return `<figure id="platform-panel-${screen.id}" role="tabpanel" aria-labelledby="platform-tab-${screen.id}" data-platform-panel="${screen.id}" data-device="${media.device}"${index === 0 ? "" : " hidden"}>${preview}${shotNavigation}</figure>`;
             })
             .join("\n          ")}
           <div class="platform-data-chip"><span>${CHECK_SVG}</span><div><strong>Ten sam portfel</strong><small>Spójne dane i historia</small></div></div>

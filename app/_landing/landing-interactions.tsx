@@ -256,6 +256,21 @@ export function LandingInteractions() {
       const tabs = Array.from(gallery.querySelectorAll<HTMLButtonElement>("[data-platform-target]"));
       const panels = Array.from(gallery.querySelectorAll<HTMLElement>("[data-platform-panel]"));
       const stories = Array.from(gallery.querySelectorAll<HTMLElement>("[data-platform-copy]"));
+      const activateShot = (button: HTMLButtonElement) => {
+        const panel = button.closest<HTMLElement>("[data-platform-panel]");
+        const image = panel?.querySelector<HTMLImageElement>("[data-platform-shot]");
+        if (!panel || !image) return;
+
+        panel.querySelectorAll<HTMLButtonElement>("[data-platform-shot-target]").forEach((shotButton) => {
+          shotButton.setAttribute("aria-pressed", shotButton === button ? "true" : "false");
+        });
+        image.src = button.dataset.src ?? image.src;
+        image.alt = button.dataset.alt ?? image.alt;
+        image.width = Number(button.dataset.width) || image.width;
+        image.height = Number(button.dataset.height) || image.height;
+        image.classList.remove("is-changing");
+        window.requestAnimationFrame(() => image.classList.add("is-changing"));
+      };
       const activate = (target: string, focus = false) => {
         const activeIndex = Math.max(0, tabs.findIndex((tab) => tab.dataset.platformTarget === target));
         gallery.querySelector<HTMLElement>(".platform-tabs")?.style.setProperty("--platform-index", String(activeIndex));
@@ -272,6 +287,12 @@ export function LandingInteractions() {
           story.hidden = story.dataset.platformCopy !== target;
         });
       };
+
+      gallery.querySelectorAll<HTMLButtonElement>("[data-platform-shot-target]").forEach((button) => {
+        const onClick = () => activateShot(button);
+        button.addEventListener("click", onClick);
+        platformTabHandlers.push([button, "click", onClick]);
+      });
 
       tabs.forEach((tab, index) => {
         const onClick = () => activate(tab.dataset.platformTarget ?? "");
@@ -294,11 +315,13 @@ export function LandingInteractions() {
       let touchStartX = 0;
       let touchStartY = 0;
       const onTouchStart = (event: Event) => {
+        if (event.target instanceof Element && event.target.closest("[data-platform-shot-target]")) return;
         const touch = (event as TouchEvent).changedTouches[0];
         touchStartX = touch?.clientX ?? 0;
         touchStartY = touch?.clientY ?? 0;
       };
       const onTouchEnd = (event: Event) => {
+        if (event.target instanceof Element && event.target.closest("[data-platform-shot-target]")) return;
         const touch = (event as TouchEvent).changedTouches[0];
         if (!touch) return;
         const deltaX = touch.clientX - touchStartX;
