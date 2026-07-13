@@ -217,7 +217,6 @@ const showcaseHtml = `
       </div>
       <div>
         <p>${c.showcase.desc}</p>
-        <div class="platform-promise"><span></span> Jeden model danych na każdym ekranie</div>
       </div>
     </header>
 
@@ -231,13 +230,12 @@ const showcaseHtml = `
             )
             .join("")}
         </div>
-        <div class="platform-sync"><span></span> Sync</div>
       </div>
 
       <div class="platform-stage-main">
         <div class="platform-visual">
           <div class="platform-orbit" aria-hidden="true"></div>
-          <div class="platform-visual-label"><span>Podgląd produktu</span><strong>macOS · Web · iOS</strong></div>
+          <div class="platform-visual-label"><span>Podgląd produktu</span><strong>Web · macOS · iOS</strong></div>
           ${showcasePlatforms
             .map((screen, index) => {
               const media = SHOWCASE_MEDIA[screen.id];
@@ -331,7 +329,7 @@ const comparisonHtml = `
             ${cmp.columns
               .map(
                 (col, i) =>
-                  `<th scope="col" class="${i === 0 ? "compare-us" : ""}">${i === 0 ? '<span class="compare-tag">Polecane</span>' : ""}${col}</th>`,
+                  `<th scope="col" class="${i === 0 ? "compare-us" : ""}">${i === 0 ? '<span class="compare-tag" data-landing-edit-id="comparison.recommended">Polecane</span>' : ""}<span data-landing-edit-id="comparison.columns.${i}">${col}</span></th>`,
               )
               .join("\n            ")}
           </tr>
@@ -343,10 +341,10 @@ const comparisonHtml = `
             <th scope="row" class="compare-col-label">
               <span class="compare-row-label">
                 <span class="compare-row-ic">${COMPARE_ROW_ICONS[r] ?? ""}</span>
-                <span>${row.label}</span>
+                <span data-landing-edit-id="comparison.rows.${r}.label">${row.label}</span>
               </span>
             </th>
-            ${row.values.map((value, i) => `<td class="${i === 0 ? "compare-us" : ""}">${value}</td>`).join("\n            ")}
+            ${row.values.map((value, i) => `<td class="${i === 0 ? "compare-us" : ""}"><span data-landing-edit-id="comparison.rows.${r}.values.${i}">${value}</span></td>`).join("\n            ")}
           </tr>`,
             )
             .join("\n          ")}
@@ -384,9 +382,6 @@ const betaListHtml = `
       <div class="sec-num">${beta.eyebrow}</div>
       <h2 class="sec-title">${beta.title}</h2>
       <p class="sec-desc">${beta.desc}</p>
-      <ul class="beta-list-points">
-        ${beta.points.map((point) => `<li>${CHECK_SVG}${point}</li>`).join("\n        ")}
-      </ul>
     </div>
     <form class="beta-waitlist-form reveal" id="betaWaitlistForm" data-provider="airtable" data-enabled="${waitlistEnabled ? "true" : "false"}" data-status="${waitlistEnabled ? "ready" : "planned"}" aria-describedby="beta-waitlist-status" novalidate>
       <div class="field">

@@ -1318,23 +1318,6 @@
   font-size: 16px;
   line-height: 1.65;
 }
-.zlanding .platform-promise {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  margin-top: 22px;
-  color: rgba(244, 242, 230, 0.92);
-  font: 600 12px var(--mono);
-  letter-spacing: 0.02em;
-}
-.zlanding .platform-promise > span,
-.zlanding .platform-sync > span {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #36a06b;
-  box-shadow: 0 0 0 5px rgba(54, 160, 107, 0.12);
-}
 .zlanding .platform-stage {
   min-width: 0;
   overflow: hidden;
@@ -1432,32 +1415,19 @@
   outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
-.zlanding .platform-sync {
-  justify-self: end;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  color: var(--muted);
-  font: 600 10px var(--mono);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.zlanding .platform-sync > span {
-  animation: sync-pulse 2.4s ease-out infinite;
-}
 .zlanding .platform-stage-main {
-  min-height: 650px;
+  min-height: 520px;
   display: grid;
   grid-template-columns: minmax(0, 1.48fr) minmax(330px, 0.72fr);
 }
 .zlanding .platform-visual {
   min-width: 0;
-  min-height: 650px;
+  min-height: 520px;
   position: relative;
   display: grid;
   place-items: center;
   overflow: hidden;
-  padding: clamp(46px, 5vw, 76px) clamp(26px, 4vw, 58px);
+  padding: clamp(34px, 4vw, 56px) clamp(26px, 4vw, 58px);
   background:
     linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px),
@@ -1580,7 +1550,7 @@
   height: auto;
 }
 .zlanding .phone-preview {
-  min-height: 500px;
+  min-height: 430px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1643,8 +1613,8 @@
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding: clamp(42px, 5vw, 70px);
+  justify-content: flex-start;
+  padding: clamp(36px, 4vw, 52px);
   animation: platform-copy-in 480ms cubic-bezier(0.2, 0.72, 0.2, 1);
 }
 .zlanding .platform-story > * {
@@ -1656,7 +1626,7 @@
 .zlanding .platform-story > :nth-child(4) { animation-delay: 200ms; }
 .zlanding .platform-story > :nth-child(5) { animation-delay: 240ms; }
 .zlanding .platform-story-index {
-  margin-bottom: auto;
+  margin-bottom: 32px;
   color: var(--gold);
   font: 600 18px var(--mono);
 }
@@ -1698,12 +1668,12 @@
   color: var(--brand);
 }
 .zlanding .platform-story .show-list {
-  margin-top: auto;
-  padding-top: 34px;
+  margin-top: 28px;
+  padding-top: 0;
 }
 .zlanding .ios-shot {
   display: block;
-  width: min(230px, 78vw);
+  width: min(210px, 78vw);
   max-width: 78vw;
   height: auto;
   border-radius: 30px;
@@ -2030,27 +2000,6 @@
   gap: clamp(30px, 5vw, 72px);
   align-items: center;
 }
-.zlanding .beta-list-points {
-  list-style: none;
-  display: grid;
-  gap: 11px;
-  margin-top: 28px;
-}
-.zlanding .beta-list-points li {
-  display: flex;
-  gap: 11px;
-  align-items: flex-start;
-  color: var(--muted);
-  font-size: 14.5px;
-  line-height: 1.5;
-}
-.zlanding .beta-list-points .ck {
-  width: 18px;
-  height: 18px;
-  flex: 0 0 auto;
-  margin-top: 1px;
-  color: var(--brand);
-}
 .zlanding .beta-waitlist-form {
   padding: 28px;
   border: 1px solid rgba(255, 255, 255, 0.72);
@@ -2101,7 +2050,7 @@
   border-color: var(--brand);
   box-shadow: 0 0 0 3px var(--brand-tint);
 }
-.zlanding .beta-consent {
+.zlanding .beta-waitlist-form label.beta-consent {
   display: flex;
   gap: 10px;
   align-items: flex-start;
@@ -2378,10 +2327,6 @@
   from { opacity: 0; translate: 0 8px; }
   to { opacity: 1; translate: 0 0; }
 }
-@keyframes sync-pulse {
-  0%, 60%, 100% { box-shadow: 0 0 0 5px rgba(54, 160, 107, 0.12); }
-  30% { box-shadow: 0 0 0 9px rgba(54, 160, 107, 0.03); }
-}
 @keyframes orbit-breathe {
   0%, 100% { scale: 1; opacity: 0.8; }
   50% { scale: 1.035; opacity: 1; }
@@ -2458,10 +2403,10 @@
     grid-template-columns: 1fr;
   }
   .zlanding .platform-visual {
-    min-height: 560px;
+    min-height: 480px;
   }
   .zlanding .platform-stories {
-    min-height: 460px;
+    min-height: 340px;
     border-top: 0.5px solid var(--line-2);
     border-left: 0;
   }
@@ -2631,8 +2576,7 @@
     gap: 12px;
     padding: 16px;
   }
-  .zlanding .platform-stage-brand,
-  .zlanding .platform-sync {
+  .zlanding .platform-stage-brand {
     display: none;
   }
   .zlanding .platform-tabs {
@@ -2644,8 +2588,8 @@
     padding-inline: 8px;
   }
   .zlanding .platform-visual {
-    min-height: 390px;
-    padding: 62px 14px 42px;
+    min-height: 340px;
+    padding: 48px 14px 34px;
   }
   .zlanding .platform-visual-label {
     top: 17px;
@@ -2667,7 +2611,7 @@
     padding: 8px 10px;
   }
   .zlanding .phone-preview {
-    min-height: 420px;
+    min-height: 360px;
     gap: 0;
   }
   .zlanding .phone-preview-note,
@@ -2675,7 +2619,7 @@
     display: none;
   }
   .zlanding .platform-story {
-    min-height: 470px;
+    min-height: 340px;
     padding: 34px 26px;
   }
   .zlanding .platform-story h3 {
@@ -2743,7 +2687,6 @@
   .zlanding [data-platform-shot].is-changing,
   .zlanding .platform-story,
   .zlanding .platform-story > *,
-  .zlanding .platform-sync > span,
   .zlanding .platform-orbit,
   .zlanding .landing-hero .hero-copy > *,
   .zlanding .landing-hero .product-card,

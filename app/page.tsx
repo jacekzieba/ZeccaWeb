@@ -11,10 +11,11 @@ export const dynamic = "force-dynamic";
 
 const SITE_URL = "https://zecca.pl";
 const LANDING_DESCRIPTION =
-  "Zecca prowadzi Twoje portfele — IKE, IKZE, akcje, ETF-y, obligacje skarbowe i lokaty — lokalnie i prywatnie. Kursy z NBP, inflacja z GUS, pełna historia od pierwszej transakcji.";
+  "Zecca to prywatna aplikacja do śledzenia inwestycji: IKE, IKZE, akcje, ETF-y, obligacje skarbowe i lokaty — na macOS, iOS oraz w przeglądarce.";
+const LANDING_TITLE = "Zecca - śledź wszystkie inwestycje";
 
 export const metadata: Metadata = {
-  title: "Zecca · spokojny przegląd Twoich inwestycji",
+  title: LANDING_TITLE,
   description: LANDING_DESCRIPTION,
   alternates: {
     canonical: "/",
@@ -24,7 +25,7 @@ export const metadata: Metadata = {
     locale: "pl_PL",
     url: SITE_URL,
     siteName: "Zecca",
-    title: "Zecca · spokojny przegląd Twoich inwestycji",
+    title: LANDING_TITLE,
     description: LANDING_DESCRIPTION,
     images: [
       {
@@ -37,7 +38,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Zecca · spokojny przegląd Twoich inwestycji",
+    title: LANDING_TITLE,
     description: LANDING_DESCRIPTION,
     images: ["/landing/showcase-mac.webp"],
   },
