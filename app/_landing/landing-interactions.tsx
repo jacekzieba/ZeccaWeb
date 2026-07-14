@@ -2,6 +2,9 @@
 
 import { useEffect } from "react";
 
+const DRAFT_COPY_PREFIX = "zecca-landing-copy:";
+const PUBLISHED_COPY_PREFIX = "zecca-landing-published:";
+
 function getStableCopyId(element: HTMLElement) {
   if (element.dataset.landingEditId) return element.dataset.landingEditId;
 
@@ -31,53 +34,62 @@ function getStableCopyId(element: HTMLElement) {
 export function LandingInteractions() {
   useEffect(() => {
     // Local copy-editing mode for reviewing landing text in place.
-    // Open the page with `?edit=1`; edits are saved only in this browser.
+    // Open the page with `?edit=1`; drafts and published changes stay in this browser.
     const editMode = new URLSearchParams(window.location.search).get("edit") === "1";
+    const root = document.querySelector<HTMLElement>(".zlanding");
+    const selector = [
+      ".zlanding h1",
+      ".zlanding h2",
+      ".zlanding h3",
+      ".zlanding p",
+      ".zlanding li",
+      ".zlanding .beta-banner",
+      ".zlanding .eyebrow",
+      ".zlanding .sec-num",
+      ".zlanding .kicker",
+      ".zlanding .tag",
+      ".zlanding .li",
+      ".zlanding .product-kicker",
+      ".zlanding .product-heading",
+      ".zlanding .portfolio-name strong",
+      ".zlanding .portfolio-preview-total span",
+      ".zlanding .nav-links a",
+      ".zlanding .store-badge span",
+      ".zlanding .hero-beta-link",
+      ".zlanding .compare-table [data-landing-edit-id]",
+      ".zlanding .faq [data-landing-edit-id]",
+    ].join(",");
+    const dynamicTextSelector = [
+      ".product-value",
+      ".product-change",
+      ".demo-status",
+      ".portfolio-name small",
+      ".portfolio-preview-total b",
+      ".portfolio-trend b",
+    ].join(",");
+    const editableElements = root
+      ? Array.from(root.querySelectorAll<HTMLElement>(selector))
+          .filter((element) => !element.closest(".landing-edit-toolbar"))
+          .filter((element) => !element.matches(dynamicTextSelector))
+      : [];
+
+    editableElements.forEach((element) => {
+      const published = window.localStorage.getItem(`${PUBLISHED_COPY_PREFIX}${getStableCopyId(element)}`);
+      if (published != null) element.innerHTML = published;
+    });
+
     let teardownTextEditor = () => {};
     if (editMode) {
       document.body.classList.add("landing-copy-editing");
-      const root = document.querySelector<HTMLElement>(".zlanding");
-      const selector = [
-        ".zlanding h1",
-        ".zlanding h2",
-        ".zlanding h3",
-        ".zlanding p",
-        ".zlanding li",
-        ".zlanding .beta-banner",
-        ".zlanding .eyebrow",
-        ".zlanding .sec-num",
-        ".zlanding .kicker",
-        ".zlanding .tag",
-        ".zlanding .li",
-        ".zlanding .product-kicker",
-        ".zlanding .product-heading",
-        ".zlanding .portfolio-name strong",
-        ".zlanding .portfolio-preview-total span",
-        ".zlanding .nav-links a",
-        ".zlanding .store-badge span",
-        ".zlanding .hero-beta-link",
-        ".zlanding .compare-table [data-landing-edit-id]",
-      ].join(",");
-      const dynamicTextSelector = [
-        ".product-value",
-        ".product-change",
-        ".demo-status",
-        ".portfolio-name small",
-        ".portfolio-preview-total b",
-        ".portfolio-trend b",
-      ].join(",");
-      const editableElements = root
-        ? Array.from(root.querySelectorAll<HTMLElement>(selector))
-            .filter((element) => !element.closest(".landing-edit-toolbar"))
-            .filter((element) => !element.matches(dynamicTextSelector))
-        : [];
 
       const saveHandlers: Array<[HTMLElement, EventListener]> = [];
       editableElements.forEach((element) => {
         const copyId = getStableCopyId(element);
-        const key = `zecca-landing-copy:${copyId}`;
+        const key = `${DRAFT_COPY_PREFIX}${copyId}`;
+        const publishedKey = `${PUBLISHED_COPY_PREFIX}${copyId}`;
         const saved = window.localStorage.getItem(key);
         element.dataset.landingEditKey = key;
+        element.dataset.landingPublishedKey = publishedKey;
         element.dataset.landingEditId = copyId;
         element.dataset.landingInitialHtml = element.innerHTML;
         if (saved != null) {
@@ -98,6 +110,9 @@ export function LandingInteractions() {
           if (element instanceof HTMLAnchorElement) {
             event.preventDefault();
           }
+          if (element.closest("summary")) {
+            event.preventDefault();
+          }
         };
         element.addEventListener("input", persist);
         element.addEventListener("blur", persist);
@@ -110,15 +125,28 @@ export function LandingInteractions() {
       toolbar.innerHTML = `
         <strong>Tryb edycji tekstów</strong>
         <span>${editableElements.length} pól</span>
+        <button type="button" data-action="publish">Opublikuj</button>
         <button type="button" data-action="reset">Reset</button>
       `;
       const onToolbarClick = (event: Event) => {
         const target = event.target as HTMLElement | null;
+        if (target?.matches("button[data-action='publish']")) {
+          editableElements.forEach((element) => {
+            const key = element.dataset.landingPublishedKey;
+            if (key) window.localStorage.setItem(key, element.innerHTML);
+          });
+          const publishedUrl = new URL(window.location.href);
+          publishedUrl.searchParams.delete("edit");
+          window.location.assign(publishedUrl);
+        }
         if (target?.matches("button[data-action='reset']")) {
           editableElements.forEach((element) => {
             const key = element.dataset.landingEditKey;
             if (key) window.localStorage.removeItem(key);
-            const html = element.dataset.landingInitialHtml ?? element.innerHTML;
+            const publishedKey = element.dataset.landingPublishedKey;
+            const html = (publishedKey ? window.localStorage.getItem(publishedKey) : null)
+              ?? element.dataset.landingInitialHtml
+              ?? element.innerHTML;
             element.innerHTML = html;
             element.classList.remove("landing-copy-empty");
             const copyId = element.dataset.landingEditId;
@@ -148,6 +176,7 @@ export function LandingInteractions() {
           element.removeAttribute("tabindex");
           element.classList.remove("landing-copy-empty");
           delete element.dataset.landingEditKey;
+          delete element.dataset.landingPublishedKey;
           delete element.dataset.landingInitialHtml;
         });
         toolbar.removeEventListener("click", onToolbarClick);
@@ -251,6 +280,26 @@ export function LandingInteractions() {
       window.setTimeout(() => ok?.classList.remove("show"), 6000);
     };
     form?.addEventListener("submit", onSubmit);
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const landingAnchors = root
+      ? Array.from(root.querySelectorAll<HTMLAnchorElement>('a[href^="#"]'))
+      : [];
+    const onAnchorClick = (event: Event) => {
+      if (
+        event.defaultPrevented ||
+        (event instanceof MouseEvent && (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey))
+      ) return;
+      const anchor = event.currentTarget as HTMLAnchorElement;
+      const hash = anchor.getAttribute("href");
+      const target = hash && hash !== "#" ? document.querySelector<HTMLElement>(hash) : null;
+      if (!target) return;
+
+      event.preventDefault();
+      window.history.pushState(null, "", hash);
+      target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+    };
+    landingAnchors.forEach((anchor) => anchor.addEventListener("click", onAnchorClick));
 
     const platformTabHandlers: Array<[HTMLElement, string, EventListener]> = [];
     document.querySelectorAll<HTMLElement>("[data-platform-gallery]").forEach((gallery) => {
@@ -382,9 +431,6 @@ export function LandingInteractions() {
     let teardownTilt = () => {};
     const finePointer =
       typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches;
-    const reduceMotion =
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (finePointer && !reduceMotion) {
       const cards = Array.from(
         document.querySelectorAll<HTMLElement>(".zlanding .feat, .zlanding .product-card"),
@@ -447,6 +493,7 @@ export function LandingInteractions() {
     return () => {
       betaForm?.removeEventListener("submit", onBetaSubmit);
       form?.removeEventListener("submit", onSubmit);
+      landingAnchors.forEach((anchor) => anchor.removeEventListener("click", onAnchorClick));
       platformTabHandlers.forEach(([element, eventName, handler]) => {
         element.removeEventListener(eventName, handler);
       });

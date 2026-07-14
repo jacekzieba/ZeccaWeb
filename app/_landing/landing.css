@@ -59,6 +59,9 @@
   color: inherit;
   text-decoration: none;
 }
+.zlanding [id] {
+  scroll-margin-top: 76px;
+}
 .zlanding .wrap {
   max-width: 1180px;
   margin: 0 auto;
@@ -200,9 +203,6 @@
   padding: 14px 22px;
   font-size: 15px;
   border-radius: 12px;
-}
-.zlanding .nav-login {
-  margin-left: 8px;
 }
 .zlanding .nav-burger {
   display: none;
@@ -383,6 +383,10 @@
 .zlanding .store-badge:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 3px;
+}
+.zlanding .store-badge.is-unavailable {
+  cursor: not-allowed;
+  opacity: 0.58;
 }
 .zlanding .store-badge svg {
   width: 25px;
@@ -1912,14 +1916,6 @@
   border-radius: 99px;
   width: fit-content;
 }
-.zlanding .compare-hint {
-  display: none;
-  margin-top: 10px;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.03em;
-  color: var(--subtle);
-}
 .zlanding .compare-foot {
   margin-top: 20px;
   font-family: var(--mono);
@@ -2207,7 +2203,7 @@
 }
 .zlanding .foot-top {
   display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr 1fr;
+  grid-template-columns: 1.6fr 1fr 1fr;
   gap: 40px;
 }
 .zlanding .foot-brand .wordmark {
@@ -2238,6 +2234,13 @@
 }
 .zlanding .foot-col a:hover {
   color: var(--on-brand);
+}
+.zlanding .foot-link-unavailable {
+  display: block;
+  font-size: 14px;
+  color: rgba(244, 242, 230, 0.38);
+  padding: 6px 0;
+  cursor: not-allowed;
 }
 .zlanding .foot-col a .soon {
   font-family: var(--mono);
@@ -2326,9 +2329,6 @@
 }
 
 @media (max-width: 920px) {
-  .zlanding .compare-hint {
-    display: block;
-  }
   .zlanding .landing-hero {
     padding-top: 46px;
   }
@@ -2404,6 +2404,84 @@
     gap: 32px;
   }
 }
+@media (max-width: 840px) {
+  .zlanding .compare-scroll {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .zlanding .compare-table,
+  .zlanding .compare-table tbody,
+  .zlanding .compare-table tbody tr {
+    display: block;
+    min-width: 0;
+    width: 100%;
+  }
+  .zlanding .compare-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .zlanding .compare-table tbody tr {
+    overflow: hidden;
+    margin-bottom: 14px;
+    border: 0.5px solid var(--line);
+    border-radius: 16px;
+    background: var(--card);
+    box-shadow: var(--shadow-card);
+  }
+  .zlanding .compare-table th,
+  .zlanding .compare-table td {
+    display: grid;
+    grid-template-columns: minmax(96px, 0.8fr) minmax(0, 1fr);
+    gap: 12px;
+    padding: 13px 16px;
+    border-bottom: 0.5px solid var(--line);
+  }
+  .zlanding .compare-table tbody th {
+    display: block;
+    font-size: 16px;
+  }
+  .zlanding .compare-table td::before {
+    content: attr(data-label);
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--subtle);
+  }
+  .zlanding .compare-table tbody tr:last-child th,
+  .zlanding .compare-table tbody tr:last-child td,
+  .zlanding .compare-table tbody tr td:last-child {
+    border-bottom: 0;
+  }
+  .zlanding .compare-table .compare-col-label {
+    position: static;
+    box-shadow: none;
+  }
+  .zlanding .compare-table tbody tr:nth-child(even) th,
+  .zlanding .compare-table tbody tr:nth-child(even) td {
+    background: var(--card);
+  }
+  .zlanding .compare-table tbody tr:hover th,
+  .zlanding .compare-table tbody tr:hover td {
+    background: var(--card);
+  }
+  .zlanding .compare-table td.compare-us,
+  .zlanding .compare-table tbody tr:nth-child(even) td.compare-us,
+  .zlanding .compare-table tbody tr:hover td.compare-us {
+    background: var(--brand-tint);
+  }
+}
 @media (max-width: 680px) {
   .zlanding .wrap {
     padding: 0 20px;
@@ -2419,10 +2497,6 @@
     padding: 9px 11px;
     color: var(--on-brand);
     background: var(--brand);
-  }
-  .zlanding .nav-login {
-    margin-left: 0;
-    padding-inline: 11px;
   }
   .zlanding .process-shell {
     padding: 24px 18px;

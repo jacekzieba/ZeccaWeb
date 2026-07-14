@@ -17,12 +17,11 @@ export const landingCopy = {
   // ── Górna nawigacja ───────────────────────────────────────────────────────
   nav: {
     links: [
-      { label: "Działanie", href: "#jak-dziala" },
+      { label: "Beta: zapisy", href: "#lista-beta" },
       { label: "Funkcje", href: "#funkcje" },
-      { label: "Beta", href: "/faq" },
-      { label: "Lista beta", href: "#lista-beta" },
+      { label: "Aplikacje", href: "#aplikacje" },
+      { label: "Feedback", href: "#kontakt" },
     ],
-    login: { label: "Zaloguj się", href: "/login" },
   },
 
   // ── Sekcja główna (hero) ──────────────────────────────────────────────────
@@ -406,27 +405,17 @@ export const landingCopy = {
     tagline: "Spokojny przegląd Twoich inwestycji. Lokalnie, prywatnie, po polsku.",
     columns: [
       {
-        title: "Produkt",
-        links: [
-          { label: "Funkcje", href: "#funkcje" },
-          { label: "Dla inwestora", href: "#inwestor" },
-          { label: "Porównanie", href: "#porownanie" },
-          { label: "FAQ", href: "#faq" },
-        ],
-      },
-      {
         title: "Pobierz",
         links: [
-          { label: "TestFlight (beta)", href: "#" },
-          { label: "App Store", href: "#", soon: "wkrótce" },
-          { label: "Mac App Store", href: "#", soon: "wkrótce" },
-          { label: "Zaloguj się", href: "/login" },
+          { label: "TestFlight (beta)", unavailable: true },
+          { label: "App Store", unavailable: true, soon: "wkrótce" },
+          { label: "Mac App Store", unavailable: true, soon: "wkrótce" },
         ],
       },
       {
         title: "Kontakt",
         links: [
-          { label: "Discord", href: "#" },
+          { label: "Discord", href: "https://discord.gg/wrKjxVyFQ" },
           { label: "Feedback", href: "#kontakt" },
           { label: "E-mail", href: "mailto:zecca.barista363@passmail.net" },
           { label: "Polityka prywatności", href: "/privacy-policy" },

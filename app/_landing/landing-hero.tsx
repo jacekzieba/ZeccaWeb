@@ -198,14 +198,14 @@ export function LandingHero() {
             <div className="hero-actions">
               <div className="store-badges">
                 {hero.storeBadges.map((badge) => (
-                  <a key={badge.main} className="store-badge" href={hero.ctaPrimaryHref}>
+                  <span key={badge.main} className="store-badge is-unavailable" aria-disabled="true">
                     <AppleGlyph />
                     <span className="sb-text">
                       <span className="sb-top">{badge.top}</span>
                       <span className="sb-main">{badge.main}</span>
                     </span>
                     <span className="store-soon">{badge.soon}</span>
-                  </a>
+                  </span>
                 ))}
               </div>
               <a className="hero-beta-link" href={hero.ctaPrimaryHref}>

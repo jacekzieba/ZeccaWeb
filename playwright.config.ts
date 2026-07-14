@@ -3,6 +3,9 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/e2e",
   testIgnore: /fake-sync|auth-live|staging-smoke|staging-destructive/,
+  // The local landing editor publishes shared state. Keep public-page specs
+  // serialized so one editing scenario cannot race the responsive checks.
+  workers: 1,
   webServer: {
     command: "npm run dev -- --port 3100",
     url: "http://127.0.0.1:3100/api/health",

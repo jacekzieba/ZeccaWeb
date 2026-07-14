@@ -103,10 +103,10 @@ const SHOWCASE_MEDIA = {
   web: {
     device: "desktop",
     shots: [
-      { label: "Pulpit", src: "/landing/screenshots/web/dashboard.jpg", width: 2530, height: 1424, alt: "Pulpit Zecca w przeglądarce" },
-      { label: "Pozycje", src: "/landing/screenshots/web/positions.jpg", width: 2530, height: 1424, alt: "Pozycje portfela Zecca w przeglądarce" },
-      { label: "Transakcje", src: "/landing/screenshots/web/transactions.jpg", width: 2530, height: 1424, alt: "Historia transakcji Zecca w przeglądarce" },
-      { label: "Raporty", src: "/landing/screenshots/web/reports.jpg", width: 2530, height: 1424, alt: "Raporty inwestycyjne Zecca w przeglądarce" },
+      { label: "Pulpit", src: "/landing/screenshots/web/dashboard.webp", width: 2530, height: 1424, alt: "Pulpit Zecca w przeglądarce" },
+      { label: "Pozycje", src: "/landing/screenshots/web/positions.webp", width: 2530, height: 1424, alt: "Pozycje portfela Zecca w przeglądarce" },
+      { label: "Transakcje", src: "/landing/screenshots/web/transactions.webp", width: 2530, height: 1424, alt: "Historia transakcji Zecca w przeglądarce" },
+      { label: "Raporty", src: "/landing/screenshots/web/reports.webp", width: 2530, height: 1424, alt: "Raporty inwestycyjne Zecca w przeglądarce" },
     ],
   },
   ios: {
@@ -141,7 +141,6 @@ const navHtml = `
     </a>
     <div class="nav-links">
       ${c.nav.links.map((l) => `<a class="lnk" href="${l.href}">${l.label}</a>`).join("\n      ")}
-      <a class="btn btn-ghost nav-login" href="${c.nav.login.href}">${c.nav.login.label}</a>
     </div>
   </div>
   <span class="nav-progress" aria-hidden="true"></span>
@@ -344,14 +343,13 @@ const comparisonHtml = `
                 <span data-landing-edit-id="comparison.rows.${r}.label">${row.label}</span>
               </span>
             </th>
-            ${row.values.map((value, i) => `<td class="${i === 0 ? "compare-us" : ""}"><span data-landing-edit-id="comparison.rows.${r}.values.${i}">${value}</span></td>`).join("\n            ")}
+            ${row.values.map((value, i) => `<td class="${i === 0 ? "compare-us" : ""}" data-label="${cmp.columns[i]}"><span data-landing-edit-id="comparison.rows.${r}.values.${i}">${value}</span></td>`).join("\n            ")}
           </tr>`,
             )
             .join("\n          ")}
         </tbody>
       </table>
     </div>
-    <p class="compare-hint">Przesuń w bok, aby zobaczyć wszystkie kolumny →</p>
     <p class="compare-foot">${cmp.footnote}</p>
   </div>
 </section>`;
@@ -366,8 +364,8 @@ const faqHtml = `
     <div class="faq-wrap">
       ${c.faq.items
         .map(
-          (item) =>
-            `<details class="faq reveal"${"open" in item && item.open ? " open" : ""}><summary>${item.q}${PLUS_SVG}</summary><div class="ans">${item.a}</div></details>`,
+          (item, index) =>
+            `<details class="faq reveal"${"open" in item && item.open ? " open" : ""}><summary><span data-landing-edit-id="faq.items.${index}.question">${item.q}</span>${PLUS_SVG}</summary><div class="ans" data-landing-edit-id="faq.items.${index}.answer">${item.a}</div></details>`,
         )
         .join("\n\n      ")}
     </div>
@@ -458,8 +456,13 @@ const footerHtml = `
         <div class="foot-title">${col.title}</div>
         ${col.links
           .map(
-            (l) =>
-              `<a href="${l.href}">${l.label}${"soon" in l && l.soon ? `<span class="soon">${l.soon}</span>` : ""}</a>`,
+            (l) => {
+              const label = `${l.label}${"soon" in l && l.soon ? `<span class="soon">${l.soon}</span>` : ""}`;
+              if ("unavailable" in l && l.unavailable) {
+                return `<span class="foot-link-unavailable" aria-disabled="true">${label}</span>`;
+              }
+              return "href" in l ? `<a href="${l.href}">${label}</a>` : "";
+            },
           )
           .join("\n        ")}
       </div>`,

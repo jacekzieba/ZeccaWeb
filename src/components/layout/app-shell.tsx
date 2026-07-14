@@ -484,7 +484,7 @@ export function AppShell({
               onClick={() => setDrawerOpen(true)}
               aria-label="Menu"
               style={{
-                width: 34, height: 34, borderRadius: 9, flexShrink: 0,
+                width: 44, height: 44, borderRadius: 9, flexShrink: 0,
                 border: `0.5px solid ${COLORS.border}`,
                 background: v2Mix(V2.card, 0.5),
                 cursor: "pointer",
@@ -561,7 +561,7 @@ export function AppShell({
               onClick={() => setSearchOpen(true)}
               aria-label="Szukaj"
               style={{
-                width: 34, height: 34, borderRadius: 9, flexShrink: 0,
+                width: 44, height: 44, borderRadius: 9, flexShrink: 0,
                 border: `0.5px solid ${COLORS.border}`,
                 background: v2Mix(V2.card, 0.5),
                 cursor: "pointer", color: COLORS.text, fontSize: 15,
@@ -578,8 +578,9 @@ export function AppShell({
           <button
             onClick={openAddTransaction}
             style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              padding: "8px 14px", borderRadius: 9,
+              display: "inline-flex", alignItems: "center", gap: isDesktop ? 6 : 0,
+              padding: isDesktop ? "8px 14px" : 0, width: isDesktop ? undefined : 44, height: isDesktop ? undefined : 44,
+              justifyContent: "center", borderRadius: 9,
               border: "none", background: V2.ink, color: V2.card,
               fontSize: 13, fontWeight: 600, cursor: "pointer",
               whiteSpace: "nowrap",
@@ -596,7 +597,7 @@ export function AppShell({
             href={"/settings" as Route}
             aria-label="Profil"
             style={{
-              width: 34, height: 34, borderRadius: "50%", flexShrink: 0, overflow: "hidden",
+              width: isDesktop ? 34 : 44, height: isDesktop ? 34 : 44, borderRadius: "50%", flexShrink: 0, overflow: "hidden",
               background: V2.brand, color: V2.onBrand,
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 12, fontWeight: 700,

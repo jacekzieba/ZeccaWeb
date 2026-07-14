@@ -631,9 +631,10 @@ export function TransactionsPage() {
       )}
 
       {/* Table */}
-      <div style={{ ...glassCard, padding: 0 }}>
+      <div className="transactions-table" style={{ ...glassCard, padding: 0 }}>
         {/* Header row */}
         <div
+          className="transactions-table-header"
           style={{
             display: "grid",
             gridTemplateColumns: "32px 100px minmax(0,1.5fr) minmax(0,1.2fr) 90px minmax(0,1fr) 90px 126px",
@@ -695,6 +696,7 @@ export function TransactionsPage() {
           return (
             <div
               key={tx.id}
+              className="transactions-table-row"
               style={{
                 display: "grid",
                 gridTemplateColumns: "32px 100px minmax(0,1.5fr) minmax(0,1.2fr) 90px minmax(0,1fr) 90px 126px",
@@ -707,7 +709,7 @@ export function TransactionsPage() {
               onMouseEnter={(e) => (e.currentTarget.style.background = v2Mix(V2.ink, 0.022))}
               onMouseLeave={(e) => (e.currentTarget.style.background = isSelected ? v2Mix(V2.brand, 0.055) : "transparent")}
             >
-              <div style={{ display: "flex", alignItems: "center" }}>
+              <div className="transactions-table-select" style={{ display: "flex", alignItems: "center" }}>
                 <input
                   type="checkbox"
                   checked={isSelected}
@@ -719,10 +721,10 @@ export function TransactionsPage() {
               </div>
 
               {/* Date */}
-              <div style={{ fontFamily: V2_TYPE.mono, fontSize: 11.5, color: V2.muted }}>{fmtDate(tx.date)}</div>
+              <div className="transactions-table-date" style={{ fontFamily: V2_TYPE.mono, fontSize: 11.5, color: V2.muted }}>{fmtDate(tx.date)}</div>
 
               {/* Instrument */}
-              <div>
+              <div className="transactions-table-instrument">
                 {tx.instrumentName ? (
                   <>
                     <div style={{ fontSize: 13.5, fontWeight: 700, color: V2.ink }}>{tx.instrumentName}</div>
@@ -737,17 +739,17 @@ export function TransactionsPage() {
               </div>
 
               {/* Portfolio */}
-              <div style={{ fontFamily: V2_TYPE.mono, fontSize: 11.5, color: V2.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <div className="transactions-table-portfolio" style={{ fontFamily: V2_TYPE.mono, fontSize: 11.5, color: V2.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {tx.portfolioName}
               </div>
 
               {/* Type badge */}
-              <div style={{ textAlign: "right" }}>
+              <div className="transactions-table-type" style={{ textAlign: "right" }}>
                 <V2Badge label={label} color={color} />
               </div>
 
               {/* Amount */}
-              <div style={{ textAlign: "right" }}>
+              <div className="transactions-table-amount" style={{ textAlign: "right" }}>
                 <div
                   style={{
                     fontFamily: V2_TYPE.serif,
@@ -767,11 +769,11 @@ export function TransactionsPage() {
               </div>
 
               {/* Currency */}
-              <div style={{ textAlign: "right", fontFamily: V2_TYPE.mono, fontSize: 11.5, color: V2.muted, fontWeight: 500 }}>
+              <div className="transactions-table-currency" style={{ textAlign: "right", fontFamily: V2_TYPE.mono, fontSize: 11.5, color: V2.muted, fontWeight: 500 }}>
                 {tx.currency}
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <div className="transactions-table-actions" style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                 <button
                   onClick={() => setEditingTransactionId(tx.id)}
                   disabled={!userDataKey}

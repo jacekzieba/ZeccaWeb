@@ -115,6 +115,37 @@ body {
   gap: 10px;
 }
 
+@media (max-width: 720px) {
+  .transactions-table-header {
+    display: none !important;
+  }
+
+  .transactions-table-row {
+    grid-template-columns: 28px minmax(0, 1fr) auto !important;
+    grid-template-areas:
+      "select date actions"
+      "select instrument instrument"
+      "select portfolio type"
+      "select amount currency" !important;
+    gap: 6px 10px;
+    padding: 14px 16px !important;
+  }
+
+  .transactions-table-select { grid-area: select; }
+  .transactions-table-date { grid-area: date; }
+  .transactions-table-instrument { grid-area: instrument; min-width: 0; }
+  .transactions-table-portfolio { grid-area: portfolio; min-width: 0; }
+  .transactions-table-type { grid-area: type; }
+  .transactions-table-amount { grid-area: amount; text-align: left !important; }
+  .transactions-table-currency { grid-area: currency; align-self: end; }
+  .transactions-table-actions { grid-area: actions; gap: 6px !important; }
+
+  .transactions-table-actions button {
+    min-height: 36px;
+    padding: 6px 8px !important;
+  }
+}
+
 @media (max-width: 820px) {
   .transaction-modal-shell {
     padding: 8px !important;

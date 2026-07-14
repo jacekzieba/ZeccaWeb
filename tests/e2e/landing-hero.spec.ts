@@ -1,5 +1,27 @@
 import { expect, test } from "@playwright/test";
 
+test("publishes locally edited landing copy to the regular page", async ({ page }) => {
+  const publishedHeading = "Tekst opublikowany lokalnie";
+
+  await page.goto("/?edit=1");
+  const heading = page.getByRole("heading", { name: "Wszystkie Twoje inwestycje w jednym miejscu" });
+  await expect(heading).toHaveAttribute("contenteditable", "true");
+  await heading.fill(publishedHeading);
+  await Promise.all([
+    page.waitForURL(/\/$/),
+    page.getByRole("button", { name: "Opublikuj" }).click(),
+  ]);
+
+  await expect(page.getByRole("heading", { name: publishedHeading })).toBeVisible();
+});
+
+test("makes FAQ questions and answers editable in copy-editing mode", async ({ page }) => {
+  await page.goto("/?edit=1");
+
+  await expect(page.locator('[data-landing-edit-id="faq.items.0.question"]')).toHaveAttribute("contenteditable", "true");
+  await expect(page.locator('[data-landing-edit-id="faq.items.0.answer"]')).toHaveAttribute("contenteditable", "true");
+});
+
 test("renders an interactive product hero without submitting the beta waitlist", async ({ page }) => {
   await page.goto("/");
 
@@ -17,7 +39,7 @@ test("renders an interactive product hero without submitting the beta waitlist",
   const iosTab = page.getByRole("tab", { name: "iOS" });
   await iosTab.click();
   await expect(iosTab).toHaveAttribute("aria-selected", "true");
-  await expect(page.locator('[data-platform-panel="ios"] .iphone')).toBeVisible();
+  await expect(page.getByRole("tabpanel", { name: /iOS/ }).getByRole("img")).toBeVisible();
 
   const range = page.getByRole("radio", { name: "1R" });
   await range.click();
@@ -36,7 +58,7 @@ test("renders an interactive product hero without submitting the beta waitlist",
   const waitlistForm = betaSection.locator("#betaWaitlistForm");
   const waitlistEnabled = await waitlistForm.getAttribute("data-enabled");
   const emailField = betaSection.getByPlaceholder("ty@przyklad.pl");
-  const consentField = betaSection.getByLabel("Chcę dostać jednorazową informację o starcie zapisów i rozumiem, że email trafi do listy beta.");
+  const consentField = waitlistForm.getByRole("checkbox");
   if (waitlistEnabled === "true") {
     await expect(betaSection.getByRole("button", { name: "Dołącz do listy" })).toBeEnabled();
     await expect(emailField).toBeEnabled();
@@ -50,6 +72,24 @@ test("renders an interactive product hero without submitting the beta waitlist",
   // waitlist field; they point at the beta section and submit nothing.
   await expect(page.locator(".landing-hero .store-badge")).toHaveCount(2);
   expect(waitlistRequests).toEqual([]);
+});
+
+test("uses the requested menu, smooth in-page links, and active Discord link", async ({ page }) => {
+  await page.goto("/");
+
+  const nav = page.locator(".nav-links");
+  await expect(nav.getByRole("link")).toHaveText(["Beta: zapisy", "Funkcje", "Aplikacje", "Feedback"]);
+  await expect(page.getByRole("link", { name: "Zaloguj się" })).toHaveCount(0);
+
+  await nav.getByRole("link", { name: "Feedback" }).click();
+  await expect(page).toHaveURL(/#kontakt$/);
+  await expect(page.locator("#kontakt")).toBeInViewport();
+
+  const footer = page.locator(".zlanding footer");
+  await expect(footer.getByRole("link", { name: "Discord" })).toHaveAttribute("href", "https://discord.gg/wrKjxVyFQ");
+  await expect(footer.getByRole("link", { name: "Polityka prywatności" })).toHaveAttribute("href", "/privacy-policy");
+  await expect(footer.locator(".foot-link-unavailable")).toHaveCount(3);
+  await expect(page.locator(".landing-hero .store-badge.is-unavailable")).toHaveCount(2);
 });
 
 test("stacks the product modules on mobile and disables card motion for reduced motion", async ({ page }) => {
