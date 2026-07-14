@@ -141,19 +141,6 @@ export const landingCopy = {
     desc: "Pracuj głęboko na Macu, otwieraj portfel bez instalacji w przeglądarce i zaglądaj do najważniejszych liczb na iPhonie. Zmieniasz ekran, nie sposób liczenia ani kontekst.",
     desktop: [
       {
-        id: "macos",
-        tab: "macOS",
-        kicker: "macOS · natywna aplikacja",
-        title: "Pełny warsztat inwestora na dużym ekranie.",
-        desc: "Raporty, alokacja, wyniki realne i historia portfeli są ułożone tak, aby dało się przejść od ogólnego obrazu do szczegółów bez gubienia kontekstu.",
-        points: [
-          "Rozbudowane raporty i statystyki w jednym widoku",
-          "Wygodna praca z wieloma portfelami i długą historią",
-          "Natywny interfejs dopasowany do pracy na Macu",
-        ],
-        imageAlt: "Zecca na macOS — raporty, statystyki i alokacja portfela",
-      },
-      {
         id: "web",
         tab: "Web",
         kicker: "Web · bez instalacji",
@@ -165,6 +152,19 @@ export const landingCopy = {
           "Czytelny układ dostosowany do szerokości ekranu",
         ],
         imageAlt: "Zecca w przeglądarce — raporty i alokacja portfela",
+      },
+      {
+        id: "macos",
+        tab: "macOS",
+        kicker: "macOS · natywna aplikacja",
+        title: "Pełny warsztat inwestora na dużym ekranie.",
+        desc: "Raporty, alokacja, wyniki realne i historia portfeli są ułożone tak, aby dało się przejść od ogólnego obrazu do szczegółów bez gubienia kontekstu.",
+        points: [
+          "Rozbudowane raporty i statystyki w jednym widoku",
+          "Wygodna praca z wieloma portfelami i długą historią",
+          "Natywny interfejs dopasowany do pracy na Macu",
+        ],
+        imageAlt: "Zecca na macOS — raporty, statystyki i alokacja portfela",
       },
     ],
     ios: {
@@ -366,8 +366,7 @@ export const landingCopy = {
     form: {
       emailLabel: "Email",
       emailPlaceholder: "ty@przyklad.pl",
-      consentLabel:
-        "Chcę dostać jednorazową informację o starcie zapisów i rozumiem, że email trafi do listy beta.",
+      consentLabel: "Chcę zapisać się do testów beta",
       submit: "Dołącz do listy",
       disabledSubmit: "Wkrótce",
       success: "Dzięki — zapisaliśmy email na liście beta.",
@@ -375,11 +374,6 @@ export const landingCopy = {
       invalidEmail: "Podaj poprawny adres e-mail.",
       missingConsent: "Zaznacz zgodę, żeby dołączyć do listy.",
     },
-    points: [
-      "oddzielny endpoint API zamiast logiki Airtable w UI",
-      "walidacja emaila, zgoda komunikacyjna i honeypot antyspamowy",
-      "zdarzenie analityczne po rzeczywistym zapisie, bez fałszywych potwierdzeń",
-    ],
   },
 
   // ── 06 · Feedback ─────────────────────────────────────────────────────────
