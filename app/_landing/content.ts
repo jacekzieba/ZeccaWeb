@@ -160,7 +160,7 @@ const howItWorksHtml = `
       <div class="process-steps">
         ${how.steps
           .map(
-            (step, index) => `<article class="process-step" style="--process-order:${index}">
+            (step) => `<article class="process-step">
           <div class="step-index">${step.label}</div>
           <div>
             <h3>${step.title}</h3>

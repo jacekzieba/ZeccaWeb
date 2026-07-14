@@ -1058,11 +1058,6 @@
   border-radius: 99px;
   background: linear-gradient(var(--gold), var(--brand));
   pointer-events: none;
-  transform: scaleY(0);
-  transform-origin: top;
-}
-.zlanding .process-shell.in .process-steps::before {
-  animation: process-line-in 820ms 180ms cubic-bezier(0.2, 0.72, 0.2, 1) forwards;
 }
 .zlanding .process-step {
   display: grid;
@@ -1077,10 +1072,6 @@
   position: relative;
   z-index: 1;
   transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
-}
-.zlanding .process-shell.in .process-step {
-  animation: process-step-in 560ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  animation-delay: calc(220ms + var(--process-order) * 110ms);
 }
 .zlanding .process-step:hover {
   border-color: color-mix(in srgb, var(--brand) 22%, transparent);
@@ -2313,13 +2304,6 @@
   from { stroke-dashoffset: var(--donut-length); opacity: 0.35; }
   to { stroke-dashoffset: 0; opacity: 1; }
 }
-@keyframes process-line-in {
-  to { transform: scaleY(1); }
-}
-@keyframes process-step-in {
-  from { opacity: 0; translate: 18px 0; }
-  to { opacity: 1; translate: 0 0; }
-}
 @keyframes feature-content-in {
   from { opacity: 0; translate: 0 8px; }
   to { opacity: 1; translate: 0 0; }
@@ -2698,8 +2682,6 @@
   .zlanding .static-vvd-chart path,
   .zlanding .static-vvd-chart polyline,
   .zlanding .allocation-card circle,
-  .zlanding .process-shell.in .process-steps::before,
-  .zlanding .process-shell.in .process-step,
   .zlanding .feat.reveal.in > *,
   .zlanding details.faq[open] .ans {
     animation: none;
