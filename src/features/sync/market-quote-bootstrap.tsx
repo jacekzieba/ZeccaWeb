@@ -6,6 +6,7 @@ import type { MarketQuoteInput } from "@/domain/valuation/price-resolver";
 import type { MarketQuote } from "@/market-data/types";
 import { isFakeSyncEnabled } from "@/lib/env";
 import { useProfile } from "@/features/profile/profile-store";
+import { marketDataSymbolForInstrument } from "@/market-data/symbols";
 import { buildInstrumentList } from "@/sync/records/investor-snapshot";
 import { useSyncStore } from "@/sync/store/sync-store";
 
@@ -43,8 +44,8 @@ export function MarketQuoteBootstrap() {
         requestSymbol:
           row.kind === "crypto" && !row.symbol.includes("-")
             ? `${row.symbol.trim().toUpperCase()}-USD`
-            : row.symbol,
-        currency: row.currency,
+            : marketDataSymbolForInstrument({ ...row, currency: row.assetCurrency }),
+        currency: row.assetCurrency,
       }));
   }, [records, enabled, displayCurrency]);
 

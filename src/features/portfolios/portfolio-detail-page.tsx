@@ -449,6 +449,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
   const { id } = use(params);
   const records = useSyncStore((s) => s.records);
   const marketFxRates = useSyncStore((s) => s.marketFxRates);
+  const marketQuotes = useSyncStore((s) => s.marketQuotes);
   const marketCpi = useSyncStore((s) => s.marketCpi);
   const { displayCurrency } = useProfile();
 
@@ -458,13 +459,14 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
         ? buildPortfolioDetail(records, id, {
             asOf: new Date(),
             fxRates: marketFxRates,
+            marketQuotes,
             useLatestTransactionFxRate: true,
             useMarketQuotes: true,
             displayCurrency,
             cpi: marketCpi,
           })
         : null,
-    [records, id, marketFxRates, marketCpi, displayCurrency],
+    [records, id, marketFxRates, marketQuotes, marketCpi, displayCurrency],
   );
   const [period, setPeriod] = useState<Period>("1Y");
   const chartSeries = useMemo(

@@ -195,6 +195,7 @@ const tdStyle: CSSProperties = { fontFamily: UI, fontSize: 12.5, color: V2.ink, 
 export function PositionsPage() {
   const records = useSyncStore((s) => s.records);
   const marketFxRates = useSyncStore((s) => s.marketFxRates);
+  const marketQuotes = useSyncStore((s) => s.marketQuotes);
   const marketCpi = useSyncStore((s) => s.marketCpi);
   const { displayCurrency } = useProfile();
 
@@ -204,13 +205,14 @@ export function PositionsPage() {
         ? buildInstrumentList(records, {
             asOf: new Date(),
             fxRates: marketFxRates,
+            marketQuotes,
             useLatestTransactionFxRate: true,
             useMarketQuotes: true,
             displayCurrency,
             cpi: marketCpi,
           })
         : [],
-    [records, marketFxRates, marketCpi, displayCurrency],
+    [records, marketFxRates, marketQuotes, marketCpi, displayCurrency],
   );
 
   const allTransactions = useMemo(

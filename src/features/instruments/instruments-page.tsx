@@ -8,7 +8,7 @@ import { makeManualValuationPayload } from "@/sync/records/macos-payloads";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { buildInstrumentList } from "@/sync/records/investor-snapshot";
 import type { MarketQuote } from "@/market-data/types";
-import { yahooSymbolForInstrument } from "@/market-data/symbols";
+import { marketDataSymbolForInstrument } from "@/market-data/symbols";
 import { isFakeSyncEnabled } from "@/lib/env";
 import { buildFakeManualValuationRecord } from "@/sync/dev/fake-sync";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
@@ -106,11 +106,11 @@ function quoteCurrencyForInstrument(quote: MarketQuote, fallbackCurrency: string
   return quote.currency ?? fallbackCurrency;
 }
 
-function buildFakeQuote(inst: { symbol: string; currency: string }): MarketQuote {
+function buildFakeQuote(inst: { symbol: string; assetCurrency: string; isin: string | null; marketDataID: string | null }): MarketQuote {
   return {
     provider: "yahoo",
-    symbol: yahooSymbolForInstrument(inst.symbol, inst.currency),
-    currency: inst.currency,
+    symbol: marketDataSymbolForInstrument({ ...inst, currency: inst.assetCurrency }),
+    currency: inst.assetCurrency,
     date: "2026-06-18",
     open: 136,
     high: 142,
@@ -123,6 +123,7 @@ function buildFakeQuote(inst: { symbol: string; currency: string }): MarketQuote
 export function InstrumentsPage() {
   const records = useSyncStore((s) => s.records);
   const marketFxRates = useSyncStore((s) => s.marketFxRates);
+  const marketQuotes = useSyncStore((s) => s.marketQuotes);
   const marketCpi = useSyncStore((s) => s.marketCpi);
   const userDataKey = useSyncStore((s) => s.userDataKey);
   const supabase = useSyncStore((s) => s.supabase);
@@ -135,13 +136,14 @@ export function InstrumentsPage() {
         ? buildInstrumentList(records, {
             asOf: new Date(),
             fxRates: marketFxRates,
+            marketQuotes,
             useLatestTransactionFxRate: true,
             useMarketQuotes: true,
             displayCurrency,
             cpi: marketCpi,
           })
         : [],
-    [marketFxRates, marketCpi, records, displayCurrency],
+    [marketFxRates, marketQuotes, marketCpi, records, displayCurrency],
   );
 
   const [search, setSearch] = useState("");
@@ -236,7 +238,10 @@ export function InstrumentsPage() {
       symbol: entry.family,
       name: `${treasuryBondFamilyLabel(entry.family)} · ${entry.items.length} ${entry.items.length === 1 ? "seria" : "serie"}`,
       kind: "treasuryBond",
+      assetCurrency: "PLN",
       currency: "PLN",
+      isin: null,
+      marketDataID: null,
       lastPrice: 0,
       lastPriceDate: null,
       valuationSource: "treasuryBond",
@@ -351,7 +356,7 @@ export function InstrumentsPage() {
   }
 
   async function handleFetchQuote(inst: (typeof allInstruments)[number]) {
-    const requestSymbol = yahooSymbolForInstrument(inst.symbol, inst.currency);
+    const requestSymbol = marketDataSymbolForInstrument({ ...inst, currency: inst.assetCurrency });
     if (!requestSymbol) {
       setQuoteError("Instrument nie ma symbolu do pobrania ceny.");
       return;
@@ -373,7 +378,7 @@ export function InstrumentsPage() {
       }
 
       const response = await fetch(
-        `/api/market-data/quote?symbol=${encodeURIComponent(inst.symbol)}&currency=${encodeURIComponent(inst.currency)}`,
+        `/api/market-data/quote?symbol=${encodeURIComponent(requestSymbol)}&currency=${encodeURIComponent(inst.assetCurrency)}`,
       );
       const body = await response.json() as { data?: MarketQuote; error?: string };
 

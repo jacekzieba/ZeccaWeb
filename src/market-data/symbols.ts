@@ -7,6 +7,49 @@ const LEGACY_SYMBOL_SUFFIXES: Record<string, string> = {
   ".NL": ".AS",
 };
 
+type MarketDataInstrument = {
+  symbol: string;
+  currency?: string | null;
+  isin?: string | null;
+  marketDataID?: string | null;
+};
+
+const XTB_YAHOO_OVERRIDES = [
+  {
+    isin: "IE00B3RBWM25",
+    symbol: "VWRL.NL",
+    settlementCurrency: "USD",
+    yahooSymbol: "VWRL.L",
+  },
+  {
+    isin: "IE00BDFL4P12",
+    symbol: "ICOM.UK",
+    settlementCurrency: "USD",
+    yahooSymbol: "ICOM.L",
+  },
+] as const;
+
+/**
+ * Selects the Yahoo line for a holding. A persisted `marketDataID` is an
+ * explicit override; the XTB entries keep dual-listed ETFs on the broker's
+ * actual trading line and settlement currency.
+ */
+export function marketDataSymbolForInstrument(instrument: MarketDataInstrument) {
+  const explicit = instrument.marketDataID?.trim().toUpperCase();
+  if (explicit) return explicit;
+
+  const symbol = instrument.symbol.trim().toUpperCase();
+  const currency = instrument.currency?.trim().toUpperCase();
+  const isin = instrument.isin?.trim().toUpperCase();
+  const override = XTB_YAHOO_OVERRIDES.find(
+    (candidate) =>
+      currency === candidate.settlementCurrency &&
+      (isin === candidate.isin || symbol === candidate.symbol),
+  );
+
+  return override?.yahooSymbol ?? yahooSymbolForInstrument(symbol, currency);
+}
+
 export function yahooSymbolForInstrument(symbol: string, currency?: string | null) {
   const normalized = symbol.trim().toUpperCase();
   if (!normalized) {

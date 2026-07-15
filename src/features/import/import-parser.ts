@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AMOUNT_MAGNITUDE_CAP } from "@/lib/parse-amount";
+import { nowSwiftReferenceSeconds } from "@/sync/records/macos-payloads";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
 import type { WriteRecordPayload } from "@/sync/records/record-writer";
 
@@ -142,6 +143,11 @@ const transactionPayloadSchema = z.object({
   currency: z.string().min(1),
   fees: z.number(),
   taxes: z.number(),
+  // Pola wymagane przez natywny TransactionPayload (iOS/macOS): ich brak
+  // wywala tam dekodowanie całego pulla. Zawsze zapisujemy komplet.
+  notes: z.string(),
+  createdAt: z.number(),
+  updatedAt: z.number(),
 });
 
 export function buildImportReferenceData(
@@ -385,6 +391,9 @@ function parseTransactionRow(
           currency,
           fees,
           taxes,
+          notes: "",
+          createdAt: nowSwiftReferenceSeconds(),
+          updatedAt: nowSwiftReferenceSeconds(),
         })
       : null;
 
@@ -445,6 +454,9 @@ function parseManualValuationRow(
           value: value!,
           currency,
           note: values.note ?? "",
+          // Jak wyżej: natywny ManualValuationPayload wymaga tych pól.
+          createdAt: nowSwiftReferenceSeconds(),
+          updatedAt: nowSwiftReferenceSeconds(),
         }
       : null;
 

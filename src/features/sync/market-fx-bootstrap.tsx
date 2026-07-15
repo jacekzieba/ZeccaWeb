@@ -3,6 +3,7 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
 import type { FxRateInput } from "@/domain/valuation/price-resolver";
+import type { MarketQuoteInput } from "@/domain/valuation/price-resolver";
 import type { FxRate } from "@/market-data/types";
 import { useProfile } from "@/features/profile/profile-store";
 import { useSyncStore } from "@/sync/store/sync-store";
@@ -19,14 +20,15 @@ type FxSeriesResponse = {
 export function MarketFxBootstrap() {
   const records = useSyncStore((state) => state.records);
   const snapshot = useSyncStore((state) => state.snapshot);
+  const marketQuotes = useSyncStore((state) => state.marketQuotes);
   const setMarketFxRates = useSyncStore((state) => state.setMarketFxRates);
   const { displayCurrency } = useProfile();
   const appliedKey = useRef<string | null>(null);
 
   const valuationDate = snapshot?.asOf.slice(0, 10) ?? null;
   const currencies = useMemo(
-    () => (records ? currenciesNeedingFx(records) : []),
-    [records],
+    () => (records ? currenciesNeedingFx(records, marketQuotes) : []),
+    [records, marketQuotes],
   );
 
   // Earliest day in the dashboard series — the window the display currency must
@@ -75,7 +77,9 @@ export function MarketFxBootstrap() {
       return;
     }
 
-    if (queries.some((query) => query.status !== "success")) {
+    // A missing/unsupported currency must not turn off FX conversion for every
+    // valid holding. Wait until the current batch settles, then keep successes.
+    if (queries.some((query) => query.status === "pending")) {
       return;
     }
     // Wait for the display-currency history too, otherwise the snapshot would
@@ -84,13 +88,14 @@ export function MarketFxBootstrap() {
       return;
     }
 
-    const rates: FxRateInput[] = queries.map((query) => {
-      const rate = query.data!;
-      return {
+    const rates: FxRateInput[] = queries.flatMap((query) => {
+      if (query.status !== "success" || !query.data) return [];
+      const rate = query.data;
+      return [{
         currency: rate.base,
         rate: rate.rate,
         date: new Date(`${rate.effectiveDate}T00:00:00.000Z`),
-      };
+      }];
     });
 
     if (needsDisplayFx && displaySeriesQuery.data) {
@@ -127,7 +132,10 @@ export function MarketFxBootstrap() {
   return null;
 }
 
-function currenciesNeedingFx(records: DecryptedRecord[]) {
+export function currenciesNeedingFx(
+  records: DecryptedRecord[],
+  marketQuotes: Pick<MarketQuoteInput, "currency">[] = [],
+) {
   const currencies = new Set<string>();
 
   for (const record of records) {
@@ -144,12 +152,16 @@ function currenciesNeedingFx(records: DecryptedRecord[]) {
     addCurrency(currencies, payload.targetCurrency);
   }
 
+  for (const quote of marketQuotes) {
+    addCurrency(currencies, quote.currency);
+  }
+
   return [...currencies].sort();
 }
 
 function addCurrency(currencies: Set<string>, value: string | null | undefined) {
   const currency = value?.trim().toUpperCase();
-  if (!currency || currency === "PLN") {
+  if (!currency || currency === "PLN" || !/^[A-Z]{3}$/.test(currency)) {
     return;
   }
   currencies.add(currency);

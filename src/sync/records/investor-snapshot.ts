@@ -40,7 +40,10 @@ import {
   resolveFxRate,
   type MarketQuoteInput,
 } from "@/domain/valuation/price-resolver";
-import { normalizeTreasuryBondParams } from "@/domain/valuation/treasury-bond-issues";
+import {
+  knownTreasuryBondValuationParams,
+  normalizeTreasuryBondParams,
+} from "@/domain/valuation/treasury-bond-issues";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
 
 /** Resolves how many units of the native (PLN) base currency one unit of the
@@ -1530,7 +1533,7 @@ function toPositionAssetInput(
           capitalization: asset.bondParams.capitalization,
           interestPayment: asset.bondParams.interestPayment,
         })
-      : null,
+      : knownTreasuryBondValuationParams(asset.symbol),
   };
 }
 
@@ -2017,7 +2020,10 @@ export function buildInstrumentList(
       symbol: asset.symbol,
       name: asset.name,
       kind: asset.kind,
+      assetCurrency: asset.currency,
       currency: valuation.currency,
+      isin: asset.isin ?? null,
+      marketDataID: asset.marketDataID ?? null,
       lastPrice: valuation.price,
       lastPriceDate: valuation.priceDate?.toISOString() ?? null,
       valuationSource: valuation.source,

@@ -24,6 +24,7 @@ test("PKO Obligacje .xls (BIFF8) imports and previews the bonds", async ({ page 
   await expect(page.getByText("Gotowe").first()).toBeVisible();
   await expect(page.getByRole("checkbox", { name: "Zaznacz wszystko" })).toBeChecked();
   await expect(page.getByRole("checkbox", { name: /Importuj pozycję 1/ })).toBeChecked();
+  await expect(page.getByRole("button", { name: "Importuj wybrane" })).toBeVisible();
   await page.getByRole("button", { name: "Sprawdź import" }).click();
   await expect(page.getByText(/Symulacja: .* wybranych pozycji gotowych do zapisu/)).toBeVisible();
   await expect(page.getByText("Nie udało się odczytać pliku")).toHaveCount(0);

@@ -21,12 +21,12 @@ test("imports a valid CSV locally, then exports the resulting transaction list",
   await main.getByRole("checkbox", { name: /Importuj pozycję 2/ }).uncheck();
   await expect(main.getByText(/1 wybranych/)).toBeVisible();
   await expect(main.getByText("Pominięte")).toBeVisible();
+  await expect(main.getByRole("button", { name: "Importuj wybrane" })).toBeVisible();
 
   await main.getByRole("button", { name: "Sprawdź import" }).click();
   await expect(main.getByText(/Symulacja: 1 wybranych pozycji gotowych do zapisu/)).toBeVisible();
 
-  await main.getByLabel("Symulacja").uncheck();
-  await main.getByRole("button", { name: "Zapisz wybrane" }).click();
+  await main.getByRole("button", { name: "Importuj wybrane" }).click();
   await expect(main.getByText("Zaimportowano 1 rekordów.")).toBeVisible();
 
   await main.getByRole("button", { name: "Eksport", exact: true }).click();

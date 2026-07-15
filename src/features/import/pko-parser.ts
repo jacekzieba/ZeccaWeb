@@ -9,6 +9,7 @@
 
 import type { ImportReferenceData, TransactionImportPreview, TransactionImportRow } from "./import-parser";
 import type { WriteRecordPayload } from "@/sync/records/record-writer";
+import { knownTreasuryBondIssue } from "@/domain/valuation/treasury-bond-issues";
 
 const APPLE_REFERENCE_DATE_UNIX_MS = Date.UTC(2001, 0, 1);
 
@@ -185,6 +186,7 @@ export function parsePkoBondsXls(
       return known.id;
     }
     const newId = crypto.randomUUID();
+    const issue = knownTreasuryBondIssue(upper);
     newInstrumentPayloads.push({
       id: newId,
       recordType: "asset",
@@ -196,6 +198,20 @@ export function parsePkoBondsXls(
       country: "PL",
       isin: null,
       category: "govBondPL",
+      ...(issue
+        ? {
+            bondParams: {
+              issueDate: issue.issueDate,
+              maturityDate: issue.maturityDate,
+              nominalValue: issue.nominalValue,
+              firstPeriodRate: issue.firstPeriodRate,
+              subsequentBase: issue.subsequentBase,
+              marginOverBase: issue.marginOverBase,
+              capitalization: issue.capitalization,
+              interestPayment: issue.interestPayment,
+            },
+          }
+        : {}),
     });
     instrumentCache.set(upper, newId);
     return newId;

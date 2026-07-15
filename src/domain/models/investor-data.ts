@@ -161,7 +161,11 @@ export type InstrumentRow = {
   symbol: string;
   name: string;
   kind: string;
+  /** Settlement currency stored on the asset; remains stable if a quote trades elsewhere. */
+  assetCurrency: string;
   currency: string;
+  isin: string | null;
+  marketDataID: string | null;
   lastPrice: number;
   lastPriceDate: string | null;
   valuationSource: "manual" | "market" | "transaction" | "treasuryBond" | "missing";

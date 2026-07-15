@@ -200,13 +200,18 @@ function dirtyTreasuryBondPrice(
   asOf: Date,
   cpi?: CpiSeries,
 ) {
+  // Retail treasury bonds accrue on calendar days. Normalising timestamps keeps
+  // the displayed daily value stable regardless of the import/refresh hour.
+  const purchaseDay = startOfUtcDay(purchaseDate);
+  const maturityDay = startOfUtcDay(params.maturityDate);
+  const valuationDay = startOfUtcDay(asOf);
   const effectiveAsOf =
-    asOf.getTime() < params.maturityDate.getTime() ? asOf : params.maturityDate;
-  if (effectiveAsOf.getTime() <= purchaseDate.getTime()) {
+    valuationDay.getTime() < maturityDay.getTime() ? valuationDay : maturityDay;
+  if (effectiveAsOf.getTime() <= purchaseDay.getTime()) {
     return params.nominalValue;
   }
 
-  let periodStart = purchaseDate;
+  let periodStart = purchaseDay;
   let periodIndex = 0;
   let principal = params.nominalValue;
   let carriedInterest = 0;
@@ -242,6 +247,10 @@ function addYears(date: Date, years: number) {
   const copy = new Date(date);
   copy.setUTCFullYear(copy.getUTCFullYear() + years);
   return copy;
+}
+
+function startOfUtcDay(date: Date) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 }
 
 function daysBetween(start: Date, end: Date) {

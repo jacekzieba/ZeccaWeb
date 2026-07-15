@@ -821,6 +821,7 @@ export function DashboardOverview() {
   const records = useSyncStore((state) => state.records);
   const marketFxRates = useSyncStore((state) => state.marketFxRates);
   const marketQuotes = useSyncStore((state) => state.marketQuotes);
+  const marketCpi = useSyncStore((state) => state.marketCpi);
   const lastSyncedAt = useSyncStore((state) => state.lastSyncedAt);
   const snapshot = useDisplaySnapshot();
   const profile = useProfile();
@@ -852,12 +853,13 @@ export function DashboardOverview() {
             asOf: new Date(),
             fxRates: marketFxRates,
             marketQuotes,
+            cpi: marketCpi,
             useLatestTransactionFxRate: true,
             useMarketQuotes: true,
             displayCurrency: profile.displayCurrency,
           })
         : [],
-    [marketFxRates, marketQuotes, records, profile.displayCurrency],
+    [marketFxRates, marketQuotes, marketCpi, records, profile.displayCurrency],
   );
   const transactions = useMemo(
     () => (records ? buildTransactionList(records) : []),

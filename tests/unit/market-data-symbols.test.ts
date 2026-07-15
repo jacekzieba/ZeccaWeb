@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { yahooSymbolForInstrument } from "@/market-data/symbols";
+import {
+  marketDataSymbolForInstrument,
+  yahooSymbolForInstrument,
+} from "@/market-data/symbols";
 
 describe("yahooSymbolForInstrument", () => {
   it("keeps US symbols without a suffix", () => {
@@ -18,5 +21,36 @@ describe("yahooSymbolForInstrument", () => {
   it("preserves explicit Yahoo symbols", () => {
     expect(yahooSymbolForInstrument("BRK-B", "USD")).toBe("BRK-B");
     expect(yahooSymbolForInstrument("EURPLN=X", "PLN")).toBe("EURPLN=X");
+  });
+
+  it("uses the broker-compatible Yahoo line before legacy suffixes", () => {
+    expect(
+      marketDataSymbolForInstrument({
+        symbol: "VWRL.NL",
+        currency: "USD",
+        isin: "IE00B3RBWM25",
+      }),
+    ).toBe("VWRL.L");
+    expect(
+      marketDataSymbolForInstrument({
+        symbol: "ICOM.UK",
+        currency: "USD",
+        isin: "IE00BDFL4P12",
+      }),
+    ).toBe("ICOM.L");
+    expect(
+      marketDataSymbolForInstrument({ symbol: "VWRL.NL", currency: "EUR" }),
+    ).toBe("VWRL.AS");
+  });
+
+  it("prefers an explicit market-data identifier", () => {
+    expect(
+      marketDataSymbolForInstrument({
+        symbol: "VWRL.NL",
+        currency: "USD",
+        isin: "IE00B3RBWM25",
+        marketDataID: "VWCE.DE",
+      }),
+    ).toBe("VWCE.DE");
   });
 });

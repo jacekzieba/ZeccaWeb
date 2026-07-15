@@ -146,8 +146,7 @@ export function ImportPage() {
   const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(
     () => new Set(),
   );
-  const [saving, setSaving] = useState(false);
-  const [dryRun, setDryRun] = useState(true);
+  const [importAction, setImportAction] = useState<"check" | "commit" | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -229,18 +228,18 @@ export function ImportPage() {
     }
   }
 
-  async function handleImport() {
+  async function handleImport(action: "check" | "commit") {
     if (!preview || !supabase || !userDataKey) {
       setError("Odblokuj dane w panelu synchronizacji przed importem.");
       return;
     }
-    setSaving(true);
+    setImportAction(action);
     setError(null);
     setResult(null);
     const provider = brokerProvider(importFormat);
     try {
       const selected = selectedImportPayloads(preview, selectedRowIds);
-      if (dryRun) {
+      if (action === "check") {
         const newInstCount = selected.newInstrumentPayloads.length;
         setResult(
           `Symulacja: ${selected.rows.length} wybranych pozycji gotowych do zapisu, ${preview.errorRows.length} wymaga poprawy` +
@@ -300,7 +299,7 @@ export function ImportPage() {
         });
       }
     } finally {
-      setSaving(false);
+      setImportAction(null);
     }
   }
 
@@ -585,20 +584,12 @@ export function ImportPage() {
                     {newInstCount > 0 && <span style={{ color: V2.bonds, fontWeight: 600 }}> · {newInstCount} nowych instrumentów</span>}
                   </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                  <label style={{ display: "inline-flex", alignItems: "center", gap: 7, color: V2.muted, fontSize: 12, fontWeight: 600 }}>
-                    <input
-                      checked={dryRun}
-                      onChange={(event) => {
-                        setDryRun(event.target.checked);
-                        setResult(null);
-                      }}
-                      type="checkbox"
-                    />
-                    Symulacja
-                  </label>
-                  <PrimaryButton disabled={selectedCount === 0 || saving || !userDataKey} onClick={() => void handleImport()}>
-                    {saving ? "Importuję…" : dryRun ? "Sprawdź import" : "Zapisz wybrane"}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <GhostButton disabled={selectedCount === 0 || importAction !== null || !userDataKey} onClick={() => void handleImport("check")}>
+                    {importAction === "check" ? "Sprawdzam…" : "Sprawdź import"}
+                  </GhostButton>
+                  <PrimaryButton disabled={selectedCount === 0 || importAction !== null || !userDataKey} onClick={() => void handleImport("commit")}>
+                    {importAction === "commit" ? "Importuję…" : "Importuj wybrane"}
                   </PrimaryButton>
                 </div>
               </div>

@@ -215,6 +215,26 @@ describe("certification import parity", () => {
     expect(byType.get("cashWithdrawal")![0].grossAmount).toBe(500);
   });
 
+  it("PKO: creates known treasury issues with parameters for formula valuation", () => {
+    const rows: unknown[][] = [
+      ["DATA DYSPOZYCJI", "RODZAJ DYSPOZYCJI", "KOD OBLIGACJI", "NR ZAPISU", "SERIA", "LICZBA OBLIGACJI", "KWOTA OPERACJI", "STATUS"],
+      ["2023-02-27", "zakup papierów", "ROS0229", 1001, 229, 100, 10_000, "zrealizowana"],
+    ];
+    const preview = parsePkoBondsXls(rows, PORTFOLIO, { ...references, instruments: [] });
+    const asset = preview.newInstrumentPayloads[0] as Record<string, unknown>;
+
+    expect(asset).toMatchObject({
+      recordType: "asset",
+      symbol: "ROS0229",
+      bondParams: {
+        issueDate: "2023-02-27T00:00:00.000Z",
+        maturityDate: "2029-02-27T00:00:00.000Z",
+        firstPeriodRate: 7.2,
+        marginOverBase: 1.5,
+      },
+    });
+  });
+
   it("XTB: resolves a known instrument by name when the ticker differs", () => {
     const refs: ImportReferenceData = {
       ...references,
