@@ -2,10 +2,9 @@
 
 import { useEffect, useRef } from "react";
 import {
-  flushPendingSyncOperations,
-  refreshSyncStore,
   SYNC_MUTATION_EVENT,
 } from "@/sync/records/record-writer";
+import { runSyncCycle } from "@/sync/records/sync-cycle";
 import { useSyncStore } from "@/sync/store/sync-store";
 import type { BrowserSupabaseClient } from "@/supabase/client";
 import { isFakeSyncEnabled } from "@/lib/env";
@@ -55,8 +54,7 @@ export function BackgroundSyncBootstrap() {
       rerunAfterFlightRef.current = false;
 
       try {
-        await flushPendingSyncOperations(activeSupabase);
-        const { records, snapshot } = await refreshSyncStore(
+        const { records, snapshot } = await runSyncCycle(
           activeSupabase,
           activeUserDataKey,
         );

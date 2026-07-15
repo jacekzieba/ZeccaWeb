@@ -49,7 +49,9 @@ describe("ManualSyncButton", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Synchronizuj teraz" }));
 
-    expect(screen.getByRole("button", { name: "Synchronizowanie danych" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Synchronizowanie danych" }).hasAttribute("disabled"),
+    ).toBe(true);
     await waitFor(() => {
       expect(flushPendingSyncOperations).toHaveBeenCalledWith(store.state.supabase);
       expect(refreshSyncStore).toHaveBeenCalledWith(
@@ -69,6 +71,8 @@ describe("ManualSyncButton", () => {
 
     expect(await screen.findByText("Brak połączenia.")).toBeTruthy();
     expect(store.state.setSync).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: "Synchronizuj teraz" })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "Synchronizuj teraz" }).hasAttribute("disabled"),
+    ).toBe(false);
   });
 });

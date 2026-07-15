@@ -29,6 +29,7 @@ import { AddTransactionModal } from "@/features/transactions/add-transaction-mod
 import { OnboardingController, OnboardingDemoGate } from "@/features/onboarding/onboarding-controller";
 import { CommandPalette } from "@/features/search/command-palette";
 import { PendingSyncStatus } from "@/features/sync/pending-sync-status";
+import { ManualSyncButton } from "@/features/sync/manual-sync-button";
 import {
   SyncUnlockPanel,
   type InitialSyncUser,
@@ -573,6 +574,7 @@ export function AppShell({
           )}
 
           <PendingSyncStatus />
+          <ManualSyncButton compact={!isDesktop} />
 
           {/* Add transaction */}
           <button
