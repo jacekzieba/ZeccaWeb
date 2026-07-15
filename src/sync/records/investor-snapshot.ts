@@ -1525,6 +1525,7 @@ function toPositionAssetInput(
     currency: asset.currency,
     bondParams: asset.bondParams
       ? normalizeTreasuryBondParams(asset.symbol, {
+          issueDate: toDate(asset.bondParams.issueDate),
           maturityDate: toDate(asset.bondParams.maturityDate),
           nominalValue: asset.bondParams.nominalValue,
           firstPeriodRate: asset.bondParams.firstPeriodRate,
@@ -1789,6 +1790,7 @@ export function buildPortfolioDetail(
       kind: asset?.kind ?? "unknown",
       quantity,
       lastPrice: valuation.price,
+      lastPriceDate: valuation.priceDate?.toISOString() ?? null,
       currency: valuation.currency,
       valuationSource: valuation.source,
       valuationSourceLabel: valuation.sourceLabel,

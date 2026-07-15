@@ -8,6 +8,10 @@
 
 import type { XtbImportPreview } from "./xtb-parser";
 import { inferCurrencyFromFx, type FxCandidate } from "./currency-inference";
+import {
+  marketDataExchangeForSymbol,
+  marketDataSymbolForInstrument,
+} from "@/market-data/symbols";
 
 /** Fetches a CCY→PLN rate for `date` (yyyy-mm-dd), or null if unavailable. */
 export type FxRateFetcher = (code: string, date: string) => Promise<number | null>;
@@ -47,6 +51,17 @@ export async function resolveObservedCurrencies(
     if (!instrument) continue;
 
     instrument.currency = inferred;
+    const symbol = typeof instrument.symbol === "string" ? instrument.symbol : "";
+    const isin = typeof instrument.isin === "string" ? instrument.isin : null;
+    const marketDataID = marketDataSymbolForInstrument({
+      symbol,
+      currency: inferred,
+      isin,
+    });
+    if (marketDataID) {
+      instrument.marketDataID = marketDataID;
+      instrument.exchange = marketDataExchangeForSymbol(marketDataID) ?? instrument.exchange;
+    }
     resolvedCount += 1;
 
     // Patch this instrument's transactions (they reference it by id).

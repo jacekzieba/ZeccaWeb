@@ -99,6 +99,15 @@ function fmtQty(n: number) {
   return n.toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 6 });
 }
 
+function fmtPriceDate(value: string) {
+  return new Intl.DateTimeFormat("pl-PL", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(value));
+}
+
 const KIND_LABELS: Record<string, string> = {
   stock: "Akcja",
   etf: "ETF",
@@ -350,6 +359,7 @@ function HoldingsCard({
               </div>
               <div style={{ fontSize: 10, color: SUBTLE }}>
                 {h.currency} · {h.valuationSourceLabel}
+                {h.lastPriceDate ? ` · ${fmtPriceDate(h.lastPriceDate)}` : ""}
               </div>
             </div>
 
@@ -522,6 +532,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
       kind: "treasuryBond",
       quantity: entry.items.reduce((sum, item) => sum + item.quantity, 0),
       lastPrice: 0,
+      lastPriceDate: null,
       currency: "PLN",
       valuationSource: "treasuryBond",
       valuationSourceLabel: `${entry.items.length} ${entry.items.length === 1 ? "seria" : "serie"}`,

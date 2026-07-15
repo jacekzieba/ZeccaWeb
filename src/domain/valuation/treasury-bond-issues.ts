@@ -1,6 +1,6 @@
 import type { BondParamsInput } from "@/domain/valuation/position-valuator";
 
-type KnownTreasuryBondIssue = Omit<BondParamsInput, "maturityDate"> & {
+type KnownTreasuryBondIssue = Omit<BondParamsInput, "issueDate" | "maturityDate"> & {
   issueDate: string;
   maturityDate: string;
 };
@@ -23,6 +23,7 @@ export function knownTreasuryBondValuationParams(code: string): BondParamsInput 
   if (!known) return null;
 
   return {
+    issueDate: new Date(known.issueDate),
     maturityDate: new Date(known.maturityDate),
     nominalValue: known.nominalValue,
     firstPeriodRate: known.firstPeriodRate,

@@ -649,6 +649,7 @@ describe("InvestorDataSnapshot mapper", () => {
         symbol: "VWRL.NL",
         quantity: 38.2636,
         lastPrice: 131.11,
+        lastPriceDate: "2026-06-05T09:59:00.000Z",
         marketValue: expect.closeTo(25_578.72, 2),
         valuationSource: "market",
       }),
@@ -656,6 +657,7 @@ describe("InvestorDataSnapshot mapper", () => {
         symbol: "ICOM.UK",
         quantity: 146.4252,
         lastPrice: 8.6595,
+        lastPriceDate: "2026-06-05T09:59:00.000Z",
         marketValue: expect.closeTo(5_286.91, 2),
         valuationSource: "market",
       }),
@@ -1413,11 +1415,11 @@ describe("InvestorDataSnapshot mapper", () => {
       totalQuantity: 50,
     });
     // ROD0338 is a catalogued issue, so the verified first-period rate (5.85%)
-    // from the known-issues table overrides the 6% carried on the synced
-    // bondParams above — matching the native TreasuryBondIssueCatalog. Accrued
-    // over 44 days (2026-04-01 → 2026-05-15) at 5.85%: 100 + 100·0.0585·44/365.
-    expect(instruments[0]?.lastPrice).toBeCloseTo(100.7052, 4);
-    expect(instruments[0]?.marketValue).toBeCloseTo(5_035.26, 2);
+    // from the known-issues table overrides the stale payload — matching the
+    // native TreasuryBondIssueCatalog. The coupon schedule begins on the
+    // issue date (2026-03-27), not the later purchase: 49 days to 2026-05-15.
+    expect(instruments[0]?.lastPrice).toBe(100.79);
+    expect(instruments[0]?.marketValue).toBe(5_039.5);
     expect(instruments[0]).toMatchObject({
       valuationSource: "treasuryBond",
       valuationSourceLabel: "Obligacja skarbowa",
@@ -1633,6 +1635,7 @@ describe("InvestorDataSnapshot mapper", () => {
         kind: "stock",
         quantity: 5,
         lastPrice: 120,
+        lastPriceDate: "2026-05-01T10:00:00.000Z",
         currency: "USD",
         valuationSource: "manual",
         valuationSourceLabel: "Wycena ręczna",

@@ -11,6 +11,10 @@
 import type { ImportReferenceData, TransactionImportPreview, TransactionImportRow } from "./import-parser";
 import type { WriteRecordPayload } from "@/sync/records/record-writer";
 import type { EtfCatalog } from "./etf-catalog";
+import {
+  marketDataExchangeForSymbol,
+  marketDataSymbolForInstrument,
+} from "@/market-data/symbols";
 
 const APPLE_REFERENCE_DATE_UNIX_MS = Date.UTC(2001, 0, 1);
 
@@ -280,6 +284,16 @@ export function parseXtbXlsx(
     const enrich = options?.catalog?.lookup(upper) ?? null;
     const newId = crypto.randomUUID();
     const kind = guessKind(upper);
+    // Store the exact provider listing at creation time. The broker's suffix is
+    // not always the quote listing: e.g. XTB's USD VWRL.NL trades on Yahoo as
+    // VWRL.L. Existing records still have a resolver fallback, but a newly
+    // imported instrument must retain the verified mapping.
+    const marketDataID = marketDataSymbolForInstrument({
+      symbol: upper,
+      currency,
+      isin: enrich?.isin ?? null,
+    });
+    const marketDataExchange = marketDataExchangeForSymbol(marketDataID);
     newInstrumentPayloads.push({
       id: newId,
       recordType: "asset",
@@ -287,10 +301,11 @@ export function parseXtbXlsx(
       symbol: upper,
       name: name || enrich?.name || upper,
       currency,
-      exchange: exchange ?? null,
+      exchange: marketDataExchange ?? exchange ?? null,
       country: enrich?.domicile ?? null,
       isin: enrich?.isin ?? null,
       category: null,
+      marketDataID: marketDataID || null,
     });
     const resolved = { id: newId, currency };
     instrumentCache.set(upper, resolved);

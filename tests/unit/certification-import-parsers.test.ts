@@ -158,6 +158,37 @@ describe("certification import parity", () => {
     expect(vwce.currency).toBe("EUR");
   });
 
+  it("XTB: persists the verified Yahoo listing for USD ICOM and VWRL", () => {
+    const catalog = buildEtfCatalog([
+      { ticker: "VWRL", isin: "IE00B3RBWM25", name: "Vanguard FTSE All-World", domicile: "Irlandia" },
+      { ticker: "ICOM", isin: "IE00BDFL4P12", name: "iShares Diversified Commodity Swap", domicile: "Irlandia" },
+    ]);
+    const rows: unknown[][] = [
+      ["ID", "Type", "Time", "Ticker", "Instrument", "Comment", "Amount"],
+      [400001, "Stock purchase", new Date("2026-07-15T10:00:00Z"), "VWRL.NL", "Vanguard FTSE All-World", "OPEN BUY 1 @ 131.25", -550],
+      [400002, "Dividend", new Date("2026-07-15T10:01:00Z"), "VWRL.NL", "Vanguard FTSE All-World", "VWRL.NL USD 0.1/SHR", 1],
+      [400003, "Stock purchase", new Date("2026-07-15T10:02:00Z"), "ICOM.UK", "iShares Diversified Commodity Swap", "OPEN BUY 1 @ 8.6595", -36],
+      [400004, "Dividend", new Date("2026-07-15T10:03:00Z"), "ICOM.UK", "iShares Diversified Commodity Swap", "ICOM.UK USD 0.1/SHR", 1],
+    ];
+
+    const preview = parseXtbXlsx(rows, PORTFOLIO, { ...references, instruments: [] }, { catalog });
+    const payloadFor = (symbol: string) =>
+      preview.newInstrumentPayloads.find((payload) => payload.symbol === symbol) as Record<string, unknown>;
+
+    expect(payloadFor("VWRL.NL")).toMatchObject({
+      currency: "USD",
+      isin: "IE00B3RBWM25",
+      marketDataID: "VWRL.L",
+      exchange: "LSE",
+    });
+    expect(payloadFor("ICOM.UK")).toMatchObject({
+      currency: "USD",
+      isin: "IE00BDFL4P12",
+      marketDataID: "ICOM.L",
+      exchange: "LSE",
+    });
+  });
+
   it("XTB: skips rows already imported (dedup by externalImportID)", () => {
     const refs: ImportReferenceData = {
       ...references,
@@ -233,6 +264,18 @@ describe("certification import parity", () => {
         marginOverBase: 1.5,
       },
     });
+  });
+
+  it("PKO: skips an undated purchase instead of creating an unpriceable bond lot", () => {
+    const rows: unknown[][] = [
+      ["DATA DYSPOZYCJI", "RODZAJ DYSPOZYCJI", "KOD OBLIGACJI", "NR ZAPISU", "SERIA", "LICZBA OBLIGACJI", "KWOTA OPERACJI", "STATUS"],
+      ["", "zakup papierów", "ROS0229", 1001, 229, 100, 10_000, "zrealizowana"],
+    ];
+    const preview = parsePkoBondsXls(rows, PORTFOLIO, { ...references, instruments: [] });
+
+    expect(preview.validRows).toHaveLength(0);
+    expect(preview.newInstrumentPayloads).toHaveLength(0);
+    expect(preview.warnings).toContain("Wiersz 2: zakup bez daty/ilości/kwoty — pominięto");
   });
 
   it("XTB: resolves a known instrument by name when the ticker differs", () => {

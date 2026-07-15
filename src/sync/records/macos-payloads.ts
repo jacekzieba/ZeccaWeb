@@ -62,6 +62,10 @@ export function makeAssetPayload(input: {
   name: string;
   currency: string;
   category?: string | null;
+  exchange?: string | null;
+  country?: string | null;
+  isin?: string | null;
+  marketDataID?: string | null;
 }) {
   return {
     id: input.id,
@@ -70,11 +74,11 @@ export function makeAssetPayload(input: {
     symbol: input.symbol,
     name: input.name,
     currency: input.currency,
-    exchange: null,
-    country: null,
-    isin: null,
+    exchange: input.exchange ?? null,
+    country: input.country ?? null,
+    isin: input.isin ?? null,
     category: input.category ?? null,
-    marketDataID: null,
+    marketDataID: input.marketDataID ?? null,
     bondParams: null,
     listedBondParams: null,
     depositParams: null,

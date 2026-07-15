@@ -77,6 +77,8 @@ describe("InstrumentEditorModal Yahoo autocomplete", () => {
     expect(nameInput().value).toBe("Vanguard FTSE All-World UCITS ETF");
     // GBP is a known currency, so it is applied automatically.
     expect(screen.getByDisplayValue("GBP")).toBeTruthy();
+    expect((screen.getByLabelText("Ticker Yahoo") as HTMLInputElement).value).toBe("VWCE.L");
+    expect((screen.getByLabelText("Giełda / listing") as HTMLInputElement).value).toBe("LSE");
   });
 
   it("auto-applies a single candidate without showing a list", async () => {

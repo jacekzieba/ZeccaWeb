@@ -54,17 +54,18 @@ function unitPrice(dataset: PositionValuationDataset): number {
 }
 
 describe("treasury bond valuation honours injected CPI series", () => {
-  it("values EDO0432 with scenario CPI to the native dirty price", () => {
-    // 100 ×1.07 →107; ×(4.0+1.5)% →112.885; +112.885×4.5%×77/365 →113.9566343151.
-    expect(unitPrice(DATASET_WITH_CPI)).toBeCloseTo(113.9566343151, 6);
+  it("rounds the published EDO0432 dirty price to a grosz per bond", () => {
+    // Raw: 100 ×1.07 →107; ×(4.0+1.5)% →112.885;
+    // +112.885×4.5%×77/365 →113.9566343151. PKO publishes 113.96 per bond.
+    expect(unitPrice(DATASET_WITH_CPI)).toBe(113.96);
   });
 
   it("falls back to the hardcoded GUS table when no CPI is injected", () => {
     // Zaszyta tabela: 2025-02 = 5.4 (nie 4.0); brak 2026-02 → sama marża 1.5%.
     // Inny wynik niż scenariusz dowodzi, że wstrzyknięcie faktycznie działa.
     const fallback = unitPrice(DATASET_NO_CPI);
-    expect(fallback).toBeCloseTo(114.7449516849, 6);
-    expect(fallback).not.toBeCloseTo(113.9566343151, 4);
+    expect(fallback).toBe(114.74);
+    expect(fallback).not.toBe(113.96);
   });
 });
 
@@ -146,7 +147,7 @@ describe("buildInvestorDataSnapshot threads injected CPI to bond valuation", () 
       cpi: scenarioCpi,
     });
     // Cash 0 (4000 deposit − 4000 buy) → portfolio value = 40 × dirty price.
-    // 40 × 113.9566343151 = 4558.2654 (native certification IKZE bond value).
-    expect(snapshot.portfolios[0].value).toBeCloseTo(4558.2654, 2);
+    // PKO rounds the unit price first: 40 × 113.96 = 4558.40.
+    expect(snapshot.portfolios[0].value).toBe(4558.4);
   });
 });

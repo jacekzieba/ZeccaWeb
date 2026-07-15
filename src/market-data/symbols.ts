@@ -7,6 +7,13 @@ const LEGACY_SYMBOL_SUFFIXES: Record<string, string> = {
   ".NL": ".AS",
 };
 
+const YAHOO_EXCHANGES_BY_SUFFIX: Record<string, string> = {
+  ".L": "LSE",
+  ".AS": "Euronext Amsterdam",
+  ".WA": "GPW",
+  ".DE": "Xetra",
+};
+
 type MarketDataInstrument = {
   symbol: string;
   currency?: string | null;
@@ -48,6 +55,14 @@ export function marketDataSymbolForInstrument(instrument: MarketDataInstrument) 
   );
 
   return override?.yahooSymbol ?? yahooSymbolForInstrument(symbol, currency);
+}
+
+/** Returns the verified venue for a Yahoo suffix when it is unambiguous. */
+export function marketDataExchangeForSymbol(symbol: string) {
+  const normalized = symbol.trim().toUpperCase();
+  return Object.entries(YAHOO_EXCHANGES_BY_SUFFIX).find(([suffix]) =>
+    normalized.endsWith(suffix),
+  )?.[1] ?? null;
 }
 
 export function yahooSymbolForInstrument(symbol: string, currency?: string | null) {

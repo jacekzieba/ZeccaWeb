@@ -121,6 +121,9 @@ describe("AddTransactionModal inline instrument creation", () => {
     fireEvent.change(screen.getByPlaceholderText("np. Vanguard FTSE All-World"), {
       target: { value: "Apple Inc." },
     });
+    fireEvent.change(screen.getByLabelText("Ticker Yahoo"), {
+      target: { value: "AAPL" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Dodaj instrument" }));
 
     await waitFor(() => {
@@ -133,6 +136,7 @@ describe("AddTransactionModal inline instrument creation", () => {
           recordType: "asset",
           symbol: "AAPL",
           name: "Apple Inc.",
+          marketDataID: "AAPL",
         }),
         { baseUpdatedAt: null },
       );

@@ -278,6 +278,10 @@ export function InstrumentsPage() {
           kind: string;
           currency: string;
           category?: string | null;
+          exchange?: string | null;
+          country?: string | null;
+          isin?: string | null;
+          marketDataID?: string | null;
         };
 
         return {
@@ -287,6 +291,10 @@ export function InstrumentsPage() {
           kind: payload.kind,
           currency: payload.currency,
           category: payload.category ?? null,
+          exchange: payload.exchange ?? null,
+          country: payload.country ?? null,
+          isin: payload.isin ?? null,
+          marketDataID: payload.marketDataID ?? null,
           updatedAt: record.updatedAt,
         };
       });

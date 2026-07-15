@@ -63,6 +63,26 @@ describe("macOS sync payload helpers", () => {
     });
   });
 
+  it("persists the verified market identity instead of discarding it", () => {
+    expect(
+      makeAssetPayload({
+        id: "22222222-2222-4222-8222-222222222222",
+        kind: "etf",
+        symbol: "VWRL.NL",
+        name: "Vanguard FTSE All-World UCITS ETF",
+        currency: "USD",
+        exchange: "LSE",
+        isin: "IE00B3RBWM25",
+        marketDataID: "VWRL.L",
+      }),
+    ).toMatchObject({
+      symbol: "VWRL.NL",
+      exchange: "LSE",
+      isin: "IE00B3RBWM25",
+      marketDataID: "VWRL.L",
+    });
+  });
+
   it("creates transaction payloads with macOS-required metadata fields", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-05-25T12:00:00.000Z"));

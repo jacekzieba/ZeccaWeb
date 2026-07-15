@@ -118,12 +118,12 @@ describe("legacy PKO bond valuation", () => {
         0,
       ),
     ).toBeCloseTo(21_773.2, 2);
-    expect(rows.reduce((sum, row) => sum + row.marketValue, 0)).toBeCloseTo(21_773.36, 2);
-    expect(snapshot.totalValue).toBeCloseTo(21_773.36, 2);
-    expect(detail.totalValue).toBeCloseTo(21_773.36, 2);
+    expect(rows.reduce((sum, row) => sum + row.marketValue, 0)).toBeCloseTo(21_773.2, 2);
+    expect(snapshot.totalValue).toBeCloseTo(21_773.2, 2);
+    expect(detail.totalValue).toBeCloseTo(21_773.2, 2);
 
     const series = detail.valuationSeries;
-    expect(series.at(-1)?.value).toBeCloseTo(21_773.36, 2);
+    expect(series.at(-1)?.value).toBeCloseTo(21_773.2, 2);
     expect(series.at(-1)!.value).toBeGreaterThan(series.at(-2)!.value);
   });
 });

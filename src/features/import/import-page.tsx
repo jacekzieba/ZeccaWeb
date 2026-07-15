@@ -18,7 +18,14 @@ import {
   importRowId,
   selectedImportPayloads,
 } from "@/features/import/import-selection";
+import {
+  isImportedMarketInstrument,
+  isImportedTreasuryBond,
+  validateImportBeforeCommit,
+  type ImportIdentityError,
+} from "@/features/import/import-identity-validation";
 import type { RecordType } from "@/domain/models/investor-data";
+import type { WriteRecordPayload } from "@/sync/records/record-writer";
 import { saveRecord } from "@/sync/records/record-writer";
 import { buildParitySnapshot } from "@/sync/records/parity-snapshot";
 import {
@@ -115,6 +122,74 @@ type ExtendedPreview = CsvImportPreview & {
   parserWarnings?: string[];
 };
 
+type IdentityField = "symbol" | "name" | "currency" | "exchange" | "isin" | "marketDataID";
+
+const IDENTITY_FIELDS: Array<{ field: IdentityField; label: string; placeholder: string }> = [
+  { field: "symbol", label: "Ticker z importu", placeholder: "np. VWRL.NL" },
+  { field: "name", label: "Pełna nazwa", placeholder: "np. Vanguard FTSE All-World UCITS ETF" },
+  { field: "currency", label: "Waluta rozliczenia", placeholder: "np. USD" },
+  { field: "exchange", label: "Giełda / listing", placeholder: "np. LSE" },
+  { field: "isin", label: "ISIN", placeholder: "np. IE00B3RBWM25" },
+  { field: "marketDataID", label: "Ticker notowania", placeholder: "np. VWRL.L" },
+];
+
+function payloadText(payload: WriteRecordPayload, field: IdentityField) {
+  const value = payload[field];
+  return typeof value === "string" ? value : "";
+}
+
+function ImportIdentityReview({
+  payload,
+  invalidFields,
+  confirmed,
+  onEdit,
+  onConfirmationChange,
+}: {
+  payload: WriteRecordPayload;
+  invalidFields: readonly string[];
+  confirmed: boolean;
+  onEdit(field: IdentityField, value: string): void;
+  onConfirmationChange(confirmed: boolean): void;
+}) {
+  const symbol = payloadText(payload, "symbol") || "nowy instrument";
+  const canConfirm = invalidFields.length === 0;
+  return (
+    <div style={{ borderTop: `0.5px solid ${V2.line}`, padding: "14px 20px" }}>
+      <div style={{ fontFamily: UI, fontSize: 13, fontWeight: 700, color: V2.ink, marginBottom: 10 }}>
+        {symbol}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(150px, 1fr))", gap: 10 }}>
+        {IDENTITY_FIELDS.map(({ field, label, placeholder }) => {
+          const invalid = invalidFields.includes(field);
+          return (
+            <label key={field} style={{ display: "block" }}>
+              <span style={{ display: "block", color: invalid ? V2.loss : V2.subtle, fontSize: 10, fontWeight: 700, letterSpacing: ".07em", marginBottom: 4, textTransform: "uppercase" }}>
+                {label}{invalid ? " · wymagane" : ""}
+              </span>
+              <input
+                aria-label={`${label}: ${symbol}`}
+                value={payloadText(payload, field)}
+                placeholder={placeholder}
+                onChange={(event) => onEdit(field, event.target.value)}
+                style={{ width: "100%", boxSizing: "border-box", borderRadius: 8, border: `1px solid ${invalid ? V2.loss : V2.line}`, background: V2.card, color: V2.ink, fontFamily: MONO, fontSize: 12, padding: "7px 8px" }}
+              />
+            </label>
+          );
+        })}
+      </div>
+      <label style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 11, color: canConfirm ? V2.ink : V2.subtle, fontSize: 12.5 }}>
+        <input
+          type="checkbox"
+          checked={confirmed}
+          disabled={!canConfirm}
+          onChange={(event) => onConfirmationChange(event.target.checked)}
+        />
+        Potwierdzam tożsamość instrumentu i źródło jego notowań.
+      </label>
+    </div>
+  );
+}
+
 // Client-side FX lookup for the XTB currency-inference phase, via the internal
 // NBP proxy route (avoids calling NBP directly from the browser). Returns null
 // on any failure so inference simply skips that currency.
@@ -146,6 +221,9 @@ export function ImportPage() {
   const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(
     () => new Set(),
   );
+  const [confirmedInstrumentIds, setConfirmedInstrumentIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [importAction, setImportAction] = useState<"check" | "commit" | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -157,6 +235,7 @@ export function ImportPage() {
 
   function showPreview(nextPreview: ExtendedPreview) {
     setPreview(nextPreview);
+    setConfirmedInstrumentIds(new Set());
     setSelectedRowIds(
       new Set(
         nextPreview.validRows.flatMap((row) => {
@@ -172,6 +251,7 @@ export function ImportPage() {
     setError(null);
     setPreview(null);
     setSelectedRowIds(new Set());
+    setConfirmedInstrumentIds(new Set());
     setFileName(file?.name ?? null);
     if (!file) return;
     const provider = brokerProvider(importFormat);
@@ -239,6 +319,21 @@ export function ImportPage() {
     const provider = brokerProvider(importFormat);
     try {
       const selected = selectedImportPayloads(preview, selectedRowIds);
+      const importIdentityErrors = validateImportBeforeCommit(
+        selected.newInstrumentPayloads,
+        selected.rows.flatMap((row) => (row.payload ? [row.payload] : [])),
+      );
+      const unconfirmed = selected.newInstrumentPayloads.filter(
+        (payload) => isImportedMarketInstrument(payload) && !confirmedInstrumentIds.has(payload.id),
+      );
+      if (action === "commit" && (importIdentityErrors.length > 0 || unconfirmed.length > 0)) {
+        const problems = [
+          ...importIdentityErrors.map((item) => `${item.symbol}: ${item.message}`),
+          ...unconfirmed.map((payload) => `${String(payload.symbol ?? payload.id)}: potwierdź tożsamość instrumentu.`),
+        ];
+        setError(`Import nie został zapisany. ${problems.join(" ")}`);
+        return;
+      }
       if (action === "check") {
         const newInstCount = selected.newInstrumentPayloads.length;
         setResult(
@@ -289,6 +384,7 @@ export function ImportPage() {
       }
       setPreview(null);
       setSelectedRowIds(new Set());
+      setConfirmedInstrumentIds(new Set());
       setFileName(null);
     } catch (importError) {
       setError(importError instanceof Error ? importError.message : "Nie udało się zapisać importu.");
@@ -393,6 +489,30 @@ export function ImportPage() {
         : { rows: [], newInstrumentPayloads: [] },
     [preview, selectedRowIds],
   );
+  const importIdentityErrors = useMemo(
+    () =>
+      validateImportBeforeCommit(
+        selectedImport.newInstrumentPayloads,
+        selectedImport.rows.flatMap((row) => (row.payload ? [row.payload] : [])),
+      ),
+    [selectedImport],
+  );
+  const identityErrorsByInstrument = useMemo(
+    () => new Map<string, ImportIdentityError>(importIdentityErrors.map((item) => [item.instrumentId, item])),
+    [importIdentityErrors],
+  );
+  const selectedMarketInstruments = useMemo(
+    () => selectedImport.newInstrumentPayloads.filter(isImportedMarketInstrument),
+    [selectedImport.newInstrumentPayloads],
+  );
+  const selectedTreasuryBonds = useMemo(
+    () => selectedImport.newInstrumentPayloads.filter(isImportedTreasuryBond),
+    [selectedImport.newInstrumentPayloads],
+  );
+  const unconfirmedMarketInstrumentCount = selectedMarketInstruments.filter(
+    (payload) => !confirmedInstrumentIds.has(payload.id),
+  ).length;
+  const importReadyToCommit = importIdentityErrors.length === 0 && unconfirmedMarketInstrumentCount === 0;
   const selectedCount = selectedImport.rows.length;
   const errorCount = preview?.errorRows.length ?? 0;
   const warningCount = preview?.rows.filter((row) => row.warnings.length > 0).length ?? 0;
@@ -429,6 +549,50 @@ export function ImportPage() {
           )
         : new Set(),
     );
+  }
+
+  function updateImportedInstrumentIdentity(
+    instrumentId: string,
+    field: IdentityField,
+    value: string,
+  ) {
+    const normalized = ["symbol", "currency", "isin", "marketDataID"].includes(field)
+      ? value.toUpperCase()
+      : value;
+    setPreview((current) => {
+      if (!current || current.kind !== "transaction") return current;
+      const newInstrumentPayloads = current.newInstrumentPayloads?.map((payload) =>
+        payload.id === instrumentId ? { ...payload, [field]: normalized } : payload,
+      );
+      const rows = current.rows.map((row) => {
+        if (field !== "currency" || row.payload?.instrumentID !== instrumentId) return row;
+        return { ...row, payload: { ...row.payload, currency: normalized } };
+      });
+      return {
+        ...current,
+        newInstrumentPayloads,
+        rows,
+        validRows: rows.filter((row) => row.errors.length === 0),
+        errorRows: rows.filter((row) => row.errors.length > 0),
+      };
+    });
+    setConfirmedInstrumentIds((current) => {
+      const next = new Set(current);
+      next.delete(instrumentId);
+      return next;
+    });
+    setError(null);
+    setResult(null);
+  }
+
+  function setInstrumentConfirmed(instrumentId: string, confirmed: boolean) {
+    setConfirmedInstrumentIds((current) => {
+      const next = new Set(current);
+      if (confirmed) next.add(instrumentId);
+      else next.delete(instrumentId);
+      return next;
+    });
+    setError(null);
   }
 
   return (
@@ -479,6 +643,7 @@ export function ImportPage() {
                     setImportFormat(id);
                     setPreview(null);
                     setSelectedRowIds(new Set());
+                    setConfirmedInstrumentIds(new Set());
                     setFileName(null);
                     setError(null);
                     setResult(null);
@@ -588,11 +753,49 @@ export function ImportPage() {
                   <GhostButton disabled={selectedCount === 0 || importAction !== null || !userDataKey} onClick={() => void handleImport("check")}>
                     {importAction === "check" ? "Sprawdzam…" : "Sprawdź import"}
                   </GhostButton>
-                  <PrimaryButton disabled={selectedCount === 0 || importAction !== null || !userDataKey} onClick={() => void handleImport("commit")}>
+                  <PrimaryButton disabled={selectedCount === 0 || importAction !== null || !userDataKey || !importReadyToCommit} onClick={() => void handleImport("commit")}>
                     {importAction === "commit" ? "Importuję…" : "Importuj wybrane"}
                   </PrimaryButton>
                 </div>
               </div>
+              {(selectedMarketInstruments.length > 0 || selectedTreasuryBonds.length > 0) && (
+                <div style={{ borderBottom: `0.5px solid ${V2.line}`, background: v2Mix(V2.brand, 0.035) }}>
+                  <div style={{ padding: "13px 20px 4px" }}>
+                    <div style={{ ...SECTION_HEAD, color: V2.brand }}>Potwierdzenie przed zapisem</div>
+                    <div style={{ color: V2.muted, fontSize: 12, lineHeight: 1.45, marginTop: 4 }}>
+                      Instrument jest zapisywany z tymi danymi jako źródłem wszystkich kolejnych wycen.
+                    </div>
+                  </div>
+                  {selectedMarketInstruments.map((payload) => {
+                    const item = identityErrorsByInstrument.get(payload.id);
+                    return (
+                      <ImportIdentityReview
+                        key={payload.id}
+                        payload={payload}
+                        invalidFields={item?.fields ?? []}
+                        confirmed={confirmedInstrumentIds.has(payload.id)}
+                        onEdit={(field, value) => updateImportedInstrumentIdentity(payload.id, field, value)}
+                        onConfirmationChange={(confirmed) => setInstrumentConfirmed(payload.id, confirmed)}
+                      />
+                    );
+                  })}
+                  {selectedTreasuryBonds.map((payload) => {
+                    const item = identityErrorsByInstrument.get(payload.id);
+                    return (
+                      <div key={payload.id} style={{ borderTop: `0.5px solid ${V2.line}`, padding: "12px 20px", color: item ? V2.loss : V2.profit, fontSize: 12.5, fontWeight: 600 }}>
+                        {String(payload.symbol ?? "Obligacja")} · {item ? item.message : "Parametry emisji i data zakupu są kompletne — wycena będzie naliczana automatycznie."}
+                      </div>
+                    );
+                  })}
+                  {!importReadyToCommit && (
+                    <div role="alert" style={{ borderTop: `0.5px solid ${V2.line}`, color: V2.loss, fontSize: 12.5, fontWeight: 600, padding: "10px 20px" }}>
+                      {importIdentityErrors.length > 0
+                        ? "Uzupełnij pola oznaczone jako wymagane przed zapisem."
+                        : `Potwierdź tożsamość ${unconfirmedMarketInstrumentCount === 1 ? "instrumentu" : "instrumentów"} przed zapisem.`}
+                    </div>
+                  )}
+                </div>
+              )}
               {(result || error) && (
                 <div
                   role={error ? "alert" : "status"}

@@ -69,6 +69,10 @@ type InstrumentDraft = {
   kind: string;
   currency: string;
   category: string | null;
+  exchange?: string | null;
+  country?: string | null;
+  isin?: string | null;
+  marketDataID?: string | null;
   updatedAt: string;
 };
 
@@ -79,15 +83,19 @@ export type SavedInstrumentDraft = {
   kind: string;
   currency: string;
   category: string | null;
+  exchange: string | null;
+  country: string | null;
+  isin: string | null;
+  marketDataID: string | null;
   updatedAt: string;
 };
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div>
-      <label style={labelStyle}>{label}</label>
+    <label style={{ display: "block" }}>
+      <span style={labelStyle}>{label}</span>
       {children}
-    </div>
+    </label>
   );
 }
 
@@ -116,6 +124,9 @@ export function InstrumentEditorModal({
   const [kind, setKind] = useState("stock");
   const [currency, setCurrency] = useState("PLN");
   const [category, setCategory] = useState("");
+  const [exchange, setExchange] = useState("");
+  const [isin, setIsin] = useState("");
+  const [marketDataID, setMarketDataID] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<InstrumentCandidate[]>([]);
@@ -138,6 +149,9 @@ export function InstrumentEditorModal({
     setKind(initialValue?.kind ?? defaultKind ?? "stock");
     setCurrency(initialValue?.currency ?? defaultCurrency ?? "PLN");
     setCategory(initialValue?.category ?? defaultCategory ?? "");
+    setExchange(initialValue?.exchange ?? "");
+    setIsin(initialValue?.isin ?? "");
+    setMarketDataID(initialValue?.marketDataID ?? "");
     setSaving(false);
     setError(null);
     setCandidates([]);
@@ -158,6 +172,8 @@ export function InstrumentEditorModal({
     if (candidate.currency && CURRENCIES.includes(candidate.currency)) {
       setCurrency(candidate.currency);
     }
+    setExchange(candidate.exchange ?? "");
+    setMarketDataID(candidate.symbol);
     setCandidates([]);
   }, []);
 
@@ -214,8 +230,15 @@ export function InstrumentEditorModal({
 
     const trimmedSymbol = symbol.trim().toUpperCase();
     const trimmedName = name.trim();
+    const trimmedExchange = exchange.trim();
+    const trimmedIsin = isin.trim().toUpperCase();
+    const trimmedMarketDataID = marketDataID.trim().toUpperCase();
     if (!trimmedSymbol || !trimmedName) {
       setError("Symbol i nazwa instrumentu są wymagane.");
+      return;
+    }
+    if ((kind === "stock" || kind === "etf") && !trimmedMarketDataID) {
+      setError("Dla akcji i ETF wybierz notowanie albo wpisz ticker Yahoo.");
       return;
     }
 
@@ -231,9 +254,24 @@ export function InstrumentEditorModal({
         kind,
         currency,
         category: category.trim() || null,
+        exchange: trimmedExchange || null,
+        country: initialValue?.country ?? null,
+        isin: trimmedIsin || null,
+        marketDataID: trimmedMarketDataID || null,
         updatedAt: new Date().toISOString(),
       };
-      const payload = makeAssetPayload({ id: savedInstrument.id, kind: savedInstrument.kind, symbol: savedInstrument.symbol, name: savedInstrument.name, currency: savedInstrument.currency, category: savedInstrument.category });
+      const payload = makeAssetPayload({
+        id: savedInstrument.id,
+        kind: savedInstrument.kind,
+        symbol: savedInstrument.symbol,
+        name: savedInstrument.name,
+        currency: savedInstrument.currency,
+        category: savedInstrument.category,
+        exchange: savedInstrument.exchange,
+        country: savedInstrument.country,
+        isin: savedInstrument.isin,
+        marketDataID: savedInstrument.marketDataID,
+      });
       if (isFakeSyncEnabled() && records) {
         const now = new Date().toISOString();
         const nextRecords = [
@@ -469,6 +507,44 @@ export function InstrumentEditorModal({
               </select>
             </Field>
           </div>
+
+          {(kind === "stock" || kind === "etf") && (
+            <>
+              <div style={{ color: MUTED, fontSize: 11.5, lineHeight: 1.45 }}>
+                Potwierdź tożsamość instrumentu: ticker brokera, walutę rozliczenia i dokładne notowanie Yahoo są zapisywane osobno.
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <Field label="Ticker Yahoo">
+                  <input
+                    type="text"
+                    value={marketDataID}
+                    onChange={(event) => setMarketDataID(event.target.value)}
+                    placeholder="np. VWRL.L"
+                    style={inputStyle}
+                    required
+                  />
+                </Field>
+                <Field label="Giełda / listing">
+                  <input
+                    type="text"
+                    value={exchange}
+                    onChange={(event) => setExchange(event.target.value)}
+                    placeholder="np. LSE"
+                    style={inputStyle}
+                  />
+                </Field>
+              </div>
+              <Field label="ISIN">
+                <input
+                  type="text"
+                  value={isin}
+                  onChange={(event) => setIsin(event.target.value)}
+                  placeholder="np. IE00B3RBWM25"
+                  style={inputStyle}
+                />
+              </Field>
+            </>
+          )}
 
           <Field label="Kategoria">
             <input

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  marketDataExchangeForSymbol,
   marketDataSymbolForInstrument,
   yahooSymbolForInstrument,
 } from "@/market-data/symbols";
@@ -52,5 +53,10 @@ describe("yahooSymbolForInstrument", () => {
         marketDataID: "VWCE.DE",
       }),
     ).toBe("VWCE.DE");
+  });
+
+  it("identifies the quote venue from a verified Yahoo listing", () => {
+    expect(marketDataExchangeForSymbol("VWRL.L")).toBe("LSE");
+    expect(marketDataExchangeForSymbol("VWRL.AS")).toBe("Euronext Amsterdam");
   });
 });

@@ -14,6 +14,15 @@ type HistoryResponse = {
   data: MarketQuote[];
 };
 
+type QuoteResponse = {
+  data: MarketQuote;
+};
+
+type MarketDataResponse = {
+  history: MarketQuote[];
+  latest: MarketQuote | null;
+};
+
 // Instruments whose price genuinely moves on a public market day-to-day. Bonds,
 // deposits and cash are valued by formula or manual entry, so we don't quote them.
 const QUOTED_KINDS = new Set(["stock", "etf", "crypto"]);
@@ -24,6 +33,82 @@ type QuotedInstrument = {
   requestSymbol: string;
   currency: string;
 };
+
+/**
+ * Converts a provider history into valuation inputs without relabelling its
+ * currency. The stored asset currency is only a fallback for providers that
+ * omit it; using it unconditionally would value e.g. VWRL.L in USD instead of
+ * GBP and apply the wrong NBP rate.
+ */
+export function marketQuoteInputsFromHistory(
+  instrument: Pick<QuotedInstrument, "id" | "currency">,
+  history: MarketQuote[],
+  latest: MarketQuote | null = null,
+): MarketQuoteInput[] {
+  const inputs = history.flatMap((point) => {
+    if (point.close <= 0) return [];
+    return [{
+      instrumentID: instrument.id,
+      price: point.close,
+      currency: point.currency ?? instrument.currency,
+      // Yahoo history is an end-of-session series; retain the provider's
+      // session date rather than stamping it with the browser refresh time.
+      date: new Date(`${point.date}T00:00:00.000Z`),
+    }];
+  });
+
+  // Yahoo's history API can retain the previous daily close after the quote
+  // endpoint has a newer regular-market price. Keep the former for charts but
+  // use the latter for the current portfolio value — the native apps already
+  // use this same quote endpoint.
+  if (!latest || latest.close <= 0) return inputs;
+  const latestInput: MarketQuoteInput = {
+    instrumentID: instrument.id,
+    price: latest.close,
+    currency: latest.currency ?? instrument.currency,
+    date: new Date(`${latest.date}T00:00:00.000Z`),
+  };
+  const latestHistoryIndex = inputs.reduce(
+    (index, point, current) => point.date > inputs[index]!.date ? current : index,
+    0,
+  );
+  if (inputs.length > 0 && latestInput.date < inputs[latestHistoryIndex]!.date) {
+    return inputs;
+  }
+  const sameSessionIndex = inputs.findIndex(
+    (point) => point.date.getTime() === latestInput.date.getTime(),
+  );
+  if (sameSessionIndex >= 0) {
+    inputs[sameSessionIndex] = latestInput;
+  } else {
+    inputs.push(latestInput);
+  }
+  return inputs.sort((a, b) => a.date.getTime() - b.date.getTime());
+}
+
+async function fetchMarketData(instrument: QuotedInstrument): Promise<MarketDataResponse> {
+  const params = new URLSearchParams({
+    symbol: instrument.requestSymbol,
+    currency: instrument.currency,
+  });
+  const historyParams = new URLSearchParams(params);
+  historyParams.set("range", "2y");
+  const [historyResult, quoteResult] = await Promise.allSettled([
+    fetch(`/api/market-data/history?${historyParams.toString()}`),
+    fetch(`/api/market-data/quote?${params.toString()}`),
+  ]);
+
+  const history = historyResult.status === "fulfilled" && historyResult.value.ok
+    ? ((await historyResult.value.json()) as HistoryResponse).data
+    : [];
+  const latest = quoteResult.status === "fulfilled" && quoteResult.value.ok
+    ? ((await quoteResult.value.json()) as QuoteResponse).data
+    : null;
+  if (history.length === 0 && !latest) {
+    throw new Error("Nie udało się pobrać notowań.");
+  }
+  return { history, latest };
+}
 
 export function MarketQuoteBootstrap() {
   const records = useSyncStore((state) => state.records);
@@ -53,22 +138,12 @@ export function MarketQuoteBootstrap() {
     queries: instruments.map((instrument) => ({
       queryKey: ["market-history", instrument.requestSymbol, instrument.currency],
       enabled,
-      staleTime: 60 * 60 * 1000,
+      // Current valuation comes from the quote endpoint (cached for 15 minutes);
+      // the long history is retained only for series and period changes.
+      staleTime: 15 * 60 * 1000,
       // A missing/unsupported symbol shouldn't block the rest of the portfolio.
       retry: 0,
-      queryFn: async () => {
-        const params = new URLSearchParams({
-          symbol: instrument.requestSymbol,
-          currency: instrument.currency,
-          range: "2y",
-        });
-        const response = await fetch(`/api/market-data/history?${params.toString()}`);
-        const body = (await response.json()) as HistoryResponse | { error?: string };
-        if (!response.ok || !("data" in body)) {
-          throw new Error("Nie udało się pobrać historii notowań.");
-        }
-        return body.data;
-      },
+      queryFn: () => fetchMarketData(instrument),
     })),
   });
 
@@ -89,15 +164,7 @@ export function MarketQuoteBootstrap() {
     queries.forEach((query, index) => {
       const instrument = instruments[index];
       if (query.status !== "success" || !query.data) return;
-      for (const point of query.data) {
-        if (point.close <= 0) continue;
-        quotes.push({
-          instrumentID: instrument.id,
-          price: point.close,
-          currency: point.currency ?? instrument.currency,
-          date: new Date(`${point.date}T00:00:00.000Z`),
-        });
-      }
+      quotes.push(...marketQuoteInputsFromHistory(instrument, query.data.history, query.data.latest));
     });
 
     const key = `${quotes.length}:${quotes

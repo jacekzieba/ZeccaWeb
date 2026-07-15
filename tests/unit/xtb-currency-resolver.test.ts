@@ -36,6 +36,32 @@ describe("resolveObservedCurrencies", () => {
     expect(tx.currency).toBe("GBP");
   });
 
+  it("updates the persisted Yahoo listing after inferring the XTB settlement currency", async () => {
+    const preview = previewWith("?");
+    preview.fxObservations = [
+      { symbol: "VWRL.NL", fxObserved: 4.0, date: "2026-03-02" },
+    ];
+    preview.newInstrumentPayloads = [
+      {
+        id: "i1",
+        recordType: "asset",
+        symbol: "VWRL.NL",
+        currency: "?",
+        isin: "IE00B3RBWM25",
+        marketDataID: "VWRL.AS",
+      },
+    ];
+
+    const resolved = await resolveObservedCurrencies(preview, fetchRate);
+
+    expect(resolved).toBe(1);
+    expect(preview.newInstrumentPayloads[0]).toMatchObject({
+      currency: "USD",
+      marketDataID: "VWRL.L",
+      exchange: "LSE",
+    });
+  });
+
   it("leaves currency as '?' when inference is ambiguous", async () => {
     const preview = previewWith("?");
     const ambiguous = async (code: string) => ({ USD: 5.15, GBP: 5.25 } as Record<string, number>)[code] ?? null;

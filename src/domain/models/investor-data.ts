@@ -110,6 +110,8 @@ export type HoldingRow = {
   kind: string;
   quantity: number;
   lastPrice: number;
+  /** Source session/observation date of `lastPrice`, not the UI refresh time. */
+  lastPriceDate: string | null;
   currency: string;
   valuationSource: "manual" | "market" | "transaction" | "treasuryBond" | "missing";
   valuationSourceLabel: string;

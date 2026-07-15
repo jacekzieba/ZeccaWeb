@@ -128,4 +128,26 @@ describe("treasury bond inflation-indexed valuation", () => {
     );
     expect(rate).toBe(6.4);
   });
+
+  it("anchors accrual periods to the issue date, not a later purchase date", () => {
+    const issueDate = new Date("2025-01-01T00:00:00.000Z");
+    const price = unitPrice(
+      {
+        issueDate,
+        maturityDate: new Date("2027-01-01T00:00:00.000Z"),
+        nominalValue: 100,
+        firstPeriodRate: 12,
+        subsequentBase: "stałe",
+        marginOverBase: 12,
+        capitalization: "brak",
+        interestPayment: "przy wykupie",
+      },
+      // Acquisition controls when the lot is held, but cannot reset an
+      // already-issued bond's coupon calendar.
+      new Date("2025-07-01T00:00:00.000Z"),
+      new Date("2025-10-01T00:00:00.000Z"),
+    );
+
+    expect(price).toBe(108.98);
+  });
 });

@@ -14,6 +14,8 @@ export type { FxRateInput } from "@/domain/valuation/price-resolver";
 const EPSILON = 0.000001;
 
 export type BondParamsInput = {
+  /** Coupon periods are defined by the issue, never by a later lot purchase. */
+  issueDate?: Date;
   maturityDate: Date;
   nominalValue: number;
   firstPeriodRate: number;
@@ -211,7 +213,10 @@ function dirtyTreasuryBondPrice(
     return params.nominalValue;
   }
 
-  let periodStart = purchaseDay;
+  // A lot's purchase date decides whether it is held, but the bond's coupon
+  // schedule and capitalization have been running since the issue date. Old
+  // payloads without this field retain the legacy purchase-date fallback.
+  let periodStart = startOfUtcDay(params.issueDate ?? purchaseDay);
   let periodIndex = 0;
   let principal = params.nominalValue;
   let carriedInterest = 0;
@@ -224,7 +229,7 @@ function dirtyTreasuryBondPrice(
       const totalDays = Math.max(1, daysBetween(periodStart, periodEnd));
       const elapsedDays = Math.max(0, daysBetween(periodStart, effectiveAsOf));
       const accrued = principal * annualRate * Math.min(elapsedDays / totalDays, 1);
-      return principal + carriedInterest + accrued;
+      return roundToGrosz(principal + carriedInterest + accrued);
     }
 
     const fullPeriodInterest = principal * annualRate;
@@ -240,7 +245,11 @@ function dirtyTreasuryBondPrice(
     periodIndex += 1;
   }
 
-  return principal + carriedInterest;
+  return roundToGrosz(principal + carriedInterest);
+}
+
+function roundToGrosz(value: number) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
 function addYears(date: Date, years: number) {

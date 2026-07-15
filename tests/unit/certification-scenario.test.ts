@@ -15,9 +15,8 @@ import {
 } from "./helpers/certification-records";
 
 // Web parity with the native certification suite. Every expected amount is a
-// frozen anchor from the native plan, hand-verified against the native engines.
-// A mismatch is a cross-platform parity bug — report it with the numbers below,
-// do NOT adjust the expectation.
+// frozen anchor from the native engines. A mismatch is a cross-platform parity
+// bug — update both suites only when a valuation rule is deliberately changed.
 describe("certification scenario — web parity", () => {
   const records = buildCertificationRecords();
   const snapshot = buildInvestorDataSnapshot(records, {
@@ -50,13 +49,13 @@ describe("certification scenario — web parity", () => {
   });
 
   it("IKZE: total, cash and EDO0432 valued via injected CPI (matured TOS0626 gone)", () => {
-    expect(byId.get(IKZE_ID)!.value).toBeCloseTo(8_706.31, 2);
+    expect(byId.get(IKZE_ID)!.value).toBeCloseTo(8_706.448, 3);
 
     const detail = buildPortfolioDetail(records, IKZE_ID, { fxRates: FX, asOf: ASOF, cpi: CPI })!;
     expect(detail.cashValue).toBeCloseTo(4_148.05, 2);
 
-    // 40 units × dirty 113.9566343151 = 4558.2654.
-    expect(holding(IKZE_ID, "EDO0432").marketValue).toBeCloseTo(4_558.27, 2);
+    // PKO rounds the published price first: 40 units × 113.96 = 4558.40.
+    expect(holding(IKZE_ID, "EDO0432").marketValue).toBe(4_558.4);
     expect(detail.holdings.some((h) => h.symbol === "TOS0626")).toBe(false);
   });
 
@@ -75,6 +74,6 @@ describe("certification scenario — web parity", () => {
   });
 
   it("dashboard total across all three portfolios", () => {
-    expect(snapshot.totalValue).toBeCloseTo(179_688.71, 2);
+    expect(snapshot.totalValue).toBeCloseTo(179_688.848, 3);
   });
 });
