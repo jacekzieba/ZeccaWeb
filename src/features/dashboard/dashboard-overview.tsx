@@ -26,7 +26,6 @@ import {
   useSectionCustomization,
   type SectionDef,
   type SectionRegistry,
-  type SectionSize,
 } from "@/components/customize/section-customization";
 import { SectionCustomizePanel, type SectionPanelTheme } from "@/components/customize/section-customize-panel";
 import { SectionGrid } from "@/components/customize/section-grid";
@@ -99,8 +98,6 @@ const DASHBOARD_KPI_ICONS: Record<string, LucideIcon> = {
   kpiOpenPositions: BriefcaseBusiness,
 };
 
-const KPI_SIZE_PRESETS: SectionSize[] = [{ width: 1 }, { width: 2 }];
-
 const DASHBOARD_SECTIONS: SectionDef<string>[] = [
   { id: "summary", label: "Wartość i historia", desc: "Główna wartość portfela, wynik i wykres historii.", category: "overview", icon: LayoutDashboard, sizePresets: [{ width: 4 }] },
   ...KPI_TILE_META.map((tile) => ({
@@ -109,7 +106,7 @@ const DASHBOARD_SECTIONS: SectionDef<string>[] = [
     desc: tile.desc,
     category: "metrics",
     icon: DASHBOARD_KPI_ICONS[tile.id],
-    sizePresets: KPI_SIZE_PRESETS,
+    sizePresets: tile.sizePresets,
   })),
   { id: "valueVsDeposits", label: "Wartość vs wpłaty", desc: "Wartość konta na tle skumulowanych wpłat.", category: "charts", icon: ChartNoAxesCombined, sizePresets: [{ width: 4 }, { width: 2 }] },
   { id: "holdings", label: "Instrumenty", desc: "Największe aktywne pozycje.", category: "data", icon: Wallet, sizePresets: [{ width: 3 }, { width: 4 }] },
@@ -711,7 +708,7 @@ function toTransactionViews(transactions: TransactionRow[]): TransactionView[] {
     date: transaction.date,
     portfolioName: transaction.portfolioName,
     type: transaction.transactionType,
-    symbol: transaction.instrumentSymbol ?? transaction.instrumentName ?? transaction.transactionType,
+    symbol: transaction.instrumentSymbol ?? transaction.instrumentName ?? TX_LABELS[transaction.transactionType] ?? transaction.transactionType,
     quantity: transaction.quantity,
     amount: transaction.grossAmount,
     currency: transaction.currency,
@@ -1062,7 +1059,7 @@ function SummaryCard({
 
   return (
     <Card glass pad={0} dataTour="dashboard-hero">
-      <div style={{ display: "grid", gridTemplateColumns: isTablet ? "1fr" : "minmax(280px, 360px) 1fr" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isTablet ? "1fr" : "minmax(0, 0.38fr) minmax(0, 1fr)" }}>
         <div
           style={{
             padding: isMobile ? "22px 22px 6px" : "30px 30px 26px",
@@ -1097,7 +1094,7 @@ function SummaryCard({
             style={{
               fontFamily: SERIF,
               fontWeight: 400,
-              fontSize: isMobile ? 52 : 66,
+              fontSize: isMobile ? 52 : "clamp(38px, 3.2vw, 66px)",
               lineHeight: 0.98,
               letterSpacing: "-.015em",
               color: PALETTE.ink,
@@ -1105,7 +1102,7 @@ function SummaryCard({
             }}
           >
             {fmt(totalValue)}
-            <span style={{ fontFamily: SERIF, fontSize: isMobile ? 22 : 26, fontStyle: "italic", color: PALETTE.subtle, fontWeight: 400, marginLeft: 8 }}>
+            <span style={{ fontFamily: SERIF, fontSize: isMobile ? 22 : "clamp(18px, 1.3vw, 26px)", fontStyle: "italic", color: PALETTE.subtle, fontWeight: 400, marginLeft: 8 }}>
               {displayCurrency}
             </span>
           </div>

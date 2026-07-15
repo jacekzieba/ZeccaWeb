@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import { CircleHelp } from "lucide-react";
+import type { SectionSize } from "@/components/customize/section-customization";
 import type { CashflowSummary, PortfolioMetrics } from "@/domain/models/investor-data";
 import { V2, V2_TYPE, v2Mix } from "@/lib/v2-design";
 
@@ -11,7 +12,7 @@ const cardStyle: CSSProperties = {
   border: `0.5px solid ${V2.line}`,
   boxShadow: `0 1px 0 ${v2Mix(V2.ink, 0.03)}, 0 6px 20px ${v2Mix(V2.ink, 0.05)}`,
   padding: "15px 17px",
-  height: "100%",
+  height: "auto",
 };
 
 function fmt(n: number, d = 0) {
@@ -118,17 +119,17 @@ export type KpiTileId =
 
 /** Metadata for each KPI tile — used to register them as individually
  * toggleable dashboard sections. */
-export const KPI_TILE_META: { id: KpiTileId; label: string; desc: string }[] = [
-  { id: "kpiUnrealized", label: "Zysk niezrealizowany", desc: "Wartość ponad zainwestowany kapitał." },
-  { id: "kpiXirr", label: "MWR · XIRR", desc: "Roczny zwrot ważony kapitałem." },
-  { id: "kpiTwr", label: "Zwrot (TWR)", desc: "Zwrot całkowity, bez wpłat." },
-  { id: "kpiCagr", label: "CAGR", desc: "Annualizowany zwrot ważony czasem." },
-  { id: "kpiRealReturn", label: "Wynik realny", desc: "Roczny zwrot po inflacji." },
-  { id: "kpiMaxDd", label: "Maks. obsunięcie", desc: "Największy spadek od szczytu." },
-  { id: "kpiRealized", label: "Zysk zrealizowany", desc: "Wynik z zamkniętych pozycji." },
-  { id: "kpiInvested", label: "Zainwestowany kapitał", desc: "Wpłaty netto." },
-  { id: "kpiDividends", label: "Dywidendy", desc: "Suma otrzymanych dywidend." },
-  { id: "kpiOpenPositions", label: "Otwarte pozycje", desc: "Liczba aktywnych pozycji." },
+export const KPI_TILE_META: { id: KpiTileId; label: string; desc: string; sizePresets: SectionSize[] }[] = [
+  { id: "kpiUnrealized", label: "Zysk niezrealizowany", desc: "Wartość ponad zainwestowany kapitał.", sizePresets: [{ width: 1 }, { width: 2 }] },
+  { id: "kpiXirr", label: "MWR · XIRR", desc: "Roczny zwrot ważony kapitałem.", sizePresets: [{ width: 1 }] },
+  { id: "kpiTwr", label: "Zwrot (TWR)", desc: "Zwrot całkowity, bez wpłat.", sizePresets: [{ width: 1 }] },
+  { id: "kpiCagr", label: "CAGR", desc: "Annualizowany zwrot ważony czasem.", sizePresets: [{ width: 1 }] },
+  { id: "kpiRealReturn", label: "Wynik realny", desc: "Roczny zwrot po inflacji.", sizePresets: [{ width: 1 }] },
+  { id: "kpiMaxDd", label: "Maks. obsunięcie", desc: "Największy spadek od szczytu.", sizePresets: [{ width: 1 }] },
+  { id: "kpiRealized", label: "Zysk zrealizowany", desc: "Wynik z zamkniętych pozycji.", sizePresets: [{ width: 1 }, { width: 2 }] },
+  { id: "kpiInvested", label: "Zainwestowany kapitał", desc: "Wpłaty netto.", sizePresets: [{ width: 1 }, { width: 2 }] },
+  { id: "kpiDividends", label: "Dywidendy", desc: "Suma otrzymanych dywidend.", sizePresets: [{ width: 1 }, { width: 2 }] },
+  { id: "kpiOpenPositions", label: "Otwarte pozycje", desc: "Liczba aktywnych pozycji.", sizePresets: [{ width: 1 }] },
 ];
 
 export const KPI_HELP_HREFS: Partial<Record<KpiTileId, string>> = {

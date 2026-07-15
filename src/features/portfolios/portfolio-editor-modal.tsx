@@ -13,6 +13,10 @@ import { refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
 import { makeAccountPayload } from "@/sync/records/macos-payloads";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import { isFakeSyncEnabled } from "@/lib/env";
+import {
+  NATIVE_PORTFOLIO_TYPES,
+  normalizePortfolioType,
+} from "@/features/portfolios/portfolio-types";
 
 const INK = "#1C3144";
 const MUTED = "rgba(28,49,68,0.58)";
@@ -84,6 +88,7 @@ export function PortfolioEditorModal({
   const setSync = useSyncStore((s) => s.setSync);
   const [mounted, setMounted] = useState(false);
   const [name, setName] = useState("");
+  const [accountType, setAccountType] = useState("Własny");
   const [baseCurrency, setBaseCurrency] = useState("PLN");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +101,7 @@ export function PortfolioEditorModal({
     }
 
     setName(initialValue?.name ?? "");
+    setAccountType(normalizePortfolioType(initialValue?.accountType));
     setBaseCurrency(initialValue?.baseCurrency ?? "PLN");
     setSaving(false);
     setError(null);
@@ -123,7 +129,7 @@ export function PortfolioEditorModal({
         id,
         name: trimmedName,
         baseCurrency,
-        accountType: initialValue?.accountType,
+        accountType,
         colorHex: initialValue?.colorHex,
         targetAllocation: initialValue?.targetAllocation,
       });
@@ -256,8 +262,27 @@ export function PortfolioEditorModal({
             />
           </Field>
 
+          <Field label="Typ portfela">
+            <select
+              aria-label="Typ portfela"
+              value={accountType}
+              onChange={(event) => setAccountType(event.target.value)}
+              style={{ ...inputStyle, appearance: "none", cursor: "pointer" }}
+            >
+              {!NATIVE_PORTFOLIO_TYPES.some((type) => type === accountType) && (
+                <option value={accountType}>{accountType}</option>
+              )}
+              {NATIVE_PORTFOLIO_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </Field>
+
           <Field label="Waluta bazowa">
             <select
+              aria-label="Waluta bazowa"
               value={baseCurrency}
               onChange={(event) => setBaseCurrency(event.target.value)}
               style={{ ...inputStyle, appearance: "none", cursor: "pointer" }}

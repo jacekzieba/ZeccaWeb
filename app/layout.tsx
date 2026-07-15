@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://zecca.pl"),
   applicationName: "Zecca",
   title: "Zecca",
-  description: "Prywatny klient webowy dla portfeli Zecca.",
+  description: "Śledź wszystkie inwestycje",
   icons: {
     icon: [
       { url: "/favicon.ico" },

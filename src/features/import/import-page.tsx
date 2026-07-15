@@ -14,6 +14,10 @@ import { loadEtfCatalog } from "@/features/import/etf-catalog";
 import { resolveObservedCurrencies } from "@/features/import/xtb-currency-resolver";
 import { parsePkoBondsXls } from "@/features/import/pko-parser";
 import { readSpreadsheet } from "@/features/import/read-spreadsheet";
+import {
+  importRowId,
+  selectedImportPayloads,
+} from "@/features/import/import-selection";
 import type { RecordType } from "@/domain/models/investor-data";
 import { saveRecord } from "@/sync/records/record-writer";
 import { buildParitySnapshot } from "@/sync/records/parity-snapshot";
@@ -139,6 +143,9 @@ export function ImportPage() {
   const [importFormat, setImportFormat] = useState<ImportFormat>("generic");
   const [fileName, setFileName] = useState<string | null>(null);
   const [preview, setPreview] = useState<ExtendedPreview | null>(null);
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [saving, setSaving] = useState(false);
   const [dryRun, setDryRun] = useState(true);
   const [result, setResult] = useState<string | null>(null);
@@ -149,10 +156,23 @@ export function ImportPage() {
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>("");
   const portfolioId = selectedPortfolioId || firstPortfolioId;
 
+  function showPreview(nextPreview: ExtendedPreview) {
+    setPreview(nextPreview);
+    setSelectedRowIds(
+      new Set(
+        nextPreview.validRows.flatMap((row) => {
+          const id = importRowId(row);
+          return id ? [id] : [];
+        }),
+      ),
+    );
+  }
+
   async function handleFile(file: File | null) {
     setResult(null);
     setError(null);
     setPreview(null);
+    setSelectedRowIds(new Set());
     setFileName(file?.name ?? null);
     if (!file) return;
     const provider = brokerProvider(importFormat);
@@ -176,7 +196,7 @@ export function ImportPage() {
         if (xtbPreview.fxObservations.length > 0) {
           await resolveObservedCurrencies(xtbPreview, fetchFxRateViaApi);
         }
-        setPreview(xtbPreview as ExtendedPreview);
+        showPreview(xtbPreview as ExtendedPreview);
         return;
       }
 
@@ -186,17 +206,17 @@ export function ImportPage() {
           setError("Wybierz portfel docelowy przed importem PKO Obligacje.");
           return;
         }
-        setPreview(parsePkoBondsXls(rows, portfolioId, references) as ExtendedPreview);
+        showPreview(parsePkoBondsXls(rows, portfolioId, references) as ExtendedPreview);
         return;
       }
 
       // Generic
       if (extension === "xlsx" || extension === "xls") {
         const rows = await readSpreadsheet(file);
-        setPreview(parseImportTable(rows, references));
+        showPreview(parseImportTable(rows, references));
       } else {
         const text = await file.text();
-        setPreview(parseCsvImport(text, references));
+        showPreview(parseCsvImport(text, references));
       }
     } catch (parseError) {
       setError(parseError instanceof Error ? parseError.message : "Nie udało się odczytać pliku.");
@@ -219,10 +239,11 @@ export function ImportPage() {
     setResult(null);
     const provider = brokerProvider(importFormat);
     try {
+      const selected = selectedImportPayloads(preview, selectedRowIds);
       if (dryRun) {
-        const newInstCount = preview.newInstrumentPayloads?.length ?? 0;
+        const newInstCount = selected.newInstrumentPayloads.length;
         setResult(
-          `Symulacja: ${preview.validRows.length} transakcji gotowych do zapisu, ${preview.errorRows.length} wymaga poprawy` +
+          `Symulacja: ${selected.rows.length} wybranych pozycji gotowych do zapisu, ${preview.errorRows.length} wymaga poprawy` +
           (newInstCount > 0 ? `, ${newInstCount} nowych instrumentów do utworzenia` : "") + "."
         );
         return;
@@ -232,7 +253,7 @@ export function ImportPage() {
       const localPayloads: Array<{ id: string; recordType: string; [key: string]: unknown }> = [];
 
       // Save new instruments first
-      for (const instrPayload of preview.newInstrumentPayloads ?? []) {
+      for (const instrPayload of selected.newInstrumentPayloads) {
         if (!isFakeSyncEnabled()) {
           await saveRecord(supabase, userDataKey, instrPayload.recordType, instrPayload, { baseUpdatedAt: null });
         }
@@ -240,7 +261,7 @@ export function ImportPage() {
       }
 
       // Save transactions
-      for (const row of preview.validRows) {
+      for (const row of selected.rows) {
         if (!row.payload) continue;
         if (!isFakeSyncEnabled()) {
           const saveResult = await saveRecord(supabase, userDataKey, row.payload.recordType, row.payload, { baseUpdatedAt: null });
@@ -259,15 +280,16 @@ export function ImportPage() {
         cpi: marketCpi,
       });
       setSync(nextRecords, nextSnapshot);
-      setResult(`Zaimportowano ${preview.validRows.length - queued} rekordów${queued > 0 ? `, ${queued} czeka w kolejce sync` : ""}.`);
+      setResult(`Zaimportowano ${selected.rows.length - queued} rekordów${queued > 0 ? `, ${queued} czeka w kolejce sync` : ""}.`);
       if (provider) {
         getTelemetryService().signal(TelemetryEvent.brokerImportSucceeded, {
           provider,
           result: "committed",
-          row_bucket: telemetryRowBucket(preview.validRows.length),
+          row_bucket: telemetryRowBucket(selected.rows.length),
         });
       }
       setPreview(null);
+      setSelectedRowIds(new Set());
       setFileName(null);
     } catch (importError) {
       setError(importError instanceof Error ? importError.message : "Nie udało się zapisać importu.");
@@ -365,9 +387,17 @@ export function ImportPage() {
   }
 
   const validCount = preview?.validRows.length ?? 0;
+  const selectedImport = useMemo(
+    () =>
+      preview
+        ? selectedImportPayloads(preview, selectedRowIds)
+        : { rows: [], newInstrumentPayloads: [] },
+    [preview, selectedRowIds],
+  );
+  const selectedCount = selectedImport.rows.length;
   const errorCount = preview?.errorRows.length ?? 0;
   const warningCount = preview?.rows.filter((row) => row.warnings.length > 0).length ?? 0;
-  const newInstCount = preview?.newInstrumentPayloads?.length ?? 0;
+  const newInstCount = selectedImport.newInstrumentPayloads.length;
   const txCount = records ? buildTransactionList(records).length : 0;
   const snapshotPoints = snapshot?.valuationSeries.length ?? 0;
   const incomeCount = records
@@ -377,6 +407,30 @@ export function ImportPage() {
     ? buildInstrumentList(records, { asOf: new Date(), fxRates: marketFxRates, useLatestTransactionFxRate: true, useMarketQuotes: true, cpi: marketCpi })
         .filter((i) => i.totalQuantity > 0).length
     : 0;
+
+  function setRowSelected(id: string, selected: boolean) {
+    setResult(null);
+    setSelectedRowIds((current) => {
+      const next = new Set(current);
+      if (selected) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
+  function setAllRowsSelected(selected: boolean) {
+    setResult(null);
+    setSelectedRowIds(
+      selected && preview
+        ? new Set(
+            preview.validRows.flatMap((row) => {
+              const id = importRowId(row);
+              return id ? [id] : [];
+            }),
+          )
+        : new Set(),
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: UI, color: V2.ink }}>
@@ -422,7 +476,14 @@ export function ImportPage() {
               ).map(([id, label, sub]) => (
                 <button
                   key={id}
-                  onClick={() => { setImportFormat(id); setPreview(null); setFileName(null); setError(null); }}
+                  onClick={() => {
+                    setImportFormat(id);
+                    setPreview(null);
+                    setSelectedRowIds(new Set());
+                    setFileName(null);
+                    setError(null);
+                    setResult(null);
+                  }}
                   style={{
                     border: `1.5px solid ${importFormat === id ? V2.brand : V2.line}`,
                     borderRadius: 12, padding: "10px 16px", textAlign: "left",
@@ -488,6 +549,20 @@ export function ImportPage() {
             </div>
           </label>
 
+          {!preview && (result || error) && (
+            <div
+              role={error ? "alert" : "status"}
+              style={{
+                color: error ? V2.loss : V2.profit,
+                fontSize: 13,
+                fontWeight: 600,
+                padding: "0 4px",
+              }}
+            >
+              {error ?? result}
+            </div>
+          )}
+
           {preview?.parserWarnings && preview.parserWarnings.length > 0 && (
             <V2Card>
               <div style={{ ...SECTION_HEAD, marginBottom: 8 }}>Ostrzeżenia parsera ({preview.parserWarnings.length})</div>
@@ -506,56 +581,115 @@ export function ImportPage() {
                 <div>
                   <div style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 500, color: V2.ink }}>Podgląd importu {preview.kind === "manualValuation" ? "wycen" : "transakcji"}</div>
                   <div style={{ color: V2.muted, fontSize: 12, marginTop: 3 }}>
-                    <span style={{ color: V2.profit, fontWeight: 600 }}>{validCount} poprawnych</span> · {warningCount} z ostrzeżeniami · <span style={{ color: errorCount ? V2.loss : V2.muted }}>{errorCount} z błędami</span>
+                    <span style={{ color: V2.profit, fontWeight: 600 }}>{validCount} poprawnych</span> · {selectedCount} wybranych · {warningCount} z ostrzeżeniami · <span style={{ color: errorCount ? V2.loss : V2.muted }}>{errorCount} z błędami</span>
                     {newInstCount > 0 && <span style={{ color: V2.bonds, fontWeight: 600 }}> · {newInstCount} nowych instrumentów</span>}
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                   <label style={{ display: "inline-flex", alignItems: "center", gap: 7, color: V2.muted, fontSize: 12, fontWeight: 600 }}>
-                    <input checked={dryRun} onChange={(event) => setDryRun(event.target.checked)} type="checkbox" />
+                    <input
+                      checked={dryRun}
+                      onChange={(event) => {
+                        setDryRun(event.target.checked);
+                        setResult(null);
+                      }}
+                      type="checkbox"
+                    />
                     Symulacja
                   </label>
-                  <PrimaryButton disabled={validCount === 0 || saving || !userDataKey} onClick={() => void handleImport()}>
-                    {saving ? "Importuję…" : dryRun ? "Sprawdź import" : "Zapisz poprawne"}
+                  <PrimaryButton disabled={selectedCount === 0 || saving || !userDataKey} onClick={() => void handleImport()}>
+                    {saving ? "Importuję…" : dryRun ? "Sprawdź import" : "Zapisz wybrane"}
                   </PrimaryButton>
                 </div>
               </div>
+              {(result || error) && (
+                <div
+                  role={error ? "alert" : "status"}
+                  style={{
+                    borderBottom: `0.5px solid ${V2.line}`,
+                    color: error ? V2.loss : V2.profit,
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    padding: "10px 20px",
+                  }}
+                >
+                  {error ?? result}
+                </div>
+              )}
               <div style={{ overflowX: "auto" }}>
-                <table style={{ borderCollapse: "collapse", minWidth: 760, width: "100%" }}>
+                <table style={{ borderCollapse: "collapse", minWidth: 820, width: "100%" }}>
                   <thead>
                     <tr style={{ background: v2Mix(V2.ink, 0.025) }}>
+                      <th style={{ padding: "10px 12px", textAlign: "left", width: 36 }}>
+                        <input
+                          aria-label="Zaznacz wszystko"
+                          aria-checked={
+                            selectedCount > 0 && selectedCount < validCount
+                              ? "mixed"
+                              : validCount > 0 && selectedCount === validCount
+                          }
+                          checked={validCount > 0 && selectedCount === validCount}
+                          disabled={validCount === 0}
+                          onChange={(event) => setAllRowsSelected(event.target.checked)}
+                          ref={(input) => {
+                            if (input) {
+                              input.indeterminate =
+                                selectedCount > 0 && selectedCount < validCount;
+                            }
+                          }}
+                          type="checkbox"
+                        />
+                      </th>
                       {["Wiersz", "Data", "Typ", "Portfel / Instrument", "Kwota / wycena", "Status"].map((heading) => (
                         <th key={heading} style={{ color: V2.subtle, fontSize: 10, fontWeight: 700, letterSpacing: ".07em", padding: "10px 12px", textAlign: "left", textTransform: "uppercase" }}>{heading}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {preview.rows.slice(0, 40).map((row) => (
-                      <tr key={row.rowNumber} style={{ borderTop: `0.5px solid ${V2.line2}` }}>
-                        <td style={cellStyle}>{row.rowNumber}</td>
-                        <td style={cellStyle}>{row.values.date || "-"}</td>
-                        <td style={cellStyle}>{row.values.transactiontype || (preview.kind === "manualValuation" ? "manualValuation" : "-")}</td>
-                        <td style={cellStyle}>{row.values.portfolio || row.values.instrument || "-"}</td>
-                        <td style={cellStyle}>{row.values.grossamount || row.values.totalvalue || row.values.value || "-"} {row.values.currency}</td>
-                        <td style={{ ...cellStyle, minWidth: 240 }}>
-                          {row.errors.length > 0 ? (
-                            <span style={{ color: V2.loss }}>{row.errors.join(" ")}</span>
-                          ) : row.warnings.length > 0 ? (
-                            <span style={{ color: V2.gold }}>{row.warnings.join(" ")}</span>
-                          ) : (
-                            <span style={{ color: V2.profit }}>Gotowe</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                    {preview.rows.map((row, index) => {
+                      const id = importRowId(row);
+                      const isSelected = id !== null && selectedRowIds.has(id);
+                      return (
+                        <tr
+                          key={id ?? `${row.rowNumber}-${index}`}
+                          style={{
+                            borderTop: `0.5px solid ${V2.line2}`,
+                            opacity: id && !isSelected ? 0.55 : 1,
+                          }}
+                        >
+                          <td style={{ ...cellStyle, width: 36 }}>
+                            <input
+                              aria-label={`Importuj pozycję ${index + 1} z wiersza ${row.rowNumber}`}
+                              checked={isSelected}
+                              disabled={!id}
+                              onChange={(event) => {
+                                if (id) setRowSelected(id, event.target.checked);
+                              }}
+                              type="checkbox"
+                            />
+                          </td>
+                          <td style={cellStyle}>{row.rowNumber}</td>
+                          <td style={cellStyle}>{row.values.date || "-"}</td>
+                          <td style={cellStyle}>{row.values.transactiontype || (preview.kind === "manualValuation" ? "manualValuation" : "-")}</td>
+                          <td style={cellStyle}>{row.values.portfolio || row.values.instrument || "-"}</td>
+                          <td style={cellStyle}>{row.values.grossamount || row.values.totalvalue || row.values.value || "-"} {row.values.currency}</td>
+                          <td style={{ ...cellStyle, minWidth: 240 }}>
+                            {row.errors.length > 0 ? (
+                              <span style={{ color: V2.loss }}>{row.errors.join(" ")}</span>
+                            ) : !isSelected ? (
+                              <span style={{ color: V2.muted }}>Pominięte</span>
+                            ) : row.warnings.length > 0 ? (
+                              <span style={{ color: V2.gold }}>{row.warnings.join(" ")}</span>
+                            ) : (
+                              <span style={{ color: V2.profit }}>Gotowe</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
-              {preview.rows.length > 40 && (
-                <div style={{ borderTop: `0.5px solid ${V2.line2}`, color: V2.subtle, fontSize: 12, padding: "10px 20px" }}>
-                  Pokazano pierwsze 40 wierszy z {preview.rows.length}.
-                </div>
-              )}
             </V2Card>
           )}
         </>
@@ -634,8 +768,6 @@ export function ImportPage() {
         </>
       )}
 
-      {result && <div style={{ color: V2.profit, fontSize: 13, fontWeight: 600 }}>{result}</div>}
-      {error && <div style={{ color: V2.loss, fontSize: 13, fontWeight: 600 }}>{error}</div>}
     </div>
   );
 }

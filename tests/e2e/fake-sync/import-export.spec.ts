@@ -12,17 +12,21 @@ test("imports a valid CSV locally, then exports the resulting transaction list",
     buffer: Buffer.from([
       "date,portfolio,transactionType,grossAmount,currency,fees,taxes,note",
       "2026-06-20,Portfel główny,cashDeposit,1234.56,PLN,0,0,E2E import",
+      "2026-06-21,Portfel główny,cashDeposit,999,PLN,0,0,E2E pominięty",
     ].join("\n")),
   });
 
   await expect(main.getByText("Podgląd importu transakcji")).toBeVisible();
-  await expect(main.getByText(/1 poprawnych/)).toBeVisible();
+  await expect(main.getByText(/2 poprawnych/)).toBeVisible();
+  await main.getByRole("checkbox", { name: /Importuj pozycję 2/ }).uncheck();
+  await expect(main.getByText(/1 wybranych/)).toBeVisible();
+  await expect(main.getByText("Pominięte")).toBeVisible();
 
   await main.getByRole("button", { name: "Sprawdź import" }).click();
-  await expect(main.getByText(/Symulacja: 1 transakcji gotowych do zapisu/)).toBeVisible();
+  await expect(main.getByText(/Symulacja: 1 wybranych pozycji gotowych do zapisu/)).toBeVisible();
 
   await main.getByLabel("Symulacja").uncheck();
-  await main.getByRole("button", { name: "Zapisz poprawne" }).click();
+  await main.getByRole("button", { name: "Zapisz wybrane" }).click();
   await expect(main.getByText("Zaimportowano 1 rekordów.")).toBeVisible();
 
   await main.getByRole("button", { name: "Eksport", exact: true }).click();
@@ -38,4 +42,5 @@ test("imports a valid CSV locally, then exports the resulting transaction list",
     csv += chunk.toString();
   }
   expect(csv).toContain("2026-06-20,Portfel główny,,cashDeposit,,,1234.56,PLN,0,0");
+  expect(csv).not.toContain("2026-06-21,Portfel główny,,cashDeposit,,,999,PLN,0,0");
 });
