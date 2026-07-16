@@ -41,4 +41,34 @@ test("shows macOS-style income records and supports fake-sync CRUD", async ({ pa
   await main.getByLabel("Usuń").first().click();
   await expect(main.getByText("Wpis usunięty lokalnie w fake sync.")).toBeVisible();
   await expect(main.getByText("E2E Salary edited")).toBeHidden();
+
+  const csv = [
+    "period,kind,type,amount,currency,fx_rate_to_pln,amount_pln,source",
+    "2025-01,earning,employment,9100,PLN,1,9100,E2E Import Salary",
+    "2025-01,burden,zus,1200,PLN,1,1200,E2E Import ZUS",
+  ].join("\n");
+  await main.getByRole("button", { name: "Importuj CSV/XLSX" }).click();
+  let importDialog = page.getByRole("dialog", { name: "Import zarobków" });
+  await importDialog.locator('input[type="file"]').setInputFiles({
+    name: "earnings.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(csv),
+  });
+  await expect(importDialog.getByLabel("Nowe: 2")).toBeVisible();
+  await expect(importDialog.getByLabel("Błędy: 0")).toBeVisible();
+  await importDialog.getByRole("button", { name: "Importuj 2 wpisów" }).click();
+
+  await expect(main.getByText("Zaimportowano 2 wpisów lokalnie w fake sync.")).toBeVisible();
+  await expect(main.getByText("E2E Import Salary")).toBeVisible();
+  await expect(main.getByText("E2E Import ZUS")).toBeVisible();
+
+  await main.getByRole("button", { name: "Importuj CSV/XLSX" }).click();
+  importDialog = page.getByRole("dialog", { name: "Import zarobków" });
+  await importDialog.locator('input[type="file"]').setInputFiles({
+    name: "earnings.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(csv),
+  });
+  await expect(importDialog.getByLabel("Bez zmian: 2")).toBeVisible();
+  await expect(importDialog.getByRole("button", { name: "Importuj 0 wpisów" })).toBeDisabled();
 });

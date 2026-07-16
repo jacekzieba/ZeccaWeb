@@ -2,6 +2,7 @@
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import dynamic from "next/dynamic";
 import {
   Banknote,
   Building2,
@@ -15,6 +16,7 @@ import {
   Plus,
   Search,
   Trash2,
+  Upload,
   UserRound,
   X,
 } from "lucide-react";
@@ -48,6 +50,14 @@ import {
   telemetrySnakeCased,
 } from "@/lib/telemetry";
 import { useSyncStore } from "@/sync/store/sync-store";
+import type {
+  EarningsImportPreview,
+} from "@/features/earnings/earnings-import";
+
+const EarningsImportModal = dynamic(
+  () => import("@/features/earnings/earnings-import-modal").then((module) => module.EarningsImportModal),
+  { ssr: false },
+);
 
 const EMPLOYMENT_TYPES: EmploymentType[] = ["employment", "business"];
 const BURDEN_CATEGORIES: EarningBurdenCategory[] = ["incomeTax", "vat", "zus", "accounting"];
@@ -580,6 +590,7 @@ export function EarningsPage() {
   const [saveState, setSaveState] = useState<SaveState>({ saving: false, error: null });
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [showImport, setShowImport] = useState(false);
 
   useEffect(() => {
     setVisibleLimit(PAGE_SIZE);
@@ -634,13 +645,19 @@ export function EarningsPage() {
   }
 
   function applyFakeIncomePayload(payload: Record<string, unknown> & { id: string }) {
+    return applyFakeIncomePayloads([payload]);
+  }
+
+  function applyFakeIncomePayloads(payloads: (Record<string, unknown> & { id: string })[]) {
     if (!records) return false;
+    const payloadIds = new Set(payloads.map((payload) => payload.id));
+    const updatedAt = new Date().toISOString();
     const nextRecords = [
-      ...records.filter((record) => !(record.id === payload.id && record.envelope.type === "income")),
-      {
+      ...records.filter((record) => !(payloadIds.has(record.id) && record.envelope.type === "income")),
+      ...payloads.map((payload) => ({
         id: payload.id,
         deviceId: "fake-sync-web",
-        updatedAt: new Date().toISOString(),
+        updatedAt,
         deletedAt: null,
         envelope: {
           type: "income" as const,
@@ -648,7 +665,7 @@ export function EarningsPage() {
           schemaVersion: 1,
           payload,
         },
-      },
+      })),
     ];
     setSync(
       nextRecords,
@@ -660,6 +677,46 @@ export function EarningsPage() {
       }),
     );
     return true;
+  }
+
+  async function commitEarningsImport(preview: EarningsImportPreview) {
+    if (!preview.canImport) {
+      throw new Error("Import zawiera błędy i nie może zostać zapisany.");
+    }
+    const items = preview.itemsToImport;
+    const payloads = items.map((item) => item.payload);
+    setMessage(null);
+
+    if (isFakeSyncEnabled()) {
+      if (!applyFakeIncomePayloads(payloads)) {
+        throw new Error("Dane fake sync nie są jeszcze dostępne.");
+      }
+      setMessage(`Zaimportowano ${items.length} wpisów lokalnie w fake sync.`);
+      return;
+    }
+    if (!supabase || !userDataKey) {
+      throw new Error("Odblokuj prywatną synchronizację przed importem.");
+    }
+
+    let queued = 0;
+    let uploaded = 0;
+    for (const item of items) {
+      const result = await saveRecord(
+        supabase,
+        userDataKey,
+        "income",
+        item.payload,
+        { baseUpdatedAt: item.baseUpdatedAt },
+      );
+      if (result.queued) queued += 1;
+      else uploaded += 1;
+    }
+    if (uploaded > 0) await refreshAfterWrite();
+    setMessage(
+      queued > 0
+        ? `Zapisano ${uploaded} wpisów; ${queued} czeka w kolejce synchronizacji.`
+        : `Zaimportowano ${uploaded} wpisów.`,
+    );
   }
 
   function deleteFakeIncomePayload(id: string) {
@@ -847,6 +904,9 @@ export function EarningsPage() {
 
   const action = (
     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <V2Button variant="ghost" disabled={!unlocked} onClick={() => setShowImport(true)}>
+        <Upload size={15} /> Importuj CSV/XLSX
+      </V2Button>
       <V2Button variant="ghost" disabled={!unlocked} onClick={() => { setSaveState({ saving: false, error: null }); setEditingBurden(newBurdenDraft()); }}>
         <MinusCircle size={15} /> Dodaj obciążenie
       </V2Button>
@@ -1092,6 +1152,14 @@ export function EarningsPage() {
           state={saveState}
           onClose={() => setEditingBurden(null)}
           onSave={() => void saveBurden(editingBurden)}
+        />
+      )}
+      {showImport && (
+        <EarningsImportModal
+          earnings={incomeLists.earnings}
+          burdens={incomeLists.burdens}
+          onClose={() => setShowImport(false)}
+          onCommit={commitEarningsImport}
         />
       )}
     </div>
