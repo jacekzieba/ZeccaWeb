@@ -120,15 +120,15 @@ export type KpiTileId =
 /** Metadata for each KPI tile — used to register them as individually
  * toggleable dashboard sections. */
 export const KPI_TILE_META: { id: KpiTileId; label: string; desc: string; sizePresets: SectionSize[] }[] = [
-  { id: "kpiUnrealized", label: "Zysk niezrealizowany", desc: "Wartość ponad zainwestowany kapitał.", sizePresets: [{ width: 1 }, { width: 2 }] },
+  { id: "kpiUnrealized", label: "Zysk niezrealizowany", desc: "Wartość ponad zainwestowany kapitał.", sizePresets: [{ width: 1 }] },
   { id: "kpiXirr", label: "MWR · XIRR", desc: "Roczny zwrot ważony kapitałem.", sizePresets: [{ width: 1 }] },
   { id: "kpiTwr", label: "Zwrot (TWR)", desc: "Zwrot całkowity, bez wpłat.", sizePresets: [{ width: 1 }] },
   { id: "kpiCagr", label: "CAGR", desc: "Annualizowany zwrot ważony czasem.", sizePresets: [{ width: 1 }] },
   { id: "kpiRealReturn", label: "Wynik realny", desc: "Roczny zwrot po inflacji.", sizePresets: [{ width: 1 }] },
   { id: "kpiMaxDd", label: "Maks. obsunięcie", desc: "Największy spadek od szczytu.", sizePresets: [{ width: 1 }] },
-  { id: "kpiRealized", label: "Zysk zrealizowany", desc: "Wynik z zamkniętych pozycji.", sizePresets: [{ width: 1 }, { width: 2 }] },
-  { id: "kpiInvested", label: "Zainwestowany kapitał", desc: "Wpłaty netto.", sizePresets: [{ width: 1 }, { width: 2 }] },
-  { id: "kpiDividends", label: "Dywidendy", desc: "Suma otrzymanych dywidend.", sizePresets: [{ width: 1 }, { width: 2 }] },
+  { id: "kpiRealized", label: "Zysk zrealizowany", desc: "Wynik z zamkniętych pozycji.", sizePresets: [{ width: 1 }] },
+  { id: "kpiInvested", label: "Zainwestowany kapitał", desc: "Wpłaty netto.", sizePresets: [{ width: 1 }] },
+  { id: "kpiDividends", label: "Dywidendy", desc: "Suma otrzymanych dywidend.", sizePresets: [{ width: 1 }] },
   { id: "kpiOpenPositions", label: "Otwarte pozycje", desc: "Liczba aktywnych pozycji.", sizePresets: [{ width: 1 }] },
 ];
 

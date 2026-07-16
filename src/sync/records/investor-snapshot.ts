@@ -1478,6 +1478,47 @@ function toPositionValuationDataset(
     | "cpi"
   >,
 ): PositionValuationDataset {
+  const transactions = dataset.transactions.map((transaction) => ({
+    instrumentID: transaction.instrumentID,
+    price: transaction.price,
+    transactionType: transaction.transactionType,
+    currency: transaction.currency,
+    grossAmount: transaction.grossAmount,
+    fxRateToBase: transaction.fxRateToBase,
+    targetCurrency: transaction.targetCurrency,
+    targetGrossAmount: transaction.targetGrossAmount,
+    date: toDate(transaction.date),
+  }));
+  const rawMarketQuotes = dataset.useMarketQuotes
+    ? [
+        ...dataset.marketQuotes.map((quote) => ({
+          instrumentID: quote.instrumentID,
+          price: quote.price,
+          currency: quote.currency,
+          date: toDate(quote.date),
+        })),
+        ...dataset.externalMarketQuotes,
+      ]
+    : [];
+
+  // A quote series is useful only when its FX covers the beginning of that
+  // series. Applying a lone current GBP fixing to today's VWRL.L quote while
+  // pricing every older GBP quote 1:1 creates a fake final-day gain. Until the
+  // history arrives, retain the internally consistent transaction valuation.
+  const firstQuoteByCurrency = new Map<string, Date>();
+  for (const quote of rawMarketQuotes) {
+    if (quote.currency === "PLN") continue;
+    const first = firstQuoteByCurrency.get(quote.currency);
+    if (!first || quote.date < first) firstQuoteByCurrency.set(quote.currency, quote.date);
+  }
+  const currenciesWithCoverage = new Set(["PLN"]);
+  for (const [currency, firstDate] of firstQuoteByCurrency) {
+    const resolved = resolveFxRate(currency, transactions, firstDate, dataset.fxRates, {
+      latestTransactionRate: dataset.useLatestTransactionFxRate,
+    });
+    if (resolved.source !== "missing") currenciesWithCoverage.add(currency);
+  }
+
   return {
     manualValuations: dataset.manualValuations.map((valuation) => ({
       instrumentID: valuation.instrumentID,
@@ -1485,28 +1526,10 @@ function toPositionValuationDataset(
       currency: valuation.currency,
       date: toDate(valuation.date),
     })),
-    marketQuotes: dataset.useMarketQuotes
-      ? [
-          ...dataset.marketQuotes.map((quote) => ({
-            instrumentID: quote.instrumentID,
-            price: quote.price,
-            currency: quote.currency,
-            date: toDate(quote.date),
-          })),
-          ...dataset.externalMarketQuotes,
-        ]
-      : [],
-    transactions: dataset.transactions.map((transaction) => ({
-      instrumentID: transaction.instrumentID,
-      price: transaction.price,
-      transactionType: transaction.transactionType,
-      currency: transaction.currency,
-      grossAmount: transaction.grossAmount,
-      fxRateToBase: transaction.fxRateToBase,
-      targetCurrency: transaction.targetCurrency,
-      targetGrossAmount: transaction.targetGrossAmount,
-      date: toDate(transaction.date),
-    })),
+    marketQuotes: rawMarketQuotes.filter((quote) =>
+      currenciesWithCoverage.has(quote.currency),
+    ),
+    transactions,
     fxRates: dataset.fxRates,
     useLatestTransactionFxRate: dataset.useLatestTransactionFxRate,
     cpi: dataset.cpi,

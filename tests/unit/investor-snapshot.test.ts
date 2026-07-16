@@ -1911,4 +1911,96 @@ describe("InvestorDataSnapshot mapper", () => {
     ]);
     expect(quoted.totalValue).toBe(1_050);
   });
+
+  it("does not create a final-day jump while historical quote FX is incomplete", () => {
+    const records = [
+      record("account", accountID, {
+        recordType: "account",
+        id: accountID,
+        name: "IKE",
+        baseCurrency: "PLN",
+      }),
+      record("asset", instrumentID, {
+        recordType: "asset",
+        id: instrumentID,
+        kind: "etf",
+        symbol: "VWRL.NL",
+        name: "FTSE All-World",
+        currency: "USD",
+        marketDataID: "VWRL.L",
+      }),
+      record("transaction", "31313131-3131-4131-8131-313131313131", {
+        recordType: "transaction",
+        id: "31313131-3131-4131-8131-313131313131",
+        date: "2026-05-01T09:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID: null,
+        transactionType: "cashDeposit",
+        grossAmount: 40_000,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+      record("transaction", "32323232-3232-4232-8232-323232323232", {
+        recordType: "transaction",
+        id: "32323232-3232-4232-8232-323232323232",
+        date: "2026-05-01T10:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID,
+        transactionType: "buy",
+        quantity: 10,
+        price: 100,
+        grossAmount: 1_000,
+        currency: "USD",
+        fxRateToBase: 4,
+        fees: 0,
+        taxes: 0,
+      }),
+    ];
+    const marketQuotes = [
+      { instrumentID, price: 100, currency: "GBP", date: new Date("2026-05-01T00:00:00.000Z") },
+      { instrumentID, price: 101, currency: "GBP", date: new Date("2026-05-02T00:00:00.000Z") },
+      { instrumentID, price: 102, currency: "GBP", date: new Date("2026-05-03T00:00:00.000Z") },
+      { instrumentID, price: 103, currency: "GBP", date: new Date("2026-05-04T00:00:00.000Z") },
+    ];
+
+    const incompleteFx = buildInvestorDataSnapshot(records, {
+      asOf: new Date("2026-05-04T12:00:00.000Z"),
+      historyGranularity: "daily",
+      useLatestTransactionFxRate: true,
+      useMarketQuotes: true,
+      marketQuotes,
+      fxRates: [
+        { currency: "GBP", rate: 5.2, date: new Date("2026-05-04T00:00:00.000Z") },
+      ],
+    });
+
+    // A lone current GBP rate must not reprice only the last point. Until the
+    // matching history arrives, keep the internally consistent transaction
+    // valuation instead of fabricating a multi-thousand-zloty daily gain.
+    expect(incompleteFx.valuationSeries.map((point) => point.value)).toEqual([
+      40_000, 40_000, 40_000, 40_000,
+    ]);
+
+    const completeFx = buildInvestorDataSnapshot(records, {
+      asOf: new Date("2026-05-04T12:00:00.000Z"),
+      historyGranularity: "daily",
+      useLatestTransactionFxRate: true,
+      useMarketQuotes: true,
+      marketQuotes,
+      fxRates: [
+        { currency: "GBP", rate: 5, date: new Date("2026-05-01T00:00:00.000Z") },
+        { currency: "GBP", rate: 5.1, date: new Date("2026-05-02T00:00:00.000Z") },
+        { currency: "GBP", rate: 5.15, date: new Date("2026-05-03T00:00:00.000Z") },
+        { currency: "GBP", rate: 5.2, date: new Date("2026-05-04T00:00:00.000Z") },
+      ],
+    });
+
+    expect(completeFx.valuationSeries.map((point) => point.value)).toEqual([
+      41_000, 41_151, 41_253, 41_356,
+    ]);
+    expect(completeFx.netInvestedSeries.map((point) => point.value)).toEqual([
+      40_000, 40_000, 40_000, 40_000,
+    ]);
+  });
 });

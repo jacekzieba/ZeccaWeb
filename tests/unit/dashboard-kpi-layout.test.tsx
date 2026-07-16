@@ -11,21 +11,21 @@ describe("dashboard KPI layout", () => {
     expect((container.firstElementChild as HTMLElement).style.height).toBe("auto");
   });
 
-  it("offers a wide preset only for KPI values that can need the extra width", () => {
+  it("keeps every KPI compact instead of stretching short content across two columns", () => {
     const presets = Object.fromEntries(
       KPI_TILE_META.map((tile) => [tile.id, tile.sizePresets.map((size) => size.width)]),
     );
 
     expect(presets).toEqual({
-      kpiUnrealized: [1, 2],
+      kpiUnrealized: [1],
       kpiXirr: [1],
       kpiTwr: [1],
       kpiCagr: [1],
       kpiRealReturn: [1],
       kpiMaxDd: [1],
-      kpiRealized: [1, 2],
-      kpiInvested: [1, 2],
-      kpiDividends: [1, 2],
+      kpiRealized: [1],
+      kpiInvested: [1],
+      kpiDividends: [1],
       kpiOpenPositions: [1],
     });
   });

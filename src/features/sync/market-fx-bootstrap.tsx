@@ -1,6 +1,6 @@
 "use client";
 
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
 import type { FxRateInput } from "@/domain/valuation/price-resolver";
 import type { MarketQuoteInput } from "@/domain/valuation/price-resolver";
@@ -9,13 +9,26 @@ import { useProfile } from "@/features/profile/profile-store";
 import { useSyncStore } from "@/sync/store/sync-store";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
 
-type FxResponse = {
-  data: FxRate;
-};
-
 type FxSeriesResponse = {
   data: FxRate[];
 };
+
+const FX_SERIES_LOOKBACK_DAYS = 14;
+
+/**
+ * Includes a short lead-in so the first valuation day (which may be a weekend
+ * or holiday) can carry forward the last published NBP fixing.
+ */
+export function marketFxSeriesPath(currency: string, start: string, end: string) {
+  const rangeStart = new Date(`${start}T00:00:00.000Z`);
+  rangeStart.setUTCDate(rangeStart.getUTCDate() - FX_SERIES_LOOKBACK_DAYS);
+  const params = new URLSearchParams({
+    code: currency,
+    start: rangeStart.toISOString().slice(0, 10),
+    end,
+  });
+  return `/api/market-data/fx?${params.toString()}`;
+}
 
 export function MarketFxBootstrap() {
   const records = useSyncStore((state) => state.records);
@@ -26,27 +39,28 @@ export function MarketFxBootstrap() {
   const appliedKey = useRef<string | null>(null);
 
   const valuationDate = snapshot?.asOf.slice(0, 10) ?? null;
-  const currencies = useMemo(
-    () => (records ? currenciesNeedingFx(records, marketQuotes) : []),
-    [records, marketQuotes],
-  );
+  const currencies = useMemo(() => {
+    if (!records) return [];
+    const required = new Set(currenciesNeedingFx(records, marketQuotes));
+    if (displayCurrency !== "PLN") required.add(displayCurrency);
+    return [...required].sort();
+  }, [records, marketQuotes, displayCurrency]);
 
-  // Earliest day in the dashboard series — the window the display currency must
-  // cover so a multi-year chart can be converted at each day's rate.
+  // Every quote/transaction currency needs the whole dashboard window. Loading
+  // only today's GBP rate would price older VWRL.L points at the fallback 1:1
+  // rate and manufacture a large gain on the final day.
   const seriesStart = snapshot?.valuationSeries[0]?.date?.slice(0, 10) ?? null;
   const needsDisplayFx = displayCurrency !== "PLN";
 
   const queries = useQueries({
     queries: currencies.map((currency) => ({
-      queryKey: ["market-fx", currency, valuationDate],
-      enabled: Boolean(valuationDate),
+      queryKey: ["market-fx-series", currency, seriesStart, valuationDate],
+      enabled: Boolean(seriesStart && valuationDate),
       queryFn: async () => {
-        const response = await fetch(
-          `/api/market-data/fx?code=${encodeURIComponent(currency)}&date=${valuationDate}`,
-        );
-        const body = await response.json() as FxResponse | { error?: string };
+        const response = await fetch(marketFxSeriesPath(currency, seriesStart!, valuationDate!));
+        const body = await response.json() as FxSeriesResponse | { error?: string };
         if (!response.ok || !("data" in body)) {
-          throw new Error("Nie udało się pobrać kursu NBP.");
+          throw new Error("Nie udało się pobrać historii kursu NBP.");
         }
         return body.data;
       },
@@ -54,59 +68,40 @@ export function MarketFxBootstrap() {
     })),
   });
 
-  const displaySeriesQuery = useQuery({
-    queryKey: ["market-fx-series", displayCurrency, seriesStart, valuationDate],
-    enabled: needsDisplayFx && Boolean(seriesStart && valuationDate),
-    staleTime: 60 * 60 * 1000,
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/market-data/fx?code=${encodeURIComponent(displayCurrency)}&start=${seriesStart}&end=${valuationDate}`,
-      );
-      const body = (await response.json()) as FxSeriesResponse | { error?: string };
-      if (!response.ok || !("data" in body)) {
-        throw new Error("Nie udało się pobrać historii kursu NBP.");
-      }
-      return body.data;
-    },
-  });
-
   useEffect(() => {
-    if (!records || (currencies.length === 0 && !needsDisplayFx)) {
+    if (!records || currencies.length === 0) {
       setMarketFxRates([]);
       appliedKey.current = null;
       return;
     }
+
+    if (!seriesStart || !valuationDate) return;
 
     // A missing/unsupported currency must not turn off FX conversion for every
     // valid holding. Wait until the current batch settles, then keep successes.
     if (queries.some((query) => query.status === "pending")) {
       return;
     }
-    // Wait for the display-currency history too, otherwise the snapshot would
-    // briefly render PLN values labelled as EUR/USD.
-    if (needsDisplayFx && displaySeriesQuery.status !== "success") {
+    // Keep the previous coherent snapshot if the selected display currency did
+    // not load; rendering PLN values with a foreign-currency label is worse
+    // than retaining the last valid result.
+    const displayCurrencyIndex = currencies.indexOf(displayCurrency);
+    if (
+      needsDisplayFx &&
+      (displayCurrencyIndex < 0 || queries[displayCurrencyIndex]?.status !== "success")
+    ) {
       return;
     }
 
-    const rates: FxRateInput[] = queries.flatMap((query) => {
-      if (query.status !== "success" || !query.data) return [];
-      const rate = query.data;
-      return [{
-        currency: rate.base,
-        rate: rate.rate,
-        date: new Date(`${rate.effectiveDate}T00:00:00.000Z`),
-      }];
-    });
-
-    if (needsDisplayFx && displaySeriesQuery.data) {
-      for (const rate of displaySeriesQuery.data) {
-        rates.push({
+    const rates: FxRateInput[] = queries.flatMap((query) =>
+      query.status === "success" && query.data
+        ? query.data.map((rate) => ({
           currency: rate.base,
           rate: rate.rate,
           date: new Date(`${rate.effectiveDate}T00:00:00.000Z`),
-        });
-      }
-    }
+        }))
+        : [],
+    );
 
     const key = rates
       .map((rate) => `${rate.currency}:${rate.date.toISOString()}:${rate.rate}`)
@@ -120,11 +115,12 @@ export function MarketFxBootstrap() {
     appliedKey.current = key;
     setMarketFxRates(rates);
   }, [
-    currencies.length,
+    currencies,
     needsDisplayFx,
     queries,
-    displaySeriesQuery.status,
-    displaySeriesQuery.data,
+    seriesStart,
+    valuationDate,
+    displayCurrency,
     records,
     setMarketFxRates,
   ]);

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
-import { currenciesNeedingFx } from "@/features/sync/market-fx-bootstrap";
+import {
+  currenciesNeedingFx,
+  marketFxSeriesPath,
+} from "@/features/sync/market-fx-bootstrap";
 
 describe("MarketFxBootstrap currency collection", () => {
   it("keeps valid record and quote currencies while discarding placeholders", () => {
@@ -19,5 +22,11 @@ describe("MarketFxBootstrap currency collection", () => {
       "GBP",
       "USD",
     ]);
+  });
+
+  it("requests historical FX coverage before the first valuation day", () => {
+    expect(marketFxSeriesPath("GBP", "2026-05-01", "2026-05-04")).toBe(
+      "/api/market-data/fx?code=GBP&start=2026-04-17&end=2026-05-04",
+    );
   });
 });
