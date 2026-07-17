@@ -8,6 +8,7 @@ import {
 } from "@/market-data/providers/nbp";
 import { fetchYahooQuote, fetchYahooSearch } from "@/market-data/providers/yahoo";
 import { fetchGusCpiSeries } from "@/market-data/providers/gus";
+import { fetchFinwireCpiSeries } from "@/market-data/providers/finwire";
 import { GET as getFxRate } from "../../app/api/market-data/fx/route";
 import { GET as getQuote } from "../../app/api/market-data/quote/route";
 import { GET as getSearch } from "../../app/api/market-data/search/route";
@@ -28,11 +29,16 @@ vi.mock("@/market-data/providers/gus", () => ({
   fetchGusCpiSeries: vi.fn(),
 }));
 
+vi.mock("@/market-data/providers/finwire", () => ({
+  fetchFinwireCpiSeries: vi.fn(),
+}));
+
 const mockedFetchNbpFxRate = vi.mocked(fetchNbpFxRate);
 const mockedFetchNbpMonthlyAverageFxRate = vi.mocked(fetchNbpMonthlyAverageFxRate);
 const mockedFetchYahooQuote = vi.mocked(fetchYahooQuote);
 const mockedFetchYahooSearch = vi.mocked(fetchYahooSearch);
 const mockedFetchGusCpiSeries = vi.mocked(fetchGusCpiSeries);
+const mockedFetchFinwireCpiSeries = vi.mocked(fetchFinwireCpiSeries);
 
 function request(url: string) {
   return new NextRequest(url);
@@ -382,8 +388,44 @@ describe("GET /api/market-data/cpi", () => {
     expect(mockedFetchGusCpiSeries).not.toHaveBeenCalled();
   });
 
-  it("returns a 502 when the GUS fetch fails", async () => {
+  it("falls back to finwire when the GUS fetch fails", async () => {
     mockedFetchGusCpiSeries.mockRejectedValue(new Error("GUS BDL returned 500."));
+    mockedFetchFinwireCpiSeries.mockResolvedValue([
+      { provider: "gus", date: "2026-01-01", yoyRate: 2.1 },
+    ]);
+
+    const response = await getCpi(
+      request("http://localhost/api/market-data/cpi?start=2026-01-01&end=2026-01-31"),
+    );
+
+    await expect(response.json()).resolves.toEqual({
+      data: [{ provider: "gus", date: "2026-01-01", yoyRate: 2.1 }],
+      cache: { hit: false },
+    });
+    expect(response.status).toBe(200);
+    expect(mockedFetchFinwireCpiSeries).toHaveBeenCalledWith("2026-01-01", "2026-01-31");
+  });
+
+  it("falls back to finwire when GUS returns an empty series", async () => {
+    mockedFetchGusCpiSeries.mockResolvedValue([]);
+    mockedFetchFinwireCpiSeries.mockResolvedValue([
+      { provider: "gus", date: "2026-01-01", yoyRate: 2.1 },
+    ]);
+
+    const response = await getCpi(
+      request("http://localhost/api/market-data/cpi?start=2026-01-01&end=2026-01-31"),
+    );
+
+    await expect(response.json()).resolves.toEqual({
+      data: [{ provider: "gus", date: "2026-01-01", yoyRate: 2.1 }],
+      cache: { hit: false },
+    });
+    expect(response.status).toBe(200);
+  });
+
+  it("returns a 502 when both GUS and finwire fail", async () => {
+    mockedFetchGusCpiSeries.mockRejectedValue(new Error("GUS BDL returned 500."));
+    mockedFetchFinwireCpiSeries.mockRejectedValue(new Error("finwire returned 502."));
 
     const response = await getCpi(
       request("http://localhost/api/market-data/cpi?start=2026-01-01&end=2026-01-31"),

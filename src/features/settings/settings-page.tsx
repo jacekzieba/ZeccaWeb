@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { computeIkeIkzeUsage } from "@/features/settings/ike-ikze-usage";
+import type { LegalLimits } from "@/market-data/types";
 import {
   V2,
   V2Badge,
@@ -34,6 +37,16 @@ import { makeSettingsPayload } from "@/sync/records/macos-payloads";
 import { isFakeSyncEnabled } from "@/lib/env";
 import { languageName, setAppLanguage, useAppLanguage, type AppLanguage } from "@/features/i18n/language-store";
 import { useTranslation } from "@/features/i18n/translate";
+
+const plnFormatter = new Intl.NumberFormat("pl-PL", {
+  style: "currency",
+  currency: "PLN",
+  maximumFractionDigits: 0,
+});
+
+function formatPln(amount: number) {
+  return plnFormatter.format(amount);
+}
 
 function portfolioCountLabel(count: number) {
   const lastDigit = count % 10;
@@ -180,6 +193,26 @@ export function SettingsPage() {
 
   const accounts = snapshot?.portfolios ?? [];
 
+  // Statutory IKE/IKZE caps come from finwire (MRPiPS obwieszczenie); disabled
+  // in fake sync, which must stay offline and deterministic.
+  const legalLimitsQuery = useQuery({
+    queryKey: ["legal-limits"],
+    enabled: !isFakeSyncEnabled(),
+    staleTime: 12 * 60 * 60 * 1000,
+    queryFn: async () => {
+      const response = await fetch("/api/market-data/legal-limits");
+      const body = (await response.json()) as { data?: LegalLimits; error?: string };
+      if (!response.ok || !body.data) {
+        throw new Error(body.error ?? "Nie udało się pobrać limitów IKE/IKZE.");
+      }
+      return body.data;
+    },
+  });
+  const ikeIkzeUsage = useMemo(
+    () => computeIkeIkzeUsage(records, legalLimitsQuery.data ?? null),
+    [records, legalLimitsQuery.data],
+  );
+
   function changeLanguage(nextLanguage: AppLanguage) {
     setAppLanguage(nextLanguage);
 
@@ -217,14 +250,35 @@ export function SettingsPage() {
       <Section eyebrow="Podatki" title="Rozliczenia podatkowe">
         <Row label="Rezydencja podatkowa · Polska" desc="Podatek Belki 19% od zysków kapitałowych" control={<Switch on={profile.taxResidencePL} onChange={(v) => updateProfile({ taxResidencePL: v })} label="Rezydencja podatkowa Polska" />} />
         <Row label="Automatyczne naliczanie podatku" desc="Szacuj należny podatek przy każdej sprzedaży" control={<Switch on={profile.autoTax} onChange={(v) => updateProfile({ autoTax: v })} label="Automatyczne naliczanie podatku" />} />
-        <Row label="Limit wpłat IKE 2026" desc="Wykorzystano 6 500 zł z 26 019 zł" control={(
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 120, height: 7, borderRadius: 4, background: v2Mix(V2.ink, 0.08), overflow: "hidden" }}>
-              <div style={{ width: "25%", height: "100%", background: V2.brand, borderRadius: 4 }} />
-            </div>
-            <span style={{ fontFamily: V2_TYPE.mono, fontSize: 12, color: V2.ink }}>25%</span>
-          </div>
-        )} last />
+        {ikeIkzeUsage.length > 0 ? (
+          ikeIkzeUsage.map((usage, index) => (
+            <Row
+              key={usage.type}
+              label={`Limit wpłat ${usage.type} ${legalLimitsQuery.data?.year ?? new Date().getFullYear()}`}
+              desc={`Wykorzystano ${formatPln(usage.contributed)} z ${formatPln(usage.limit)}`}
+              control={(
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 120, height: 7, borderRadius: 4, background: v2Mix(V2.ink, 0.08), overflow: "hidden" }}>
+                    <div style={{ width: `${Math.round(usage.ratio * 100)}%`, height: "100%", background: V2.brand, borderRadius: 4 }} />
+                  </div>
+                  <span style={{ fontFamily: V2_TYPE.mono, fontSize: 12, color: V2.ink }}>{Math.round(usage.ratio * 100)}%</span>
+                </div>
+              )}
+              last={index === ikeIkzeUsage.length - 1}
+            />
+          ))
+        ) : (
+          <Row
+            label="Limity wpłat IKE/IKZE"
+            desc={
+              legalLimitsQuery.data
+                ? `IKE ${formatPln(legalLimitsQuery.data.ike)} · IKZE ${formatPln(legalLimitsQuery.data.ikze)} (${legalLimitsQuery.data.year}) — dodaj konto IKE/IKZE, aby śledzić wykorzystanie`
+                : "Limity ustawowe są pobierane w tle."
+            }
+            control={<span />}
+            last
+          />
+        )}
       </Section>
 
       <AccountsSection accounts={accounts} />

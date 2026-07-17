@@ -125,6 +125,7 @@ export function InstrumentsPage() {
   const marketFxRates = useSyncStore((s) => s.marketFxRates);
   const marketQuotes = useSyncStore((s) => s.marketQuotes);
   const marketCpi = useSyncStore((s) => s.marketCpi);
+  const marketReferenceRates = useSyncStore((s) => s.marketReferenceRates);
   const userDataKey = useSyncStore((s) => s.userDataKey);
   const supabase = useSyncStore((s) => s.supabase);
   const setSync = useSyncStore((s) => s.setSync);
@@ -141,9 +142,10 @@ export function InstrumentsPage() {
             useMarketQuotes: true,
             displayCurrency,
             cpi: marketCpi,
+            referenceRates: marketReferenceRates,
           })
         : [],
-    [marketFxRates, marketQuotes, marketCpi, records, displayCurrency],
+    [marketFxRates, marketQuotes, marketCpi, marketReferenceRates, records, displayCurrency],
   );
 
   const [search, setSearch] = useState("");

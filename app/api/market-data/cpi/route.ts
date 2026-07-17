@@ -4,6 +4,7 @@ import {
   setCachedMarketData,
 } from "@/market-data/cache";
 import { fetchGusCpiSeries } from "@/market-data/providers/gus";
+import { fetchFinwireCpiSeries } from "@/market-data/providers/finwire";
 import type { CpiObservation } from "@/market-data/types";
 import { rateLimitResponse } from "@/market-data/rate-limit";
 
@@ -37,7 +38,22 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const series = await fetchGusCpiSeries(start, end);
+    // GUS is primary; finwire (also sourced from GUS) is a fallback so a single
+    // upstream outage on stat.gov.pl doesn't leave inflation-indexed bonds and
+    // the real-return metric without a live reading.
+    let series: CpiObservation[];
+    try {
+      series = await fetchGusCpiSeries(start, end);
+      if (series.length === 0) {
+        series = await fetchFinwireCpiSeries(start, end);
+      }
+    } catch (gusError) {
+      try {
+        series = await fetchFinwireCpiSeries(start, end);
+      } catch {
+        throw gusError;
+      }
+    }
     const entry = setCachedMarketData(cacheKey, series, CPI_CACHE_TTL_MS);
     return NextResponse.json({ data: entry.value, cache: { hit: false } });
   } catch (error) {

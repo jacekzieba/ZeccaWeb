@@ -1,7 +1,12 @@
 import { create } from "zustand";
 import type { InvestorDataSnapshot } from "@/domain/models/investor-data";
 import type { FxRateInput, MarketQuoteInput } from "@/domain/valuation/price-resolver";
-import { CPI_YOY, type CpiSeries } from "@/domain/valuation/bond-rates";
+import {
+  CPI_YOY,
+  NBP_REFERENCE_RATES,
+  type CpiSeries,
+  type ReferenceRateSeries,
+} from "@/domain/valuation/bond-rates";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
 import type { BrowserSupabaseClient } from "@/supabase/client";
 
@@ -11,8 +16,16 @@ type SyncState = {
   lastSyncedAt: number | null;
   marketFxRates: FxRateInput[];
   marketQuotes: MarketQuoteInput[];
-  /** Defaults to the hardcoded GUS table; live GUS readings extend it. */
+  /**
+   * As-announced CPI for bond coupons: the hardcoded GUS table, extended only
+   * with newly announced months. Live GUS never overwrites an existing month
+   * here, so a later annual revision can't change a locked-in bond coupon.
+   */
   marketCpi: CpiSeries;
+  /** Revised/current CPI for the real-return metric; live GUS overwrites freely. */
+  marketMetricsCpi: CpiSeries;
+  /** Defaults to the hardcoded NBP table; live NBP archive readings replace it. */
+  marketReferenceRates: ReferenceRateSeries;
   userDataKey: CryptoKey | null;
   supabase: BrowserSupabaseClient | null;
   addTransactionOpen: boolean;
@@ -21,6 +34,8 @@ type SyncState = {
   setMarketFxRates: (rates: FxRateInput[]) => void;
   setMarketQuotes: (quotes: MarketQuoteInput[]) => void;
   setMarketCpi: (cpi: CpiSeries) => void;
+  setMarketMetricsCpi: (cpi: CpiSeries) => void;
+  setMarketReferenceRates: (rates: ReferenceRateSeries) => void;
   setCredentials: (key: CryptoKey, supabase: BrowserSupabaseClient) => void;
   clearSync: () => void;
   openAddTransaction: () => void;
@@ -34,6 +49,8 @@ export const useSyncStore = create<SyncState>((set) => ({
   marketFxRates: [],
   marketQuotes: [],
   marketCpi: CPI_YOY,
+  marketMetricsCpi: CPI_YOY,
+  marketReferenceRates: NBP_REFERENCE_RATES,
   userDataKey: null,
   supabase: null,
   addTransactionOpen: false,
@@ -42,8 +59,10 @@ export const useSyncStore = create<SyncState>((set) => ({
   setMarketFxRates: (marketFxRates) => set({ marketFxRates }),
   setMarketQuotes: (marketQuotes) => set({ marketQuotes }),
   setMarketCpi: (marketCpi) => set({ marketCpi }),
+  setMarketMetricsCpi: (marketMetricsCpi) => set({ marketMetricsCpi }),
+  setMarketReferenceRates: (marketReferenceRates) => set({ marketReferenceRates }),
   setCredentials: (userDataKey, supabase) => set({ userDataKey, supabase }),
-  clearSync: () => set({ records: null, snapshot: null, lastSyncedAt: null, marketFxRates: [], marketQuotes: [], marketCpi: CPI_YOY, userDataKey: null, supabase: null }),
+  clearSync: () => set({ records: null, snapshot: null, lastSyncedAt: null, marketFxRates: [], marketQuotes: [], marketCpi: CPI_YOY, marketMetricsCpi: CPI_YOY, marketReferenceRates: NBP_REFERENCE_RATES, userDataKey: null, supabase: null }),
   openAddTransaction: () => set({ addTransactionOpen: true }),
   closeAddTransaction: () => set({ addTransactionOpen: false }),
 }));

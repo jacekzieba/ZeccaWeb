@@ -1049,6 +1049,32 @@ describe("InvestorDataSnapshot mapper", () => {
     expect(snapshot.metrics.inflationPct).toBe(2.9);
   });
 
+  it("uses the injected revised metricsCpi for the real-return inflation, not the as-announced table", () => {
+    const records = [
+      record("account", accountID, {
+        recordType: "account",
+        id: accountID,
+        name: "Core",
+        baseCurrency: "PLN",
+      }),
+      record("settings", "88888888-8888-4888-8888-888888888888", {
+        recordType: "settings",
+        id: "B2AA7BD4-A95D-4D80-90F9-787B8A1EC401",
+        baseCurrency: "PLN",
+        inflationRegion: "PL",
+        updatedAt: "2025-08-25T00:00:00.000Z",
+      }),
+    ];
+
+    // Static table has 2025-08 = 2.9; a revised series overrides only the metric.
+    const snapshot = buildInvestorDataSnapshot(records, {
+      asOf: new Date("2025-08-25T00:00:00.000Z"),
+      metricsCpi: { "2025-08": 3.4 },
+    });
+
+    expect(snapshot.metrics.inflationPct).toBe(3.4);
+  });
+
   it("states real return on an annualised basis (real CAGR), not cumulative", () => {
     const records = [
       record("account", accountID, {

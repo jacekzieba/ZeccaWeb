@@ -33,6 +33,8 @@ export const CPI_YOY: Record<string, number> = {
   "2025-01": 5.3, "2025-02": 5.4, "2025-03": 4.9, "2025-04": 4.3,
   "2025-05": 4.0, "2025-06": 4.1, "2025-07": 3.1, "2025-08": 2.9,
   "2025-09": 2.9, "2025-10": 2.8, "2025-11": 2.4, "2025-12": 2.4,
+  "2026-01": 2.1, "2026-02": 2.1, "2026-03": 3.0, "2026-04": 3.2,
+  "2026-05": 3.1, "2026-06": 2.5,
 };
 
 export type CpiSeries = Record<string, number>;
@@ -44,8 +46,18 @@ export type ReferenceRateObservation = {
 
 export type ReferenceRateSeries = readonly ReferenceRateObservation[];
 
-/** Awaryjna historia stopy referencyjnej NBP, zgodna z natywną appką Zecca. */
+/**
+ * Awaryjna historia stopy referencyjnej NBP.
+ *
+ * Zweryfikowana względem oficjalnego archiwum NBP
+ * (https://static.nbp.pl/dane/stopy/stopy_procentowe_archiwum.xml) — tabela
+ * w natywnej appce Zecca pomijała obniżkę z 2025-11-06 (4,50 → 4,25) oraz
+ * pandemiczne cięcia z marca/kwietnia 2020. Świeże zmiany dociąga na żywo
+ * `MarketReferenceRateBootstrap`; ta tabela jest tylko fallbackiem offline.
+ */
 export const NBP_REFERENCE_RATES: ReferenceRateSeries = [
+  { date: new Date("2020-03-18T00:00:00.000Z"), rate: 1.0 },
+  { date: new Date("2020-04-09T00:00:00.000Z"), rate: 0.5 },
   { date: new Date("2020-05-29T00:00:00.000Z"), rate: 0.1 },
   { date: new Date("2021-10-07T00:00:00.000Z"), rate: 0.5 },
   { date: new Date("2021-11-04T00:00:00.000Z"), rate: 1.25 },
@@ -64,6 +76,7 @@ export const NBP_REFERENCE_RATES: ReferenceRateSeries = [
   { date: new Date("2025-07-03T00:00:00.000Z"), rate: 5.0 },
   { date: new Date("2025-09-04T00:00:00.000Z"), rate: 4.75 },
   { date: new Date("2025-10-09T00:00:00.000Z"), rate: 4.5 },
+  { date: new Date("2025-11-06T00:00:00.000Z"), rate: 4.25 },
   { date: new Date("2025-12-04T00:00:00.000Z"), rate: 4.0 },
   { date: new Date("2026-03-05T00:00:00.000Z"), rate: 3.75 },
 ];
@@ -126,6 +139,28 @@ export function bondPeriodRate(
   }
 
   return Math.max(0, inflation) + params.marginOverBase;
+}
+
+/**
+ * Whether the macro reading a given coupon period needs is actually available.
+ * Shares the branch conditions with {@link bondPeriodRate}, so a `false` here
+ * means the rate for that period fell back to margin-only. Period 0 (issue
+ * rate) and fixed-coupon bonds never need external data.
+ */
+export function bondPeriodHasMacroData(
+  params: BondRateParams,
+  periodIndex: number,
+  periodStart: Date,
+  cpi: CpiSeries = CPI_YOY,
+  referenceRates: ReferenceRateSeries = NBP_REFERENCE_RATES,
+): boolean {
+  if (periodIndex === 0 || params.subsequentBase === "stałe") {
+    return true;
+  }
+  if (params.subsequentBase === "stopa referencyjna NBP") {
+    return latestReferenceRate(periodStart, referenceRates) != null;
+  }
+  return inflationReferenceRate(periodStart, cpi) != null;
 }
 
 function latestReferenceRate(

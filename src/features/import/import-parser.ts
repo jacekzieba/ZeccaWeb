@@ -350,6 +350,11 @@ function parseTransactionRow(
   if (!TRANSACTION_TYPES.has(transactionType)) errors.push("Nieznany typ transakcji.");
   if (grossAmount == null) errors.push("Brak poprawnej kwoty brutto.");
   if (!currency) errors.push("Brak waluty.");
+  // Bez tej walidacji nie-UUID w kolumnie `id` przechodzi do schema.parse
+  // poniżej i wyjątek zrywa import całego pliku zamiast oznaczyć wiersz.
+  if (values.id && !isUuid(values.id)) {
+    errors.push("Nieprawidłowe ID — wymagany format UUID.");
+  }
   if (values.id && references.existingTransactionIds.has(values.id)) {
     errors.push("Transakcja o tym ID już istnieje.");
   }
@@ -431,6 +436,9 @@ function parseManualValuationRow(
     errors.push("Podaj value albo totalValue z dodatnią quantity.");
   }
   if (!currency) errors.push("Brak waluty.");
+  if (values.id && !isUuid(values.id)) {
+    errors.push("Nieprawidłowe ID — wymagany format UUID.");
+  }
   if (values.id && references.existingManualValuationIds.has(values.id)) {
     errors.push("Wycena o tym ID już istnieje.");
   }
@@ -592,4 +600,8 @@ function resolveInstrument(value: string, references: ImportReferenceData) {
 
 function normalizeLookup(value: string) {
   return value.trim().toLowerCase();
+}
+
+function isUuid(value: string) {
+  return z.string().uuid().safeParse(value).success;
 }

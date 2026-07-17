@@ -8,6 +8,7 @@ import {
   type PriceTransactionInput,
 } from "@/domain/valuation/price-resolver";
 import {
+  bondPeriodHasMacroData,
   bondPeriodRate,
   type CpiSeries,
   type ReferenceRateSeries,
@@ -261,6 +262,45 @@ function dirtyTreasuryBondPrice(
   }
 
   return roundToGrosz(principal + carriedInterest);
+}
+
+/**
+ * Whether any coupon period contributing to a bond's value up to `asOf` lacked
+ * the macro reading it needed (CPI or NBP reference rate), so its rate fell back
+ * to margin-only. Mirrors the period walk in {@link dirtyTreasuryBondPrice} but
+ * only inspects coverage — it does not touch the interest math, so the
+ * parity-verified pricing path is unchanged. Returns `false` when every period
+ * had its data (or the bond is fixed-coupon / not yet started).
+ */
+export function treasuryBondMacroGaps(
+  params: BondParamsInput,
+  purchaseDate: Date,
+  asOf: Date,
+  cpi?: CpiSeries,
+  referenceRates?: ReferenceRateSeries,
+): boolean {
+  const purchaseDay = startOfUtcDay(purchaseDate);
+  const maturityDay = startOfUtcDay(params.maturityDate);
+  const valuationDay = startOfUtcDay(asOf);
+  const effectiveAsOf =
+    valuationDay.getTime() < maturityDay.getTime() ? valuationDay : maturityDay;
+  if (effectiveAsOf.getTime() <= purchaseDay.getTime()) {
+    return false;
+  }
+
+  let periodStart = startOfUtcDay(params.issueDate ?? purchaseDay);
+  let periodIndex = 0;
+  const periodMonths = params.interestPayment === "co miesiąc" ? 1 : 12;
+
+  while (periodStart.getTime() < effectiveAsOf.getTime()) {
+    if (!bondPeriodHasMacroData(params, periodIndex, periodStart, cpi, referenceRates)) {
+      return true;
+    }
+    periodStart = addMonths(periodStart, periodMonths);
+    periodIndex += 1;
+  }
+
+  return false;
 }
 
 function roundToGrosz(value: number) {

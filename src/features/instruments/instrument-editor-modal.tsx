@@ -130,6 +130,8 @@ export function InstrumentEditorModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<InstrumentCandidate[]>([]);
+  const [bondParams, setBondParams] = useState<Record<string, unknown> | null>(null);
+  const [bondFetch, setBondFetch] = useState<"idle" | "loading" | "error">("idle");
 
   useEffect(() => setMounted(true), []);
 
@@ -155,6 +157,8 @@ export function InstrumentEditorModal({
     setSaving(false);
     setError(null);
     setCandidates([]);
+    setBondParams(null);
+    setBondFetch("idle");
   }, [
     defaultCategory,
     defaultCurrency,
@@ -271,6 +275,7 @@ export function InstrumentEditorModal({
         country: savedInstrument.country,
         isin: savedInstrument.isin,
         marketDataID: savedInstrument.marketDataID,
+        bondParams: kind === "treasuryBond" ? bondParams : null,
       });
       if (isFakeSyncEnabled() && records) {
         const now = new Date().toISOString();
@@ -295,6 +300,26 @@ export function InstrumentEditorModal({
           : "Nie udało się zapisać instrumentu.",
       );
       setSaving(false);
+    }
+  }
+
+  async function handleFetchBondParams() {
+    const code = symbol.trim().toUpperCase();
+    if (!code) return;
+    setBondFetch("loading");
+    try {
+      const res = await fetch(`/api/market-data/bond-params?code=${encodeURIComponent(code)}`);
+      const json = (await res.json()) as { data?: Record<string, unknown> };
+      if (!res.ok || !json.data) {
+        setBondParams(null);
+        setBondFetch("error");
+        return;
+      }
+      setBondParams(json.data);
+      setBondFetch("idle");
+    } catch {
+      setBondParams(null);
+      setBondFetch("error");
     }
   }
 
@@ -507,6 +532,47 @@ export function InstrumentEditorModal({
               </select>
             </Field>
           </div>
+
+          {kind === "treasuryBond" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ color: MUTED, fontSize: 11.5, lineHeight: 1.45 }}>
+                Parametry emisji (oprocentowanie, marża, daty) pobieramy z listu emisyjnego dla podanej serii — np. EDO0736.
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  onClick={handleFetchBondParams}
+                  disabled={bondFetch === "loading" || !symbol.trim()}
+                  style={{
+                    border: "0.5px solid rgba(28,49,68,0.14)",
+                    borderRadius: 8,
+                    background: PAPER,
+                    color: INK,
+                    cursor: bondFetch === "loading" || !symbol.trim() ? "default" : "pointer",
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    padding: "7px 12px",
+                    opacity: bondFetch === "loading" || !symbol.trim() ? 0.6 : 1,
+                  }}
+                >
+                  {bondFetch === "loading" ? "Pobieranie…" : "Pobierz parametry"}
+                </button>
+                {bondParams && (
+                  <span style={{ fontSize: 12, color: MUTED }}>
+                    {`Pobrano: ${Number(bondParams.firstPeriodRate)}% · ${String(bondParams.subsequentBase)}`}
+                    {Number(bondParams.marginOverBase) > 0 && String(bondParams.subsequentBase) !== "stałe"
+                      ? ` + marża ${Number(bondParams.marginOverBase)}%`
+                      : ""}
+                  </span>
+                )}
+                {bondFetch === "error" && (
+                  <span style={{ fontSize: 12, color: LOSS }}>
+                    Nie znaleziono listu emisyjnego — sprawdź kod serii.
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
           {(kind === "stock" || kind === "etf") && (
             <>

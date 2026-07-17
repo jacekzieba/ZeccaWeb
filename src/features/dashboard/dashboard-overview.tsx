@@ -34,6 +34,7 @@ import type {
   InstrumentRow,
   PortfolioMetrics,
   PortfolioSummary,
+  SnapshotDiagnostic,
   TransactionRow,
   ValuationPoint,
 } from "@/domain/models/investor-data";
@@ -822,6 +823,7 @@ export function DashboardOverview() {
   const marketFxRates = useSyncStore((state) => state.marketFxRates);
   const marketQuotes = useSyncStore((state) => state.marketQuotes);
   const marketCpi = useSyncStore((state) => state.marketCpi);
+  const marketReferenceRates = useSyncStore((state) => state.marketReferenceRates);
   const lastSyncedAt = useSyncStore((state) => state.lastSyncedAt);
   const snapshot = useDisplaySnapshot();
   const profile = useProfile();
@@ -854,12 +856,13 @@ export function DashboardOverview() {
             fxRates: marketFxRates,
             marketQuotes,
             cpi: marketCpi,
+            referenceRates: marketReferenceRates,
             useLatestTransactionFxRate: true,
             useMarketQuotes: true,
             displayCurrency: profile.displayCurrency,
           })
         : [],
-    [marketFxRates, marketQuotes, marketCpi, records, profile.displayCurrency],
+    [marketFxRates, marketQuotes, marketCpi, marketReferenceRates, records, profile.displayCurrency],
   );
   const transactions = useMemo(
     () => (records ? buildTransactionList(records) : []),
@@ -977,6 +980,8 @@ export function DashboardOverview() {
         </button>
       </div>
 
+      <DataQualityBanner diagnostics={snapshot.diagnostics ?? []} />
+
       {showCustomize && (
         <SectionCustomizePanel
           registry={DASHBOARD_REGISTRY}
@@ -1003,6 +1008,48 @@ export function DashboardOverview() {
         testIdPrefix="dashboard"
         gap={DASHBOARD_GRID_GAP}
       />
+    </div>
+  );
+}
+
+function DataQualityBanner({
+  diagnostics,
+}: {
+  diagnostics: SnapshotDiagnostic[];
+}) {
+  if (diagnostics.length === 0) return null;
+
+  const join = (code: SnapshotDiagnostic["code"]) =>
+    [...new Set(diagnostics.filter((d) => d.code === code).map((d) => d.context))].join(", ");
+  const priceMissing = join("price-missing");
+  const fxMissing = join("fx-missing");
+  const bondMissing = join("bond-missing-macro");
+
+  const lines: string[] = [];
+  if (priceMissing) lines.push(`Brak aktualnej ceny (pominięte w wartości): ${priceMissing}.`);
+  if (fxMissing) lines.push(`Brak kursu waluty (liczone 1:1 do PLN): ${fxMissing}.`);
+  if (bondMissing) lines.push(`Niepełne dane makro do wyceny obligacji (wynik przybliżony): ${bondMissing}.`);
+
+  return (
+    <div
+      role="status"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 4,
+        border: `0.5px solid ${mix(PALETTE.gold, 0.4)}`,
+        background: mix(PALETTE.gold, 0.08),
+        borderRadius: 12,
+        padding: "10px 14px",
+        fontFamily: UI,
+        fontSize: 12.5,
+        color: PALETTE.ink,
+      }}
+    >
+      <div style={{ fontWeight: 700 }}>Część danych rynkowych jest niepełna — wartości mogą być przybliżone.</div>
+      {lines.map((line) => (
+        <div key={line} style={{ color: PALETTE.muted }}>{line}</div>
+      ))}
     </div>
   );
 }

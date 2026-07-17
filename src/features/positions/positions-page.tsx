@@ -197,6 +197,7 @@ export function PositionsPage() {
   const marketFxRates = useSyncStore((s) => s.marketFxRates);
   const marketQuotes = useSyncStore((s) => s.marketQuotes);
   const marketCpi = useSyncStore((s) => s.marketCpi);
+  const marketReferenceRates = useSyncStore((s) => s.marketReferenceRates);
   const { displayCurrency } = useProfile();
 
   const instruments = useMemo(
@@ -210,9 +211,10 @@ export function PositionsPage() {
             useMarketQuotes: true,
             displayCurrency,
             cpi: marketCpi,
+            referenceRates: marketReferenceRates,
           })
         : [],
-    [records, marketFxRates, marketQuotes, marketCpi, displayCurrency],
+    [records, marketFxRates, marketQuotes, marketCpi, marketReferenceRates, displayCurrency],
   );
 
   const allTransactions = useMemo(

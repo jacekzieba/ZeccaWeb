@@ -40,3 +40,19 @@ export type CpiObservation = {
   date: string;
   yoyRate: number;
 };
+
+/** NBP reference-rate change: the rate (%) effective from `effectiveDate` ("RRRR-MM-DD"). */
+export type ReferenceRateChange = {
+  provider: "nbp";
+  effectiveDate: string;
+  rate: number;
+};
+
+/** Statutory IKE/IKZE contribution caps and headline tax parameters for a year. */
+export type LegalLimits = {
+  provider: "finwire";
+  year: number;
+  ike: number;
+  ikze: number;
+  ikzeSelfemployed: number;
+};

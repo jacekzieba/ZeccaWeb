@@ -6,6 +6,7 @@ import { FakeSyncBootstrap } from "@/sync/dev/fake-sync-bootstrap";
 import { MarketFxBootstrap } from "@/features/sync/market-fx-bootstrap";
 import { MarketQuoteBootstrap } from "@/features/sync/market-quote-bootstrap";
 import { MarketCpiBootstrap } from "@/features/sync/market-cpi-bootstrap";
+import { MarketReferenceRateBootstrap } from "@/features/sync/market-reference-rate-bootstrap";
 import { BackgroundSyncBootstrap } from "@/features/sync/background-sync-bootstrap";
 import { TelemetryBootstrap } from "@/features/telemetry/telemetry-bootstrap";
 import { LanguageBootstrap } from "@/features/i18n/language-bootstrap";
@@ -31,6 +32,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <MarketFxBootstrap />
       <MarketQuoteBootstrap />
       <MarketCpiBootstrap />
+      <MarketReferenceRateBootstrap />
       <TelemetryBootstrap />
       {children}
     </QueryClientProvider>

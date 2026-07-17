@@ -46,6 +46,13 @@ export function checkRateLimit(
   const existing = windows.get(key);
 
   if (!existing || existing.resetAt <= now) {
+    // Expired windows are only overwritten on a repeat key, so unique client
+    // keys would otherwise accumulate for the life of the instance.
+    if (windows.size >= 10_000) {
+      for (const [staleKey, window] of windows) {
+        if (window.resetAt <= now) windows.delete(staleKey);
+      }
+    }
     windows.set(key, { count: 1, resetAt: now + WINDOW_MS });
     return { limited: false, retryAfterSeconds: 0 };
   }

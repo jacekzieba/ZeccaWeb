@@ -9,6 +9,7 @@ import type {
   PortfolioDetail,
   PortfolioMetrics,
   PortfolioSummary,
+  SnapshotDiagnostic,
   SnapshotSettings,
   TransactionRow,
   ValuationPoint,
@@ -29,6 +30,7 @@ import {
   type CashflowPoint,
 } from "@/domain/metrics/portfolio-metrics";
 import {
+  treasuryBondMacroGaps,
   valueCashBalances,
   valueInstrumentPosition,
   type PositionAssetInput,
@@ -270,6 +272,13 @@ type ParsedDataset = {
   cpi?: CpiSeries;
   /** Optional NBP reference-rate history; undefined uses the fallback table. */
   referenceRates?: ReferenceRateSeries;
+  /**
+   * Optional CPI series (revised/current GUS values) used for the portfolio's
+   * real-return metric. Kept separate from `cpi` (as-announced) because GUS
+   * revises the index annually while treasury-bond coupons stay fixed on the
+   * originally announced value. Undefined → hardcoded GUS table.
+   */
+  metricsCpi?: CpiSeries;
 };
 
 export type SnapshotBuildOptions = {
@@ -295,6 +304,9 @@ export type SnapshotBuildOptions = {
   cpi?: CpiSeries;
   /** NBP reference-rate history for ROR/DOR valuation. */
   referenceRates?: ReferenceRateSeries;
+  /** Revised CPI series for the real-return metric; see the field of the same
+   * name on `ParsedDataset`. Undefined → hardcoded GUS table. */
+  metricsCpi?: CpiSeries;
 };
 
 type PortfolioValuation = {
@@ -381,7 +393,100 @@ export function buildInvestorDataSnapshot(
     allocation: buildAllocation(accounts, dataset, asOf),
     metrics,
     settings: getTelemetrySettings(dataset),
+    diagnostics: collectDiagnostics(accounts, dataset, asOf),
   };
+}
+
+/**
+ * Surfaces the data gaps the valuation would otherwise paper over: a held asset
+ * with no resolvable price (dropped from the total), a foreign currency with no
+ * FX rate (silently treated as 1:1 PLN), or a bond period with no CPI/reference
+ * reading (rate fell back to margin-only). Carries symbols/currencies but no
+ * amounts, so it is safe to log or send as telemetry.
+ */
+function collectDiagnostics(
+  accounts: AccountPayload[],
+  dataset: ParsedDataset,
+  asOf: Date,
+): SnapshotDiagnostic[] {
+  const assetsByID = new Map(dataset.assets.map((asset) => [asset.id, asset]));
+  const valuationDataset = toPositionValuationDataset(dataset);
+  const diagnostics: SnapshotDiagnostic[] = [];
+  const missingPrice = new Set<string>();
+  const missingFx = new Set<string>();
+  const bondGap = new Set<string>();
+
+  const checkFx = (currency: string) => {
+    const code = currency.trim().toUpperCase();
+    if (code === "PLN" || !/^[A-Z]{3}$/.test(code) || missingFx.has(code)) return;
+    const resolved = resolveFxRate(code, valuationDataset.transactions, asOf, dataset.fxRates, {
+      latestTransactionRate: dataset.useLatestTransactionFxRate,
+    });
+    if (resolved.source === "missing") {
+      missingFx.add(code);
+      diagnostics.push({ code: "fx-missing", severity: "warning", context: code });
+    }
+  };
+
+  for (const account of accounts) {
+    const ledger = computeLedger(
+      transactionsForPortfolio(dataset.transactions, account.id),
+      asOf,
+    );
+
+    for (const [instrumentID, quantity] of ledger.positions) {
+      if (quantity <= EPSILON) continue;
+      const asset = assetsByID.get(instrumentID);
+      const assetInput = toPositionAssetInput(asset);
+      const lots = ledger.openLots.get(instrumentID) ?? [];
+      const valuation = valueInstrumentPosition({
+        instrumentID,
+        quantity,
+        asset: assetInput,
+        lots,
+        dataset: valuationDataset,
+        asOf,
+      });
+      const label = asset?.symbol?.trim() || asset?.name?.trim() || instrumentID.slice(0, 8);
+
+      if (valuation.source === "missing" && !missingPrice.has(instrumentID)) {
+        missingPrice.add(instrumentID);
+        diagnostics.push({ code: "price-missing", severity: "warning", context: label });
+      } else {
+        checkFx(valuation.currency);
+      }
+
+      if (
+        assetInput?.kind === "treasuryBond" &&
+        assetInput.bondParams &&
+        valuation.source === "treasuryBond" &&
+        !bondGap.has(instrumentID)
+      ) {
+        const earliestPurchase = lots.reduce(
+          (min, lot) => (lot.purchaseDate.getTime() < min.getTime() ? lot.purchaseDate : min),
+          asOf,
+        );
+        if (
+          treasuryBondMacroGaps(
+            assetInput.bondParams,
+            earliestPurchase,
+            asOf,
+            dataset.cpi,
+            dataset.referenceRates,
+          )
+        ) {
+          bondGap.add(instrumentID);
+          diagnostics.push({ code: "bond-missing-macro", severity: "info", context: label });
+        }
+      }
+    }
+
+    for (const [currency, amount] of ledger.cashBalances) {
+      if (Math.abs(amount) > EPSILON) checkFx(currency);
+    }
+  }
+
+  return diagnostics;
 }
 
 /** Divides each valuation point by the display-currency rate on that point's
@@ -881,18 +986,22 @@ function getInflationPct(dataset: ParsedDataset, asOf: Date): number {
   }
 
   if ((latestSettings?.inflationRegion ?? "PL").toUpperCase() === "PL") {
-    return latestCpiYoyOnOrBefore(asOf) ?? 0;
+    // Portfolio real-return deflates by the CURRENT official CPI (as revised by
+    // GUS), not the "as announced" values that treasury bonds locked in for
+    // their coupons. Bonds keep their as-announced series (`dataset.cpi`); this
+    // metrics path uses the revised series when provided, else the static table.
+    return latestCpiYoyOnOrBefore(asOf, dataset.metricsCpi ?? CPI_YOY) ?? 0;
   }
 
   return 0;
 }
 
-function latestCpiYoyOnOrBefore(asOf: Date): number | null {
+function latestCpiYoyOnOrBefore(asOf: Date, cpi: CpiSeries): number | null {
   const asOfMonth = Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth(), 1);
   let bestTime = Number.NEGATIVE_INFINITY;
   let bestRate: number | null = null;
 
-  for (const [key, rate] of Object.entries(CPI_YOY)) {
+  for (const [key, rate] of Object.entries(cpi)) {
     const match = /^(\d{4})-(\d{2})$/.exec(key);
     if (!match) continue;
     const time = Date.UTC(Number(match[1]), Number(match[2]) - 1, 1);
@@ -923,6 +1032,7 @@ function parseDataset(
     useLatestTransactionFxRate: options.useLatestTransactionFxRate ?? false,
     cpi: options.cpi,
     referenceRates: options.referenceRates,
+    metricsCpi: options.metricsCpi,
   };
 
   for (const record of records) {

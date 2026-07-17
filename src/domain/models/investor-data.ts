@@ -93,6 +93,24 @@ export type InvestorDataSnapshot = {
   /** Gate-relevant settings surfaced for telemetry. Optional: demo/sample
    * snapshots omit it, which keeps the telemetry gate closed by default. */
   settings?: SnapshotSettings;
+  /** Data-quality warnings the engine would otherwise resolve silently (a held
+   * asset with no price, a foreign currency with no FX rate, a bond period with
+   * no macro reading). Empty when everything needed was available. Carries no
+   * monetary amounts. Optional so demo/sample snapshots can omit it. */
+  diagnostics?: SnapshotDiagnostic[];
+};
+
+export type SnapshotDiagnosticCode =
+  | "price-missing"
+  | "fx-missing"
+  | "bond-missing-macro";
+
+/** A single data-quality warning. `context` names the affected subject (an
+ * instrument symbol or currency code) and never includes amounts. */
+export type SnapshotDiagnostic = {
+  code: SnapshotDiagnosticCode;
+  severity: "warning" | "info";
+  context: string;
 };
 
 /** Subset of the synced settings record needed to gate telemetry. Carries no

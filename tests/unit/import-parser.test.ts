@@ -75,6 +75,24 @@ describe("parseTransactionCsvImport", () => {
     );
   });
 
+  it("flags a non-UUID id as a row error instead of throwing mid-import", () => {
+    const preview = parseTransactionCsvImport(
+      [
+        "id,date,portfolio,transactionType,grossAmount,currency",
+        "TX-001,2026-05-17,IKE,cashDeposit,100,PLN",
+        ",2026-05-18,IKE,cashDeposit,200,PLN",
+      ].join("\n"),
+      references,
+    );
+
+    expect(preview.errorRows).toHaveLength(1);
+    expect(preview.errorRows[0].errors).toContain(
+      "Nieprawidłowe ID — wymagany format UUID.",
+    );
+    // The healthy row must still import.
+    expect(preview.validRows).toHaveLength(1);
+  });
+
   it("reports duplicate ids inside spreadsheet imports", () => {
     const duplicateId = "44444444-4444-4444-8444-444444444444";
     const preview = parseTransactionTable(
@@ -124,5 +142,21 @@ describe("parseCsvImport manual valuations", () => {
       currency: "PLN",
       note: "PKO stan rachunku",
     });
+  });
+
+  it("flags a non-UUID id as a row error", () => {
+    const preview = parseCsvImport(
+      [
+        "id,date,instrument,value,currency",
+        "WYC-1,2026-06-05,AAPL,190.5,USD",
+      ].join("\n"),
+      references,
+    );
+
+    expect(preview.kind).toBe("manualValuation");
+    expect(preview.errorRows).toHaveLength(1);
+    expect(preview.errorRows[0].errors).toContain(
+      "Nieprawidłowe ID — wymagany format UUID.",
+    );
   });
 });

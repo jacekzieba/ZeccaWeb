@@ -204,6 +204,35 @@ async function fetchFxRateViaApi(code: string, date: string): Promise<number | n
   }
 }
 
+/**
+ * Fills in `bondParams` for any imported treasury bond that arrived without them
+ * (a series outside the small offline catalog) by resolving each series' own
+ * emission letter. Best-effort: a series that can't be resolved keeps no params
+ * and is still flagged by the pre-commit validation for manual entry.
+ */
+async function enrichTreasuryBondParams(preview: ExtendedPreview): Promise<ExtendedPreview> {
+  const payloads = preview.newInstrumentPayloads;
+  if (!payloads?.length) return preview;
+
+  const enriched = await Promise.all(
+    payloads.map(async (payload) => {
+      if (payload.kind !== "treasuryBond" || payload.bondParams || typeof payload.symbol !== "string") {
+        return payload;
+      }
+      try {
+        const res = await fetch(`/api/market-data/bond-params?code=${encodeURIComponent(payload.symbol)}`);
+        if (!res.ok) return payload;
+        const json = (await res.json()) as { data?: Record<string, unknown> };
+        return json.data ? { ...payload, bondParams: json.data } : payload;
+      } catch {
+        return payload;
+      }
+    }),
+  );
+
+  return { ...preview, newInstrumentPayloads: enriched };
+}
+
 export function ImportPage() {
   const records = useSyncStore((s) => s.records);
   const userDataKey = useSyncStore((s) => s.userDataKey);
@@ -285,7 +314,11 @@ export function ImportPage() {
           setError("Wybierz portfel docelowy przed importem PKO Obligacje.");
           return;
         }
-        showPreview(parsePkoBondsXls(rows, portfolioId, references) as ExtendedPreview);
+        showPreview(
+          await enrichTreasuryBondParams(
+            parsePkoBondsXls(rows, portfolioId, references) as ExtendedPreview,
+          ),
+        );
         return;
       }
 

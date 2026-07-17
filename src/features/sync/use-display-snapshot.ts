@@ -22,6 +22,8 @@ export function useDisplaySnapshot(): InvestorDataSnapshot | null {
   const marketFxRates = useSyncStore((s) => s.marketFxRates);
   const marketQuotes = useSyncStore((s) => s.marketQuotes);
   const marketCpi = useSyncStore((s) => s.marketCpi);
+  const marketMetricsCpi = useSyncStore((s) => s.marketMetricsCpi);
+  const marketReferenceRates = useSyncStore((s) => s.marketReferenceRates);
   const storeSnapshot = useSyncStore((s) => s.snapshot);
   const { displayCurrency } = useProfile();
 
@@ -32,10 +34,12 @@ export function useDisplaySnapshot(): InvestorDataSnapshot | null {
       fxRates: marketFxRates,
       marketQuotes,
       cpi: marketCpi,
+      metricsCpi: marketMetricsCpi,
+      referenceRates: marketReferenceRates,
       historyGranularity: "daily",
       useLatestTransactionFxRate: true,
       useMarketQuotes: true,
       displayCurrency,
     });
-  }, [records, marketFxRates, marketQuotes, marketCpi, displayCurrency, storeSnapshot]);
+  }, [records, marketFxRates, marketQuotes, marketCpi, marketMetricsCpi, marketReferenceRates, displayCurrency, storeSnapshot]);
 }

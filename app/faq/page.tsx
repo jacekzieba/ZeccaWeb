@@ -168,9 +168,26 @@ const implementationNotes = [
   "Dla ekranów analitycznych warto używać tych samych opisów w tooltipach, panelu konfiguracji dashboardu i dokumentacji FAQ, żeby nazwy nie rozjechały się między platformami.",
 ];
 
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((faq) => ({
+    "@type": "Question",
+    name: faq.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: Array.isArray(faq.answer) ? faq.answer.join(" ") : faq.answer,
+    },
+  })),
+};
+
 export default function FAQPage() {
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       <main style={{ flex: 1, maxWidth: "900px", marginInline: "auto", width: "100%", padding: "40px 24px" }}>
         <div style={{ marginBottom: 48 }}>
           <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 8, letterSpacing: "-0.01em" }}>

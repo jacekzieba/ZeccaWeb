@@ -79,6 +79,11 @@ function lookbackStart(date: string): string {
 // into a non-PLN display currency at the rate that applied on each day.
 const NBP_MAX_RANGE_DAYS = 360;
 
+// The NBP web API serves table A only from 2002-01-02. Clamping the requested
+// start both avoids guaranteed-404 windows and bounds how many upstream
+// requests a single (unauthenticated) series call can fan out into.
+const NBP_API_EARLIEST = "2002-01-02";
+
 export async function fetchNbpFxRateSeries(
   code: string,
   start: string,
@@ -89,9 +94,11 @@ export async function fetchNbpFxRateSeries(
     throw new Error("Currency code must use ISO 4217 format.");
   }
 
-  const startDate = new Date(`${start}T00:00:00.000Z`);
+  const earliest = new Date(`${NBP_API_EARLIEST}T00:00:00.000Z`);
+  const requestedStart = new Date(`${start}T00:00:00.000Z`);
+  const startDate = requestedStart.getTime() < earliest.getTime() ? earliest : requestedStart;
   const endDate = new Date(`${end}T00:00:00.000Z`);
-  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+  if (Number.isNaN(requestedStart.getTime()) || Number.isNaN(endDate.getTime())) {
     throw new Error("Invalid FX series range.");
   }
 

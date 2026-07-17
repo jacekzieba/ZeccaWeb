@@ -26,6 +26,7 @@ const LOOKBACK_MONTHS = 24;
 export function MarketCpiBootstrap() {
   const records = useSyncStore((state) => state.records);
   const setMarketCpi = useSyncStore((state) => state.setMarketCpi);
+  const setMarketMetricsCpi = useSyncStore((state) => state.setMarketMetricsCpi);
   const appliedKey = useRef<string | null>(null);
 
   // Fake sync seeds a deterministic scenario (used by dev mode and e2e tests)
@@ -68,6 +69,7 @@ export function MarketCpiBootstrap() {
   useEffect(() => {
     if (!needsCpi) {
       setMarketCpi(CPI_YOY);
+      setMarketMetricsCpi(CPI_YOY);
       appliedKey.current = null;
       return;
     }
@@ -81,14 +83,24 @@ export function MarketCpiBootstrap() {
       return;
     }
 
-    const cpi: CpiSeries = { ...CPI_YOY };
+    // Two series from the same GUS fetch:
+    //  - bondCpi (as-announced): extend the curated table only with months it
+    //    does not already carry, so a later annual revision never rewrites a
+    //    coupon the bond already locked in.
+    //  - metricsCpi (revised): always take the latest published value, so the
+    //    real-return metric reflects the current official statistic.
+    const bondCpi: CpiSeries = { ...CPI_YOY };
+    const metricsCpi: CpiSeries = { ...CPI_YOY };
     for (const observation of query.data) {
-      cpi[observation.date.slice(0, 7)] = observation.yoyRate;
+      const month = observation.date.slice(0, 7);
+      if (!(month in CPI_YOY)) bondCpi[month] = observation.yoyRate;
+      metricsCpi[month] = observation.yoyRate;
     }
 
     appliedKey.current = key;
-    setMarketCpi(cpi);
-  }, [needsCpi, query.status, query.data, setMarketCpi]);
+    setMarketCpi(bondCpi);
+    setMarketMetricsCpi(metricsCpi);
+  }, [needsCpi, query.status, query.data, setMarketCpi, setMarketMetricsCpi]);
 
   return null;
 }
