@@ -19,13 +19,14 @@ function unitPrice(
   bondParams: BondParamsInput,
   purchaseDate: Date,
   asOf: Date,
+  dataset: PositionValuationDataset = EMPTY_DATASET,
 ): number {
   return valueInstrumentPosition({
     instrumentID: "00000000-0000-4000-8000-000000000000",
     quantity: 1,
     asset: { kind: "treasuryBond", currency: "PLN", bondParams },
     lots: [{ purchaseDate, quantity: 1 }],
-    dataset: EMPTY_DATASET,
+    dataset,
     asOf,
   }).price;
 }
@@ -84,8 +85,7 @@ describe("treasury bond inflation-indexed valuation", () => {
   it.each(holdings)(
     "reproduces official current value for $code",
     ({ params, purchase, expectedUnit }) => {
-      // Tolerancja 0,05 zł — oficjalna wartość jest zaokrąglana do grosza.
-      expect(unitPrice(params, purchase, asOf)).toBeCloseTo(expectedUnit, 1);
+      expect(unitPrice(params, purchase, asOf)).toBe(expectedUnit);
     },
   );
 
@@ -149,5 +149,36 @@ describe("treasury bond inflation-indexed valuation", () => {
     );
 
     expect(price).toBe(108.98);
+  });
+});
+
+describe("treasury bond monthly coupon valuation", () => {
+  const params: BondParamsInput = {
+    issueDate: new Date("2026-01-15T00:00:00.000Z"),
+    maturityDate: new Date("2027-01-15T00:00:00.000Z"),
+    nominalValue: 100,
+    firstPeriodRate: 5.75,
+    subsequentBase: "stopa referencyjna NBP",
+    marginOverBase: 0,
+    capitalization: "brak",
+    interestPayment: "co miesiąc",
+  };
+  const purchase = new Date("2026-01-15T00:00:00.000Z");
+  const dataset = {
+    ...EMPTY_DATASET,
+    referenceRates: [
+      { date: new Date("2025-12-04T00:00:00.000Z"), rate: 4.0 },
+      { date: new Date("2026-03-05T00:00:00.000Z"), rate: 3.75 },
+    ],
+  };
+
+  it("accrues the first ROR0127 period with Act/365", () => {
+    expect(unitPrice(params, purchase, new Date("2026-01-25T00:00:00.000Z"), dataset))
+      .toBe(100.16);
+  });
+
+  it("uses the current NBP rate and drops already-paid monthly coupons", () => {
+    expect(unitPrice(params, purchase, new Date("2026-03-20T00:00:00.000Z"), dataset))
+      .toBe(100.05);
   });
 });

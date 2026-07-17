@@ -1664,6 +1664,39 @@ describe("InvestorDataSnapshot mapper", () => {
     });
   });
 
+  it("converts foreign fees and taxes at the transaction FX rate", () => {
+    const records = [
+      record("account", accountID, {
+        recordType: "account",
+        id: accountID,
+        name: "Global",
+        baseCurrency: "PLN",
+      }),
+      record("transaction", "99999999-9999-4999-8999-999999999996", {
+        recordType: "transaction",
+        id: "99999999-9999-4999-8999-999999999996",
+        date: "2026-05-02T10:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID: null,
+        transactionType: "dividend",
+        quantity: null,
+        price: null,
+        grossAmount: 100,
+        currency: "EUR",
+        fees: 5,
+        taxes: 2,
+        fxRateToBase: 4.5,
+      }),
+    ];
+
+    const snapshot = buildInvestorDataSnapshot(records, {
+      asOf: new Date("2026-05-03T00:00:00.000Z"),
+    });
+
+    expect(snapshot.cashflows.fees).toBe(22.5);
+    expect(snapshot.cashflows.taxes).toBe(9);
+  });
+
   it("can revalue foreign currency positions with historical FX context", () => {
     const records = [
       record("account", accountID, {

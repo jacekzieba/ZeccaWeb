@@ -37,6 +37,37 @@ export const CPI_YOY: Record<string, number> = {
 
 export type CpiSeries = Record<string, number>;
 
+export type ReferenceRateObservation = {
+  date: Date;
+  rate: number;
+};
+
+export type ReferenceRateSeries = readonly ReferenceRateObservation[];
+
+/** Awaryjna historia stopy referencyjnej NBP, zgodna z natywną appką Zecca. */
+export const NBP_REFERENCE_RATES: ReferenceRateSeries = [
+  { date: new Date("2020-05-29T00:00:00.000Z"), rate: 0.1 },
+  { date: new Date("2021-10-07T00:00:00.000Z"), rate: 0.5 },
+  { date: new Date("2021-11-04T00:00:00.000Z"), rate: 1.25 },
+  { date: new Date("2021-12-09T00:00:00.000Z"), rate: 1.75 },
+  { date: new Date("2022-01-05T00:00:00.000Z"), rate: 2.25 },
+  { date: new Date("2022-02-09T00:00:00.000Z"), rate: 2.75 },
+  { date: new Date("2022-03-09T00:00:00.000Z"), rate: 3.5 },
+  { date: new Date("2022-04-07T00:00:00.000Z"), rate: 4.5 },
+  { date: new Date("2022-05-06T00:00:00.000Z"), rate: 5.25 },
+  { date: new Date("2022-06-09T00:00:00.000Z"), rate: 6.0 },
+  { date: new Date("2022-07-08T00:00:00.000Z"), rate: 6.5 },
+  { date: new Date("2022-09-08T00:00:00.000Z"), rate: 6.75 },
+  { date: new Date("2023-09-07T00:00:00.000Z"), rate: 6.0 },
+  { date: new Date("2023-10-05T00:00:00.000Z"), rate: 5.75 },
+  { date: new Date("2025-05-08T00:00:00.000Z"), rate: 5.25 },
+  { date: new Date("2025-07-03T00:00:00.000Z"), rate: 5.0 },
+  { date: new Date("2025-09-04T00:00:00.000Z"), rate: 4.75 },
+  { date: new Date("2025-10-09T00:00:00.000Z"), rate: 4.5 },
+  { date: new Date("2025-12-04T00:00:00.000Z"), rate: 4.0 },
+  { date: new Date("2026-03-05T00:00:00.000Z"), rate: 3.75 },
+];
+
 /**
  * Wskaźnik inflacji (CPI r/r, %) przyjmowany do ustalenia oprocentowania okresu
  * rozpoczynającego się w dniu `periodStart` — odczyt z miesiąca (periodStart − 2).
@@ -70,6 +101,7 @@ export function bondPeriodRate(
   periodIndex: number,
   periodStart: Date,
   cpi: CpiSeries = CPI_YOY,
+  referenceRates: ReferenceRateSeries = NBP_REFERENCE_RATES,
 ): number {
   if (periodIndex === 0) {
     return params.firstPeriodRate;
@@ -77,6 +109,13 @@ export function bondPeriodRate(
 
   if (params.subsequentBase === "stałe") {
     return params.marginOverBase;
+  }
+
+  if (params.subsequentBase === "stopa referencyjna NBP") {
+    const base = latestReferenceRate(periodStart, referenceRates);
+    return base == null
+      ? Math.max(0, params.marginOverBase)
+      : Math.max(0, base + params.marginOverBase);
   }
 
   const inflation = inflationReferenceRate(periodStart, cpi);
@@ -87,4 +126,22 @@ export function bondPeriodRate(
   }
 
   return Math.max(0, inflation) + params.marginOverBase;
+}
+
+function latestReferenceRate(
+  periodStart: Date,
+  referenceRates: ReferenceRateSeries,
+): number | null {
+  let latestTime = Number.NEGATIVE_INFINITY;
+  let latestRate: number | null = null;
+
+  for (const observation of referenceRates) {
+    const time = observation.date.getTime();
+    if (time <= periodStart.getTime() && time > latestTime) {
+      latestTime = time;
+      latestRate = observation.rate;
+    }
+  }
+
+  return latestRate;
 }

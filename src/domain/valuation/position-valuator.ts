@@ -7,7 +7,11 @@ import {
   type ManualValuationInput,
   type PriceTransactionInput,
 } from "@/domain/valuation/price-resolver";
-import { bondPeriodRate, type CpiSeries } from "@/domain/valuation/bond-rates";
+import {
+  bondPeriodRate,
+  type CpiSeries,
+  type ReferenceRateSeries,
+} from "@/domain/valuation/bond-rates";
 
 export type { FxRateInput } from "@/domain/valuation/price-resolver";
 
@@ -51,6 +55,8 @@ export type PositionValuationDataset = {
    * against a specific/synthetic inflation path (e.g. cross-platform parity).
    */
   cpi?: CpiSeries;
+  /** Optional NBP reference-rate history used to price ROR/DOR bonds. */
+  referenceRates?: ReferenceRateSeries;
 };
 
 export type PositionValuation = {
@@ -131,6 +137,7 @@ export function valueInstrumentPosition(input: {
             lot.purchaseDate,
             asOf,
             dataset.cpi,
+            dataset.referenceRates,
           ),
       0,
     );
@@ -201,6 +208,7 @@ function dirtyTreasuryBondPrice(
   purchaseDate: Date,
   asOf: Date,
   cpi?: CpiSeries,
+  referenceRates?: ReferenceRateSeries,
 ) {
   // Retail treasury bonds accrue on calendar days. Normalising timestamps keeps
   // the displayed daily value stable regardless of the import/refresh hour.
@@ -220,19 +228,26 @@ function dirtyTreasuryBondPrice(
   let periodIndex = 0;
   let principal = params.nominalValue;
   let carriedInterest = 0;
+  const periodMonths = params.interestPayment === "co miesiąc" ? 1 : 12;
 
   while (periodStart.getTime() < effectiveAsOf.getTime()) {
-    const periodEnd = addYears(periodStart, 1);
-    const annualRate = bondPeriodRate(params, periodIndex, periodStart, cpi) / 100;
+    const periodEnd = addMonths(periodStart, periodMonths);
+    const annualRate =
+      bondPeriodRate(params, periodIndex, periodStart, cpi, referenceRates) / 100;
+    const totalDays = Math.max(1, daysBetween(periodStart, periodEnd));
+    const periodYearFraction = periodMonths === 12 ? 1 : totalDays / 365;
 
     if (effectiveAsOf.getTime() < periodEnd.getTime()) {
-      const totalDays = Math.max(1, daysBetween(periodStart, periodEnd));
       const elapsedDays = Math.max(0, daysBetween(periodStart, effectiveAsOf));
-      const accrued = principal * annualRate * Math.min(elapsedDays / totalDays, 1);
+      const accrued =
+        principal *
+        annualRate *
+        periodYearFraction *
+        Math.min(elapsedDays / totalDays, 1);
       return roundToGrosz(principal + carriedInterest + accrued);
     }
 
-    const fullPeriodInterest = principal * annualRate;
+    const fullPeriodInterest = principal * annualRate * periodYearFraction;
     if (params.interestPayment === "przy wykupie") {
       if (params.capitalization === "roczna") {
         principal += fullPeriodInterest;
@@ -252,9 +267,15 @@ function roundToGrosz(value: number) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
-function addYears(date: Date, years: number) {
+function addMonths(date: Date, months: number) {
   const copy = new Date(date);
-  copy.setUTCFullYear(copy.getUTCFullYear() + years);
+  const day = copy.getUTCDate();
+  copy.setUTCDate(1);
+  copy.setUTCMonth(copy.getUTCMonth() + months);
+  const lastDay = new Date(
+    Date.UTC(copy.getUTCFullYear(), copy.getUTCMonth() + 1, 0),
+  ).getUTCDate();
+  copy.setUTCDate(Math.min(day, lastDay));
   return copy;
 }
 

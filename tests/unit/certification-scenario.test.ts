@@ -42,6 +42,8 @@ describe("certification scenario — web parity", () => {
 
     const detail = buildPortfolioDetail(records, IKE_ID, { fxRates: FX, asOf: ASOF, cpi: CPI })!;
     expect(detail.cashValue).toBeCloseTo(28_167.1, 2);
+    expect(detail.cashflows.fees).toBeCloseTo(91, 2);
+    expect(detail.cashflows.taxes).toBeCloseTo(1.9, 2);
 
     expect(holding(IKE_ID, "VWCE.DE").marketValue).toBeCloseTo(30_360, 2);
     expect(holding(IKE_ID, "CSPX.UK").marketValue).toBeCloseTo(43_680, 2);

@@ -35,7 +35,11 @@ import {
   type PositionValuationDataset,
   type FxRateInput,
 } from "@/domain/valuation/position-valuator";
-import { CPI_YOY, type CpiSeries } from "@/domain/valuation/bond-rates";
+import {
+  CPI_YOY,
+  type CpiSeries,
+  type ReferenceRateSeries,
+} from "@/domain/valuation/bond-rates";
 import {
   resolveFxRate,
   type MarketQuoteInput,
@@ -264,6 +268,8 @@ type ParsedDataset = {
   /** Optional CPI override for inflation-indexed bond valuation; see
    * `SnapshotBuildOptions.cpi`. Undefined → hardcoded GUS table. */
   cpi?: CpiSeries;
+  /** Optional NBP reference-rate history; undefined uses the fallback table. */
+  referenceRates?: ReferenceRateSeries;
 };
 
 export type SnapshotBuildOptions = {
@@ -287,6 +293,8 @@ export type SnapshotBuildOptions = {
    * inflation path — e.g. cross-platform parity with the native engine, which
    * takes its CPI series as an explicit parameter. */
   cpi?: CpiSeries;
+  /** NBP reference-rate history for ROR/DOR valuation. */
+  referenceRates?: ReferenceRateSeries;
 };
 
 type PortfolioValuation = {
@@ -485,10 +493,13 @@ function buildCashflowSummary(
 
     // Convert PLN booked amounts into the display currency at the rate on the
     // transaction's own date, so a lifetime dividend total reflects FX history.
-    const fxRate =
-      (transaction.currency === "PLN" || !transaction.fxRateToBase
+    const transactionRate =
+      transaction.currency === "PLN" ||
+      !transaction.fxRateToBase ||
+      transaction.fxRateToBase <= 0
         ? 1
-        : transaction.fxRateToBase) / baseToPln(toDate(transaction.date));
+        : transaction.fxRateToBase;
+    const fxRate = transactionRate / baseToPln(toDate(transaction.date));
     const gross = transaction.grossAmount * fxRate;
 
     fees += transaction.fees * fxRate;
@@ -911,6 +922,7 @@ function parseDataset(
     useMarketQuotes: options.useMarketQuotes ?? false,
     useLatestTransactionFxRate: options.useLatestTransactionFxRate ?? false,
     cpi: options.cpi,
+    referenceRates: options.referenceRates,
   };
 
   for (const record of records) {
@@ -1476,6 +1488,7 @@ function toPositionValuationDataset(
     | "useMarketQuotes"
     | "useLatestTransactionFxRate"
     | "cpi"
+    | "referenceRates"
   >,
 ): PositionValuationDataset {
   const transactions = dataset.transactions.map((transaction) => ({
@@ -1533,6 +1546,7 @@ function toPositionValuationDataset(
     fxRates: dataset.fxRates,
     useLatestTransactionFxRate: dataset.useLatestTransactionFxRate,
     cpi: dataset.cpi,
+    referenceRates: dataset.referenceRates,
   };
 }
 
