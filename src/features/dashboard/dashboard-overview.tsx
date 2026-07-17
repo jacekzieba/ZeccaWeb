@@ -1024,11 +1024,13 @@ function DataQualityBanner({
   const priceMissing = join("price-missing");
   const fxMissing = join("fx-missing");
   const bondMissing = join("bond-missing-macro");
+  const recordSkipped = join("record-skipped");
 
   const lines: string[] = [];
   if (priceMissing) lines.push(`Brak aktualnej ceny (pominięte w wartości): ${priceMissing}.`);
   if (fxMissing) lines.push(`Brak kursu waluty (liczone 1:1 do PLN): ${fxMissing}.`);
   if (bondMissing) lines.push(`Niepełne dane makro do wyceny obligacji (wynik przybliżony): ${bondMissing}.`);
+  if (recordSkipped) lines.push(`Pominięto nieczytelne rekordy (${recordSkipped}) — zaktualizuj aplikację lub zgłoś problem.`);
 
   return (
     <div

@@ -279,6 +279,16 @@ type ParsedDataset = {
    * originally announced value. Undefined → hardcoded GUS table.
    */
   metricsCpi?: CpiSeries;
+  /** Records that failed schema validation and were skipped (lenient mode). */
+  skipped: SkippedRecord[];
+};
+
+/** A synced record the runtime could not decode. Carries only the record id,
+ * type and a short issue string — never payload contents. */
+export type SkippedRecord = {
+  id: string;
+  type: string;
+  issue: string;
 };
 
 export type SnapshotBuildOptions = {
@@ -307,6 +317,13 @@ export type SnapshotBuildOptions = {
   /** Revised CPI series for the real-return metric; see the field of the same
    * name on `ParsedDataset`. Undefined → hardcoded GUS table. */
   metricsCpi?: CpiSeries;
+  /**
+   * When true, a record that fails schema validation throws instead of being
+   * skipped. Used by the parity/certification path so a schema drift from the
+   * native app fails loudly in CI; the runtime UI leaves it false so one bad
+   * record degrades to a warning rather than blanking the dashboard.
+   */
+  strict?: boolean;
 };
 
 type PortfolioValuation = {
@@ -415,6 +432,12 @@ function collectDiagnostics(
   const missingPrice = new Set<string>();
   const missingFx = new Set<string>();
   const bondGap = new Set<string>();
+
+  // A record the runtime couldn't decode was dropped rather than crashing the
+  // view; report it (by type only) so the gap is visible, not silent.
+  for (const type of new Set(dataset.skipped.map((record) => record.type))) {
+    diagnostics.push({ code: "record-skipped", severity: "warning", context: type });
+  }
 
   const checkFx = (currency: string) => {
     const code = currency.trim().toUpperCase();
@@ -1033,6 +1056,28 @@ function parseDataset(
     cpi: options.cpi,
     referenceRates: options.referenceRates,
     metricsCpi: options.metricsCpi,
+    skipped: [],
+  };
+
+  // In lenient (runtime) mode a record that fails validation is collected and
+  // skipped so one malformed record can't blank the whole view; in strict mode
+  // (parity/certification) it re-throws so schema drift fails loudly in CI.
+  const collect = <T>(
+    schema: z.ZodType<T>,
+    record: DecryptedRecord,
+    target: T[],
+  ) => {
+    const result = schema.safeParse(record.envelope.payload);
+    if (result.success) {
+      target.push(result.data);
+      return;
+    }
+    if (options.strict) throw result.error;
+    dataset.skipped.push({
+      id: record.id,
+      type: record.envelope.type,
+      issue: result.error.issues[0]?.message ?? "invalid record",
+    });
   };
 
   for (const record of records) {
@@ -1042,31 +1087,25 @@ function parseDataset(
 
     switch (record.envelope.type) {
       case "account":
-        dataset.accounts.push(accountPayloadSchema.parse(record.envelope.payload));
+        collect(accountPayloadSchema, record, dataset.accounts);
         break;
       case "asset":
-        dataset.assets.push(assetPayloadSchema.parse(record.envelope.payload));
+        collect(assetPayloadSchema, record, dataset.assets);
         break;
       case "transaction":
-        dataset.transactions.push(
-          transactionPayloadSchema.parse(record.envelope.payload),
-        );
+        collect(transactionPayloadSchema, record, dataset.transactions);
         break;
       case "manualValuation":
-        dataset.manualValuations.push(
-          manualValuationPayloadSchema.parse(record.envelope.payload),
-        );
+        collect(manualValuationPayloadSchema, record, dataset.manualValuations);
         break;
       case "marketQuote":
-        dataset.marketQuotes.push(
-          marketQuotePayloadSchema.parse(record.envelope.payload),
-        );
+        collect(marketQuotePayloadSchema, record, dataset.marketQuotes);
         break;
       case "settings":
-        dataset.settings.push(settingsPayloadSchema.parse(record.envelope.payload));
+        collect(settingsPayloadSchema, record, dataset.settings);
         break;
       case "income":
-        dataset.income.push(incomePayloadSchema.parse(record.envelope.payload));
+        collect(incomePayloadSchema, record, dataset.income);
         break;
     }
   }
@@ -1290,12 +1329,16 @@ function transactionsForPortfolio(
   );
 }
 
-function computeLedger(transactions: TransactionPayload[], asOf: Date): Ledger {
-  const ledger: Ledger = {
+function emptyLedger(): Ledger {
+  return {
     positions: new Map(),
     cashBalances: new Map(),
     openLots: new Map(),
   };
+}
+
+function computeLedger(transactions: TransactionPayload[], asOf: Date): Ledger {
+  const ledger: Ledger = emptyLedger();
 
   for (const transaction of transactions) {
     if (toDate(transaction.date).getTime() > asOf.getTime()) {
@@ -1498,14 +1541,31 @@ function consumeLots(
   ledger.openLots.set(instrumentID, lots);
 }
 
+/**
+ * Dataset-level inputs to {@link valuePortfolio} that do not change day to day
+ * (the resolver-ready valuation dataset and the asset lookup). Building them is
+ * the dominant cost when valuing a long daily series, so callers that value the
+ * same dataset across many dates precompute them once via {@link precomputeValuation}.
+ */
+type PrecomputedValuation = {
+  valuationDataset: PositionValuationDataset;
+  assetsByID: Map<string, AssetPayload>;
+};
+
+function precomputeValuation(dataset: ParsedDataset): PrecomputedValuation {
+  return {
+    valuationDataset: toPositionValuationDataset(dataset),
+    assetsByID: new Map(dataset.assets.map((asset) => [asset.id, asset])),
+  };
+}
+
 function valuePortfolio(
   ledger: Ledger,
   dataset: ParsedDataset,
   asOf: Date,
-  options: { bondsUseFormula?: boolean } = {},
+  options: { bondsUseFormula?: boolean; precomputed?: PrecomputedValuation } = {},
 ): PortfolioValuation {
-  const assetsByID = new Map(dataset.assets.map((asset) => [asset.id, asset]));
-  const valuationDataset = toPositionValuationDataset(dataset);
+  const { assetsByID, valuationDataset } = options.precomputed ?? precomputeValuation(dataset);
   const allocationValues = new Map<string, number>();
   let holdingsValue = 0;
   let costBasis = 0;
@@ -1547,7 +1607,7 @@ function valuePortfolio(
     );
   }
 
-  const cashValue = valueCash(ledger, dataset, asOf);
+  const cashValue = valueCash(ledger, dataset, asOf, valuationDataset);
 
   if (cashValue > EPSILON) {
     allocationValues.set(
@@ -1579,10 +1639,11 @@ function valueCash(
     | "useLatestTransactionFxRate"
   >,
   asOf: Date,
+  precomputedDataset?: PositionValuationDataset,
 ) {
   return valueCashBalances(
     ledger.cashBalances,
-    toPositionValuationDataset(dataset),
+    precomputedDataset ?? toPositionValuationDataset(dataset),
     asOf,
   );
 }
@@ -1733,15 +1794,35 @@ function buildValuationSeries(
     ? fullDailyDates(dataset, asOf)
     : fullMonthEndDates(dataset, asOf);
 
+  // Dataset-level valuation inputs are identical for every date, so build them
+  // once instead of once per (date × account).
+  const precomputed = precomputeValuation(dataset);
+
+  // Each account keeps a running ledger advanced across the (ascending) dates
+  // by applying only the transactions that fall in each step, rather than
+  // replaying the whole history per day. `dataset.transactions` is already
+  // sorted ascending, so the per-account slice preserves that order and the
+  // resulting ledger is byte-identical to a full `computeLedger` at each date.
+  const runners = accounts.map((account) => ({
+    transactions: transactionsForPortfolio(dataset.transactions, account.id),
+    ledger: emptyLedger(),
+    cursor: 0,
+  }));
+
   return dates.map((date) => {
     const dayEnd = endOfLocalDay(date);
-    const value = accounts.reduce((sum, account) => {
-      const ledger = computeLedger(
-        transactionsForPortfolio(dataset.transactions, account.id),
-        dayEnd,
-      );
-      return sum + valuePortfolio(ledger, dataset, dayEnd).totalValue;
-    }, 0);
+    const dayEndMs = dayEnd.getTime();
+    let value = 0;
+    for (const runner of runners) {
+      while (
+        runner.cursor < runner.transactions.length &&
+        toDate(runner.transactions[runner.cursor].date).getTime() <= dayEndMs
+      ) {
+        applyTransaction(runner.ledger, runner.transactions[runner.cursor]);
+        runner.cursor += 1;
+      }
+      value += valuePortfolio(runner.ledger, dataset, dayEnd, { precomputed }).totalValue;
+    }
 
     return {
       label: daily ? dayLabel(date) : monthLabel(date),

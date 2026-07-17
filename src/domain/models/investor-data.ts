@@ -103,7 +103,8 @@ export type InvestorDataSnapshot = {
 export type SnapshotDiagnosticCode =
   | "price-missing"
   | "fx-missing"
-  | "bond-missing-macro";
+  | "bond-missing-macro"
+  | "record-skipped";
 
 /** A single data-quality warning. `context` names the affected subject (an
  * instrument symbol or currency code) and never includes amounts. */

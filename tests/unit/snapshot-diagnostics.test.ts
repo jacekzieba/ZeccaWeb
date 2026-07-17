@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
+import { buildParitySnapshot } from "@/sync/records/parity-snapshot";
 import { treasuryBondMacroGaps, type BondParamsInput } from "@/domain/valuation/position-valuator";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
 import type { RecordType } from "@/domain/models/investor-data";
@@ -81,6 +82,41 @@ describe("snapshot diagnostics", () => {
 
     const snapshot = buildInvestorDataSnapshot(records, { asOf: new Date("2026-06-30T00:00:00.000Z") });
     expect(snapshot.diagnostics).toEqual([]);
+  });
+});
+
+describe("malformed record resilience", () => {
+  const goodAccount = record("account", ACCOUNT, {
+    recordType: "account",
+    id: ACCOUNT,
+    name: "Core",
+    baseCurrency: "PLN",
+  });
+  // Missing required fields (grossAmount, currency) → fails the schema.
+  const badTransaction = record("transaction", "99999999-9999-4999-8999-999999999999", {
+    recordType: "transaction",
+    id: "99999999-9999-4999-8999-999999999999",
+    portfolioID: ACCOUNT,
+    transactionType: "cashDeposit",
+  });
+
+  it("skips a malformed record and reports it instead of throwing (runtime/lenient)", () => {
+    const snapshot = buildInvestorDataSnapshot([goodAccount, badTransaction], {
+      asOf: new Date("2026-06-30T00:00:00.000Z"),
+    });
+    const skipped = (snapshot.diagnostics ?? []).filter((d) => d.code === "record-skipped");
+    expect(skipped).toHaveLength(1);
+    expect(skipped[0].context).toBe("transaction");
+    // The healthy account still produced a portfolio.
+    expect(snapshot.portfolios).toHaveLength(1);
+  });
+
+  it("throws on a malformed record in strict (parity) mode", () => {
+    expect(() =>
+      buildParitySnapshot([goodAccount, badTransaction], {
+        asOf: new Date("2026-06-30T00:00:00.000Z"),
+      }),
+    ).toThrow();
   });
 });
 

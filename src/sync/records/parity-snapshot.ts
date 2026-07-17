@@ -49,10 +49,13 @@ export function buildParitySnapshot(
   records: DecryptedRecord[],
   options: SnapshotBuildOptions = {},
 ): ParitySnapshot {
-  const snapshot = buildInvestorDataSnapshot(records, options);
+  // Parity must fail loudly on a record it can't decode — a silent skip would
+  // hide schema drift from the native engine. The runtime UI stays lenient.
+  const strictOptions: SnapshotBuildOptions = { ...options, strict: true };
+  const snapshot = buildInvestorDataSnapshot(records, strictOptions);
   const summary = summarizeDecryptedRecords(records);
   const transactions = buildTransactionList(records);
-  const instruments = buildInstrumentList(records, options);
+  const instruments = buildInstrumentList(records, strictOptions);
   const portfolios = snapshot.portfolios.map((portfolio) => {
     const detail = buildPortfolioDetail(records, portfolio.id, options);
 
