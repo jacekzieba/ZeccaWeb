@@ -75,6 +75,34 @@ describe("parseYahooChart", () => {
     });
   });
 
+  it.each([
+    ["GBp", "GBP", 0.01],
+    ["GBX", "GBP", 0.01],
+    ["GBP", "GBP", 1],
+  ] as const)("normalizes %s quote prices", (currency, expectedCurrency, scale) => {
+    const quote = parseYahooChart(
+      yahooChartResponse({
+        currency,
+        regularMarketPrice: 19_325,
+        regularMarketTime: 1_778_803_200,
+        open: [18_500, 19_050],
+        high: [19_000, 19_520],
+        low: [18_400, 18_840],
+        close: [18_900, 19_325],
+      }),
+      "VWRL.L",
+    );
+
+    expect(quote).toMatchObject({
+      currency: expectedCurrency,
+      volume: 12345,
+    });
+    expect(quote.open).toBeCloseTo(19_050 * scale);
+    expect(quote.high).toBeCloseTo(19_520 * scale);
+    expect(quote.low).toBeCloseTo(18_840 * scale);
+    expect(quote.close).toBeCloseTo(19_325 * scale);
+  });
+
   it("surfaces Yahoo chart errors", () => {
     expect(() =>
       parseYahooChart(
@@ -152,6 +180,45 @@ describe("parseYahooChartSeries", () => {
         "AAPL",
       ),
     ).toThrow("no valid price history");
+  });
+
+  it.each([
+    ["GBp", "GBP", 0.01],
+    ["GBX", "GBP", 0.01],
+    ["GBP", "GBP", 1],
+  ] as const)("normalizes %s history prices", (currency, expectedCurrency, scale) => {
+    const [bar] = parseYahooChartSeries(
+      {
+        chart: {
+          result: [
+            {
+              meta: { currency },
+              timestamp: [1_778_803_200],
+              indicators: {
+                quote: [{
+                  open: [19_050],
+                  high: [19_520],
+                  low: [18_840],
+                  close: [19_325],
+                  volume: [12345],
+                }],
+              },
+            },
+          ],
+          error: null,
+        },
+      },
+      "VWRL.L",
+    );
+
+    expect(bar).toMatchObject({
+      currency: expectedCurrency,
+      volume: 12345,
+    });
+    expect(bar.open).toBeCloseTo(19_050 * scale);
+    expect(bar.high).toBeCloseTo(19_520 * scale);
+    expect(bar.low).toBeCloseTo(18_840 * scale);
+    expect(bar.close).toBeCloseTo(19_325 * scale);
   });
 });
 
@@ -266,6 +333,18 @@ describe("parseYahooSearch", () => {
       },
     ]);
     expect(parseYahooSearch({})).toEqual([]);
+  });
+
+  it.each([
+    ["GBp", "GBP"],
+    ["GBX", "GBP"],
+    ["GBP", "GBP"],
+  ] as const)("normalizes the %s search currency label to %s", (currency, expectedCurrency) => {
+    expect(
+      parseYahooSearch({
+        quotes: [{ symbol: "VWRL.L", quoteType: "ETF", currency }],
+      })[0]?.currency,
+    ).toBe(expectedCurrency);
   });
 });
 
@@ -447,8 +526,12 @@ describe("fetchGusCpiSeries", () => {
 });
 
 function yahooChartResponse(input: {
+  currency?: string;
   regularMarketPrice: number | null;
   regularMarketTime: number;
+  open?: Array<number | null>;
+  high?: Array<number | null>;
+  low?: Array<number | null>;
   close: Array<number | null>;
 }) {
   return {
@@ -456,16 +539,16 @@ function yahooChartResponse(input: {
       result: [
         {
           meta: {
-            currency: "USD",
+            currency: input.currency ?? "USD",
             regularMarketPrice: input.regularMarketPrice,
             regularMarketTime: input.regularMarketTime,
           },
           indicators: {
             quote: [
               {
-                open: [185, 190.5],
-                high: [190, 195.2],
-                low: [184, 188.4],
+                open: input.open ?? [185, 190.5],
+                high: input.high ?? [190, 195.2],
+                low: input.low ?? [184, 188.4],
                 close: input.close,
                 volume: [10000, 12345],
               },

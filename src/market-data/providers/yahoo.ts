@@ -58,10 +58,14 @@ export function parseYahooChart(json: unknown, symbol: string): MarketQuote {
   }
 
   const quote = result.indicators.quote?.[0];
-  const close = result.meta.regularMarketPrice ?? latestNumber(quote?.close);
-  if (!close || close <= 0) {
+  const rawClose = result.meta.regularMarketPrice ?? latestNumber(quote?.close);
+  if (!rawClose || rawClose <= 0) {
     throw new Error("Yahoo Finance returned no valid price.");
   }
+
+  const inPence = isPenceCurrency(result.meta.currency);
+  const normalizePrice = (price: number) => inPence ? price / 100 : price;
+  const close = normalizePrice(rawClose);
 
   const date = new Date(
     (result.meta.regularMarketTime ?? Math.floor(Date.now() / 1000)) * 1000,
@@ -70,11 +74,11 @@ export function parseYahooChart(json: unknown, symbol: string): MarketQuote {
   return {
     provider: "yahoo",
     symbol,
-    currency: result.meta.currency ?? null,
+    currency: inPence ? "GBP" : (result.meta.currency ?? null),
     date,
-    open: latestNumber(quote?.open) ?? close,
-    high: latestNumber(quote?.high) ?? close,
-    low: latestNumber(quote?.low) ?? close,
+    open: normalizePrice(latestNumber(quote?.open) ?? rawClose),
+    high: normalizePrice(latestNumber(quote?.high) ?? rawClose),
+    low: normalizePrice(latestNumber(quote?.low) ?? rawClose),
     close,
     volume: latestNumber(quote?.volume),
   };
@@ -117,7 +121,9 @@ export function parseYahooChartSeries(json: unknown, symbol: string): MarketQuot
 
   const timestamps = result.timestamp ?? [];
   const quote = result.indicators.quote?.[0];
-  const currency = result.meta.currency ?? null;
+  const inPence = isPenceCurrency(result.meta.currency);
+  const normalizePrice = (price: number) => inPence ? price / 100 : price;
+  const currency = inPence ? "GBP" : (result.meta.currency ?? null);
   const series: MarketQuote[] = [];
 
   for (let i = 0; i < timestamps.length; i += 1) {
@@ -133,10 +139,10 @@ export function parseYahooChartSeries(json: unknown, symbol: string): MarketQuot
       symbol,
       currency,
       date,
-      open: quote?.open?.[i] ?? close,
-      high: quote?.high?.[i] ?? close,
-      low: quote?.low?.[i] ?? close,
-      close,
+      open: normalizePrice(quote?.open?.[i] ?? close),
+      high: normalizePrice(quote?.high?.[i] ?? close),
+      low: normalizePrice(quote?.low?.[i] ?? close),
+      close: normalizePrice(close),
       volume: quote?.volume?.[i] ?? null,
     });
   }
@@ -211,7 +217,7 @@ export function parseYahooSearch(
       symbol,
       name: quote.longname ?? quote.shortname ?? symbol,
       exchange: quote.exchDisp ?? null,
-      currency: quote.currency ?? null,
+      currency: isPenceCurrency(quote.currency) ? "GBP" : (quote.currency ?? null),
       kind,
     });
   }
@@ -237,6 +243,10 @@ function normalizeYahooSymbol(symbol: string) {
     throw new Error("Invalid Yahoo Finance symbol.");
   }
   return normalized;
+}
+
+function isPenceCurrency(currency: string | null | undefined) {
+  return currency === "GBp" || currency === "GBX";
 }
 
 function latestNumber(values: Array<number | null> | null | undefined) {
