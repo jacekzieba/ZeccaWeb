@@ -8,12 +8,9 @@ import type { DecryptedRecord } from "@/sync/records/encrypted-records";
 // Same inputs, same frozen anchor amounts. A divergence in the computed
 // snapshot is a parity bug to report — never a number to "fix" here.
 //
-// Shared by the Task 2 unit test (exact per-portfolio amounts via
-// buildInvestorDataSnapshot with injected CPI/FX/asOf) and the fake-sync e2e
-// dataset (NEXT_PUBLIC_FAKE_SYNC_DATASET=certification). Note: the live UI
-// display path uses asOf=today and no injected CPI, so only the all-PLN taxable
-// portfolio (62 945.30) is deterministic on screen; the exact IKE/IKZE amounts
-// are asserted in the unit test, not the e2e.
+// Shared by the Task 2 unit test and the fake-sync e2e dataset
+// (NEXT_PUBLIC_FAKE_SYNC_DATASET=certification). Both paths inject this frozen
+// asOf/CPI/FX set, so exact IKE, IKZE and combined totals stay deterministic.
 
 export const IKE_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 export const IKZE_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";

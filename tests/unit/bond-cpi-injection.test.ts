@@ -61,12 +61,12 @@ describe("treasury bond valuation honours injected CPI series", () => {
   });
 
   it("falls back to the hardcoded GUS table when no CPI is injected", () => {
-    // Zaszyta tabela: 2025-02 = 5.4 (nie 4.0); 2026-02 = 2.1 → 3.6% z marżą.
-    // Raw: 100 ×1.07 →107; ×(5.4+1.5)% →114.383;
-    // +114.383×3.6%×77/365 →115.2517. Inny wynik niż scenariusz dowodzi,
+    // Zaszyta tabela: 2025-02 = 4.9 (nie 4.0); 2026-02 = 2.1 → 3.6% z marżą.
+    // Raw: 100 ×1.07 →107; ×(4.9+1.5)% →113.848;
+    // +113.848×3.6%×77/365 →114.7126. Inny wynik niż scenariusz dowodzi,
     // że wstrzyknięcie faktycznie działa.
     const fallback = unitPrice(DATASET_NO_CPI);
-    expect(fallback).toBe(115.25);
+    expect(fallback).toBe(114.71);
     expect(fallback).not.toBe(113.96);
   });
 });

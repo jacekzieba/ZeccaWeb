@@ -6,6 +6,7 @@ import type { FxRateInput } from "@/domain/valuation/price-resolver";
 import type { MarketQuoteInput } from "@/domain/valuation/price-resolver";
 import type { FxRate } from "@/market-data/types";
 import { useProfile } from "@/features/profile/profile-store";
+import { isFakeSyncEnabled } from "@/lib/env";
 import { useSyncStore } from "@/sync/store/sync-store";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
 
@@ -37,14 +38,15 @@ export function MarketFxBootstrap() {
   const setMarketFxRates = useSyncStore((state) => state.setMarketFxRates);
   const { displayCurrency } = useProfile();
   const appliedKey = useRef<string | null>(null);
+  const enabled = !isFakeSyncEnabled();
 
   const valuationDate = snapshot?.asOf.slice(0, 10) ?? null;
   const currencies = useMemo(() => {
-    if (!records) return [];
+    if (!records || !enabled) return [];
     const required = new Set(currenciesNeedingFx(records, marketQuotes));
     if (displayCurrency !== "PLN") required.add(displayCurrency);
     return [...required].sort();
-  }, [records, marketQuotes, displayCurrency]);
+  }, [records, marketQuotes, displayCurrency, enabled]);
 
   // Every quote/transaction currency needs the whole dashboard window. Loading
   // only today's GBP rate would price older VWRL.L points at the fallback 1:1
@@ -55,7 +57,7 @@ export function MarketFxBootstrap() {
   const queries = useQueries({
     queries: currencies.map((currency) => ({
       queryKey: ["market-fx-series", currency, seriesStart, valuationDate],
-      enabled: Boolean(seriesStart && valuationDate),
+      enabled: enabled && Boolean(seriesStart && valuationDate),
       queryFn: async () => {
         const response = await fetch(marketFxSeriesPath(currency, seriesStart!, valuationDate!));
         const body = await response.json() as FxSeriesResponse | { error?: string };
@@ -69,6 +71,8 @@ export function MarketFxBootstrap() {
   });
 
   useEffect(() => {
+    if (!enabled) return;
+
     if (!records || currencies.length === 0) {
       setMarketFxRates([]);
       appliedKey.current = null;
@@ -116,6 +120,7 @@ export function MarketFxBootstrap() {
     setMarketFxRates(rates);
   }, [
     currencies,
+    enabled,
     needsDisplayFx,
     queries,
     seriesStart,

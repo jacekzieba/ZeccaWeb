@@ -29,8 +29,8 @@ export function MarketCpiBootstrap() {
   const setMarketMetricsCpi = useSyncStore((state) => state.setMarketMetricsCpi);
   const appliedKey = useRef<string | null>(null);
 
-  // Fake sync seeds a deterministic scenario (used by dev mode and e2e tests)
-  // that must price its bonds off the hardcoded table, not a live network call.
+  // Fake sync owns its deterministic CPI input (the curated default table or a
+  // certification fixture), so a live network call must not replace it.
   const enabled = !isFakeSyncEnabled();
 
   const needsCpi = useMemo(() => {
@@ -67,6 +67,8 @@ export function MarketCpiBootstrap() {
   });
 
   useEffect(() => {
+    if (!enabled) return;
+
     if (!needsCpi) {
       setMarketCpi(CPI_YOY);
       setMarketMetricsCpi(CPI_YOY);
@@ -100,7 +102,7 @@ export function MarketCpiBootstrap() {
     appliedKey.current = key;
     setMarketCpi(bondCpi);
     setMarketMetricsCpi(metricsCpi);
-  }, [needsCpi, query.status, query.data, setMarketCpi, setMarketMetricsCpi]);
+  }, [enabled, needsCpi, query.status, query.data, setMarketCpi, setMarketMetricsCpi]);
 
   return null;
 }
