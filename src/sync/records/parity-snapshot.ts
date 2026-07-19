@@ -54,10 +54,10 @@ export function buildParitySnapshot(
   const strictOptions: SnapshotBuildOptions = { ...options, strict: true };
   const snapshot = buildInvestorDataSnapshot(records, strictOptions);
   const summary = summarizeDecryptedRecords(records);
-  const transactions = buildTransactionList(records);
+  const transactions = buildTransactionList(records, strictOptions);
   const instruments = buildInstrumentList(records, strictOptions);
   const portfolios = snapshot.portfolios.map((portfolio) => {
-    const detail = buildPortfolioDetail(records, portfolio.id, options);
+    const detail = buildPortfolioDetail(records, portfolio.id, strictOptions);
 
     return {
       id: portfolio.id,

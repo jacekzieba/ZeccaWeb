@@ -59,6 +59,10 @@ export async function middleware(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value),
           );
+          // request.cookies.set rewrote the request's Cookie header; mirror it
+          // onto the forwarded headers, or server components would read the
+          // pre-refresh session from the stale clone.
+          requestHeaders.set("cookie", request.headers.get("cookie") ?? "");
           supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options),

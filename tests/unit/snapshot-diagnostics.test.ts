@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
+import { buildInvestorDataSnapshot, buildTransactionList } from "@/sync/records/investor-snapshot";
 import { buildParitySnapshot } from "@/sync/records/parity-snapshot";
 import { treasuryBondMacroGaps, type BondParamsInput } from "@/domain/valuation/position-valuator";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
@@ -117,6 +117,80 @@ describe("malformed record resilience", () => {
         asOf: new Date("2026-06-30T00:00:00.000Z"),
       }),
     ).toThrow();
+  });
+
+  it("throws in strict mode when buildTransactionList meets a malformed record", () => {
+    expect(() =>
+      buildTransactionList([goodAccount, badTransaction], { strict: true }),
+    ).toThrow();
+  });
+
+  it("does not credit phantom sell proceeds when the matching buy was skipped", () => {
+    const asset = record("asset", USD_ASSET, {
+      recordType: "asset", id: USD_ASSET, kind: "etf", symbol: "ETF", name: "ETF", currency: "PLN",
+    });
+    const deposit = record("transaction", "88888888-8888-4888-8888-888888888888", {
+      recordType: "transaction", id: "88888888-8888-4888-8888-888888888888",
+      date: "2026-01-01T00:00:00.000Z", portfolioID: ACCOUNT,
+      transactionType: "cashDeposit", grossAmount: 1000, currency: "PLN", fees: 0, taxes: 0,
+    });
+    // The buy that would back the sell fails the schema and is skipped.
+    const badBuy = record("transaction", "99999999-9999-4999-8999-999999999998", {
+      recordType: "transaction", id: "99999999-9999-4999-8999-999999999998",
+      portfolioID: ACCOUNT, instrumentID: USD_ASSET, transactionType: "buy",
+    });
+    const sell = record("transaction", "77777777-7777-4777-8777-777777777776", {
+      recordType: "transaction", id: "77777777-7777-4777-8777-777777777776",
+      date: "2026-01-02T00:00:00.000Z", portfolioID: ACCOUNT, instrumentID: USD_ASSET,
+      transactionType: "sell", quantity: 2, price: 100, grossAmount: 200,
+      currency: "PLN", fees: 0, taxes: 0,
+    });
+
+    const snapshot = buildInvestorDataSnapshot([goodAccount, asset, deposit, badBuy, sell], {
+      asOf: new Date("2026-06-30T00:00:00.000Z"),
+    });
+
+    // Cash must stay at the deposit: crediting the sell's 200 would invent
+    // money the ledger never spent on the (skipped) buy.
+    expect(snapshot.totalValue).toBeCloseTo(1000, 6);
+  });
+
+  it("does not credit phantom bondRedemption/depositClose proceeds when the acquisition was skipped", () => {
+    const BOND = "44444444-4444-4444-8444-444444444444";
+    const DEPOSIT = "55555555-5555-4555-8555-555555555555";
+    const cash = record("transaction", "88888888-8888-4888-8888-888888888887", {
+      recordType: "transaction", id: "88888888-8888-4888-8888-888888888887",
+      date: "2026-01-01T00:00:00.000Z", portfolioID: ACCOUNT,
+      transactionType: "cashDeposit", grossAmount: 1000, currency: "PLN", fees: 0, taxes: 0,
+    });
+    // Both acquisitions fail the schema and are skipped.
+    const badBondBuy = record("transaction", "99999999-9999-4999-8999-999999999997", {
+      recordType: "transaction", id: "99999999-9999-4999-8999-999999999997",
+      portfolioID: ACCOUNT, instrumentID: BOND, transactionType: "buy",
+    });
+    const badDepositOpen = record("transaction", "99999999-9999-4999-8999-999999999996", {
+      recordType: "transaction", id: "99999999-9999-4999-8999-999999999996",
+      portfolioID: ACCOUNT, instrumentID: DEPOSIT, transactionType: "depositOpen",
+    });
+    const redemption = record("transaction", "77777777-7777-4777-8777-777777777775", {
+      recordType: "transaction", id: "77777777-7777-4777-8777-777777777775",
+      date: "2026-01-02T00:00:00.000Z", portfolioID: ACCOUNT, instrumentID: BOND,
+      transactionType: "bondRedemption", quantity: 2, grossAmount: 200,
+      currency: "PLN", fees: 0, taxes: 0,
+    });
+    const depositClose = record("transaction", "77777777-7777-4777-8777-777777777774", {
+      recordType: "transaction", id: "77777777-7777-4777-8777-777777777774",
+      date: "2026-01-02T00:00:00.000Z", portfolioID: ACCOUNT, instrumentID: DEPOSIT,
+      transactionType: "depositClose", grossAmount: 300,
+      currency: "PLN", fees: 0, taxes: 0,
+    });
+
+    const snapshot = buildInvestorDataSnapshot(
+      [goodAccount, cash, badBondBuy, badDepositOpen, redemption, depositClose],
+      { asOf: new Date("2026-06-30T00:00:00.000Z") },
+    );
+
+    expect(snapshot.totalValue).toBeCloseTo(1000, 6);
   });
 });
 

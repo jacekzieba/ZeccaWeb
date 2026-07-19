@@ -93,7 +93,13 @@ function makeBaseToPln(
 const APPLE_REFERENCE_DATE_UNIX_MS = Date.UTC(2001, 0, 1);
 const EPSILON = 0.000001;
 
-const swiftDateSchema = z.union([z.number(), z.string()]);
+// A date must actually parse: an unparseable value would otherwise crash the
+// snapshot build (Invalid time value) or stall the incremental series cursor.
+const swiftDateSchema = z
+  .union([z.number(), z.string()])
+  .refine((value) => !Number.isNaN(toDate(value).getTime()), {
+    message: "unparseable date",
+  });
 
 const accountPayloadSchema = z.object({
   recordType: z.literal("account"),
@@ -345,8 +351,11 @@ export function buildInvestorDataSnapshot(
   const asOf = getAsOf(records, dataset, options);
   const baseToPln = makeBaseToPln(displayCurrency, dataset);
   const accounts = getAccounts(dataset, baseCurrency);
+  // Dataset-level valuation inputs are shared by every per-account loop below;
+  // build them once instead of once per (loop × account).
+  const precomputed = precomputeValuation(dataset);
   const portfolios = accounts.map((account) =>
-    buildPortfolioSummary(account, dataset, asOf, baseToPln),
+    buildPortfolioSummary(account, dataset, asOf, baseToPln, precomputed),
   );
   const totalValue = portfolios.reduce(
     (sum, portfolio) => sum + portfolio.value,
@@ -357,10 +366,10 @@ export function buildInvestorDataSnapshot(
     accounts.reduce((sum, account) => {
       const transactions = transactionsForPortfolio(dataset.transactions, account.id);
       const ledger = computeLedger(transactions, asOf);
-      return sum + valueCash(ledger, dataset, asOf);
+      return sum + valueCash(ledger, dataset, asOf, precomputed.valuationDataset);
     }, 0) / asOfRate;
   const valuationSeries = convertSeriesCurrency(
-    buildValuationSeries(accounts, dataset, asOf, options),
+    buildValuationSeries(accounts, dataset, asOf, options, precomputed),
     baseToPln,
   );
   const monthlyChange = calculateMonthlyChange(valuationSeries);
@@ -383,6 +392,7 @@ export function buildInvestorDataSnapshot(
     dataset,
     asOf,
     baseToPln,
+    precomputed,
   );
   const metrics = buildMetrics(
     accounts,
@@ -407,7 +417,7 @@ export function buildInvestorDataSnapshot(
     performanceSeries,
     // Allocation is a set of ratios, so it stays currency-invariant and is
     // computed from the native PLN valuation.
-    allocation: buildAllocation(accounts, dataset, asOf),
+    allocation: buildAllocation(accounts, dataset, asOf, precomputed),
     metrics,
     settings: getTelemetrySettings(dataset),
     diagnostics: collectDiagnostics(accounts, dataset, asOf),
@@ -731,6 +741,7 @@ function buildOpenPositionStats(
   dataset: ParsedDataset,
   asOf: Date,
   baseToPln: BaseToPln,
+  precomputed: PrecomputedValuation,
 ): { unrealizedPnl: number; unrealizedPnlPct: number } {
   let holdingsValue = 0;
   let costBasis = 0;
@@ -740,7 +751,7 @@ function buildOpenPositionStats(
       transactionsForPortfolio(dataset.transactions, account.id),
       asOf,
     );
-    const valuation = valuePortfolio(ledger, dataset, asOf);
+    const valuation = valuePortfolio(ledger, dataset, asOf, { precomputed });
     holdingsValue += valuation.holdingsValue;
     costBasis += valuation.costBasis;
   }
@@ -1212,10 +1223,11 @@ function buildPortfolioSummary(
   dataset: ParsedDataset,
   asOf: Date,
   baseToPln: BaseToPln,
+  precomputed: PrecomputedValuation,
 ): PortfolioSummary {
   const transactions = transactionsForPortfolio(dataset.transactions, account.id);
   const todayLedger = computeLedger(transactions, asOf);
-  const valuation = valuePortfolio(todayLedger, dataset, asOf);
+  const valuation = valuePortfolio(todayLedger, dataset, asOf, { precomputed });
   const value = valuation.totalValue / baseToPln(asOf);
 
   const previousDay = endOfLocalDay(addLocalDays(asOf, -1));
@@ -1235,7 +1247,7 @@ function buildPortfolioSummary(
   // every day. The formula yields the true daily accrual; non-bond assets are
   // unaffected by the flag and keep their quote/valuation pricing.
   const valueForDelta =
-    valuePortfolio(todayLedger, dataset, asOf, { bondsUseFormula: true })
+    valuePortfolio(todayLedger, dataset, asOf, { bondsUseFormula: true, precomputed })
       .totalValue / baseToPln(asOf);
   const previousValueForDelta =
     valuePortfolio(previousLedger, datasetForPreviousDay, previousDay, {
@@ -1380,21 +1392,30 @@ function applyTransaction(ledger: Ledger, transaction: TransactionPayload) {
       addPosition(ledger, transaction.instrumentID, transaction.quantity ?? 0);
       addLot(ledger, transaction);
       break;
-    case "sell":
-      addCashForTrade(ledger, transaction, grossAmount - fees - taxes);
-      addPosition(ledger, transaction.instrumentID, -(transaction.quantity ?? 0));
-      consumeLots(ledger, transaction.instrumentID, transaction.quantity ?? 0);
+    case "sell": {
+      const soldQuantity = transaction.quantity ?? 0;
+      const consumed = consumeLots(ledger, transaction.instrumentID, soldQuantity);
+      const coverage = lotCoverage(transaction.instrumentID, soldQuantity, consumed);
+      addCashForTrade(ledger, transaction, (grossAmount - fees - taxes) * coverage);
+      addPosition(ledger, transaction.instrumentID, -soldQuantity);
       break;
+    }
     case "dividend":
     case "interest":
     case "bondCoupon":
       addCash(ledger, currency, grossAmount - taxes);
       break;
-    case "bondRedemption":
-      addCash(ledger, currency, grossAmount - taxes);
-      addPosition(ledger, transaction.instrumentID, -(transaction.quantity ?? 0));
-      consumeLots(ledger, transaction.instrumentID, transaction.quantity ?? 0);
+    case "bondRedemption": {
+      const quantity = transaction.quantity ?? 0;
+      const consumed = consumeLots(ledger, transaction.instrumentID, quantity);
+      addCash(
+        ledger,
+        currency,
+        (grossAmount - taxes) * lotCoverage(transaction.instrumentID, quantity, consumed),
+      );
+      addPosition(ledger, transaction.instrumentID, -quantity);
       break;
+    }
     case "depositOpen":
       addCash(ledger, currency, -grossAmount);
       addPosition(ledger, transaction.instrumentID, 1);
@@ -1404,11 +1425,17 @@ function applyTransaction(ledger: Ledger, transaction: TransactionPayload) {
         price: grossAmount,
       });
       break;
-    case "depositClose":
-      addCash(ledger, currency, grossAmount - taxes);
-      addPosition(ledger, transaction.instrumentID, -(transaction.quantity ?? 1));
-      consumeLots(ledger, transaction.instrumentID, transaction.quantity ?? 1);
+    case "depositClose": {
+      const quantity = transaction.quantity ?? 1;
+      const consumed = consumeLots(ledger, transaction.instrumentID, quantity);
+      addCash(
+        ledger,
+        currency,
+        (grossAmount - taxes) * lotCoverage(transaction.instrumentID, quantity, consumed),
+      );
+      addPosition(ledger, transaction.instrumentID, -quantity);
       break;
+    }
     case "fee":
     case "tax":
       addCash(ledger, currency, -grossAmount);
@@ -1516,13 +1543,30 @@ function addLot(ledger: Ledger, transaction: TransactionPayload) {
   ledger.openLots.set(instrumentID, lots);
 }
 
+/**
+ * Fraction of a disposal actually backed by open lots. Proceeds are credited
+ * only for this fraction: with the acquisition record missing (e.g. skipped as
+ * malformed in lenient mode), full proceeds would add cash the ledger never
+ * paid out. A consistent dataset always has full coverage, so this is a no-op
+ * there; without an instrument id (or zero quantity) lots can't be tracked and
+ * the credit stays whole.
+ */
+function lotCoverage(
+  instrumentID: string | null | undefined,
+  quantity: number,
+  consumed: number,
+) {
+  return instrumentID && quantity > EPSILON ? consumed / quantity : 1;
+}
+
+/** Consumes FIFO lots and returns the quantity actually covered by them. */
 function consumeLots(
   ledger: Ledger,
   instrumentID: string | null | undefined,
   quantity: number,
-) {
+): number {
   if (!instrumentID || quantity <= EPSILON) {
-    return;
+    return 0;
   }
 
   const lots = ledger.openLots.get(instrumentID) ?? [];
@@ -1539,6 +1583,7 @@ function consumeLots(
   }
 
   ledger.openLots.set(instrumentID, lots);
+  return quantity - remaining;
 }
 
 /**
@@ -1750,6 +1795,7 @@ function buildAllocation(
   accounts: AccountPayload[],
   dataset: ParsedDataset,
   asOf: Date,
+  precomputed: PrecomputedValuation,
 ): AllocationSlice[] {
   const values = new Map<string, number>();
 
@@ -1758,7 +1804,7 @@ function buildAllocation(
       transactionsForPortfolio(dataset.transactions, account.id),
       asOf,
     );
-    const valuation = valuePortfolio(ledger, dataset, asOf);
+    const valuation = valuePortfolio(ledger, dataset, asOf, { precomputed });
 
     for (const [label, value] of valuation.allocationValues) {
       values.set(label, (values.get(label) ?? 0) + value);
@@ -1786,6 +1832,7 @@ function buildValuationSeries(
   dataset: ParsedDataset,
   asOf: Date,
   options: SnapshotBuildOptions = {},
+  precomputed: PrecomputedValuation = precomputeValuation(dataset),
 ) {
   // Monthly is the default (kept for parity with the native app); the UI opts
   // into a daily series so the period selector and chart show day-to-day moves.
@@ -1793,10 +1840,6 @@ function buildValuationSeries(
   const dates = daily
     ? fullDailyDates(dataset, asOf)
     : fullMonthEndDates(dataset, asOf);
-
-  // Dataset-level valuation inputs are identical for every date, so build them
-  // once instead of once per (date × account).
-  const precomputed = precomputeValuation(dataset);
 
   // Each account keeps a running ledger advanced across the (ascending) dates
   // by applying only the transactions that fall in each step, rather than
@@ -1963,7 +2006,9 @@ function dayLabel(date: Date) {
   return new Intl.DateTimeFormat("pl-PL", { day: "numeric", month: "short" }).format(date);
 }
 
-function toDate(value: z.infer<typeof swiftDateSchema>) {
+// Typed structurally (not via z.infer) — swiftDateSchema's refine calls this,
+// so inferring from the schema would be circular.
+function toDate(value: number | string) {
   if (typeof value === "number") {
     return new Date(APPLE_REFERENCE_DATE_UNIX_MS + value * 1000);
   }
@@ -1988,6 +2033,7 @@ export function buildPortfolioDetail(
   const ledger = computeLedger(transactions, asOf);
   const assetsByID = new Map(dataset.assets.map((a) => [a.id, a]));
   const valuationDataset = toPositionValuationDataset(dataset);
+  const precomputed: PrecomputedValuation = { valuationDataset, assetsByID };
 
   const holdings: HoldingRow[] = [];
   let holdingsValue = 0;
@@ -2044,7 +2090,7 @@ export function buildPortfolioDetail(
     .sort((a, b) => b.amount - a.amount);
 
   const valuationSeries = convertSeriesCurrency(
-    buildValuationSeries([account], dataset, asOf, options),
+    buildValuationSeries([account], dataset, asOf, options, precomputed),
     baseToPln,
   );
 
@@ -2068,7 +2114,7 @@ export function buildPortfolioDetail(
     totalValue,
     performanceSeries,
     baseToPln,
-    buildOpenPositionStats([account], dataset, asOf, baseToPln),
+    buildOpenPositionStats([account], dataset, asOf, baseToPln, precomputed),
   );
 
   return {
@@ -2086,8 +2132,11 @@ export function buildPortfolioDetail(
   };
 }
 
-export function buildTransactionList(records: DecryptedRecord[]): TransactionRow[] {
-  const dataset = parseDataset(records);
+export function buildTransactionList(
+  records: DecryptedRecord[],
+  options: SnapshotBuildOptions = {},
+): TransactionRow[] {
+  const dataset = parseDataset(records, options);
   const accountsById = new Map(dataset.accounts.map((a) => [a.id, a]));
   const assetsById = new Map(dataset.assets.map((a) => [a.id, a]));
 
