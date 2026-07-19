@@ -289,11 +289,10 @@ export function SettingsPage() {
       <DisplaySection />
       <PrivacySection />
 
-      <Section eyebrow="Pomoc" title="Wprowadzenie do aplikacji">
+      <Section eyebrow="Pomoc" title="Wprowadzenie i kontakt">
         <Row
           label="Tour po interfejsie"
           desc="Ponownie obejrzyj wprowadzenie: dashboard, portfele, pozycje i zarobki"
-          last
           control={
             <Link
               href="/dashboard?tour=1"
@@ -305,6 +304,33 @@ export function SettingsPage() {
             >
               Zobacz wprowadzenie →
             </Link>
+          }
+        />
+        <Row
+          label="Discord"
+          desc="Społeczność, zapowiedzi i szybki kontakt z autorem"
+          control={
+            <a
+              href="https://discord.gg/wrKjxVyFQ"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ fontFamily: V2_TYPE.ui, fontSize: 12.5, fontWeight: 600, color: V2.brand, textDecoration: "none" }}
+            >
+              Dołącz →
+            </a>
+          }
+        />
+        <Row
+          label="E-mail"
+          desc="zecca.barista363@passmail.net"
+          last
+          control={
+            <a
+              href="mailto:zecca.barista363@passmail.net"
+              style={{ fontFamily: V2_TYPE.ui, fontSize: 12.5, fontWeight: 600, color: V2.brand, textDecoration: "none" }}
+            >
+              Napisz →
+            </a>
           }
         />
       </Section>

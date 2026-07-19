@@ -9,10 +9,23 @@ const ANCHOR_TIMEOUT_MS = 2000;
 const ANCHOR_POLL_MS = 50;
 const SPOT_PAD = 6;
 const TIP_W = 320;
-const EASE = "cubic-bezier(.4,0,.2,1)";
-// Glide the spotlight/tooltip between steps; opacity fades the first appearance.
-const GLIDE = `top .4s ${EASE}, left .4s ${EASE}, width .4s ${EASE}, height .4s ${EASE}, opacity .3s ease`;
-const TIP_GLIDE = `top .4s ${EASE}, left .4s ${EASE}, opacity .3s ease`;
+const EASE = "cubic-bezier(.22,1,.36,1)";
+const FADE_MS = 280;
+const STEP_FADE_OUT_MS = FADE_MS + 60;
+const SCROLL_MIN_MS = 140;
+const SCROLL_MAX_MS = 1200;
+const FADE = `opacity ${FADE_MS}ms ease`;
+
+const transitionStyles = `
+  @keyframes onboarding-tip-content-in {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .onboarding-tour-transition { transition-duration: 0.01ms !important; }
+    .onboarding-tip-content { animation: none !important; }
+  }
+`;
 
 function anchorEl(anchor: string): HTMLElement | null {
   return document.querySelector<HTMLElement>(`[data-tour="${anchor}"]`);
@@ -40,14 +53,11 @@ export function TourOverlay({
   onSkip: () => void;
 }) {
   const step = steps[stepIndex];
-  // `rect` persists across steps so the spotlight glides to the next target
-  // instead of blinking through a full-screen state.
+  // `rect` persists while the current spotlight fades out. The next target is
+  // measured only after smooth scrolling has settled.
   const [rect, setRect] = useState<Rect | null>(null);
-  // Glide on step changes, but follow scroll/resize instantly (no lag).
-  const [animate, setAnimate] = useState(false);
-  // Fade the very first spotlight in once its anchor has been measured.
   const [shown, setShown] = useState(false);
-  const shownRef = useRef(false);
+  const transitionTimerRef = useRef<number | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -60,73 +70,105 @@ export function TourOverlay({
 
   const goTo = useCallback(
     (dir: 1 | -1) => {
+      if (!shown) return;
       const next = stepIndex + dir;
       if (next < 0) return;
-      if (next >= steps.length) {
-        onFinish();
-        return;
+      setShown(false);
+      if (transitionTimerRef.current != null) {
+        window.clearTimeout(transitionTimerRef.current);
       }
-      // Anchors on other routes don't exist yet — the controller navigates
-      // and the waiting effect below picks the step up (or skips it).
-      onStepChange(next);
+      const delay = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? 0
+        : STEP_FADE_OUT_MS;
+      transitionTimerRef.current = window.setTimeout(() => {
+        transitionTimerRef.current = null;
+        if (next >= steps.length) {
+          onFinish();
+          return;
+        }
+        // Anchors on other routes don't exist yet — the controller navigates
+        // and the waiting effect below picks the step up (or skips it).
+        onStepChange(next);
+      }, delay);
     },
-    [stepIndex, steps.length, onFinish, onStepChange],
+    [shown, stepIndex, steps.length, onFinish, onStepChange],
   );
+
+  useEffect(() => () => {
+    if (transitionTimerRef.current != null) {
+      window.clearTimeout(transitionTimerRef.current);
+    }
+  }, []);
 
   // Wait for the anchor, measure it, keep the measurement fresh.
   useEffect(() => {
     if (!step) return;
-    // Entering a step: any position change from here should glide. We keep the
-    // previous rect on screen (dimmed with its cut-out) until the new anchor is
-    // measured, then the box slides to it — no full-screen blink between steps.
-    setAnimate(true);
+    setShown(false);
     let cancelled = false;
     let timer = 0;
+    let frame = 0;
     let waited = 0;
     let unsubscribe: (() => void) | null = null;
 
-    const applyRect = (el: HTMLElement, instant: boolean) => {
+    const applyRect = (el: HTMLElement) => {
       const r = el.getBoundingClientRect();
-      if (instant) setAnimate(false); // scroll/resize follow, no easing
       setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
-      if (!shownRef.current) {
-        shownRef.current = true;
-        // One frame at opacity 0 → transition to 1 (fade the first spotlight in).
-        requestAnimationFrame(() => {
-          if (!cancelled) setShown(true);
-        });
-      }
     };
 
-    const settleAndMeasure = (el: HTMLElement) => {
-      el.scrollIntoView({ block: "center" });
-      // Measure only after layout + scroll settle. Reading synchronously here
-      // can catch a pre-layout, full-width rect that then snaps to real size.
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => {
-          if (cancelled) return;
-          const current = anchorEl(step.anchor);
-          if (!current) return;
-          applyRect(current, false);
-          const follow = () => {
-            const live = anchorEl(step.anchor);
-            if (live) applyRect(live, true);
-          };
-          window.addEventListener("scroll", follow, { passive: true, capture: true });
-          window.addEventListener("resize", follow);
-          unsubscribe = () => {
-            window.removeEventListener("scroll", follow, { capture: true });
-            window.removeEventListener("resize", follow);
-          };
-        }),
-      );
+    const showSettledTarget = (el: HTMLElement) => {
+      applyRect(el);
+      frame = requestAnimationFrame(() => {
+        if (!cancelled) setShown(true);
+      });
+      const follow = () => {
+        const live = anchorEl(step.anchor);
+        if (live) applyRect(live);
+      };
+      window.addEventListener("scroll", follow, { passive: true, capture: true });
+      window.addEventListener("resize", follow);
+      unsubscribe = () => {
+        window.removeEventListener("scroll", follow, { capture: true });
+        window.removeEventListener("resize", follow);
+      };
+    };
+
+    const scrollThenMeasure = (el: HTMLElement) => {
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      el.scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });
+
+      const startedAt = performance.now();
+      let previousRect = el.getBoundingClientRect();
+      let stableFrames = 0;
+
+      const waitForSettle = (now: number) => {
+        if (cancelled) return;
+        const current = anchorEl(step.anchor);
+        if (!current) return;
+        const currentRect = current.getBoundingClientRect();
+        const geometryStable =
+          Math.abs(currentRect.top - previousRect.top) < 0.5 &&
+          Math.abs(currentRect.left - previousRect.left) < 0.5 &&
+          Math.abs(currentRect.width - previousRect.width) < 0.5 &&
+          Math.abs(currentRect.height - previousRect.height) < 0.5;
+        stableFrames = geometryStable ? stableFrames + 1 : 0;
+        previousRect = currentRect;
+        const elapsed = now - startedAt;
+        const settled = reduceMotion || (elapsed >= SCROLL_MIN_MS && stableFrames >= 4);
+        if (settled || elapsed >= SCROLL_MAX_MS) {
+          showSettledTarget(current);
+          return;
+        }
+        frame = requestAnimationFrame(waitForSettle);
+      };
+
+      frame = requestAnimationFrame(waitForSettle);
     };
 
     const tick = () => {
       if (cancelled) return;
       const el = anchorEl(step.anchor);
       if (el) {
-        settleAndMeasure(el);
+        scrollThenMeasure(el);
         return;
       }
       waited += ANCHOR_POLL_MS;
@@ -150,6 +192,7 @@ export function TourOverlay({
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
+      window.cancelAnimationFrame(frame);
       unsubscribe?.();
     };
   }, [step, stepIndex, steps, onFinish, onStepChange]);
@@ -213,21 +256,24 @@ export function TourOverlay({
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 900 }}>
+      <style>{transitionStyles}</style>
       {/* Blocks interaction with the app while the tour runs. */}
       <div style={{ position: "fixed", inset: 0 }} aria-hidden="true" />
 
       {/* Full-screen dim shown only before the first anchor is measured; it
           fades out as the spotlight cut-out fades in. */}
       <div
+        className="onboarding-tour-transition"
         style={{
           position: "fixed", inset: 0, background: DIM, pointerEvents: "none",
           opacity: spot && shown ? 0 : 1,
-          transition: "opacity .3s ease",
+          transition: FADE,
         }}
       />
 
       {spot && (
         <div
+          className="onboarding-tour-transition"
           style={{
             position: "fixed",
             top: spot.top, left: spot.left, width: spot.width, height: spot.height,
@@ -235,15 +281,17 @@ export function TourOverlay({
             boxShadow: `0 0 0 9999px ${DIM}`,
             pointerEvents: "none",
             opacity: shown ? 1 : 0,
-            transition: animate ? GLIDE : "opacity .3s ease",
+            transition: FADE,
           }}
         />
       )}
 
-      {shown && (
+      {spot && (
       <div
+        className="onboarding-tour-transition"
         role="dialog"
         aria-label={step.title}
+        aria-hidden={!shown}
         style={{
           ...tipStyle,
           zIndex: 901,
@@ -255,32 +303,39 @@ export function TourOverlay({
           fontFamily: V2_TYPE.ui,
           color: V2.ink,
           opacity: shown ? 1 : 0,
-          transition: animate ? TIP_GLIDE : "opacity .3s ease",
+          pointerEvents: shown ? "auto" : "none",
+          transition: FADE,
         }}
       >
-        <div style={{ fontFamily: V2_TYPE.mono, fontSize: 10, letterSpacing: ".08em", color: V2.gold }}>
-          TOUR · KROK {stepIndex + 1} / {steps.length}
-        </div>
-        <div style={{ fontFamily: V2_TYPE.serif, fontWeight: 500, fontSize: 19, marginTop: 7, lineHeight: 1.2 }}>
-          {step.title}
-        </div>
-        <p style={{ fontSize: 12.5, lineHeight: 1.6, color: V2.muted, marginTop: 8 }}>{step.body}</p>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14 }}>
-          {stepIndex > 0 && (
-            <button style={btn(false)} onClick={() => goTo(-1)}>
-              ← Wstecz
+        <div
+          key={`${step.id}-${shown ? "shown" : "hidden"}`}
+          className="onboarding-tip-content"
+          style={{ animation: `onboarding-tip-content-in .48s ${EASE} .1s both` }}
+        >
+          <div style={{ fontFamily: V2_TYPE.mono, fontSize: 10, letterSpacing: ".08em", color: V2.gold }}>
+            TOUR · KROK {stepIndex + 1} / {steps.length}
+          </div>
+          <div style={{ fontFamily: V2_TYPE.serif, fontWeight: 500, fontSize: 19, marginTop: 7, lineHeight: 1.2 }}>
+            {step.title}
+          </div>
+          <p style={{ fontSize: 12.5, lineHeight: 1.6, color: V2.muted, marginTop: 8 }}>{step.body}</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14 }}>
+            {stepIndex > 0 && (
+              <button style={btn(false)} onClick={() => goTo(-1)}>
+                ← Wstecz
+              </button>
+            )}
+            <button style={btn(true)} onClick={() => goTo(1)} data-testid="tour-next">
+              {isLast ? "Zakończ tour →" : "Dalej →"}
             </button>
-          )}
-          <button style={btn(true)} onClick={() => goTo(1)} data-testid="tour-next">
-            {isLast ? "Zakończ tour →" : "Dalej →"}
-          </button>
-          <button
-            onClick={onSkip}
-            data-testid="tour-skip"
-            style={{ marginLeft: "auto", border: "none", background: "none", cursor: "pointer", fontSize: 11, color: V2.subtle, fontFamily: V2_TYPE.ui }}
-          >
-            Pomiń tour (Esc)
-          </button>
+            <button
+              onClick={onSkip}
+              data-testid="tour-skip"
+              style={{ marginLeft: "auto", border: "none", background: "none", cursor: "pointer", fontSize: 11, color: V2.subtle, fontFamily: V2_TYPE.ui }}
+            >
+              Pomiń tour (Esc)
+            </button>
+          </div>
         </div>
       </div>
       )}

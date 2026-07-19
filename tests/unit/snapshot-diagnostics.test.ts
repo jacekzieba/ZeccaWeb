@@ -2,18 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildInvestorDataSnapshot, buildTransactionList } from "@/sync/records/investor-snapshot";
 import { buildParitySnapshot } from "@/sync/records/parity-snapshot";
 import { treasuryBondMacroGaps, type BondParamsInput } from "@/domain/valuation/position-valuator";
-import type { DecryptedRecord } from "@/sync/records/encrypted-records";
-import type { RecordType } from "@/domain/models/investor-data";
-
-function record(type: RecordType, id: string, payload: unknown): DecryptedRecord {
-  return {
-    id,
-    deviceId: "test",
-    updatedAt: "2026-06-30T10:00:00.000Z",
-    deletedAt: null,
-    envelope: { type, payloadVersion: 1, schemaVersion: 1, payload },
-  };
-}
+import { makeRecord as record } from "./helpers/records";
 
 const ACCOUNT = "11111111-1111-4111-8111-111111111111";
 const USD_ASSET = "22222222-2222-4222-8222-222222222222";

@@ -155,6 +155,7 @@ export type SyncLoadResult = {
 export type InitialSyncUser = {
   id: string;
   email?: string | null;
+  onboardingCompleted?: boolean;
 };
 
 export function SyncUnlockPanel({

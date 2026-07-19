@@ -208,10 +208,16 @@ export function LandingHero() {
                   </span>
                 ))}
               </div>
-              <a className="hero-beta-link" href={hero.ctaPrimaryHref}>
-                {hero.ctaPrimary}
-                <span aria-hidden="true">→</span>
-              </a>
+              <div className="hero-entry-links">
+                <a className="btn btn-brand" href={hero.ctaDemoHref}>
+                  {hero.ctaDemo}
+                  <span aria-hidden="true">→</span>
+                </a>
+                <a className="hero-beta-link" href={hero.ctaPrimaryHref}>
+                  {hero.ctaPrimary}
+                  <span aria-hidden="true">→</span>
+                </a>
+              </div>
               {hero.note.trim() ? (
                 <EditableHtml as="p" copyId="hero.note" className="hero-note" html={hero.note} />
               ) : null}

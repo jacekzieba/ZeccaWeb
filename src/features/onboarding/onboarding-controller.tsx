@@ -5,13 +5,13 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import { buildFakeSyncRecords } from "@/sync/dev/fake-sync";
 import { isFakeSyncEnabled } from "@/lib/env";
+import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { V2, V2_TYPE } from "@/lib/v2-design";
 import { OnboardingCard } from "./onboarding-card";
 import { TourOverlay } from "./tour-overlay";
 import { FINALE_COPY, INTRO_CARDS, TOUR_STEPS } from "./steps";
 import {
-  isOnboardingCompleted,
   resolveOnboardingEntry,
   useOnboardingStore,
 } from "./onboarding-state";
@@ -29,11 +29,19 @@ function seedDemoRecords() {
 }
 
 /**
- * Sits in AppShell's `!records` branch. A brand-new user (no completed flag)
- * gets demo data seeded and the onboarding started; everyone else falls
- * through to `children` — the regular SyncUnlockGate.
+ * Sits in AppShell's `!records` branch. A brand-new account gets demo data
+ * seeded and the onboarding started; public `/demo` always starts a fresh
+ * in-memory tour. Everyone else falls through to the regular SyncUnlockGate.
  */
-export function OnboardingDemoGate({ children }: { children: React.ReactNode }) {
+export function OnboardingDemoGate({
+  children,
+  accountOnboardingCompleted,
+  publicDemo,
+}: {
+  children: React.ReactNode;
+  accountOnboardingCompleted: boolean;
+  publicDemo: boolean;
+}) {
   const start = useOnboardingStore((s) => s.start);
   const phase = useOnboardingStore((s) => s.phase);
   const startedRef = useRef(false);
@@ -41,11 +49,13 @@ export function OnboardingDemoGate({ children }: { children: React.ReactNode }) 
   // Fake-sync seeds records asynchronously — this branch renders briefly even
   // though data is on the way, so never auto-start the demo there (the tour is
   // still reachable via ?tour=1, which is what the e2e suite exercises).
-  const entry = isFakeSyncEnabled()
+  const entry = publicDemo
+    ? "demo-start"
+    : isFakeSyncEnabled()
     ? "none"
     : resolveOnboardingEntry({
         hasRecords: false,
-        completed: isOnboardingCompleted(),
+        completed: accountOnboardingCompleted,
         tourParam: false,
       });
 
@@ -53,9 +63,9 @@ export function OnboardingDemoGate({ children }: { children: React.ReactNode }) 
     if (entry === "demo-start" && !startedRef.current) {
       startedRef.current = true;
       seedDemoRecords();
-      start("demo");
+      start(publicDemo ? "public-demo" : "demo");
     }
-  }, [entry, start]);
+  }, [entry, publicDemo, start]);
 
   if (entry === "demo-start" || phase !== "idle") {
     // Demo records land in a moment; AppShell re-renders straight into the app.
@@ -82,10 +92,17 @@ function TourQueryParamListener() {
   return null;
 }
 
-export function OnboardingController() {
+export function OnboardingController({
+  accountUserId,
+  publicDemo,
+  onAccountOnboardingFinished,
+}: {
+  accountUserId?: string;
+  publicDemo: boolean;
+  onAccountOnboardingFinished: () => void;
+}) {
   const { phase, stepIndex, mode, setPhase, setStepIndex, finish } = useOnboardingStore();
   const clearSync = useSyncStore((s) => s.clearSync);
-  const userDataKey = useSyncStore((s) => s.userDataKey);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -94,8 +111,9 @@ export function OnboardingController() {
   // Navigate when the current tour step lives on another route.
   useEffect(() => {
     if (phase !== "tour" || !step) return;
+    if (mode === "public-demo") return;
     if (pathname !== step.route) router.push(step.route);
-  }, [phase, step, pathname, router]);
+  }, [mode, phase, step, pathname, router]);
 
   const listener = (
     <Suspense fallback={null}>
@@ -105,11 +123,29 @@ export function OnboardingController() {
 
   if (phase === "idle" || !mode) return listener;
 
-  const endOnboarding = () => {
+  const endOnboarding = (destination?: "/login" | "/register") => {
+    const endingMode = mode;
+
+    if (endingMode === "demo" && accountUserId) {
+      onAccountOnboardingFinished();
+      const supabase = createBrowserSupabaseClientOrNull();
+      if (supabase) {
+        void supabase
+          .from("profiles")
+          .update({ onboarding_completed_at: new Date().toISOString() } as never)
+          .eq("id", accountUserId);
+      }
+    }
+
     finish();
-    if (mode === "demo" && !userDataKey) {
-      // Drop the seeded demo dataset → AppShell falls back to SyncUnlockGate.
+    if (endingMode === "demo" || endingMode === "public-demo") {
+      // Demo records exist only in memory and are always discarded on exit.
       clearSync();
+    }
+
+    if (endingMode === "public-demo") {
+      window.location.assign(destination ?? "/login");
+    } else if (endingMode === "demo") {
       router.push("/dashboard");
     }
   };
@@ -132,14 +168,14 @@ export function OnboardingController() {
           eyebrow={card.eyebrow}
           title={card.title}
           body={card.body}
-          image={card.image}
+          visual={card.visual}
           dots={{ count: INTRO_CARDS.length, active: stepIndex }}
           footer={
             <>
               {stepIndex > 0 ? (
                 <button style={btn(false)} onClick={() => setStepIndex(stepIndex - 1)}>← Wstecz</button>
               ) : (
-                <button style={btn(false)} onClick={endOnboarding} data-testid="onboarding-skip">Pomiń</button>
+                <button style={btn(false)} onClick={() => endOnboarding()} data-testid="onboarding-skip">Pomiń</button>
               )}
               <button
                 style={btn(true)}
@@ -148,7 +184,7 @@ export function OnboardingController() {
                   if (isLastCard) {
                     setStepIndex(0);
                     setPhase("tour");
-                    if (pathname !== TOUR_STEPS[0].route) router.push(TOUR_STEPS[0].route);
+                    if (!publicDemo && pathname !== TOUR_STEPS[0].route) router.push(TOUR_STEPS[0].route);
                   } else {
                     setStepIndex(stepIndex + 1);
                   }
@@ -172,9 +208,9 @@ export function OnboardingController() {
           stepIndex={stepIndex}
           onStepChange={setStepIndex}
           onFinish={() => setPhase("finale")}
-          onSkip={endOnboarding}
+          onSkip={() => endOnboarding()}
         />
-        {mode === "demo" && (
+        {(mode === "demo" || mode === "public-demo") && (
           <div
             style={{
               position: "fixed", left: 14, bottom: 14, zIndex: 902,
@@ -199,11 +235,36 @@ export function OnboardingController() {
       <OnboardingCard
         eyebrow={FINALE_COPY.eyebrow}
         title={FINALE_COPY.title}
-        body={mode === "demo" ? FINALE_COPY.bodyDemo : FINALE_COPY.bodyReplay}
+        body={
+          mode === "public-demo"
+            ? FINALE_COPY.bodyPublic
+            : mode === "demo"
+              ? FINALE_COPY.bodyDemo
+              : FINALE_COPY.bodyReplay
+        }
         footer={
-          <button style={btn(true)} data-testid="onboarding-finish" onClick={endOnboarding}>
-            {mode === "demo" ? FINALE_COPY.ctaDemo : FINALE_COPY.ctaReplay}
-          </button>
+          mode === "public-demo" ? (
+            <>
+              <button
+                style={btn(false)}
+                data-testid="onboarding-public-login"
+                onClick={() => endOnboarding("/login")}
+              >
+                {FINALE_COPY.ctaPublicLogin}
+              </button>
+              <button
+                style={btn(true)}
+                data-testid="onboarding-public-register"
+                onClick={() => endOnboarding("/register")}
+              >
+                {FINALE_COPY.ctaPublicRegister}
+              </button>
+            </>
+          ) : (
+            <button style={btn(true)} data-testid="onboarding-finish" onClick={() => endOnboarding()}>
+              {mode === "demo" ? FINALE_COPY.ctaDemo : FINALE_COPY.ctaReplay}
+            </button>
+          )
         }
       />
     </>

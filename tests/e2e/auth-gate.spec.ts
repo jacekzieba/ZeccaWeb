@@ -7,6 +7,13 @@ test("redirects protected routes to login with the next parameter", async ({ pag
   await expect(page.getByRole("heading", { name: "Logowanie" })).toBeVisible();
 });
 
+test("keeps the product demo outside the auth gate", async ({ request }) => {
+  const response = await request.get("/demo");
+
+  expect(response.ok()).toBe(true);
+  expect(response.url()).toMatch(/\/demo$/);
+});
+
 test("keeps public market data routes outside the auth gate", async ({ request }) => {
   const response = await request.get("/api/market-data/fx?code=PLN");
 

@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
 import { CPI_YOY, type CpiSeries } from "@/domain/valuation/bond-rates";
 import type { CpiObservation } from "@/market-data/types";
-import { isFakeSyncEnabled } from "@/lib/env";
 import { buildInstrumentList } from "@/sync/records/investor-snapshot";
 import { useSyncStore } from "@/sync/store/sync-store";
 
@@ -29,16 +28,12 @@ export function MarketCpiBootstrap() {
   const setMarketMetricsCpi = useSyncStore((state) => state.setMarketMetricsCpi);
   const appliedKey = useRef<string | null>(null);
 
-  // Fake sync owns its deterministic CPI input (the curated default table or a
-  // certification fixture), so a live network call must not replace it.
-  const enabled = !isFakeSyncEnabled();
-
   const needsCpi = useMemo(() => {
-    if (!records || !enabled) return false;
+    if (!records) return false;
     return buildInstrumentList(records).some(
       (row) => row.valuationSource === "treasuryBond" && row.totalQuantity > 0,
     );
-  }, [records, enabled]);
+  }, [records]);
 
   const { start, end } = useMemo(() => {
     const endDate = new Date();
@@ -67,8 +62,6 @@ export function MarketCpiBootstrap() {
   });
 
   useEffect(() => {
-    if (!enabled) return;
-
     if (!needsCpi) {
       setMarketCpi(CPI_YOY);
       setMarketMetricsCpi(CPI_YOY);
@@ -102,7 +95,7 @@ export function MarketCpiBootstrap() {
     appliedKey.current = key;
     setMarketCpi(bondCpi);
     setMarketMetricsCpi(metricsCpi);
-  }, [enabled, needsCpi, query.status, query.data, setMarketCpi, setMarketMetricsCpi]);
+  }, [needsCpi, query.status, query.data, setMarketCpi, setMarketMetricsCpi]);
 
   return null;
 }

@@ -384,12 +384,17 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
 export function AppShell({
   children,
   initialUser = null,
+  publicDemo = false,
 }: {
   children: React.ReactNode;
   initialUser?: InitialSyncUser | null;
+  publicDemo?: boolean;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [accountOnboardingCompleted, setAccountOnboardingCompleted] = useState(
+    initialUser?.onboardingCompleted ?? true,
+  );
   const isDesktop = useIsDesktop();
   const topbarHidden = useHideOnScroll();
   const profile = useProfile();
@@ -453,7 +458,10 @@ export function AppShell({
   if (!records) {
     return (
       <AppLock>
-        <OnboardingDemoGate>
+        <OnboardingDemoGate
+          accountOnboardingCompleted={accountOnboardingCompleted}
+          publicDemo={publicDemo}
+        >
           <SyncUnlockGate initialUser={initialUser} onSyncLoaded={handleSyncLoaded} />
         </OnboardingDemoGate>
       </AppLock>
@@ -689,7 +697,11 @@ export function AppShell({
       {/* Global modal */}
       <AddTransactionModal />
       <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
-      <OnboardingController />
+      <OnboardingController
+        accountUserId={initialUser?.id}
+        publicDemo={publicDemo}
+        onAccountOnboardingFinished={() => setAccountOnboardingCompleted(true)}
+      />
       {paritySnapshot && (
         <script
           id="investor-web-parity-snapshot"

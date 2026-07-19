@@ -159,6 +159,16 @@
   color: var(--brand);
   background: var(--brand-tint);
 }
+.zlanding .nav-links a.lnk[href="/register"] {
+  color: var(--on-brand);
+  background: var(--brand);
+  box-shadow: 0 3px 10px rgba(35, 77, 56, 0.2);
+}
+.zlanding .nav-links a.lnk[href="/register"]:hover {
+  color: var(--on-brand);
+  background: var(--brand);
+  transform: translateY(-1px);
+}
 .zlanding .btn {
   font-family: var(--ui);
   font-weight: 600;
@@ -432,10 +442,16 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-top: 16px;
   color: var(--brand);
   font: 600 13.5px var(--ui);
   transition: gap 0.16s ease;
+}
+.zlanding .hero-entry-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 16px;
 }
 .zlanding .hero-beta-link span {
   transition: transform 0.16s ease;
@@ -2482,6 +2498,11 @@
     background: var(--brand-tint);
   }
 }
+@media (max-width: 980px) {
+  .zlanding .nav-links a.lnk[href^="#"] {
+    display: none;
+  }
+}
 @media (max-width: 680px) {
   .zlanding .wrap {
     padding: 0 20px;
@@ -2492,9 +2513,12 @@
   .zlanding .nav-links a.lnk {
     display: none;
   }
-  .zlanding .nav-links a.lnk[href="#lista-beta"] {
+  .zlanding .nav-links a.lnk[href="/login"],
+  .zlanding .nav-links a.lnk[href="/register"] {
     display: inline-flex;
     padding: 9px 11px;
+  }
+  .zlanding .nav-links a.lnk[href="/register"] {
     color: var(--on-brand);
     background: var(--brand);
   }
@@ -2725,6 +2749,9 @@
   }
 }
 @media (max-width: 440px) {
+  .zlanding .nav-links a.lnk[href="/login"] {
+    display: none;
+  }
   .zlanding .store-badges {
     display: grid;
     grid-template-columns: 1fr;
@@ -2740,9 +2767,6 @@
 @media (max-width: 380px) {
   .zlanding .hero-copy h1 {
     font-size: 39px;
-  }
-  .zlanding .nav-links a.lnk[href="#lista-beta"] {
-    display: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {

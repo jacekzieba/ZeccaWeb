@@ -1,14 +1,12 @@
-"use client";
-
-import { useState } from "react";
 import { V2, V2_TYPE } from "@/lib/v2-design";
+import { OnboardingVisual } from "./onboarding-visual";
 
 /** Full-screen dimmed modal card used by the onboarding intro and finale. */
 export function OnboardingCard({
   eyebrow,
   title,
   body,
-  image = null,
+  visual,
   dots,
   footer,
   children,
@@ -16,13 +14,11 @@ export function OnboardingCard({
   eyebrow: string;
   title: string;
   body: string;
-  image?: { src: string; alt: string } | null;
+  visual?: "portfolio" | "privacy";
   dots?: { count: number; active: number };
   footer: React.ReactNode;
   children?: React.ReactNode;
 }) {
-  const [imageBroken, setImageBroken] = useState(false);
-
   return (
     <div
       role="dialog"
@@ -53,26 +49,7 @@ export function OnboardingCard({
         </h2>
         <p style={{ fontSize: 13.5, lineHeight: 1.65, color: V2.muted, marginTop: 12 }}>{body}</p>
 
-        {image && !imageBroken ? (
-          // eslint-disable-next-line @next/next/no-img-element -- static onboarding asset with an onError fallback
-          <img
-            src={image.src}
-            alt={image.alt}
-            onError={() => setImageBroken(true)}
-            style={{ width: "100%", maxHeight: 220, objectFit: "cover", borderRadius: 12, marginTop: 18 }}
-          />
-        ) : image ? (
-          <div
-            style={{
-              marginTop: 18, height: 140, borderRadius: 12,
-              border: `1.5px dashed ${V2.brand}55`, background: `${V2.brand}14`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: V2.brand, fontSize: 12, fontWeight: 600,
-            }}
-          >
-            {image.alt}
-          </div>
-        ) : null}
+        {visual && <OnboardingVisual visual={visual} />}
 
         {children}
 

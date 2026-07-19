@@ -71,6 +71,7 @@ test("renders an interactive product hero without submitting the beta waitlist",
   // The hero now leads with App Store / Mac App Store badges instead of an inline
   // waitlist field; they point at the beta section and submit nothing.
   await expect(page.locator(".landing-hero .store-badge")).toHaveCount(2);
+  await expect(page.locator(".landing-hero").getByRole("link", { name: "Zobacz demo", exact: true })).toHaveAttribute("href", "/demo");
   expect(waitlistRequests).toEqual([]);
 });
 
@@ -78,8 +79,18 @@ test("uses the requested menu, smooth in-page links, and active Discord link", a
   await page.goto("/");
 
   const nav = page.locator(".nav-links");
-  await expect(nav.getByRole("link")).toHaveText(["Beta: zapisy", "Funkcje", "Aplikacje", "Feedback"]);
-  await expect(page.getByRole("link", { name: "Zaloguj się" })).toHaveCount(0);
+  await expect(nav.getByRole("link")).toHaveText([
+    "Beta: zapisy",
+    "Funkcje",
+    "Aplikacje",
+    "Feedback",
+    "Zobacz demo",
+    "Zaloguj się",
+    "Załóż konto",
+  ]);
+  await expect(nav.getByRole("link", { name: "Zobacz demo" })).toHaveAttribute("href", "/demo");
+  await expect(nav.getByRole("link", { name: "Zaloguj się" })).toHaveAttribute("href", "/login");
+  await expect(nav.getByRole("link", { name: "Załóż konto" })).toHaveAttribute("href", "/register");
 
   await nav.getByRole("link", { name: "Feedback" }).click();
   await expect(page).toHaveURL(/#kontakt$/);

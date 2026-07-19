@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RecordType } from "@/domain/models/investor-data";
-import type { DecryptedRecord } from "@/sync/records/encrypted-records";
+import { makeRecord } from "./helpers/records";
 import {
   buildIncomeLists,
   buildInstrumentList,
@@ -14,25 +14,12 @@ const accountID = "11111111-1111-4111-8111-111111111111";
 const instrumentID = "22222222-2222-4222-8222-222222222222";
 const usdInstrumentID = "77777777-7777-4777-8777-777777777777";
 
-function record(
+const record = (
   type: RecordType,
   id: string,
   payload: unknown,
   updatedAt = "2026-05-15T10:00:00.000Z",
-): DecryptedRecord {
-  return {
-    id,
-    deviceId: "test",
-    updatedAt,
-    deletedAt: null,
-    envelope: {
-      type,
-      payloadVersion: 1,
-      schemaVersion: 1,
-      payload,
-    },
-  };
-}
+) => makeRecord(type, id, payload, updatedAt);
 
 describe("InvestorDataSnapshot mapper", () => {
   it("builds dashboard values from decrypted sync records", () => {

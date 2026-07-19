@@ -5,7 +5,7 @@ export type IntroCard = {
   eyebrow: string;
   title: string;
   body: string;
-  image: { src: string; alt: string } | null;
+  visual: "portfolio" | "privacy";
 };
 
 export type TourStep = {
@@ -21,20 +21,22 @@ export const INTRO_CARDS: IntroCard[] = [
   {
     id: "intro-welcome",
     eyebrow: "Witaj w Zecca",
-    title: "Cały Twój majątek, czytany jak rocznik finansowy.",
+    title: "Monitoruj swoje inwestycje",
     body:
-      "Zecca to prywatny tracker inwestycji — akcje i ETF-y, obligacje skarbowe, lokaty i gotówka w jednym miejscu. " +
-      "Bez reklam, bez sprzedawania danych. Liczby, które rozumiesz, i wykresy, które mówią prawdę — także po inflacji.",
-    image: { src: "/onboarding/intro-hero.png", alt: "Podgląd aplikacji Zecca" },
+      "Zecca to miejsce do sprawdzania Twoich wyników inwestycyjnych. Aplikacja wspiera akcje, ETF-y, obligacje skarbowe, " +
+      "lokaty, kryptowaluty i inne instrumenty. Odwzorowuje historię Twoich inwestycji oraz przedstawia metryki i wykresy, " +
+      "aby pomóc Ci podejmować jak najlepsze decyzje i budować swój majątek.",
+    visual: "portfolio",
   },
   {
     id: "intro-privacy",
     eyebrow: "Twoje dane, Twój klucz",
-    title: "Nikt nie czyta Twojego portfela. Nawet my.",
+    title: "Dostęp do Twojego portfela masz tylko Ty",
     body:
-      "Dane wprowadzasz w aplikacji Zecca na macOS lub iOS. Do przeglądarki trafiają zaszyfrowane end-to-end — " +
-      "klucz istnieje tylko na Twoich urządzeniach. Serwer widzi wyłącznie zaszyfrowany pakiet.",
-    image: { src: "/onboarding/intro-privacy.png", alt: "Szyfrowanie end-to-end" },
+      "Zecca jest obecnie dostępna przez przeglądarkę internetową oraz aplikację na iPhone'a, iPada i Maca. Możesz wybrać " +
+      "synchronizację przez iCloud (wspiera tylko urządzenia Apple), przez nasze serwery lub trzymać swoje dane wyłącznie " +
+      "lokalnie. Twoja prywatność jest dla nas szczególnie ważna, dlatego wszystkie dane szyfrujemy end-to-end.",
+    visual: "privacy",
   },
 ];
 
@@ -43,20 +45,20 @@ export const TOUR_STEPS: TourStep[] = [
     id: "tour-kpi",
     route: "/dashboard",
     anchor: "dashboard-hero",
-    title: "Liczby, które naprawdę coś znaczą",
+    title: "Wartość Twojego portfela w czasie",
     body:
-      "Wartość całego portfela, a obok MWR (XIRR) — realna roczna stopa zwrotu z uwzględnieniem wpłat — " +
-      "i wynik realny, czyli ile zarabiasz po odjęciu inflacji. Okres historii przełączysz przyciskami 1M–MAX.",
+      "Sprawdź, jak zmieniała się wartość Twoich inwestycji oraz poznaj najważniejsze metryki. " +
+      "Zobaczysz tutaj wpływ inflacji, realną stopę zwrotu oraz wyniki z ostatnich tygodni.",
     placement: "bottom",
   },
   {
     id: "tour-instruments",
     route: "/dashboard",
     anchor: "dashboard-instruments",
-    title: "Co dokładnie posiadasz",
+    title: "Instrumenty w Twoim portfelu",
     body:
-      "Każdy instrument z liczbą jednostek, kursem i bieżącą wartością. Kliknięcie otwiera szczegóły — " +
-      "skład serii obligacji, historię kursu, transakcje.",
+      "Każdy instrument z Twojego portfela jest widoczny z liczbą jednostek, kursem zakupu i bieżącą wartością. " +
+      "Klikając na jego nazwę, zobaczysz dodatkowe szczegóły.",
     placement: "bottom",
   },
   {
@@ -64,9 +66,7 @@ export const TOUR_STEPS: TourStep[] = [
     route: "/dashboard",
     anchor: "sidebar-portfolios",
     title: "Każdy portfel pod ręką",
-    body:
-      "IKE, konto obligacji, rachunek maklerski — portfele z bieżącą wartością zawsze w sidebarze. " +
-      "Na dole karta z łączną wartością całego majątku.",
+    body: "Boczne menu gwarantuje Ci szybki dostęp do wszystkich Twoich portfeli.",
     placement: "right",
   },
   {
@@ -76,17 +76,17 @@ export const TOUR_STEPS: TourStep[] = [
     title: "Każda złotówka ma swoją historię",
     body:
       "Pozycje pokazują pełny skład portfela z zyskiem/stratą liczonym od realnych transakcji zakupu. " +
-      "Obok, w zakładce Transakcje, cała historia: zakupy, sprzedaże, dywidendy i odsetki.",
+      "Obok, w zakładce Transakcje, znajduje się cała historia: zakupy, sprzedaże, dywidendy i odsetki.",
     placement: "bottom",
   },
   {
     id: "tour-earnings",
     route: "/earnings",
     anchor: "earnings-summary",
-    title: "Pełny obraz — nie tylko inwestycje",
+    title: "Monitoruj także zarobki",
     body:
-      "Zarobki to rejestr Twoich dochodów: etat, B2B i obciążenia, miesiąc po miesiącu. " +
-      "Średnia po obciążeniach pokazuje, ile realnie zostaje — i ile z tego może pracować w portfelu.",
+      "Nie ma inwestycji bez środków do zainwestowania. W tym menu znajdziesz rejestr swoich dochodów oraz " +
+      "obciążenia związane z pracą (jeśli masz działalność gospodarczą).",
     placement: "bottom",
   },
 ];
@@ -97,9 +97,14 @@ export const FINALE_COPY = {
   bodyDemo:
     "To już wszystko — wiesz, gdzie co jest. Oglądałeś dane przykładowe; teraz odblokuj synchronizację " +
     "frazą z aplikacji natywnej albo zacznij od pobrania Zecca na macOS lub iOS.",
-  bodyReplay: "To już wszystko — tour zakończony. Twoje dane są zsynchronizowane.",
+  bodyReplay:
+    "To już wszystko. Możesz rozpocząć korzystanie z aplikacji. W razie pytań, kontakt do nas jest możliwy przez maila lub Discord.",
+  bodyPublic:
+    "To już wszystko. Dane przykładowe nie zostaną zapisane. Załóż konto lub zaloguj się, aby rozpocząć korzystanie z Zecca.",
   ctaDemo: "Przejdź do konfiguracji synchronizacji →",
   ctaReplay: "Wróć do aplikacji →",
+  ctaPublicLogin: "Zaloguj się",
+  ctaPublicRegister: "Załóż konto →",
 } as const;
 
 export function nextPresentStep(

@@ -21,6 +21,9 @@ export const landingCopy = {
       { label: "Funkcje", href: "#funkcje" },
       { label: "Aplikacje", href: "#aplikacje" },
       { label: "Feedback", href: "#kontakt" },
+      { label: "Zobacz demo", href: "/demo" },
+      { label: "Zaloguj się", href: "/login" },
+      { label: "Załóż konto", href: "/register" },
     ],
   },
 
@@ -32,6 +35,8 @@ export const landingCopy = {
     lede: "W aplikacji Zecca możesz śledzić swoje portfele inwestycyjne oraz monitorować wartość Twoich akcji, ETF-ów, obligacji i innych aktywów. Program samodzielnie przelicza całą historię Twoich inwestycji.",
     ctaPrimary: "Dołącz do listy beta",
     ctaPrimaryHref: "#lista-beta",
+    ctaDemo: "Zobacz demo",
+    ctaDemoHref: "/demo",
     // Realne wejścia silnika — krótki „stempel" pod ledem, nie ozdoba.
     sources: ["Kursy NBP", "Inflacja GUS", "XIRR / TWR"],
     proof:

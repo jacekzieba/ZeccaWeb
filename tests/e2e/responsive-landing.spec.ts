@@ -15,7 +15,8 @@ test.describe("responsive landing page", () => {
       await expectNoDocumentOverflow(page);
 
       const visibleNavLinks = page.locator(".nav-links a.lnk:visible");
-      await expect(visibleNavLinks).toHaveCount(viewport.width <= 680 ? 1 : 4);
+      const expectedNavLinks = viewport.width <= 440 ? 1 : viewport.width <= 980 ? 3 : 7;
+      await expect(visibleNavLinks).toHaveCount(expectedNavLinks);
 
       const comparison = page.locator(".compare-scroll");
       await expect(comparison).toBeVisible();

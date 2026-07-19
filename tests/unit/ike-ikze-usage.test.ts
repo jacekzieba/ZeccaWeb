@@ -1,18 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { computeIkeIkzeUsage } from "@/features/settings/ike-ikze-usage";
-import type { DecryptedRecord } from "@/sync/records/encrypted-records";
-import type { RecordType } from "@/domain/models/investor-data";
 import type { LegalLimits } from "@/market-data/types";
-
-function record(type: RecordType, id: string, payload: unknown): DecryptedRecord {
-  return {
-    id,
-    deviceId: "test",
-    updatedAt: "2026-06-30T10:00:00.000Z",
-    deletedAt: null,
-    envelope: { type, payloadVersion: 1, schemaVersion: 1, payload },
-  };
-}
+import { makeRecord as record } from "./helpers/records";
 
 const limits: LegalLimits = {
   provider: "finwire",

@@ -6,7 +6,7 @@ import {
 } from "@/domain/valuation/position-valuator";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
-import type { RecordType } from "@/domain/models/investor-data";
+import { makeRecord as record } from "./helpers/records";
 
 // Syntetyczne CPI scenariusza: miesiąc referencyjny okresu = start okresu − 2 mies.
 // Okres 2 (start 2025-04-15) → 2025-02 = 4.0; okres 3 (start 2026-04-15) → 2026-02 = 3.0.
@@ -73,16 +73,6 @@ describe("treasury bond valuation honours injected CPI series", () => {
 
 const accountID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const edoID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
-
-function record(type: RecordType, id: string, payload: unknown): DecryptedRecord {
-  return {
-    id,
-    deviceId: "test",
-    updatedAt: "2026-06-30T10:00:00.000Z",
-    deletedAt: null,
-    envelope: { type, payloadVersion: 1, schemaVersion: 1, payload },
-  };
-}
 
 function edoPortfolioRecords(): DecryptedRecord[] {
   return [

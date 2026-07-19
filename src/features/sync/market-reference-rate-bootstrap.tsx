@@ -7,7 +7,6 @@ import {
   type ReferenceRateSeries,
 } from "@/domain/valuation/bond-rates";
 import type { ReferenceRateChange } from "@/market-data/types";
-import { isFakeSyncEnabled } from "@/lib/env";
 import { buildInstrumentList } from "@/sync/records/investor-snapshot";
 import { useSyncStore } from "@/sync/store/sync-store";
 
@@ -29,15 +28,12 @@ export function MarketReferenceRateBootstrap() {
   );
   const appliedKey = useRef<string | null>(null);
 
-  // Fake sync must stay deterministic and offline, like the CPI bootstrap.
-  const enabled = !isFakeSyncEnabled();
-
   const needsRates = useMemo(() => {
-    if (!records || !enabled) return false;
+    if (!records) return false;
     return buildInstrumentList(records).some(
       (row) => row.valuationSource === "treasuryBond" && row.totalQuantity > 0,
     );
-  }, [records, enabled]);
+  }, [records]);
 
   const query = useQuery({
     queryKey: ["market-reference-rates"],

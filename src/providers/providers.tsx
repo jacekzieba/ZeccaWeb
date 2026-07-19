@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
+import { isFakeSyncEnabled } from "@/lib/env";
 import { FakeSyncBootstrap } from "@/sync/dev/fake-sync-bootstrap";
 import { MarketFxBootstrap } from "@/features/sync/market-fx-bootstrap";
 import { MarketQuoteBootstrap } from "@/features/sync/market-quote-bootstrap";
@@ -29,10 +30,18 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <LanguageBootstrap />
       <FakeSyncBootstrap />
       <BackgroundSyncBootstrap />
-      <MarketFxBootstrap />
-      <MarketQuoteBootstrap />
-      <MarketCpiBootstrap />
-      <MarketReferenceRateBootstrap />
+      {/* Fake sync owns its deterministic market inputs (the store defaults or
+          the certification fixture), so the live market bootstraps must not
+          mount and overwrite them. The flag is a build-time constant, so the
+          gate cannot flip between server and client render. */}
+      {!isFakeSyncEnabled() && (
+        <>
+          <MarketFxBootstrap />
+          <MarketQuoteBootstrap />
+          <MarketCpiBootstrap />
+          <MarketReferenceRateBootstrap />
+        </>
+      )}
       <TelemetryBootstrap />
       {children}
     </QueryClientProvider>

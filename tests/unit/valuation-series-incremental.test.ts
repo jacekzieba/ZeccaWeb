@@ -2,16 +2,10 @@ import { describe, expect, it } from "vitest";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
 import type { RecordType } from "@/domain/models/investor-data";
+import { makeRecord } from "./helpers/records";
 
-function record(type: RecordType, id: string, payload: unknown): DecryptedRecord {
-  return {
-    id,
-    deviceId: "test",
-    updatedAt: "2026-01-03T12:00:00.000Z",
-    deletedAt: null,
-    envelope: { type, payloadVersion: 1, schemaVersion: 1, payload },
-  };
-}
+const record = (type: RecordType, id: string, payload: unknown) =>
+  makeRecord(type, id, payload, "2026-01-03T12:00:00.000Z");
 
 const ACCOUNT = "11111111-1111-4111-8111-111111111111";
 const ETF = "22222222-2222-4222-8222-222222222222";

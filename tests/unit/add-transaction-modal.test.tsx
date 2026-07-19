@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { RecordType } from "@/domain/models/investor-data";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
+import { makeRecord } from "./helpers/records";
 import { AddTransactionModal } from "@/features/transactions/add-transaction-modal";
 import { refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
 
@@ -36,25 +37,12 @@ vi.mock("@/lib/telemetry", () => ({
 const accountID = "11111111-1111-4111-8111-111111111111";
 const newAssetID = "22222222-2222-4222-8222-222222222229";
 
-function record(
+const record = (
   type: RecordType,
   id: string,
   payload: unknown,
   updatedAt = "2026-05-15T10:00:00.000Z",
-): DecryptedRecord {
-  return {
-    id,
-    deviceId: "test",
-    updatedAt,
-    deletedAt: null,
-    envelope: {
-      type,
-      payloadVersion: 1,
-      schemaVersion: 1,
-      payload,
-    },
-  };
-}
+) => makeRecord(type, id, payload, updatedAt);
 
 const accountRecord = record("account", accountID, {
   recordType: "account",

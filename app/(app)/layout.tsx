@@ -31,9 +31,23 @@ export default async function AuthenticatedLayout({
     redirect("/login");
   }
 
+  const { data: profileData, error: profileError } = await supabase
+    .from("profiles")
+    .select("onboarding_completed_at")
+    .eq("id", user.id)
+    .maybeSingle();
+  const profile = profileData as { onboarding_completed_at: string | null } | null;
+
+  // A profile read failure must not trap a returning user in onboarding.
+  const onboardingCompleted = profileError
+    ? true
+    : Boolean(profile?.onboarding_completed_at);
+
   return (
     <Providers>
-      <AppShell initialUser={{ id: user.id, email: user.email }}>
+      <AppShell
+        initialUser={{ id: user.id, email: user.email, onboardingCompleted }}
+      >
         {children}
       </AppShell>
     </Providers>

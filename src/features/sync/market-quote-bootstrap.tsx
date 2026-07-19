@@ -4,7 +4,6 @@ import { useQueries } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
 import type { MarketQuoteInput } from "@/domain/valuation/price-resolver";
 import type { MarketQuote } from "@/market-data/types";
-import { isFakeSyncEnabled } from "@/lib/env";
 import { useProfile } from "@/features/profile/profile-store";
 import { marketDataSymbolForInstrument } from "@/market-data/symbols";
 import { buildInstrumentList } from "@/sync/records/investor-snapshot";
@@ -116,12 +115,8 @@ export function MarketQuoteBootstrap() {
   const { displayCurrency } = useProfile();
   const appliedKey = useRef<string | null>(null);
 
-  // Live quotes never override manual valuations in fake sync (which seeds
-  // manual valuations for every asset), so there is nothing to fetch.
-  const enabled = !isFakeSyncEnabled();
-
   const instruments = useMemo<QuotedInstrument[]>(() => {
-    if (!records || !enabled) return [];
+    if (!records) return [];
     return buildInstrumentList(records, { displayCurrency })
       .filter((row) => row.totalQuantity > 0 && QUOTED_KINDS.has(row.kind) && row.symbol.trim())
       .map((row) => ({
@@ -132,12 +127,11 @@ export function MarketQuoteBootstrap() {
             : marketDataSymbolForInstrument({ ...row, currency: row.assetCurrency }),
         currency: row.assetCurrency,
       }));
-  }, [records, enabled, displayCurrency]);
+  }, [records, displayCurrency]);
 
   const queries = useQueries({
     queries: instruments.map((instrument) => ({
       queryKey: ["market-history", instrument.requestSymbol, instrument.currency],
-      enabled,
       // Current valuation comes from the quote endpoint (cached for 15 minutes);
       // the long history is retained only for series and period changes.
       staleTime: 15 * 60 * 1000,
@@ -148,7 +142,7 @@ export function MarketQuoteBootstrap() {
   });
 
   useEffect(() => {
-    if (!enabled || instruments.length === 0) {
+    if (instruments.length === 0) {
       setMarketQuotes([]);
       appliedKey.current = null;
       return;
@@ -177,7 +171,7 @@ export function MarketQuoteBootstrap() {
 
     appliedKey.current = key;
     setMarketQuotes(quotes);
-  }, [enabled, instruments, queries, setMarketQuotes]);
+  }, [instruments, queries, setMarketQuotes]);
 
   return null;
 }

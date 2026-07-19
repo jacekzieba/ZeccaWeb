@@ -1133,10 +1133,12 @@ function SummaryCard({
                 background: mix(PALETTE.ink, 0.05),
                 padding: "5px 10px",
                 borderRadius: 99,
+                whiteSpace: "nowrap",
               }}
             >
               <span
-                style={{ width: 6, height: 6, borderRadius: "50%", background: lastSyncedAt ? PALETTE.profit : PALETTE.subtle }}
+                data-testid="sync-status-dot"
+                style={{ width: 6, height: 6, flex: "0 0 6px", borderRadius: "50%", background: lastSyncedAt ? PALETTE.profit : PALETTE.subtle }}
               />
               {lastSyncLabel}
             </span>

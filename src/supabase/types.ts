@@ -15,15 +15,18 @@ export type Database = {
         Row: {
           id: string;
           email: string | null;
+          onboarding_completed_at: string | null;
           updated_at: string;
         };
         Insert: {
           id: string;
           email?: string | null;
+          onboarding_completed_at?: string | null;
           updated_at?: string;
         };
         Update: {
           email?: string | null;
+          onboarding_completed_at?: string | null;
           updated_at?: string;
         };
       };

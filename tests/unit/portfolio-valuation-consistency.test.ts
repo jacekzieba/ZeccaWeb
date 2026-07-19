@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RecordType } from "@/domain/models/investor-data";
-import type { DecryptedRecord } from "@/sync/records/encrypted-records";
+import { makeRecord } from "./helpers/records";
 import {
   buildInstrumentList,
   buildInvestorDataSnapshot,
@@ -12,15 +12,8 @@ const vwrlID = "22222222-2222-4222-8222-222222222222";
 const icomID = "33333333-3333-4333-8333-333333333333";
 const asOf = new Date("2026-07-15T18:05:00.000Z");
 
-function record(type: RecordType, id: string, payload: unknown): DecryptedRecord {
-  return {
-    id,
-    deviceId: "test",
-    updatedAt: asOf.toISOString(),
-    deletedAt: null,
-    envelope: { type, payloadVersion: 1, schemaVersion: 1, payload },
-  };
-}
+const record = (type: RecordType, id: string, payload: unknown) =>
+  makeRecord(type, id, payload, asOf.toISOString());
 
 const vwrlQuantity = 38.4508;
 const icomQuantity = 146.4252;
