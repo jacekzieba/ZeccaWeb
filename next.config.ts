@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const securityHeaders = [
   // Force HTTPS. Vercel sets this too; keeping it explicit documents intent.
@@ -24,4 +25,12 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: "zecca",
+  project: "zecca",
+  // Quiet build logs outside CI. Source-map upload needs SENTRY_AUTH_TOKEN (set
+  // in Vercel env) — the build still succeeds without it, just without readable
+  // stack traces.
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+});

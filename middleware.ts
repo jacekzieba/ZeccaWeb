@@ -30,7 +30,7 @@ function buildCsp(): string {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data:",
     "font-src 'self'",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://nom.telemetrydeck.com",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://nom.telemetrydeck.com https://*.ingest.de.sentry.io",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
