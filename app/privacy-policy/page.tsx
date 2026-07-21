@@ -93,6 +93,10 @@ export default function PrivacyPolicyPage() {
             Webowa wersja Zecca korzysta także z Vercel Analytics i Vercel Speed Insights do technicznego pomiaru odwiedzin, wydajności i stabilności strony. Te dane pomagają wykrywać problemy z aplikacją web, ale nie zawierają treści portfela, transakcji, tickerów ani importowanych plików.
           </p>
 
+          <p style={{ marginBottom: 16 }}>
+            Do wykrywania i diagnozowania awarii aplikacji webowej korzystamy z Sentry (Functional Software, Inc.), z przechowywaniem danych w regionie UE (Niemcy). Sentry otrzymuje wyłącznie <strong>techniczne informacje o błędzie</strong>: typ błędu i ślad stosu, wersję i numer kompilacji aplikacji oraz typ przeglądarki. Zgłoszenia <strong>nie zawierają</strong> kwot, tickerów, treści portfela, adresów e-mail, tokenów sesji, zawartości formularzy ani parametrów adresu URL — dane te są usuwane przed wysłaniem. Zgłoszenia wysyłane są wyłącznie z produkcyjnej wersji aplikacji.
+          </p>
+
           <h2 style={{ fontSize: 22, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
             Cookies i sesja
           </h2>

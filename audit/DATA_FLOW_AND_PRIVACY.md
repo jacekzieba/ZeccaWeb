@@ -17,6 +17,7 @@ Zero-knowledge: rekordy portfela szyfrowane na kliencie (AES-256-GCM, nonce 96-b
 | Preferencje UI/profil web | użytkownik | UX | jawne | localStorage | brak | lokalnie | ręcznie/wylogowanie (część) |
 | Telemetria produktowa | klient | analityka | zanonimizowana, ephemeral id | — (bez cookies/localStorage) | TelemetryDeck (EU) | wg TelemetryDeck | opt-out w Ustawieniach |
 | Web analytics/perf | klient | pomiar techniczny | pochodne IP, bezcookie | Vercel | Vercel | wg Vercel | — ([ANALYTICS-CONSENT]) |
+| Zgłoszenia błędów | klient + serwer | wykrywanie awarii | techniczne dane błędu, scrubbing PII, tylko prod | Sentry (region UE) | Sentry (Functional Software, Inc.) | wg Sentry | wg Sentry |
 | E-mail beta | użytkownik | lista beta | zod+honeypot | Airtable | Airtable | wg Airtable | wg Airtable |
 
 ## Storage przeglądarki (inwentaryzacja)
