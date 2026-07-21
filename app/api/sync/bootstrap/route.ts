@@ -56,10 +56,13 @@ export async function GET() {
     );
   }
 
-  return NextResponse.json({
-    keyBackup: keyBackupResult.data,
-    encryptedRecords: (recordsResult.data ?? []).map((record) =>
-      encryptedRecordSchema.parse(record),
-    ),
-  });
+  return NextResponse.json(
+    {
+      keyBackup: keyBackupResult.data,
+      encryptedRecords: (recordsResult.data ?? []).map((record) =>
+        encryptedRecordSchema.parse(record),
+      ),
+    },
+    { headers: { "Cache-Control": "private, no-store" } },
+  );
 }

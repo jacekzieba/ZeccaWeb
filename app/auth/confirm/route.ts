@@ -1,6 +1,7 @@
 import { type EmailOtpType } from "@supabase/supabase-js";
 import { createServerClient, type SetAllCookies } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { safeRelativePath } from "@/lib/safe-redirect";
 
 /**
  * Email-confirmation handler for the token_hash flow (device-independent — works
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
   const next = searchParams.get("next") ?? "/dashboard";
-  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
+  const safeNext = safeRelativePath(next);
   const redirectTo = new URL(safeNext, origin);
 
   if (tokenHash && type) {

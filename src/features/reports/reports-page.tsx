@@ -3,6 +3,7 @@
 import { useMemo, useState, type CSSProperties } from "react";
 import { CircleHelp } from "lucide-react";
 import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
+import { DataQualityBanner } from "@/features/sync/data-quality-banner";
 import { useProfile } from "@/features/profile/profile-store";
 import { useSampleDataSignal } from "@/features/telemetry/use-sample-data-signal";
 import { sampleSnapshot } from "@/features/dashboard/sample-data";
@@ -189,6 +190,8 @@ export function ReportsPage() {
           </div>
         </div>
       </div>
+
+      <DataQualityBanner diagnostics={snapshot.diagnostics ?? []} />
 
       {/* Report-type selector */}
       <div style={{ display: "inline-flex", flexWrap: "wrap", gap: 6, background: v2Mix(V2.ink, 0.05), borderRadius: 11, padding: 4, alignSelf: "flex-start" }}>

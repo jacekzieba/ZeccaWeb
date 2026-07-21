@@ -66,10 +66,10 @@ type PortfolioDraft = {
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div>
-      <label style={labelStyle}>{label}</label>
+    <label style={{ display: "block" }}>
+      <span style={labelStyle}>{label}</span>
       {children}
-    </div>
+    </label>
   );
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { COLORS, SHADOWS } from "@/lib/design-tokens";
 
@@ -13,6 +13,8 @@ export function ResetPasswordForm() {
   const [confirm, setConfirm] = useState("");
   const [status, setStatus] = useState<Status>("checking");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const passwordId = useId();
+  const confirmId = useId();
 
   const isLoading = status === "loading";
 
@@ -153,8 +155,9 @@ export function ResetPasswordForm() {
   return (
     <form style={{ display: "flex", flexDirection: "column", gap: 16 }} onSubmit={handleSubmit}>
       <div>
-        <label style={labelStyle}>Nowe hasło</label>
+        <label htmlFor={passwordId} style={labelStyle}>Nowe hasło</label>
         <input
+          id={passwordId}
           style={inputStyle}
           type="password"
           value={password}
@@ -166,8 +169,9 @@ export function ResetPasswordForm() {
         />
       </div>
       <div>
-        <label style={labelStyle}>Powtórz nowe hasło</label>
+        <label htmlFor={confirmId} style={labelStyle}>Powtórz nowe hasło</label>
         <input
+          id={confirmId}
           style={inputStyle}
           type="password"
           value={confirm}

@@ -186,7 +186,7 @@ export default function FAQPage() {
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c") }}
       />
       <main style={{ flex: 1, maxWidth: "900px", marginInline: "auto", width: "100%", padding: "40px 24px" }}>
         <div style={{ marginBottom: 48 }}>

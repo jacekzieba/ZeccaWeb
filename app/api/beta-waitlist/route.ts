@@ -118,7 +118,8 @@ export async function POST(request: NextRequest) {
     const missingField = unknownFieldName(detail);
     if (missingField && optionalFields.has(missingField)) {
       optionalFields.delete(missingField);
-      const { [missingField]: _removed, ...remainingFields } = activeFields;
+      const remainingFields = { ...activeFields };
+      delete remainingFields[missingField];
       activeFields = remainingFields;
       continue;
     }

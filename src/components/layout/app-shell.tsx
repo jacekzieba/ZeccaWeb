@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { buildParitySnapshot } from "@/sync/records/parity-snapshot";
+import { clearPendingSyncOperations } from "@/sync/records/record-writer";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
 import { AddTransactionModal } from "@/features/transactions/add-transaction-modal";
@@ -152,7 +153,7 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-async function handleLogout() {
+export async function handleLogout() {
   const supabase = createBrowserSupabaseClientOrNull();
   if (supabase) {
     try {
@@ -164,6 +165,7 @@ async function handleLogout() {
       // Sign out even if the local trusted-device cache is unavailable.
     }
 
+    clearPendingSyncOperations();
     await supabase.auth.signOut();
   }
   window.location.assign("/login");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { COLORS, SHADOWS } from "@/lib/design-tokens";
 
@@ -10,6 +10,7 @@ export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const emailId = useId();
 
   const isLoading = status === "loading";
 
@@ -103,8 +104,9 @@ export function ForgotPasswordForm() {
   return (
     <form style={{ display: "flex", flexDirection: "column", gap: 16 }} onSubmit={handleSubmit}>
       <div>
-        <label style={labelStyle}>E-mail</label>
+        <label htmlFor={emailId} style={labelStyle}>E-mail</label>
         <input
+          id={emailId}
           style={inputStyle}
           type="email"
           value={email}

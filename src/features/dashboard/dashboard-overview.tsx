@@ -34,7 +34,6 @@ import type {
   InstrumentRow,
   PortfolioMetrics,
   PortfolioSummary,
-  SnapshotDiagnostic,
   TransactionRow,
   ValuationPoint,
 } from "@/domain/models/investor-data";
@@ -47,6 +46,7 @@ import {
 import { summarizeDecryptedRecords } from "@/sync/records/sync-summary";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
+import { DataQualityBanner } from "@/features/sync/data-quality-banner";
 import { firstName, useProfile } from "@/features/profile/profile-store";
 import {
   groupTreasuryBondSeries,
@@ -1008,50 +1008,6 @@ export function DashboardOverview() {
         testIdPrefix="dashboard"
         gap={DASHBOARD_GRID_GAP}
       />
-    </div>
-  );
-}
-
-function DataQualityBanner({
-  diagnostics,
-}: {
-  diagnostics: SnapshotDiagnostic[];
-}) {
-  if (diagnostics.length === 0) return null;
-
-  const join = (code: SnapshotDiagnostic["code"]) =>
-    [...new Set(diagnostics.filter((d) => d.code === code).map((d) => d.context))].join(", ");
-  const priceMissing = join("price-missing");
-  const fxMissing = join("fx-missing");
-  const bondMissing = join("bond-missing-macro");
-  const recordSkipped = join("record-skipped");
-
-  const lines: string[] = [];
-  if (priceMissing) lines.push(`Brak aktualnej ceny (pominięte w wartości): ${priceMissing}.`);
-  if (fxMissing) lines.push(`Brak kursu waluty (liczone 1:1 do PLN): ${fxMissing}.`);
-  if (bondMissing) lines.push(`Niepełne dane makro do wyceny obligacji (wynik przybliżony): ${bondMissing}.`);
-  if (recordSkipped) lines.push(`Pominięto nieczytelne rekordy (${recordSkipped}) — zaktualizuj aplikację lub zgłoś problem.`);
-
-  return (
-    <div
-      role="status"
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 4,
-        border: `0.5px solid ${mix(PALETTE.gold, 0.4)}`,
-        background: mix(PALETTE.gold, 0.08),
-        borderRadius: 12,
-        padding: "10px 14px",
-        fontFamily: UI,
-        fontSize: 12.5,
-        color: PALETTE.ink,
-      }}
-    >
-      <div style={{ fontWeight: 700 }}>Część danych rynkowych jest niepełna — wartości mogą być przybliżone.</div>
-      {lines.map((line) => (
-        <div key={line} style={{ color: PALETTE.muted }}>{line}</div>
-      ))}
     </div>
   );
 }

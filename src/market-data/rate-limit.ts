@@ -17,12 +17,18 @@ type Window = {
 const windows = new Map<string, Window>();
 
 function clientKey(request: NextRequest): string {
+  // Prefer the platform-set x-real-ip: Vercel populates it and the client can't
+  // spoof it, unlike the client-controllable x-forwarded-for chain.
+  const realIp = request.headers.get("x-real-ip")?.trim();
+  if (realIp) {
+    return realIp;
+  }
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) {
     // x-forwarded-for may be a comma-separated chain; the first entry is the client.
     return forwarded.split(",")[0]!.trim();
   }
-  return request.headers.get("x-real-ip")?.trim() || "unknown";
+  return "unknown";
 }
 
 export type RateLimitResult = {

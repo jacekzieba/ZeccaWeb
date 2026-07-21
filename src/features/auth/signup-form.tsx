@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { COLORS, SHADOWS } from "@/lib/design-tokens";
 
@@ -14,6 +14,9 @@ export function SignupForm() {
   const [confirm, setConfirm] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const emailId = useId();
+  const passwordId = useId();
+  const confirmId = useId();
 
   const isLoading = status === "loading";
 
@@ -130,8 +133,9 @@ export function SignupForm() {
   return (
     <form style={{ display: "flex", flexDirection: "column", gap: 16 }} onSubmit={handleSubmit}>
       <div>
-        <label style={labelStyle}>E-mail</label>
+        <label htmlFor={emailId} style={labelStyle}>E-mail</label>
         <input
+          id={emailId}
           style={inputStyle}
           type="email"
           value={email}
@@ -142,8 +146,9 @@ export function SignupForm() {
         />
       </div>
       <div>
-        <label style={labelStyle}>Hasło</label>
+        <label htmlFor={passwordId} style={labelStyle}>Hasło</label>
         <input
+          id={passwordId}
           style={inputStyle}
           type="password"
           value={password}
@@ -155,8 +160,9 @@ export function SignupForm() {
         />
       </div>
       <div>
-        <label style={labelStyle}>Powtórz hasło</label>
+        <label htmlFor={confirmId} style={labelStyle}>Powtórz hasło</label>
         <input
+          id={confirmId}
           style={inputStyle}
           type="password"
           value={confirm}

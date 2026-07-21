@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { COLORS, SHADOWS } from "@/lib/design-tokens";
 
@@ -43,6 +43,8 @@ export function LoginForm() {
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [oauthStatus, setOauthStatus] = useState<OAuthStatus>("idle");
+  const emailId = useId();
+  const passwordId = useId();
 
   const isLoading = status === "loading" || oauthStatus !== "idle";
 
@@ -180,8 +182,9 @@ export function LoginForm() {
       {/* Email/password form */}
       <form style={{ display: "flex", flexDirection: "column", gap: 16 }} onSubmit={handleSubmit}>
         <div>
-          <label style={labelStyle}>E-mail</label>
+          <label htmlFor={emailId} style={labelStyle}>E-mail</label>
           <input
+            id={emailId}
             style={inputStyle}
             type="email"
             value={email}
@@ -192,8 +195,9 @@ export function LoginForm() {
           />
         </div>
         <div>
-          <label style={labelStyle}>Hasło</label>
+          <label htmlFor={passwordId} style={labelStyle}>Hasło</label>
           <input
+            id={passwordId}
             style={inputStyle}
             type="password"
             value={password}

@@ -2,7 +2,7 @@
 
 import type { Session } from "@supabase/supabase-js";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import {
@@ -172,6 +172,7 @@ export function SyncUnlockPanel({
   );
   const [session, setSession] = useState<Session | null>(null);
   const [passphrase, setPassphrase] = useState("");
+  const passphraseId = useId();
   const [createPassphrase, setCreatePassphrase] = useState("");
   const [createConfirm, setCreateConfirm] = useState("");
   const [createStatus, setCreateStatus] = useState<"idle" | "creating" | "error">("idle");
@@ -886,6 +887,7 @@ export function SyncUnlockPanel({
         >
           <div>
             <label
+              htmlFor={passphraseId}
               style={{
                 display: "block",
                 fontSize: 11,
@@ -899,6 +901,7 @@ export function SyncUnlockPanel({
               Passphrase backupu klucza
             </label>
             <input
+              id={passphraseId}
               type="password"
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
