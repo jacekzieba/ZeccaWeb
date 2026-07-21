@@ -93,11 +93,11 @@ const SHOWCASE_MEDIA = {
   macos: {
     device: "desktop",
     shots: [
-      { label: "Pulpit", src: "/landing/screenshots/macos/dashboard.png", width: 2560, height: 1640, alt: "Pulpit natywnej aplikacji Zecca na macOS" },
-      { label: "Pozycje", src: "/landing/screenshots/macos/positions.png", width: 2560, height: 1640, alt: "Pozycje portfela w natywnej aplikacji Zecca na macOS" },
-      { label: "Transakcje", src: "/landing/screenshots/macos/transactions.png", width: 2560, height: 1640, alt: "Historia transakcji w natywnej aplikacji Zecca na macOS" },
-      { label: "Raporty", src: "/landing/screenshots/macos/reports.png", width: 2560, height: 1640, alt: "Raporty inwestycyjne w natywnej aplikacji Zecca na macOS" },
-      { label: "Import", src: "/landing/screenshots/macos/import.png", width: 2560, height: 1640, alt: "Import danych w natywnej aplikacji Zecca na macOS" },
+      { label: "Pulpit", src: "/landing/screenshots/macos/dashboard.webp", width: 2560, height: 1640, alt: "Pulpit natywnej aplikacji Zecca na macOS" },
+      { label: "Pozycje", src: "/landing/screenshots/macos/positions.webp", width: 2560, height: 1640, alt: "Pozycje portfela w natywnej aplikacji Zecca na macOS" },
+      { label: "Transakcje", src: "/landing/screenshots/macos/transactions.webp", width: 2560, height: 1640, alt: "Historia transakcji w natywnej aplikacji Zecca na macOS" },
+      { label: "Raporty", src: "/landing/screenshots/macos/reports.webp", width: 2560, height: 1640, alt: "Raporty inwestycyjne w natywnej aplikacji Zecca na macOS" },
+      { label: "Import", src: "/landing/screenshots/macos/import.webp", width: 2560, height: 1640, alt: "Import danych w natywnej aplikacji Zecca na macOS" },
     ],
   },
   web: {
@@ -112,11 +112,11 @@ const SHOWCASE_MEDIA = {
   ios: {
     device: "phone",
     shots: [
-      { label: "Pulpit", src: "/landing/screenshots/ios/dashboard.png", width: 1206, height: 2622, alt: "Pulpit aplikacji Zecca na iPhonie" },
-      { label: "Pozycje", src: "/landing/screenshots/ios/positions.png", width: 1206, height: 2622, alt: "Pozycje portfela w aplikacji Zecca na iPhonie" },
-      { label: "Transakcje", src: "/landing/screenshots/ios/transactions.png", width: 1206, height: 2622, alt: "Historia transakcji w aplikacji Zecca na iPhonie" },
-      { label: "Zarobki", src: "/landing/screenshots/ios/earnings.png", width: 1206, height: 2622, alt: "Zarobki i wyniki roczne w aplikacji Zecca na iPhonie" },
-      { label: "Raporty", src: "/landing/screenshots/ios/reports.png", width: 1206, height: 2622, alt: "Raporty inwestycyjne w aplikacji Zecca na iPhonie" },
+      { label: "Pulpit", src: "/landing/screenshots/ios/dashboard.webp", width: 1206, height: 2622, alt: "Pulpit aplikacji Zecca na iPhonie" },
+      { label: "Pozycje", src: "/landing/screenshots/ios/positions.webp", width: 1206, height: 2622, alt: "Pozycje portfela w aplikacji Zecca na iPhonie" },
+      { label: "Transakcje", src: "/landing/screenshots/ios/transactions.webp", width: 1206, height: 2622, alt: "Historia transakcji w aplikacji Zecca na iPhonie" },
+      { label: "Zarobki", src: "/landing/screenshots/ios/earnings.webp", width: 1206, height: 2622, alt: "Zarobki i wyniki roczne w aplikacji Zecca na iPhonie" },
+      { label: "Raporty", src: "/landing/screenshots/ios/reports.webp", width: 1206, height: 2622, alt: "Raporty inwestycyjne w aplikacji Zecca na iPhonie" },
     ],
   },
 } as const;
@@ -139,7 +139,10 @@ const navHtml = `
       <span class="wordmark">Zecca</span>
       <span class="beta-pill">beta</span>
     </a>
-    <div class="nav-links">
+    <button class="nav-burger" type="button" id="navBurger" aria-label="Otwórz menu" aria-expanded="false" aria-controls="navLinks">
+      <span class="nav-burger-lines" aria-hidden="true"></span>
+    </button>
+    <div class="nav-links" id="navLinks">
       ${c.nav.links.map((l) => `<a class="lnk" href="${l.href}">${l.label}</a>`).join("\n      ")}
     </div>
   </div>
@@ -183,13 +186,12 @@ const featuresHtml = `
       <p class="sec-desc">${c.features.desc}</p>
     </div>
 
-    <input class="feature-toggle-input sr-only" type="checkbox" id="feature-toggle" />
     <div class="feat-grid">
       ${c.features.items
         .map((item, i) => {
           const icon = FEATURE_ICONS[i] ?? FEATURE_ICONS[0];
           const tags = item.tags.map((t) => `<span class="tag">${t}</span>`).join("");
-          return `<div class="feat ${FEATURE_LAYOUT_CLASSES[i] ?? ""} reveal" data-feature-index="${i}" style="--feature-order:${i}">
+          return `<div class="feat ${FEATURE_LAYOUT_CLASSES[i] ?? ""} reveal" style="--feature-order:${i}">
         <div class="ic" style="${icon.bg}">${icon.svg}</div>
         <h3>${item.title}</h3>
         <p>${item.desc}</p>
@@ -198,11 +200,6 @@ const featuresHtml = `
         })
         .join("\n      ")}
     </div>
-    <label class="feature-more" for="feature-toggle">
-      <span class="feature-more-expand">${c.features.expandLabel}</span>
-      <span class="feature-more-collapse">${c.features.collapseLabel}</span>
-      <b aria-hidden="true">↓</b>
-    </label>
   </div>
 </section>`;
 
@@ -479,13 +476,13 @@ const footerHtml = `
 export const LANDING_NAV_HTML = navHtml;
 
 export const LANDING_BODY_HTML = `
-${betaListHtml}
 ${howItWorksHtml}
 ${featuresHtml}
 ${showcaseHtml}
 ${investorHtml}
 ${comparisonHtml}
 ${faqHtml}
+${betaListHtml}
 ${feedbackHtml}
 ${footerHtml}
 `;

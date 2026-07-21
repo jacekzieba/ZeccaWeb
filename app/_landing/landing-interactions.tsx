@@ -184,6 +184,43 @@ export function LandingInteractions() {
       };
     }
 
+    // Mobile navigation (hamburger). The nav links become a dropdown panel
+    // below the bar; the burger toggles it and manages aria-expanded so it
+    // stays accessible on touch/narrow viewports.
+    const navBurger = document.getElementById("navBurger");
+    const navPanel = document.getElementById("navLinks");
+    const navEl = navBurger?.closest("nav") ?? null;
+    const isMenuOpen = () => navBurger?.getAttribute("aria-expanded") === "true";
+    const setMenu = (open: boolean) => {
+      navPanel?.classList.toggle("is-open", open);
+      navBurger?.setAttribute("aria-expanded", open ? "true" : "false");
+      navBurger?.setAttribute("aria-label", open ? "Zamknij menu" : "Otwórz menu");
+    };
+    const onBurgerClick = (event: Event) => {
+      event.stopPropagation();
+      setMenu(!isMenuOpen());
+    };
+    const onPanelClick = (event: Event) => {
+      if ((event.target as HTMLElement).closest("a")) setMenu(false);
+    };
+    const onMenuDocClick = (event: Event) => {
+      if (isMenuOpen() && !navEl?.contains(event.target as Node)) setMenu(false);
+    };
+    const onMenuKeydown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && isMenuOpen()) {
+        setMenu(false);
+        navBurger?.focus();
+      }
+    };
+    const onMenuResize = () => {
+      if (window.innerWidth > 980) setMenu(false);
+    };
+    navBurger?.addEventListener("click", onBurgerClick);
+    navPanel?.addEventListener("click", onPanelClick);
+    document.addEventListener("click", onMenuDocClick);
+    document.addEventListener("keydown", onMenuKeydown);
+    window.addEventListener("resize", onMenuResize);
+
     // Beta waitlist → Airtable-backed API when explicitly enabled.
     const betaForm = document.getElementById("betaWaitlistForm") as HTMLFormElement | null;
     const betaStatus = document.getElementById("beta-waitlist-status");
@@ -491,6 +528,11 @@ export function LandingInteractions() {
     }
 
     return () => {
+      navBurger?.removeEventListener("click", onBurgerClick);
+      navPanel?.removeEventListener("click", onPanelClick);
+      document.removeEventListener("click", onMenuDocClick);
+      document.removeEventListener("keydown", onMenuKeydown);
+      window.removeEventListener("resize", onMenuResize);
       betaForm?.removeEventListener("submit", onBetaSubmit);
       form?.removeEventListener("submit", onSubmit);
       landingAnchors.forEach((anchor) => anchor.removeEventListener("click", onAnchorClick));

@@ -216,6 +216,51 @@
 }
 .zlanding .nav-burger {
   display: none;
+  margin-left: auto;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--card) 70%, transparent);
+  color: var(--ink);
+  cursor: pointer;
+}
+.zlanding .nav-burger-lines,
+.zlanding .nav-burger-lines::before,
+.zlanding .nav-burger-lines::after {
+  content: "";
+  display: block;
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+.zlanding .nav-burger-lines {
+  position: relative;
+}
+.zlanding .nav-burger-lines::before {
+  position: absolute;
+  top: -6px;
+  left: 0;
+}
+.zlanding .nav-burger-lines::after {
+  position: absolute;
+  top: 6px;
+  left: 0;
+}
+.zlanding .nav-burger[aria-expanded="true"] .nav-burger-lines {
+  background: transparent;
+}
+.zlanding .nav-burger[aria-expanded="true"] .nav-burger-lines::before {
+  transform: translateY(6px) rotate(45deg);
+}
+.zlanding .nav-burger[aria-expanded="true"] .nav-burger-lines::after {
+  transform: translateY(-6px) rotate(-45deg);
 }
 
 /* ============ HERO ============ */
@@ -1145,9 +1190,6 @@
   grid-auto-rows: minmax(156px, auto);
   gap: 16px;
   margin-top: 48px;
-}
-.zlanding .feature-more {
-  display: none;
 }
 .zlanding .feat {
   --tilt-x: 0deg;
@@ -2499,8 +2541,37 @@
   }
 }
 @media (max-width: 980px) {
-  .zlanding .nav-links a.lnk[href^="#"] {
+  .zlanding .nav-burger {
+    display: inline-flex;
+  }
+  .zlanding .nav-links {
+    position: absolute;
+    top: calc(100% + 1px);
+    left: 0;
+    right: 0;
+    margin-left: 0;
     display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding: 12px 20px 18px;
+    background: rgba(228, 224, 215, 0.96);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border-bottom: 1px solid rgba(26, 33, 27, 0.12);
+    box-shadow: 0 18px 40px rgba(18, 38, 28, 0.16);
+  }
+  .zlanding .nav-links.is-open {
+    display: flex;
+  }
+  .zlanding .nav-links a.lnk {
+    font-size: 15px;
+    padding: 12px 14px;
+    border-radius: 10px;
+  }
+  .zlanding .nav-links a.lnk[href="/register"] {
+    margin-top: 4px;
+    justify-content: center;
   }
 }
 @media (max-width: 680px) {
@@ -2509,18 +2580,6 @@
   }
   .zlanding .nav-in {
     padding: 11px 20px;
-  }
-  .zlanding .nav-links a.lnk {
-    display: none;
-  }
-  .zlanding .nav-links a.lnk[href="/login"],
-  .zlanding .nav-links a.lnk[href="/register"] {
-    display: inline-flex;
-    padding: 9px 11px;
-  }
-  .zlanding .nav-links a.lnk[href="/register"] {
-    color: var(--on-brand);
-    background: var(--brand);
   }
   .zlanding .process-shell {
     padding: 24px 18px;
@@ -2549,46 +2608,6 @@
   }
   .zlanding .feat-portfolios {
     grid-column: span 1;
-  }
-  .zlanding .feature-toggle-input:not(:checked) ~ .feat-grid .feat[data-feature-index="5"],
-  .zlanding .feature-toggle-input:not(:checked) ~ .feat-grid .feat[data-feature-index="6"],
-  .zlanding .feature-toggle-input:not(:checked) ~ .feat-grid .feat[data-feature-index="7"],
-  .zlanding .feature-toggle-input:not(:checked) ~ .feat-grid .feat[data-feature-index="8"] {
-    display: none;
-  }
-  .zlanding .feature-more {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 9px;
-    margin-top: 18px;
-    padding: 13px 18px;
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    background: color-mix(in srgb, var(--card) 76%, transparent);
-    color: var(--brand);
-    cursor: pointer;
-    font: 650 13px var(--ui);
-  }
-  .zlanding .feature-more-collapse {
-    display: none;
-  }
-  .zlanding .feature-toggle-input:checked ~ .feature-more .feature-more-expand {
-    display: none;
-  }
-  .zlanding .feature-toggle-input:checked ~ .feature-more .feature-more-collapse {
-    display: inline;
-  }
-  .zlanding .feature-toggle-input:focus-visible ~ .feature-more {
-    outline: 2px solid var(--brand);
-    outline-offset: 3px;
-  }
-  .zlanding .feature-more b {
-    transition: transform 180ms ease;
-  }
-  .zlanding .feature-toggle-input:checked ~ .feature-more b {
-    transform: rotate(180deg);
   }
   .zlanding .landing-hero {
     padding: 36px 0 26px;
@@ -2749,9 +2768,6 @@
   }
 }
 @media (max-width: 440px) {
-  .zlanding .nav-links a.lnk[href="/login"] {
-    display: none;
-  }
   .zlanding .store-badges {
     display: grid;
     grid-template-columns: 1fr;
@@ -2804,8 +2820,7 @@
     transition: none;
   }
   .zlanding .platform-tabs::before,
-  .zlanding .nav-progress,
-  .zlanding .feature-more b {
+  .zlanding .nav-progress {
     transition: none;
   }
 }

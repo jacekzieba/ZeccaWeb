@@ -87,6 +87,12 @@ export async function middleware(request: NextRequest) {
     return applyCsp(NextResponse.redirect(new URL("/dashboard", request.url)));
   }
 
+  // Logged-in users skip the marketing landing and land straight in their app.
+  // This keeps `/` itself static — the page component does no auth work.
+  if (user && pathname === "/" && !fakeSyncEnabled) {
+    return applyCsp(NextResponse.redirect(new URL("/dashboard", request.url)));
+  }
+
   // Protect all app routes
   // /reset-password stays public: the recovery link may land without a session,
   // and the form itself explains how to request a fresh link.

@@ -1,13 +1,9 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
-import { createServerSupabaseClient } from "@/supabase/server";
 import { LANDING_BODY_HTML, LANDING_NAV_HTML } from "./_landing/content";
 import { landingCopy } from "./_landing/copy";
 import { LandingHero } from "./_landing/landing-hero";
 import { LandingInteractions } from "./_landing/landing-interactions";
 import "./_landing/landing.css";
-
-export const dynamic = "force-dynamic";
 
 const SITE_URL = "https://zecca.pl";
 const LANDING_DESCRIPTION =
@@ -104,22 +100,9 @@ const landingJsonLd = {
   ],
 };
 
-export default async function LandingPage() {
-  const fakeSyncEnabled =
-    process.env.NEXT_PUBLIC_FAKE_SYNC === "1" &&
-    process.env.NODE_ENV !== "production";
-
-  // Logged-in users go straight to their app; visitors see the marketing landing.
-  if (!fakeSyncEnabled) {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      redirect("/dashboard");
-    }
-  }
-
+// Static marketing page. Logged-in visitors are redirected to /dashboard in
+// middleware, so `/` needs no per-request auth call and can be prerendered.
+export default function LandingPage() {
   return (
     <>
       <script

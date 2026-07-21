@@ -87,8 +87,6 @@ export const landingCopy = {
     eyebrow: "01 · FUNKCJE",
     title: "Jeden spokojny widok na <em>cały</em> Twój majątek.",
     desc: "Od pierwszej obligacji kupionej lata temu po dzisiejszy ETF. Zecca składa to w jedną, odtwarzalną historię wartości.",
-    expandLabel: "Pokaż wszystkie funkcje",
-    collapseLabel: "Pokaż mniej",
     items: [
       {
         title: "Wiele portfeli i grup",
@@ -366,7 +364,7 @@ export const landingCopy = {
   betaList: {
     eyebrow: "05 · LISTA BETA",
     title: "Zapisy uruchomimy w kontrolowany sposób.",
-    desc: "Formularz jest gotowy pod Airtable i można go włączyć konfiguracją środowiska. Do tego momentu pozostaje czytelnym placeholderem bez wysyłania danych.",
+    desc: "Miejsca w becie udostępniamy stopniowo. Zostaw swój adres e-mail, a damy Ci znać, gdy tylko otworzymy kolejną turę zapisów.",
     form: {
       emailLabel: "Email",
       emailPlaceholder: "ty@przyklad.pl",
@@ -386,7 +384,7 @@ export const landingCopy = {
     title: "Pomóż nam dopracować <em>Zeccę</em>.",
     desc: "Zbieramy feedback od pierwszych użytkowników. Napisz, co działa, co nie i czego brakuje. Czytamy każdą wiadomość i to ona kształtuje kolejne wersje.",
     discordButton: "Dołącz do Discorda",
-    discordHref: "https://discord.gg/wrKjxVyFQ",
+    discordHref: "https://discord.gg/Y7yJep36bq",
     discordNote: "Społeczność, zapowiedzi i szybki kontakt z autorem.",
     // Adres, na który trafia formularz (otwiera klienta poczty) oraz temat maila.
     email: "zecca.barista363@passmail.net",
@@ -420,7 +418,7 @@ export const landingCopy = {
       {
         title: "Kontakt",
         links: [
-          { label: "Discord", href: "https://discord.gg/wrKjxVyFQ" },
+          { label: "Discord", href: "https://discord.gg/Y7yJep36bq" },
           { label: "Feedback", href: "#kontakt" },
           { label: "E-mail", href: "mailto:zecca.barista363@passmail.net" },
           { label: "Polityka prywatności", href: "/privacy-policy" },
