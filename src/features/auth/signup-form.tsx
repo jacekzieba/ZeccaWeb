@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
+import { authRedirectBase } from "@/lib/auth-redirect";
 import { COLORS, SHADOWS } from "@/lib/design-tokens";
 
 type Status = "idle" | "loading" | "error" | "confirm-sent";
@@ -48,7 +49,7 @@ export function SignupForm() {
       email: email.trim(),
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: `${authRedirectBase()}/auth/callback`,
       },
     });
 

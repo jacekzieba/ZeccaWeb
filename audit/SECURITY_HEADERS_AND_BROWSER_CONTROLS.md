@@ -63,5 +63,34 @@ CSP egzekwowany (middleware, po analizie raportów) — ten sam policy, nagłów
 4. Przełączyć na egzekwowanie na stagingu, potem produkcji.
 5. Utrzymać `report-uri`/`report-to` dla monitoringu.
 
+### ⚠️ Weryfikacja runtime (2026-07-21) — egzekwowanie obecnego policy ŁAMIE strony statyczne
+
+Podczas prób przełączenia na egzekwowanie (prod build + `next start`) potwierdzono **empirycznie**, że policy z `'strict-dynamic'` + nonce **psuje statycznie prerenderowane strony** (`/`, `/login`, `/register`, `/demo`, `/faq`, `/privacy-policy`, `/forgot-password`, `/reset-password`).
+
+**Dowód (sonda w przeglądarce na egzekwowanym buildzie):**
+- nagłówek `Content-Security-Policy` (egzekwujący) obecny, z `nonce-…`;
+- `scriptSrcWithNonce: 0` — żaden `<script src="/_next/…">` nie ma nonce;
+- `inlineExecFirstHasNonce: false`, **`window.__next_f` === undefined** → inline bootstrap RSC Next (`self.__next_f.push`) **zablokowany**, JS strony się nie wykonuje.
+
+**Przyczyna:** strony statyczne mają skrypty „zapieczone" w czasie buildu, więc nie mogą dostać per-request nonce. `'strict-dynamic'` każe przeglądarce **ignorować** `'self'`/`'unsafe-inline'`, więc wszystkie nienoncowane skrypty (w tym bootstrap Next) są blokowane. Mechanizm nonce Next działa tylko dla stron **dynamicznych** (renderowanych na żądanie). Dlatego zmiana została **wycofana** — middleware pozostaje w Report-Only.
+
+**Do decyzji właściciela — dwie realne drogi:**
+1. **Zachować strony statyczne → egzekwować słabszy `script-src`:** usunąć `'strict-dynamic'` i nonce, ustawić `script-src 'self' 'unsafe-inline'` (opcjonalnie bez `https:`). Wtedy egzekwowane są WSZYSTKIE pozostałe dyrektywy (`connect-src`, `frame-ancestors`, `object-src`, `base-uri`, `form-action`, `default-src`) — realna wartość — kosztem słabszej ochrony skryptów (dopuszczony inline). Nie łamie stron statycznych.
+2. **Zachować silny nonce+strict-dynamic → zdynamizować strony:** dodać `export const dynamic = "force-dynamic"` do stron auth/marketingowych, aby Next stemplował nonce na żądanie. Pełna ochrona XSS, ale utrata statycznej generacji (wolniejszy TTFB, koszt SSR) tych stron.
+
+Rekomendacja: (1) jako szybki, bezpieczny krok pośredni (egzekwuje dyrektywy niezwiązane ze skryptami), a docelowo rozważyć (2) tylko dla stron z realnym ryzykiem wstrzyknięcia.
+
+### ✅ ROZWIĄZANIE WDROŻONE (2026-07-21) — opcja (1), zweryfikowane runtime
+
+W `middleware.ts` wdrożono **egzekwowany CSP w produkcji** (Report-Only w dev), z polityką skryptów `script-src 'self' 'unsafe-inline'` (bez `strict-dynamic`/nonce). Wszystkie pozostałe dyrektywy egzekwowane ściśle: `default-src 'self'`, `connect-src` (self + Supabase + TelemetryDeck), `frame-ancestors 'none'`, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`, `img-src 'self' data:`, `style-src 'self' 'unsafe-inline'`, `report-uri /api/csp-report`.
+
+**Weryfikacja na produkcyjnym buildzie (`next build` + `next start`, przeglądarka):**
+- Nagłówek `Content-Security-Policy` (egzekwujący) obecny na `/` i `/login`.
+- `window.__next_f` **zdefiniowane** (len 19 / 7), React zhydrowany → **JS stron działa** (w przeciwieństwie do wariantu strict-dynamic).
+- **Zero naruszeń CSP** w konsoli na `/` i `/login`; strona logowania renderuje się i jest interaktywna.
+- Skrypt Vercel Analytics (`/_vercel/*`, same-origin) ładuje się pod `script-src 'self'`.
+
+**Kompromis (świadomy):** `'unsafe-inline'` w `script-src` dopuszcza skrypty inline (wymagane przez bootstrap Next na stronach statycznych), więc ochrona przed inline-XSS jest słabsza niż nonce. Blokowane są jednak skrypty zewnętrzne/wstrzyknięte przez `src`, a ryzyko inline-XSS jest niskie (escaping React, brak dynamicznego `dangerouslySetInnerHTML`, escapowany JSON-LD). Ścieżka do pełnej ochrony nonce = opcja (2) w przyszłości.
+
 ## Cookies sesyjne (do potwierdzenia w runtime — NOT ASSESSED)
 Flagi ustawiane przez `@supabase/ssr`. Zweryfikować w produkcji: `HttpOnly`, `Secure`, `SameSite=Lax/Strict`, prefiks `__Host-`/`__Secure-`, brak dostępu JS, zakres domeny/ścieżki, zachowanie na subdomenach i preview.

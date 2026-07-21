@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
+import { authRedirectBase } from "@/lib/auth-redirect";
 import { COLORS, SHADOWS } from "@/lib/design-tokens";
 
 type Status = "idle" | "loading" | "error" | "sent";
@@ -27,7 +28,7 @@ export function ForgotPasswordForm() {
     }
 
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+      redirectTo: `${authRedirectBase()}/auth/callback?next=/reset-password`,
     });
 
     if (error) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useState, useEffect, useMemo, useRef, type CSSProperties, type FormEvent, type ReactNode } from "react";
+import { useState, useEffect, useMemo, useRef, useId, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import {
   ArrowLeftRight,
   Banknote,
@@ -166,11 +166,101 @@ const selectStyle: CSSProperties = {
   cursor: "pointer",
 };
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function Field({
+  label,
+  children,
+  htmlFor,
+}: {
+  label: string;
+  children: ReactNode;
+  // Composite fields (more than one control, e.g. a select next to a button)
+  // pass an explicit htmlFor and put a matching id on their primary control.
+  // Single-control fields omit it and get an implicit association by wrapping
+  // the control in the <label> — interactive content must not be nested in a
+  // label, so those cases use htmlFor instead.
+  htmlFor?: string;
+}) {
+  if (htmlFor) {
+    return (
+      <div>
+        <label htmlFor={htmlFor} style={labelStyle}>{label}</label>
+        {children}
+      </div>
+    );
+  }
   return (
-    <div>
-      <label style={labelStyle}>{label}</label>
+    <label style={{ display: "block" }}>
+      <span style={labelStyle}>{label}</span>
       {children}
+    </label>
+  );
+}
+
+const DECIMAL_HINT_KEY = "zecca-web-decimal-hint-seen";
+
+/**
+ * One-time hint that Polish amounts use a comma as the decimal separator.
+ * Shown once per browser (remembered in localStorage), then dismissed for good.
+ */
+function DecimalSeparatorHint() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(DECIMAL_HINT_KEY) !== "1") setVisible(true);
+    } catch {
+      // localStorage unavailable — skip the hint rather than fail.
+    }
+  }, []);
+
+  if (!visible) return null;
+
+  const dismiss = () => {
+    try {
+      localStorage.setItem(DECIMAL_HINT_KEY, "1");
+    } catch {
+      // Ignore: the hint just won't be remembered.
+    }
+    setVisible(false);
+  };
+
+  return (
+    <div
+      role="note"
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 10,
+        border: `0.5px solid ${LINE_SOFT}`,
+        background: v2Mix(V2.card, 0.68),
+        borderRadius: 10,
+        padding: "9px 12px",
+        marginBottom: 12,
+        fontSize: 12.5,
+        color: MUTED,
+        lineHeight: 1.4,
+      }}
+    >
+      <span style={{ flex: 1 }}>
+        Wskazówka: kwoty i liczby zapisuj z <strong>przecinkiem</strong> jako
+        separatorem dziesiętnym (np. 1234,56). Nie używaj separatora tysięcy.
+      </span>
+      <button
+        type="button"
+        onClick={dismiss}
+        aria-label="Zamknij wskazówkę"
+        style={{
+          border: "none",
+          background: "transparent",
+          cursor: "pointer",
+          color: SUBTLE,
+          fontSize: 16,
+          lineHeight: 1,
+          padding: 0,
+        }}
+      >
+        ×
+      </button>
     </div>
   );
 }
@@ -262,6 +352,7 @@ export function AddTransactionModal({
   const [txType, setTxType] = useState<TxTypeValue>("buy");
   const [portfolioId, setPortfolioId] = useState("");
   const [instrumentId, setInstrumentId] = useState("");
+  const instrumentFieldId = useId();
   const [date, setDate] = useState(today);
   const [quantity, setQuantity] = useState("");
   const [price, setPrice] = useState("");
@@ -1106,6 +1197,8 @@ export function AddTransactionModal({
                 </section>
               )}
 
+              <DecimalSeparatorHint />
+
               <div className="transaction-form-grid">
                 <Field label="Data">
                   <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={inputStyle} required />
@@ -1161,11 +1254,12 @@ export function AddTransactionModal({
 
               {txDef.needsInstrument && (
                 <div style={{ marginTop: 15 }}>
-                  <Field label="Instrument">
+                  <Field label="Instrument" htmlFor={instrumentFieldId}>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "center" }}>
                       <div style={{ position: "relative" }}>
                         <Search size={16} strokeWidth={2.1} style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: MUTED, pointerEvents: "none" }} />
                         <select
+                          id={instrumentFieldId}
                           value={instrumentId}
                           onChange={(e) => setInstrumentId(e.target.value)}
                           style={{ ...selectStyle, paddingLeft: 34 }}

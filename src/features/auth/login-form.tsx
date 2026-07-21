@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
+import { authRedirectBase } from "@/lib/auth-redirect";
 import { COLORS, SHADOWS } from "@/lib/design-tokens";
 
 function GoogleIcon() {
@@ -84,7 +85,7 @@ export function LoginForm() {
     await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${authRedirectBase()}/auth/callback`,
       },
     });
   }

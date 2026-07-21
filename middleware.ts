@@ -2,19 +2,31 @@ import { createServerClient, type SetAllCookies } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Content-Security-Policy in Report-Only mode. It blocks nothing yet — the
- * browser only POSTs violations to `/api/csp-report` — so we can watch real
- * traffic before switching to an enforcing `Content-Security-Policy`. Browser
- * requests only ever reach our own origin (all `/api/*`), Supabase (auth +
- * realtime) and TelemetryDeck; Yahoo/NBP/GUS/finwire/obligacjeskarbowe are
- * called server-side and need no connect-src entry. `strict-dynamic` + nonce is
- * the target script policy; `unsafe-inline`/`https:` are ignored by supporting
- * browsers and only serve as a fallback for older ones.
+ * Content-Security-Policy — enforced in production, Report-Only in development
+ * (so local HMR/eval is not blocked while violations are still reported to
+ * `/api/csp-report`).
+ *
+ * Script policy is `script-src 'self' 'unsafe-inline'` rather than a nonce +
+ * `strict-dynamic` policy: several pages (`/`, `/login`, `/register`, `/demo`,
+ * `/faq`, `/privacy-policy`, `/forgot-password`, `/reset-password`) are
+ * statically prerendered, so their script tags are baked at build time and
+ * cannot carry a per-request nonce. A nonce + `strict-dynamic` policy makes
+ * browsers ignore `'self'`/`'unsafe-inline'` and blocks Next's inline RSC
+ * bootstrap (`self.__next_f.push`) on those pages — verified to break them.
+ * `'self' 'unsafe-inline'` keeps them working while still blocking external and
+ * injected `src` scripts, and every other directive is enforced strictly. The
+ * app ships no external scripts and no app-authored executable inline scripts
+ * (only Next's framework bootstrap and escaped application/ld+json data blocks).
+ * Browser requests only ever reach our own origin (all `/api/*` and same-origin
+ * `/_vercel/*` analytics), Supabase (auth + realtime) and TelemetryDeck;
+ * Yahoo/NBP/GUS/finwire/obligacjeskarbowe are called server-side. To upgrade to
+ * a strong nonce policy later, make the currently-static pages dynamic — see
+ * audit/SECURITY_HEADERS_AND_BROWSER_CONTROLS.md.
  */
-function buildCspReportOnly(nonce: string): string {
+function buildCsp(): string {
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https: 'unsafe-inline'`,
+    "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data:",
     "font-src 'self'",
@@ -32,16 +44,18 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_FAKE_SYNC === "1" &&
     process.env.NODE_ENV !== "production";
 
-  const nonce = btoa(crypto.randomUUID());
-  const cspReportOnly = buildCspReportOnly(nonce);
-  // Expose the nonce and the policy to Next on the REQUEST headers so the
-  // framework stamps its own inline bootstrap scripts with the same nonce.
+  const csp = buildCsp();
+  // Enforce in production; keep Report-Only in development so local HMR
+  // (eval/inline) is not blocked while we still collect violation reports.
+  const cspHeaderName =
+    process.env.NODE_ENV === "production"
+      ? "Content-Security-Policy"
+      : "Content-Security-Policy-Report-Only";
   const requestHeaders = new Headers(request.headers);
-  requestHeaders.set("x-nonce", nonce);
-  requestHeaders.set("Content-Security-Policy-Report-Only", cspReportOnly);
+  requestHeaders.set(cspHeaderName, csp);
 
   const applyCsp = (response: NextResponse) => {
-    response.headers.set("Content-Security-Policy-Report-Only", cspReportOnly);
+    response.headers.set(cspHeaderName, csp);
     return response;
   };
 
