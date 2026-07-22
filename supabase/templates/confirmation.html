@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pl">
+  <body style="margin:0;padding:0;background:#E4E6E2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#161D18;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#E4E6E2;padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#F7F8F4;border:1px solid #D6DAD0;border-radius:16px;overflow:hidden;">
+            <tr>
+              <td style="padding:32px 32px 8px 32px;">
+                <div style="font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#214A35;">Zecca</div>
+                <h1 style="margin:16px 0 0 0;font-size:24px;font-weight:600;color:#161D18;">Potwierdź swój adres e-mail</h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:16px 32px 8px 32px;font-size:15px;line-height:1.55;color:#4A544E;">
+                Cześć! Dziękujemy za założenie konta w <strong style="color:#161D18;">Zecca</strong> — aplikacji do monitorowania Twoich inwestycji.
+                Potwierdź adres e-mail, aby aktywować konto i synchronizować dane między urządzeniami.
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:24px 32px 8px 32px;">
+                <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup"
+                   style="display:block;text-align:center;background:#214A35;color:#ffffff;text-decoration:none;font-size:16px;font-weight:600;padding:15px 24px;border-radius:12px;">
+                  Potwierdź adres e-mail
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 32px 4px 32px;font-size:13px;line-height:1.5;color:#4A544E;">
+                Jeśli przycisk nie działa, skopiuj ten link do przeglądarki:
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 32px 24px 32px;font-size:12px;line-height:1.5;color:#214A35;word-break:break-all;">
+                {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:16px 32px 28px 32px;border-top:1px solid #D6DAD0;font-size:12px;line-height:1.5;color:#4A544E;">
+                Po potwierdzeniu w przeglądarce możesz wrócić do aplikacji Zecca i zalogować się swoim adresem e-mail.
+                Jeśli to nie Ty zakładałeś konto, zignoruj tę wiadomość — bez potwierdzenia konto nie zostanie aktywowane.
+              </td>
+            </tr>
+          </table>
+          <div style="max-width:480px;margin:16px auto 0 auto;font-size:11px;color:#A5ADA5;text-align:center;">
+            Zecca · Twój portfel inwestycyjny
+          </div>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

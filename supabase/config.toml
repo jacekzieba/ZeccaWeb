@@ -160,7 +160,8 @@ site_url = "http://localhost:3105"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["http://localhost:3105/auth/callback"]
+# Includes the iOS app deep-link scheme so native OAuth sign-in returns to the app.
+additional_redirect_urls = ["http://localhost:3105/auth/callback", "com.jacek.zecca://login-callback"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.
@@ -233,15 +234,24 @@ otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
-# Use a production-ready SMTP server
+# Use a production-ready SMTP server so the sender is "Zecca" instead of the
+# built-in "Supabase Auth". Fill host/user with your provider's values and set
+# the password secret in the environment (never commit it), then uncomment.
 # [auth.email.smtp]
 # enabled = true
-# host = "smtp.sendgrid.net"
+# host = "smtp.sendgrid.net"      # or your provider (Postmark, SES, Resend, …)
 # port = 587
 # user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# pass = "env(ZECCA_SMTP_PASSWORD)"
+# admin_email = "no-reply@zecca.app"   # a verified sender on your domain
+# sender_name = "Zecca"
+
+# Branded Polish "Confirm signup" email. The link points at the token_hash
+# handler (app/auth/confirm/route.ts), which works even if opened in a
+# different browser than the one used to sign up.
+[auth.email.template.confirmation]
+subject = "Potwierdź swój adres e-mail w Zecca"
+content_path = "./supabase/templates/confirmation.html"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]
