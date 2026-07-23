@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { COLORS } from "@/lib/design-tokens";
 
@@ -28,38 +26,10 @@ export function Footer() {
         </div>
 
         <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
-          <Link
-            href="/privacy-policy"
-            style={{
-              fontSize: 12,
-              color: COLORS.textMuted,
-              textDecoration: "none",
-              transition: "color 0.15s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = COLORS.text;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = COLORS.textMuted;
-            }}
-          >
+          <Link href="/privacy-policy" className="footer-link" style={{ fontSize: 12 }}>
             Polityka prywatności
           </Link>
-          <Link
-            href="/faq"
-            style={{
-              fontSize: 12,
-              color: COLORS.textMuted,
-              textDecoration: "none",
-              transition: "color 0.15s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = COLORS.text;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = COLORS.textMuted;
-            }}
-          >
+          <Link href="/faq" className="footer-link" style={{ fontSize: 12 }}>
             FAQ
           </Link>
         </div>

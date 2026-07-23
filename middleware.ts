@@ -91,10 +91,6 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  const isSeoAsset =
-    pathname === "/robots.txt" ||
-    pathname === "/sitemap.xml" ||
-    pathname === "/manifest.webmanifest";
 
   // Redirect authenticated users away from the auth pages
   if (user && (pathname === "/login" || pathname === "/register")) {
@@ -107,28 +103,34 @@ export async function middleware(request: NextRequest) {
     return applyCsp(NextResponse.redirect(new URL("/dashboard", request.url)));
   }
 
-  // Protect all app routes
-  // /reset-password stays public: the recovery link may land without a session,
-  // and the form itself explains how to request a fresh link.
+  // Protect only the known app routes (same set as the sitemap/robots disallow
+  // list). Anything else — unknown paths, typos, `/_vercel/*` — falls through
+  // to Next.js routing instead of being redirected to `/login`, so it can 404
+  // normally. /reset-password is intentionally not in this list: the recovery
+  // link may land without a session, and the form itself explains how to
+  // request a fresh one.
+  const PROTECTED_PAGE_PREFIXES = [
+    "/dashboard",
+    "/portfolios",
+    "/positions",
+    "/transactions",
+    "/instruments",
+    "/earnings",
+    "/benchmark",
+    "/reports",
+    "/import",
+    "/settings",
+  ];
+  const isProtectedPage = PROTECTED_PAGE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
   const isPublicApiRoute =
     pathname.startsWith("/api/health") ||
     pathname.startsWith("/api/market-data/") ||
     pathname === "/api/csp-report" ||
     pathname === "/api/beta-waitlist";
-  const isAppRoute =
-    pathname !== "/" &&
-    !pathname.startsWith("/login") &&
-    !pathname.startsWith("/register") &&
-    !pathname.startsWith("/forgot-password") &&
-    !pathname.startsWith("/reset-password") &&
-    !pathname.startsWith("/demo") &&
-    !pathname.startsWith("/privacy-policy") &&
-    !pathname.startsWith("/faq") &&
-    !pathname.startsWith("/auth/") &&
-    !isSeoAsset &&
-    !isPublicApiRoute &&
-    !pathname.startsWith("/_next") &&
-    pathname !== "/favicon.ico";
+  const isProtectedApiRoute = pathname.startsWith("/api/") && !isPublicApiRoute;
+  const isAppRoute = isProtectedPage || isProtectedApiRoute;
 
   if (!user && isAppRoute && !fakeSyncEnabled) {
     const redirectUrl = new URL("/login", request.url);
@@ -141,6 +143,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml)$).*)",
   ],
 };

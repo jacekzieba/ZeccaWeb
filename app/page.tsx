@@ -82,7 +82,7 @@ const landingJsonLd = {
         "@type": "Offer",
         price: "0",
         priceCurrency: "PLN",
-        availability: "https://schema.org/PreOrder",
+        availability: "https://schema.org/InStock",
       },
     },
     {

@@ -28,6 +28,15 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+.footer-link {
+  color: var(--inv-text-muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.footer-link:hover {
+  color: var(--inv-text);
+}
+
 /* Responsive grid helpers — avoids Tailwind arbitrary value conflicts with daisyUI */
 .grid-chart-alloc {
   display: grid;

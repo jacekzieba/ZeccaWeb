@@ -41,7 +41,7 @@ export default function NotFound() {
           Strona, której szukasz, nie istnieje lub została przeniesiona.
         </p>
         <Link
-          href="/dashboard"
+          href="/"
           style={{
             display: "inline-block",
             marginTop: 20,
@@ -56,7 +56,7 @@ export default function NotFound() {
             boxShadow: SHADOWS.button,
           }}
         >
-          Wróć do dashboardu
+          Wróć na stronę główną
         </Link>
       </section>
     </main>
