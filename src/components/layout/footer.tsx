@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { COLORS } from "@/lib/design-tokens";
+import { CopyrightYear } from "./copyright-year";
 
 export function Footer() {
   return (
@@ -22,7 +23,7 @@ export function Footer() {
         }}
       >
         <div style={{ fontSize: 12, color: COLORS.textMuted }}>
-          © {new Date().getFullYear()} Zecca. Wszelkie prawa zastrzeżone.
+          © <CopyrightYear /> Zecca. Wszelkie prawa zastrzeżone.
         </div>
 
         <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
