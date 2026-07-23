@@ -223,34 +223,6 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
 
   return (
     <>
-      {/* Brand */}
-      <div style={{ padding: "18px 16px 10px", display: "flex", alignItems: "center", gap: 10 }}>
-        <div
-          style={{
-            width: 30, height: 30, borderRadius: 8,
-            background: COLORS.text, color: COLORS.white,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontFamily: TYPOGRAPHY.serif,
-            fontSize: 18, fontWeight: 600,
-            boxShadow: SHADOWS.button,
-          }}
-        >
-          <Image
-            src="/zecca-logo.png"
-            alt=""
-            width={32}
-            height={32}
-            style={{ width: "100%", height: "100%", display: "block", objectFit: "cover", borderRadius: "inherit" }}
-          />
-        </div>
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text, letterSpacing: ".01em" }}>Zecca</div>
-          <div style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 9.5, color: COLORS.subtle, letterSpacing: ".10em", textTransform: "uppercase", marginTop: 1 }}>
-            Web · v2
-          </div>
-        </div>
-      </div>
-
       {/* Only navigation scrolls. The summary card below stays visible. */}
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
       <nav style={{ padding: "6px 10px 4px" }}>

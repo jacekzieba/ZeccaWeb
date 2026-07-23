@@ -180,12 +180,21 @@ function toMonthly(series: { label: string; value: number; date: string }[]) {
   );
 }
 
+// Selectable time ranges. `points` is the number of monthly samples to keep
+// (one more than the number of months shown). Infinity keeps the full history.
+const RANGE_OPTIONS = [
+  { id: "6m", label: "6M", points: 7 },
+  { id: "1y", label: "1R", points: 13 },
+  { id: "2y", label: "2L", points: 25 },
+  { id: "3y", label: "3L", points: 37 },
+  { id: "max", label: "Maks", points: Infinity },
+] as const;
+
 // Build the deposit-neutral growth-of-100 line from the time-weighted
 // performance index (NOT raw value, which would include contributions).
-function portfolioGrowth(
-  series: { label: string; value: number; date: string }[],
+function growthFromMonthly(
+  monthly: { label: string; value: number; date: string }[],
 ): GrowthSeries {
-  const monthly = toMonthly(series).slice(-24);
   if (monthly.length < 2) {
     return { labels: ["Start", "Teraz"], growth: [100, 100], returns: [0] };
   }
@@ -462,13 +471,23 @@ export function BenchmarkPage() {
   const snapshot = storeSnapshot ?? sampleSnapshot;
   useSampleDataSignal(!storeSnapshot);
   const [selectedId, setSelectedId] = useState("allweather");
+  const [rangeId, setRangeId] = useState<string>("max");
   const isMobile = useMedia("(max-width: 720px)");
   const isTablet = useMedia("(max-width: 1140px)");
 
   const perf = snapshot.performanceSeries?.length >= 2 ? snapshot.performanceSeries : null;
   const history = perf
     ?? (sampleSnapshot.performanceSeries.length >= 2 ? sampleSnapshot.performanceSeries : SAMPLE_HISTORY);
-  const portfolio = useMemo(() => portfolioGrowth(history), [history]);
+  const monthlyAll = useMemo(() => toMonthly(history), [history]);
+  const ranges = useMemo(
+    () => RANGE_OPTIONS.filter((range) => range.points === Infinity || range.points <= monthlyAll.length),
+    [monthlyAll.length],
+  );
+  const activeRange = ranges.find((range) => range.id === rangeId) ?? ranges[ranges.length - 1];
+  const portfolio = useMemo(() => {
+    const monthly = activeRange.points === Infinity ? monthlyAll : monthlyAll.slice(-activeRange.points);
+    return growthFromMonthly(monthly);
+  }, [monthlyAll, activeRange.points]);
   const selected = BENCHMARKS.find((benchmark) => benchmark.id === selectedId) ?? BENCHMARKS[0];
   const benchmark = useMemo(() => buildBenchmarkSeries(selected, portfolio.growth.length), [selected, portfolio.growth.length]);
   const portfolioStats = useMemo(() => stats(portfolio), [portfolio]);
@@ -496,6 +515,44 @@ export function BenchmarkPage() {
           <div style={{ fontSize: 13, color: C.muted, marginTop: 3 }}>
             Wzrost 100 (TWR, bez wpłat) · {labels[0]} → {labels.at(-1)}
           </div>
+        </div>
+        <div
+          role="group"
+          aria-label="Zakres czasowy"
+          style={{
+            display: "inline-flex",
+            gap: 2,
+            padding: 3,
+            borderRadius: 11,
+            background: C.card2,
+            border: `0.5px solid ${C.line}`,
+          }}
+        >
+          {ranges.map((range) => {
+            const active = range.id === activeRange.id;
+            return (
+              <button
+                key={range.id}
+                onClick={() => setRangeId(range.id)}
+                aria-pressed={active}
+                style={{
+                  padding: "6px 13px",
+                  borderRadius: 8,
+                  border: "none",
+                  cursor: "pointer",
+                  fontFamily: UI,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  background: active ? C.card : "transparent",
+                  color: active ? C.ink : C.subtle,
+                  boxShadow: active ? `0 1px 3px ${mix(C.ink, 0.12)}` : "none",
+                  transition: "all .15s",
+                }}
+              >
+                {range.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { RefreshCw } from "lucide-react";
 import { COLORS, SHADOWS } from "@/lib/design-tokens";
 import { isFakeSyncEnabled } from "@/lib/env";
@@ -35,6 +35,14 @@ export function ManualSyncButton({ compact = false }: { compact?: boolean }) {
   const setSync = useSyncStore((state) => state.setSync);
   const [syncing, setSyncing] = useState(false);
   const [feedback, setFeedback] = useState<SyncFeedback | null>(null);
+
+  useEffect(() => {
+    if (feedback?.kind !== "success") {
+      return;
+    }
+    const timer = setTimeout(() => setFeedback(null), 2500);
+    return () => clearTimeout(timer);
+  }, [feedback]);
 
   async function handleSync() {
     if (!supabase || !userDataKey || syncing) {
