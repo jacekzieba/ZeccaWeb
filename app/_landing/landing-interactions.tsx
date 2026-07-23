@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { track } from "@vercel/analytics";
 
 const DRAFT_COPY_PREFIX = "zecca-landing-copy:";
 const PUBLISHED_COPY_PREFIX = "zecca-landing-published:";
@@ -276,6 +277,7 @@ export function LandingInteractions() {
         }
         betaForm.reset();
         setBetaStatus(labels?.success ?? "Dzięki — zapisaliśmy email na liście beta.", "success");
+        track("Beta Waitlist Signup", { source: "landing" });
         window.dispatchEvent(
           new CustomEvent("zecca:beta-waitlist-signup", {
             detail: { source: "landing" },

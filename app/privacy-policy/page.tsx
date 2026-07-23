@@ -4,6 +4,9 @@ import { Footer } from "@/components/layout/footer";
 export const metadata = {
   title: "Polityka prywatności - Zecca",
   description: "Polityka prywatności Zecca",
+  alternates: {
+    canonical: "/privacy-policy",
+  },
 };
 
 export default function PrivacyPolicyPage() {

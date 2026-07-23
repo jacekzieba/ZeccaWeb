@@ -339,7 +339,7 @@ export const landingCopy = {
       },
       {
         q: "To beta. Czy moje dane są bezpieczne?",
-        a: "Dane są szyfrowane <b>end-to-end</b>, a klucz znasz tylko Ty. Pamiętaj jednak, że to wczesna wersja, mogą zdarzyć się błędy. Zalecamy regularny <b>eksport / kopię</b> danych i ostrożność przy traktowaniu Zekki jako jedynego źródła prawdy.",
+        a: "Dane są szyfrowane <b>end-to-end</b>, a klucz znasz tylko Ty. Pamiętaj jednak, że to wczesna wersja, mogą zdarzyć się błędy. Zalecamy regularny <b>eksport / kopię</b> danych i ostrożność przy traktowaniu Zecci jako jedynego źródła prawdy.",
       },
       {
         q: "Czy moje dane trafiają na Wasz serwer?",
@@ -421,6 +421,7 @@ export const landingCopy = {
           { label: "Discord", href: "https://discord.gg/Y7yJep36bq" },
           { label: "Feedback", href: "#kontakt" },
           { label: "E-mail", href: "mailto:zecca.barista363@passmail.net" },
+          { label: "FAQ", href: "/faq" },
           { label: "Polityka prywatności", href: "/privacy-policy" },
         ],
       },

@@ -5,6 +5,9 @@ import { Footer } from "@/components/layout/footer";
 export const metadata = {
   title: "FAQ i metryki - Zecca",
   description: "Najczęstsze pytania dotyczące Zecca oraz wyjaśnienia metryk inwestycyjnych.",
+  alternates: {
+    canonical: "/faq",
+  },
 };
 
 interface FAQItem {
@@ -323,7 +326,7 @@ export default function FAQPage() {
                 borderBottom: index < faqs.length - 1 ? `0.5px solid ${COLORS.border}` : "none",
               }}
             >
-              <h2
+              <h3
                 style={{
                   fontSize: 18,
                   fontWeight: 700,
@@ -332,7 +335,7 @@ export default function FAQPage() {
                 }}
               >
                 {faq.question}
-              </h2>
+              </h3>
               <div style={{ fontSize: 15, lineHeight: 1.6, color: COLORS.textMuted }}>
                 {Array.isArray(faq.answer) ? (
                   <ul style={{ paddingLeft: 20 }}>

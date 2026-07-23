@@ -289,7 +289,7 @@ export function LandingHero() {
               <div className="trust-item" key={item.title}>
                 <TrustIcon index={index} />
                 <div>
-                  <h2>{item.title}</h2>
+                  <p className="trust-item-title">{item.title}</p>
                   <p>{item.desc}</p>
                 </div>
               </div>
