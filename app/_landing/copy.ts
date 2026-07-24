@@ -371,7 +371,7 @@ export const landingCopy = {
       consentLabel: "Chcę zapisać się do testów beta",
       submit: "Dołącz do listy",
       disabledSubmit: "Wkrótce",
-      success: "Dzięki — zapisaliśmy email na liście beta.",
+      success: "Dziękujemy! Wyślemy Ci niedługo informacje o dostępie do aplikacji.",
       error: "Nie udało się zapisać. Spróbuj ponownie za chwilę.",
       invalidEmail: "Podaj poprawny adres e-mail.",
       missingConsent: "Zaznacz zgodę, żeby dołączyć do listy.",

@@ -276,7 +276,7 @@ export function LandingInteractions() {
           throw new Error(payload?.error ?? "waitlist_failed");
         }
         betaForm.reset();
-        setBetaStatus(labels?.success ?? "Dzięki — zapisaliśmy email na liście beta.", "success");
+        setBetaStatus(labels?.success ?? "Dziękujemy! Wyślemy Ci niedługo informacje o dostępie do aplikacji.", "success");
         track("Beta Waitlist Signup", { source: "landing" });
         window.dispatchEvent(
           new CustomEvent("zecca:beta-waitlist-signup", {
