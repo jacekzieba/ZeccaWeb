@@ -8,6 +8,7 @@ import { isFakeSyncEnabled } from "@/lib/env";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { V2, V2_TYPE } from "@/lib/v2-design";
+import { endDemoSession, startDemoSession } from "./demo-session";
 import { OnboardingCard } from "./onboarding-card";
 import { TourOverlay } from "./tour-overlay";
 import { FINALE_COPY, INTRO_CARDS, TOUR_STEPS } from "./steps";
@@ -17,7 +18,7 @@ import {
 } from "./onboarding-state";
 
 /** Seeds the sync store with the demo dataset (same builder as fake-sync). */
-function seedDemoRecords() {
+function seedDemoRecords(publicDemo: boolean) {
   const records = buildFakeSyncRecords();
   const snapshot = buildInvestorDataSnapshot(records, {
     asOf: new Date(),
@@ -26,12 +27,14 @@ function seedDemoRecords() {
     useMarketQuotes: true,
   });
   useSyncStore.getState().setSync(records, snapshot);
+  useSyncStore.getState().setPublicDemo(publicDemo);
 }
 
 /**
  * Sits in AppShell's `!records` branch. A brand-new account gets demo data
- * seeded and the onboarding started; public `/demo` always starts a fresh
- * in-memory tour. Everyone else falls through to the regular SyncUnlockGate.
+ * seeded and the onboarding started; a public demo visitor gets the same
+ * in-memory dataset. Everyone else falls through to the regular
+ * SyncUnlockGate.
  */
 export function OnboardingDemoGate({
   children,
@@ -44,6 +47,7 @@ export function OnboardingDemoGate({
 }) {
   const start = useOnboardingStore((s) => s.start);
   const phase = useOnboardingStore((s) => s.phase);
+  const pathname = usePathname();
   const startedRef = useRef(false);
 
   // Fake-sync seeds records asynchronously — this branch renders briefly even
@@ -60,12 +64,21 @@ export function OnboardingDemoGate({
       });
 
   useEffect(() => {
-    if (entry === "demo-start" && !startedRef.current) {
-      startedRef.current = true;
-      seedDemoRecords();
-      start(publicDemo ? "public-demo" : "demo");
+    if (entry !== "demo-start" || startedRef.current) return;
+    startedRef.current = true;
+    seedDemoRecords(publicDemo);
+
+    if (!publicDemo) {
+      start("demo");
+      return;
     }
-  }, [entry, publicDemo, start]);
+
+    // Demo records live in memory only, so reloading a page deeper in the app
+    // lands here again. Re-seed the data, but replay the tour only from the
+    // `/demo` entry point.
+    startDemoSession();
+    if (pathname === "/demo") start("public-demo");
+  }, [entry, pathname, publicDemo, start]);
 
   if (entry === "demo-start" || phase !== "idle") {
     // Demo records land in a moment; AppShell re-renders straight into the app.
@@ -138,16 +151,28 @@ export function OnboardingController({
     }
 
     finish();
-    if (endingMode === "demo" || endingMode === "public-demo") {
-      // Demo records exist only in memory and are always discarded on exit.
-      clearSync();
-    }
 
     if (endingMode === "public-demo") {
+      // The full page load discards the in-memory demo data on its own.
+      // Clearing the store first would re-arm the gate below, which
+      // immediately re-seeds the data and re-sets the demo cookie.
+      endDemoSession();
       window.location.assign(destination ?? "/login");
-    } else if (endingMode === "demo") {
+      return;
+    }
+
+    if (endingMode === "demo") {
+      // Demo records exist only in memory and are always discarded on exit.
+      clearSync();
       router.push("/dashboard");
     }
+  };
+
+  // Public demo only: close the tour but keep the sample dataset so the visitor
+  // can browse the whole app. Leaving happens via "Zakończ demo" in the sidebar.
+  const exploreDemo = () => {
+    finish();
+    router.push("/dashboard");
   };
 
   const btn = (primary: boolean): React.CSSProperties => ({
@@ -210,7 +235,7 @@ export function OnboardingController({
           onFinish={() => setPhase("finale")}
           onSkip={() => endOnboarding()}
         />
-        {(mode === "demo" || mode === "public-demo") && (
+        {mode === "demo" && (
           <div
             style={{
               position: "fixed", right: 16, bottom: 16, zIndex: 902,
@@ -255,11 +280,18 @@ export function OnboardingController({
                 {FINALE_COPY.ctaPublicLogin}
               </button>
               <button
-                style={btn(true)}
+                style={btn(false)}
                 data-testid="onboarding-public-register"
                 onClick={() => endOnboarding("/register")}
               >
                 {FINALE_COPY.ctaPublicRegister}
+              </button>
+              <button
+                style={btn(true)}
+                data-testid="onboarding-public-explore"
+                onClick={exploreDemo}
+              >
+                {FINALE_COPY.ctaPublicExplore}
               </button>
             </>
           ) : (

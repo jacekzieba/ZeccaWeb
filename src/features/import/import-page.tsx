@@ -237,6 +237,7 @@ export function ImportPage() {
   const records = useSyncStore((s) => s.records);
   const userDataKey = useSyncStore((s) => s.userDataKey);
   const supabase = useSyncStore((s) => s.supabase);
+  const publicDemo = useSyncStore((s) => s.publicDemo);
   const setSync = useSyncStore((s) => s.setSync);
   const marketFxRates = useSyncStore((s) => s.marketFxRates);
   const marketCpi = useSyncStore((s) => s.marketCpi);
@@ -653,6 +654,19 @@ export function ImportPage() {
         <V2Card>
           <div style={{ padding: "20px 4px", textAlign: "center", color: V2.subtle, fontSize: 14 }}>
             Odblokuj dane w panelu synchronizacji, żeby importować lub eksportować.
+          </div>
+        </V2Card>
+      )}
+
+      {records && tab === "import" && publicDemo && (
+        <V2Card style={{ borderColor: v2Mix(V2.gold, 0.35), background: v2Mix(V2.gold, 0.06) }}>
+          <div style={{ fontFamily: UI, fontSize: 12.5, fontWeight: 700, color: V2.gold }}>
+            Import jest wyłączony w trybie demo
+          </div>
+          <div style={{ fontFamily: UI, fontSize: 12, color: V2.muted, marginTop: 3, lineHeight: 1.45 }}>
+            Możesz przejrzeć cały przebieg importu i podgląd pliku, ale dane przykładowe nie zostaną
+            zmienione. Załóż konto, żeby zaimportować własną historię. Eksport danych demo do CSV działa
+            normalnie.
           </div>
         </V2Card>
       )}

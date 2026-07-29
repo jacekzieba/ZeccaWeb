@@ -28,6 +28,7 @@ import { useSyncStore } from "@/sync/store/sync-store";
 import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
 import { AddTransactionModal } from "@/features/transactions/add-transaction-modal";
 import { OnboardingController, OnboardingDemoGate } from "@/features/onboarding/onboarding-controller";
+import { endDemoSession } from "@/features/onboarding/demo-session";
 import { CommandPalette } from "@/features/search/command-palette";
 import { PendingSyncStatus } from "@/features/sync/pending-sync-status";
 import { ManualSyncButton } from "@/features/sync/manual-sync-button";
@@ -171,6 +172,16 @@ export async function handleLogout() {
   window.location.assign("/login");
 }
 
+/**
+ * Public demo has no session to sign out of. The full page load discards the
+ * in-memory sample data on its own — clearing the store first would re-arm the
+ * demo gate, which immediately re-seeds and re-sets the cookie.
+ */
+function exitPublicDemo() {
+  endDemoSession();
+  window.location.assign("/");
+}
+
 function fmtNavNumber(value: number, locale: string, digits = 0) {
   return value.toLocaleString(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
@@ -191,7 +202,7 @@ function isNavItemActive(item: NavItem, pathname: string) {
 }
 
 // ── Sidebar content ──────────────────────────────────────────────
-function SidebarContent({ onNav }: { onNav?: () => void }) {
+function SidebarContent({ onNav, publicDemo = false }: { onNav?: () => void; publicDemo?: boolean }) {
   const pathname = usePathname();
   const { language, t } = useTranslation();
   const numberLocale = language === "en" ? "en-US" : "pl-PL";
@@ -334,7 +345,8 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
       {/* Logout */}
       <div style={{ padding: "0 10px 14px" }}>
         <button
-          onClick={handleLogout}
+          onClick={publicDemo ? exitPublicDemo : handleLogout}
+          data-testid={publicDemo ? "exit-demo" : undefined}
           style={{
             width: "100%", display: "flex", alignItems: "center", gap: 8,
             padding: "8px 11px", borderRadius: 9,
@@ -347,7 +359,7 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
         >
           <LogOut size={14} strokeWidth={1.8} aria-hidden="true" />
-          Wyloguj się
+          {publicDemo ? "Zakończ demo" : "Wyloguj się"}
         </button>
       </div>
     </>
@@ -555,8 +567,13 @@ export function AppShell({
             </button>
           )}
 
-          <PendingSyncStatus />
-          <ManualSyncButton compact={!isDesktop} />
+          {/* Nothing to sync in the public demo — the data never leaves memory. */}
+          {!publicDemo && (
+            <>
+              <PendingSyncStatus />
+              <ManualSyncButton compact={!isDesktop} />
+            </>
+          )}
 
           {/* Add transaction */}
           <button
@@ -616,7 +633,7 @@ export function AppShell({
               borderRadius: 14, overflow: "hidden",
             }}
           >
-            <SidebarContent />
+            <SidebarContent publicDemo={publicDemo} />
           </aside>
         )}
 
@@ -657,7 +674,7 @@ export function AppShell({
               >
                 ×
               </button>
-              <SidebarContent onNav={() => setDrawerOpen(false)} />
+              <SidebarContent onNav={() => setDrawerOpen(false)} publicDemo={publicDemo} />
             </aside>
           </>
         )}
@@ -676,6 +693,24 @@ export function AppShell({
         publicDemo={publicDemo}
         onAccountOnboardingFinished={() => setAccountOnboardingCompleted(true)}
       />
+      {publicDemo && (
+        <div
+          data-testid="demo-badge"
+          style={{
+            position: "fixed", right: 16, bottom: 16, zIndex: 902,
+            fontSize: 11, fontWeight: 700,
+            letterSpacing: ".08em", textTransform: "uppercase",
+            color: V2.gold, background: "rgba(255,252,244,.82)",
+            padding: "6px 11px", borderRadius: 99,
+            border: "0.5px solid rgba(162,119,46,.35)",
+            backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
+            boxShadow: "0 4px 16px rgba(22,29,24,.14)",
+            pointerEvents: "none",
+          }}
+        >
+          Dane przykładowe
+        </div>
+      )}
       {paritySnapshot && (
         <script
           id="investor-web-parity-snapshot"

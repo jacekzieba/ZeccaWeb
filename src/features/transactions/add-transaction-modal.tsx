@@ -340,6 +340,7 @@ export function AddTransactionModal({
   const records = useSyncStore((s) => s.records);
   const userDataKey = useSyncStore((s) => s.userDataKey);
   const supabase = useSyncStore((s) => s.supabase);
+  const publicDemo = useSyncStore((s) => s.publicDemo);
   const setSync = useSyncStore((s) => s.setSync);
 
   const [mounted, setMounted] = useState(false);
@@ -1129,7 +1130,9 @@ export function AddTransactionModal({
           {!userDataKey && (
             <div style={{ padding: "12px 28px", background: `${AMBER}12`, borderBottom: `0.5px solid ${LINE_SOFT}` }}>
               <div style={{ fontSize: 12, color: AMBER, fontWeight: 700 }}>
-                Odblokuj dane w panelu synchronizacji, żeby zapisywać transakcje.
+                {publicDemo
+                  ? "Tryb demo — możesz obejrzeć cały formularz, ale zapis transakcji jest wyłączony."
+                  : "Odblokuj dane w panelu synchronizacji, żeby zapisywać transakcje."}
               </div>
             </div>
           )}

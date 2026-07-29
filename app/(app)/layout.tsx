@@ -1,6 +1,8 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/supabase/server";
 import { AppShell } from "@/components/layout/app-shell";
+import { DEMO_SESSION_COOKIE } from "@/features/onboarding/demo-session";
 import { Providers } from "@/providers/providers";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +30,18 @@ export default async function AuthenticatedLayout({
   } = await supabase.auth.getUser();
 
   if (!user) {
+    // Public demo: no account, no server data — the app shell runs entirely on
+    // the in-memory sample dataset seeded by the onboarding gate.
+    const demoSession =
+      (await cookies()).get(DEMO_SESSION_COOKIE)?.value === "1";
+    if (demoSession) {
+      return (
+        <Providers>
+          <AppShell publicDemo>{children}</AppShell>
+        </Providers>
+      );
+    }
+
     redirect("/login");
   }
 

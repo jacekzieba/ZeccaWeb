@@ -1,5 +1,6 @@
 import { createServerClient, type SetAllCookies } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { DEMO_SESSION_COOKIE } from "@/features/onboarding/demo-session";
 
 /**
  * Content-Security-Policy — enforced in production, Report-Only in development
@@ -132,7 +133,13 @@ export async function middleware(request: NextRequest) {
   const isProtectedApiRoute = pathname.startsWith("/api/") && !isPublicApiRoute;
   const isAppRoute = isProtectedPage || isProtectedApiRoute;
 
-  if (!user && isAppRoute && !fakeSyncEnabled) {
+  // A public-demo visitor browses the real app pages on in-memory sample data.
+  // Only pages open up: every `/api/*` route stays gated, so the demo cannot
+  // read or write anything server-side.
+  const demoPage =
+    isProtectedPage && request.cookies.get(DEMO_SESSION_COOKIE)?.value === "1";
+
+  if (!user && isAppRoute && !fakeSyncEnabled && !demoPage) {
     const redirectUrl = new URL("/login", request.url);
     redirectUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
     return applyCsp(NextResponse.redirect(redirectUrl));

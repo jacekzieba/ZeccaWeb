@@ -100,11 +100,14 @@ export const FINALE_COPY = {
   bodyReplay:
     "To już wszystko. Możesz rozpocząć korzystanie z aplikacji. W razie pytań, kontakt do nas jest możliwy przez maila lub Discord.",
   bodyPublic:
-    "To już wszystko. Dane przykładowe nie zostaną zapisane. Załóż konto lub zaloguj się, aby rozpocząć korzystanie z Zecca.",
+    "To już wszystko. Możesz teraz swobodnie zwiedzać całą aplikację na danych przykładowych — " +
+    "dodawanie transakcji i import są w demo wyłączone, a dane nie zostaną nigdzie zapisane. " +
+    "Załóż konto lub zaloguj się, aby pracować na własnym portfelu.",
   ctaDemo: "Przejdź do konfiguracji synchronizacji →",
   ctaReplay: "Wróć do aplikacji →",
   ctaPublicLogin: "Zaloguj się",
-  ctaPublicRegister: "Załóż konto →",
+  ctaPublicRegister: "Załóż konto",
+  ctaPublicExplore: "Zwiedzaj aplikację →",
 } as const;
 
 export function nextPresentStep(

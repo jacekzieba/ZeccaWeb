@@ -188,6 +188,7 @@ export function SettingsPage() {
   const records = useSyncStore((s) => s.records);
   const userDataKey = useSyncStore((s) => s.userDataKey);
   const supabase = useSyncStore((s) => s.supabase);
+  const publicDemo = useSyncStore((s) => s.publicDemo);
   const language = useAppLanguage();
   const { t } = useTranslation();
 
@@ -335,7 +336,8 @@ export function SettingsPage() {
         />
       </Section>
 
-      <DangerZone />
+      {/* Account-level actions need a real session — hidden in the public demo. */}
+      {!publicDemo && <DangerZone />}
     </div>
   );
 }

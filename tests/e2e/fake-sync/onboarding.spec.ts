@@ -90,12 +90,38 @@ test("public demo stays on /demo and ends with login or registration", async ({ 
     await tourNext.click();
   }
 
-  await expect(page.getByText("Dane przykładowe nie zostaną zapisane.", { exact: false })).toBeVisible();
+  await expect(
+    page.getByText("Możesz teraz swobodnie zwiedzać całą aplikację", { exact: false }),
+  ).toBeVisible();
   await expect(page.getByTestId("onboarding-public-login")).toBeVisible();
+  await expect(page.getByTestId("onboarding-public-explore")).toBeVisible();
   await page.getByTestId("onboarding-public-register").click();
   await expect(page).toHaveURL(/\/register$/);
 
   // Public demo is always available again, independently of the account flag.
   await page.goto("/demo");
   await expect(page.getByRole("heading", { name: "Monitoruj swoje inwestycje" })).toBeVisible();
+});
+
+test("public demo finale can hand over to free exploration", async ({ page }) => {
+  test.slow();
+  await page.goto("/demo");
+
+  const introNext = page.getByTestId("onboarding-next");
+  await expect(introNext).toBeVisible();
+  await introNext.click();
+  await introNext.click();
+
+  const tourNext = page.getByTestId("tour-next");
+  for (let step = 1; step <= 5; step++) {
+    await expect(page.getByText(`TOUR · KROK ${step} / 5`)).toBeVisible({ timeout: 10_000 });
+    await tourNext.click();
+  }
+
+  // "Zwiedzaj aplikację" closes the onboarding and keeps the sample dataset.
+  await page.getByTestId("onboarding-public-explore").click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByTestId("dashboard-grid")).toBeVisible();
+  await expect(page.getByTestId("tour-next")).toHaveCount(0);
+  await expect(page.getByTestId("onboarding-next")).toHaveCount(0);
 });

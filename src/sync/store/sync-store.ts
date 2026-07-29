@@ -29,8 +29,15 @@ type SyncState = {
   userDataKey: CryptoKey | null;
   supabase: BrowserSupabaseClient | null;
   addTransactionOpen: boolean;
+  /**
+   * Signed-out visitor browsing the sample dataset. Writes are already blocked
+   * by the missing `userDataKey`; this flag lets screens hide account-only
+   * actions and explain why saving is off.
+   */
+  publicDemo: boolean;
 
   setSync: (records: DecryptedRecord[], snapshot: InvestorDataSnapshot) => void;
+  setPublicDemo: (publicDemo: boolean) => void;
   setMarketFxRates: (rates: FxRateInput[]) => void;
   setMarketQuotes: (quotes: MarketQuoteInput[]) => void;
   setMarketCpi: (cpi: CpiSeries) => void;
@@ -54,15 +61,17 @@ export const useSyncStore = create<SyncState>((set) => ({
   userDataKey: null,
   supabase: null,
   addTransactionOpen: false,
+  publicDemo: false,
 
   setSync: (records, snapshot) => set({ records, snapshot, lastSyncedAt: Date.now() }),
+  setPublicDemo: (publicDemo) => set({ publicDemo }),
   setMarketFxRates: (marketFxRates) => set({ marketFxRates }),
   setMarketQuotes: (marketQuotes) => set({ marketQuotes }),
   setMarketCpi: (marketCpi) => set({ marketCpi }),
   setMarketMetricsCpi: (marketMetricsCpi) => set({ marketMetricsCpi }),
   setMarketReferenceRates: (marketReferenceRates) => set({ marketReferenceRates }),
   setCredentials: (userDataKey, supabase) => set({ userDataKey, supabase }),
-  clearSync: () => set({ records: null, snapshot: null, lastSyncedAt: null, marketFxRates: [], marketQuotes: [], marketCpi: CPI_YOY, marketMetricsCpi: CPI_YOY, marketReferenceRates: NBP_REFERENCE_RATES, userDataKey: null, supabase: null }),
+  clearSync: () => set({ records: null, snapshot: null, lastSyncedAt: null, marketFxRates: [], marketQuotes: [], marketCpi: CPI_YOY, marketMetricsCpi: CPI_YOY, marketReferenceRates: NBP_REFERENCE_RATES, userDataKey: null, supabase: null, publicDemo: false }),
   openAddTransaction: () => set({ addTransactionOpen: true }),
   closeAddTransaction: () => set({ addTransactionOpen: false }),
 }));
