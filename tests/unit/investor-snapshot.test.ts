@@ -8,7 +8,6 @@ import {
   buildPortfolioDetail,
   buildTransactionList,
 } from "@/sync/records/investor-snapshot";
-import { findDuplicateEarning } from "@/domain/models/earnings";
 
 const accountID = "11111111-1111-4111-8111-111111111111";
 const instrumentID = "22222222-2222-4222-8222-222222222222";
@@ -1212,7 +1211,7 @@ describe("InvestorDataSnapshot mapper", () => {
     });
   });
 
-  it("builds macOS-compatible income lists, monthly summaries and duplicate keys", () => {
+  it("builds macOS-compatible income lists and monthly summaries", () => {
     const activeRecords = [
       record("income", "66666666-6666-4666-8666-666666666666", {
         recordType: "income",
@@ -1319,15 +1318,6 @@ describe("InvestorDataSnapshot mapper", () => {
     expect(lists.totals.totalPLN).toBe(53_300);
     expect(lists.years).toEqual([2026, 2025]);
     expect(lists.currencies).toEqual(["EUR", "PLN"]);
-    expect(
-      findDuplicateEarning(lists.earnings, {
-        id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-        year: 2026,
-        month: 5,
-        source: "Invoice",
-        employmentType: "business",
-      })?.id,
-    ).toBe("66666666-6666-4666-8666-666666666666");
   });
 
   it("supports Swift JSONEncoder numeric dates", () => {

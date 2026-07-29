@@ -15,6 +15,11 @@ import { resolveObservedCurrencies } from "@/features/import/xtb-currency-resolv
 import { parsePkoBondsXls } from "@/features/import/pko-parser";
 import { readSpreadsheet } from "@/features/import/read-spreadsheet";
 import {
+  ImportProgressIndicator,
+  type ImportProgressState,
+  waitForNextPaint,
+} from "@/features/import/import-progress";
+import {
   importRowId,
   selectedImportPayloads,
 } from "@/features/import/import-selection";
@@ -257,6 +262,7 @@ export function ImportPage() {
   const [importAction, setImportAction] = useState<"check" | "commit" | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<ImportProgressState | null>(null);
 
   // For XTB/PKO: first portfolio is used as the target; user can change
   const firstPortfolioId = references.portfolios[0]?.id ?? "";
@@ -283,52 +289,70 @@ export function ImportPage() {
     setSelectedRowIds(new Set());
     setConfirmedInstrumentIds(new Set());
     setFileName(file?.name ?? null);
+    setProgress(file ? { label: "Przygotowywanie pliku…", value: 8 } : null);
     if (!file) return;
-    const provider = brokerProvider(importFormat);
+    const format = importFormat;
+    const provider = brokerProvider(format);
     if (provider) {
       getTelemetryService().signal(TelemetryEvent.brokerImportStarted, { provider });
     }
     try {
+      await waitForNextPaint();
       const extension = file.name.split(".").pop()?.toLowerCase();
 
-      if (importFormat === "xtb") {
+      if (format === "xtb") {
         // XTB exports may have multiple sheets; prefer "Cash Operations".
+        setProgress({ label: "Odczytywanie arkusza XTB…", value: 22 });
         const rows = await readSpreadsheet(file, { sheet: "Cash Operations" });
         if (!portfolioId) {
           setError("Wybierz portfel docelowy przed importem XTB.");
           return;
         }
+        setProgress({ label: "Ładowanie katalogu instrumentów…", value: 52 });
         const catalog = await loadEtfCatalog();
+        setProgress({ label: "Analizowanie transakcji XTB…", value: 68 });
+        await waitForNextPaint();
         const xtbPreview = parseXtbXlsx(rows, portfolioId, references, { catalog });
         // D2: resolve any currencies the parser left "?" by inferring them from
         // the observed FX and NBP rates on the trade date.
         if (xtbPreview.fxObservations.length > 0) {
+          setProgress({ label: "Rozpoznawanie walut…", value: 84 });
           await resolveObservedCurrencies(xtbPreview, fetchFxRateViaApi);
         }
+        setProgress({ label: "Tworzenie podglądu…", value: 95 });
         showPreview(xtbPreview as ExtendedPreview);
         return;
       }
 
-      if (importFormat === "pko") {
+      if (format === "pko") {
+        setProgress({ label: "Odczytywanie arkusza PKO…", value: 22 });
         const rows = await readSpreadsheet(file);
         if (!portfolioId) {
           setError("Wybierz portfel docelowy przed importem PKO Obligacje.");
           return;
         }
+        setProgress({ label: "Analizowanie operacji PKO…", value: 66 });
+        await waitForNextPaint();
+        const pkoPreview = parsePkoBondsXls(rows, portfolioId, references) as ExtendedPreview;
+        setProgress({ label: "Uzupełnianie danych obligacji…", value: 84 });
         showPreview(
-          await enrichTreasuryBondParams(
-            parsePkoBondsXls(rows, portfolioId, references) as ExtendedPreview,
-          ),
+          await enrichTreasuryBondParams(pkoPreview),
         );
         return;
       }
 
       // Generic
       if (extension === "xlsx" || extension === "xls") {
+        setProgress({ label: "Odczytywanie arkusza…", value: 25 });
         const rows = await readSpreadsheet(file);
+        setProgress({ label: "Analizowanie danych…", value: 72 });
+        await waitForNextPaint();
         showPreview(parseImportTable(rows, references));
       } else {
+        setProgress({ label: "Odczytywanie pliku CSV…", value: 25 });
         const text = await file.text();
+        setProgress({ label: "Analizowanie danych…", value: 72 });
+        await waitForNextPaint();
         showPreview(parseCsvImport(text, references));
       }
     } catch (parseError) {
@@ -339,6 +363,8 @@ export function ImportPage() {
           reason: "parse_error",
         });
       }
+    } finally {
+      setProgress(null);
     }
   }
 
@@ -686,6 +712,7 @@ export function ImportPage() {
               ).map(([id, label, sub]) => (
                 <button
                   key={id}
+                  disabled={progress !== null}
                   onClick={() => {
                     setImportFormat(id);
                     setPreview(null);
@@ -699,7 +726,8 @@ export function ImportPage() {
                     border: `1.5px solid ${importFormat === id ? V2.brand : V2.line}`,
                     borderRadius: 12, padding: "10px 16px", textAlign: "left",
                     background: importFormat === id ? v2Mix(V2.brand, 0.07) : V2.card,
-                    cursor: "pointer", minWidth: 200,
+                    cursor: progress ? "wait" : "pointer", minWidth: 200,
+                    opacity: progress ? 0.65 : 1,
                   }}
                 >
                   <div style={{ fontFamily: UI, fontSize: 13, fontWeight: 700, color: importFormat === id ? V2.brand : V2.ink }}>{label}</div>
@@ -713,6 +741,7 @@ export function ImportPage() {
                 <div style={{ ...SECTION_HEAD, marginBottom: 6 }}>Portfel docelowy</div>
                 <select
                   value={selectedPortfolioId || firstPortfolioId}
+                  disabled={progress !== null}
                   onChange={(e) => setSelectedPortfolioId(e.target.value)}
                   style={{
                     fontFamily: UI, fontSize: 13, padding: "8px 12px", borderRadius: 8,
@@ -744,21 +773,29 @@ export function ImportPage() {
             </V2Card>
           )}
 
-          <label style={{ display: "block", cursor: "pointer", borderRadius: 16, border: `1.5px dashed ${V2.line}`, background: v2Mix(V2.card, 0.6), padding: "30px 18px", textAlign: "center" }}>
+          <label
+            aria-busy={progress !== null}
+            style={{ display: "block", cursor: progress ? "wait" : "pointer", borderRadius: 16, border: `1.5px dashed ${V2.line}`, background: v2Mix(V2.card, 0.6), padding: "30px 18px", textAlign: "center" }}
+          >
             <input
               accept=".csv,.xls,.xlsx,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               type="file"
+              disabled={progress !== null}
               onChange={(event) => void handleFile(event.target.files?.[0] ?? null)}
               style={{ display: "none" }}
             />
             <div style={{ fontSize: 22, color: V2.subtle, marginBottom: 8 }}>⬇</div>
-            <div style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 500, color: V2.ink }}>{fileName ?? "Wybierz plik CSV albo XLSX / XLS"}</div>
+            <div style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 500, color: V2.ink }}>
+              {progress ? "Wczytywanie pliku…" : fileName ?? "Wybierz plik CSV albo XLSX / XLS"}
+            </div>
             <div style={{ color: V2.subtle, fontSize: 12, marginTop: 5 }}>
               {importFormat === "xtb" ? "Plik XTB XLSX — arkusz \"Cash Operations\"" :
                importFormat === "pko" ? "Plik PKO Obligacje XLS — Historia dyspozycji" :
                "Plik jest parsowany lokalnie w przeglądarce."}
             </div>
           </label>
+
+          {progress && <ImportProgressIndicator {...progress} />}
 
           {!preview && (result || error) && (
             <div

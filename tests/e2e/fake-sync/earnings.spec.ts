@@ -72,3 +72,30 @@ test("shows macOS-style income records and supports fake-sync CRUD", async ({ pa
   await expect(importDialog.getByLabel("Bez zmian: 2")).toBeVisible();
   await expect(importDialog.getByRole("button", { name: "Importuj 0 wpisów" })).toBeDisabled();
 });
+
+test("keeps separate earnings with the same month, type and source", async ({ page }) => {
+  await page.goto("/earnings");
+
+  const main = page.getByRole("main");
+  await expect(page).toHaveURL(/\/earnings$/);
+
+  for (const amount of ["11111", "22222"]) {
+    await main.getByRole("button", { name: "Dodaj wynagrodzenie" }).click();
+    const dialog = page.getByRole("dialog", { name: "Nowy wpis zarobku" });
+    await dialog.getByLabel("Typ").selectOption("business");
+    await dialog.getByLabel("Rok").fill("2026");
+    await dialog.getByLabel("Miesiąc").selectOption("3");
+    await dialog.getByLabel("Przychód").fill(amount);
+    await dialog
+      .getByPlaceholder("np. Wynagrodzenie, Faktura miesięczna")
+      .fill("Elektryka");
+    await dialog.getByRole("button", { name: "Zapisz" }).click();
+    await expect(dialog).toBeHidden();
+  }
+
+  await main
+    .getByPlaceholder("Szukaj po źródle, notatce, kategorii...")
+    .fill("Elektryka");
+  await expect(main.getByText("2 rekordów")).toBeVisible();
+  await expect(main.getByText("Elektryka", { exact: true })).toHaveCount(2);
+});

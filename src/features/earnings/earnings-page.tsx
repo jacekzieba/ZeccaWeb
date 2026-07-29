@@ -30,7 +30,6 @@ import {
   buildEarningsTotals,
   compareEarningsTableRows,
   earningsRowSearchIndex,
-  findDuplicateEarning,
   normalizeEarningsSearchText,
   type EarningBurdenCategory,
   type EarningBurdenRow,
@@ -747,20 +746,10 @@ export function EarningsPage() {
       return;
     }
 
-    const duplicate = findDuplicateEarning(incomeLists.earnings, {
-      id: draft.id,
-      year,
-      month,
-      source,
-      employmentType: draft.employmentType,
-    });
-    const id = duplicate?.id ?? draft.id;
-    const baseUpdatedAt = duplicate?.sourceUpdatedAt ?? draft.sourceUpdatedAt;
-    // A genuine new earning: not matched to an existing record and not an edit.
-    const isNewEarning = !duplicate && draft.sourceUpdatedAt == null;
+    const isNewEarning = draft.sourceUpdatedAt == null;
     const payload = {
       recordType: "income",
-      id,
+      id: draft.id,
       entryKind: "earning",
       year,
       month,
@@ -793,7 +782,7 @@ export function EarningsPage() {
         userDataKey,
         "income",
         payload,
-        { baseUpdatedAt },
+        { baseUpdatedAt: draft.sourceUpdatedAt },
       );
       if (!result.queued) await refreshAfterWrite();
       if (isNewEarning) {

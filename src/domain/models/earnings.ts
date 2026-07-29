@@ -281,17 +281,3 @@ export function buildIncomeListsFromRows(
     currencies: Array.from(new Set(sortedEarnings.map((item) => item.currency))).sort(),
   };
 }
-
-export function findDuplicateEarning(
-  earnings: EarningRow[],
-  candidate: Pick<EarningRow, "year" | "month" | "source" | "employmentType" | "id">,
-) {
-  return earnings.find(
-    (item) =>
-      item.id !== candidate.id &&
-      item.year === candidate.year &&
-      item.month === candidate.month &&
-      item.source === candidate.source &&
-      item.employmentType === candidate.employmentType,
-  );
-}

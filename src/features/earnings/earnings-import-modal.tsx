@@ -13,6 +13,11 @@ import {
   type EarningsImportItem,
   type EarningsImportPreview,
 } from "@/features/earnings/earnings-import";
+import {
+  ImportProgressIndicator,
+  type ImportProgressState,
+  waitForNextPaint,
+} from "@/features/import/import-progress";
 import { readSpreadsheet } from "@/features/import/read-spreadsheet";
 import { V2, V2Button, V2_TYPE, v2Mix } from "@/lib/v2-design";
 
@@ -30,6 +35,7 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [progress, setProgress] = useState<ImportProgressState | null>(null);
 
   useEffect(() => setMounted(true), []);
 
@@ -43,23 +49,31 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
     setError(null);
     if (!file) return;
 
+    setProgress({ label: "Przygotowywanie pliku…", value: 8 });
     try {
+      await waitForNextPaint();
       const extension = file.name.split(".").pop()?.toLowerCase();
-      const next = extension === "xlsx"
-        ? parseEarningsImportTable(
-            await readSpreadsheet(file),
-            { earnings, burdens },
-          )
-        : extension === "csv"
-          ? parseEarningsImportCsv(
-              await file.text(),
-              { earnings, burdens },
-            )
-          : null;
+      let next: EarningsImportPreview | null = null;
+      if (extension === "xlsx") {
+        setProgress({ label: "Odczytywanie arkusza…", value: 25 });
+        const rows = await readSpreadsheet(file);
+        setProgress({ label: "Analizowanie zarobków…", value: 72 });
+        await waitForNextPaint();
+        next = parseEarningsImportTable(rows, { earnings, burdens });
+      } else if (extension === "csv") {
+        setProgress({ label: "Odczytywanie pliku CSV…", value: 25 });
+        const text = await file.text();
+        setProgress({ label: "Analizowanie zarobków…", value: 72 });
+        await waitForNextPaint();
+        next = parseEarningsImportCsv(text, { earnings, burdens });
+      }
       if (!next) throw new Error("Wybierz plik CSV lub XLSX.");
+      setProgress({ label: "Tworzenie podglądu…", value: 95 });
       setPreview(next);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Nie udało się odczytać pliku.");
+    } finally {
+      setProgress(null);
     }
   }
 
@@ -144,8 +158,16 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
             </code>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <label style={{ display: "inline-flex" }}>
-                <input type="file" accept=".csv,.xlsx" onChange={(event) => void handleFile(event)} style={{ position: "absolute", width: 1, height: 1, opacity: 0 }} />
-                <span style={primaryActionStyle}><Upload size={15} /> Wybierz CSV lub XLSX</span>
+                <input
+                  type="file"
+                  accept=".csv,.xlsx"
+                  disabled={progress !== null}
+                  onChange={(event) => void handleFile(event)}
+                  style={{ position: "absolute", width: 1, height: 1, opacity: 0 }}
+                />
+                <span style={{ ...primaryActionStyle, opacity: progress ? 0.6 : 1 }}>
+                  <Upload size={15} /> {progress ? "Wczytywanie…" : "Wybierz CSV lub XLSX"}
+                </span>
               </label>
               <V2Button variant="ghost" onClick={downloadTemplate}><Download size={15} /> Pobierz wzór CSV</V2Button>
               <V2Button variant="ghost" onClick={() => void copyInstructions()}>
@@ -154,6 +176,8 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
               </V2Button>
             </div>
           </section>
+
+          {progress && <ImportProgressIndicator {...progress} />}
 
           {error && (
             <div role="alert" style={{ padding: "10px 12px", borderRadius: 9, border: `0.5px solid ${v2Mix(V2.loss, 0.25)}`, background: v2Mix(V2.loss, 0.07), color: V2.loss, fontSize: 13 }}>

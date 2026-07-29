@@ -14,3 +14,4 @@ tools/swift-fixture-generator/.build/
 .design-ref/
 .vercel
 .env*
+.superpowers/
