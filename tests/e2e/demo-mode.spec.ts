@@ -40,6 +40,16 @@ test("demo cookie opens the app pages with sample data", async ({ page }) => {
   }
 });
 
+test("skipping the onboarding leaves the visitor inside the demo", async ({ page }) => {
+  await page.goto("/demo");
+
+  await page.getByTestId("onboarding-skip").click();
+
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByTestId("demo-badge")).toBeVisible();
+  await expect(page.getByTestId("dashboard-grid")).toBeVisible();
+});
+
 test("demo can open the transaction form but not save it", async ({ page }) => {
   await enterDemo(page);
   await page.goto("/dashboard");

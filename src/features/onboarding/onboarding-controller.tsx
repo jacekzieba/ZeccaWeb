@@ -175,6 +175,19 @@ export function OnboardingController({
     router.push("/dashboard");
   };
 
+  /**
+   * "Pomiń" / Esc. Skipping the intro or the tour is not the same as leaving:
+   * a public-demo visitor who skips wants to look around, so drop them into
+   * the app instead of bouncing them to the login page.
+   */
+  const skipOnboarding = () => {
+    if (mode === "public-demo") {
+      exploreDemo();
+      return;
+    }
+    endOnboarding();
+  };
+
   const btn = (primary: boolean): React.CSSProperties => ({
     fontFamily: V2_TYPE.ui, fontWeight: 600, fontSize: 13, borderRadius: 9,
     padding: "10px 18px", cursor: "pointer",
@@ -200,7 +213,7 @@ export function OnboardingController({
               {stepIndex > 0 ? (
                 <button style={btn(false)} onClick={() => setStepIndex(stepIndex - 1)}>← Wstecz</button>
               ) : (
-                <button style={btn(false)} onClick={() => endOnboarding()} data-testid="onboarding-skip">Pomiń</button>
+                <button style={btn(false)} onClick={skipOnboarding} data-testid="onboarding-skip">Pomiń</button>
               )}
               <button
                 style={btn(true)}
@@ -233,7 +246,7 @@ export function OnboardingController({
           stepIndex={stepIndex}
           onStepChange={setStepIndex}
           onFinish={() => setPhase("finale")}
-          onSkip={() => endOnboarding()}
+          onSkip={skipOnboarding}
         />
         {mode === "demo" && (
           <div

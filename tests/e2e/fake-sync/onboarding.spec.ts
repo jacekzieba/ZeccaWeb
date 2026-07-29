@@ -103,6 +103,59 @@ test("public demo stays on /demo and ends with login or registration", async ({ 
   await expect(page.getByRole("heading", { name: "Monitoruj swoje inwestycje" })).toBeVisible();
 });
 
+// Late market data used to re-render the section under the current anchor.
+// The measuring loop bailed out when the anchor vanished for a few frames and
+// never resumed, leaving the app dimmed by the tour overlay with no card and
+// no way forward.
+test("tour recovers when its anchor briefly disappears mid-measurement", async ({ page }) => {
+  await page.goto("/dashboard?tour=1");
+
+  const introNext = page.getByTestId("onboarding-next");
+  await expect(introNext).toBeVisible();
+  await introNext.click();
+  await introNext.click();
+
+  await page.evaluate(() => {
+    // Pull the anchor out just after the tour starts measuring it, then put it
+    // back — exactly what a re-render does to the element identity.
+    setTimeout(() => {
+      const el = document.querySelector('[data-tour="dashboard-hero"]');
+      el?.removeAttribute("data-tour");
+      setTimeout(() => el?.setAttribute("data-tour", "dashboard-hero"), 300);
+    }, 120);
+  });
+
+  await expect(page.getByText("TOUR · KROK 1 / 5")).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByTestId("tour-next")).toBeVisible();
+});
+
+test("skipping the public demo intro keeps the visitor in the app", async ({ page }) => {
+  await page.goto("/demo");
+
+  await page.getByTestId("onboarding-skip").click();
+
+  // Skipping is not leaving — no bounce to the login page. (The demo chrome
+  // itself is asserted in demo-mode.spec.ts; fake sync short-circuits the
+  // authenticated layout before it can read the demo cookie.)
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByTestId("onboarding-next")).toHaveCount(0);
+});
+
+test("Esc during the public demo tour keeps the visitor in the app", async ({ page }) => {
+  await page.goto("/demo");
+
+  const introNext = page.getByTestId("onboarding-next");
+  await expect(introNext).toBeVisible();
+  await introNext.click();
+  await introNext.click();
+
+  await expect(page.getByText("TOUR · KROK 1 / 5")).toBeVisible({ timeout: 10_000 });
+  await page.keyboard.press("Escape");
+
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByTestId("tour-next")).toHaveCount(0);
+});
+
 test("public demo finale can hand over to free exploration", async ({ page }) => {
   test.slow();
   await page.goto("/demo");

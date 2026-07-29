@@ -143,7 +143,16 @@ export function TourOverlay({
       const waitForSettle = (now: number) => {
         if (cancelled) return;
         const current = anchorEl(step.anchor);
-        if (!current) return;
+        if (!current) {
+          // The anchor can disappear for a few frames when late market data
+          // lands and re-renders the section under it. Bailing out here left
+          // the tour dimmed with no card and no way forward, so fall back to
+          // the polling loop instead; `waited` advances so its own timeout
+          // still fires and the step is skipped if the anchor stays away.
+          waited += ANCHOR_POLL_MS;
+          tick();
+          return;
+        }
         const currentRect = current.getBoundingClientRect();
         const geometryStable =
           Math.abs(currentRect.top - previousRect.top) < 0.5 &&
