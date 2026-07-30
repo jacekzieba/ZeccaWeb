@@ -16,7 +16,25 @@ i nie wynika z niczego, co dotyczy Zecci. Nagłówki jadą na `Georgia, "Times N
 a w `app/layout.tsx` nie ma żadnego `next/font` — `--font-inter` w `tailwind.config.ts` wskazuje na nic.
 Cała typografia produktu to font systemowy plus Georgia.
 
-**Warstwa systemowa.** Design systemu nie ma:
+**Warstwa systemowa — SPROSTOWANIE (2026-07-30).** Pierwotna wersja tej sekcji twierdziła,
+że design systemu nie ma. **To była nieprawda.** W `src/lib/v2-design.tsx` istnieje paleta `V2`
+z dwudziestoma tokenami, używana **728 razy w 21 plikach**, plus wyekstrahowane komponenty
+`V2Card`, `V2Eyebrow`, `V2Badge`, `V2ScreenHead`, `V2Button`, `V2Kpi` oraz wspólne style
+`v2InputStyle`, `v2SelectStyle`, `v2Glass`.
+
+Mój audyt szukał systemu w `tailwind.config.ts`, motywie daisyUI i zmiennych CSS — znalazł tam
+same martwe warstwy i wyciągnął z tego zły wniosek. Nie sprawdziłem `src/lib/`.
+
+Prawdziwy stan: **system istnieje, jest nieudokumentowany, ubogi w komponenty i koduje stary
+kierunek wizualny** (krem `#E4E6E2`, szkło z `backdrop-filter` i cieniami). Konsekwencje:
+
+- podmiana wartości w `V2` propaguje się na 728 miejsc automatycznie — migracja jest tańsza,
+  niż zakładałem
+- prawdziwym wyciekiem jest **108 literałów hex** w TSX, i to jest liczba do wyzerowania
+- sześć prymitywów już istnieje; lista dwunastu z sekcji 7 częściowo wyważała otwarte drzwi
+- `v2Glass` (backdrop-filter + dwa cienie) jest wprost sprzeczne z regułą „zero cieni” i musi zginąć
+
+Poniższa lista martwych warstw pozostaje aktualna — to są rzeczy równoległe do `V2`, nie zamiast niego:
 
 - 77 różnych hardkodowanych hexów w `app/` i `src/`
 - kolory z `tailwind.config.ts` (`ink`, `paper`, `sand`, `amber`, `profit`, `loss`, `equity`, `bonds`) — użyte zero razy w TSX
@@ -134,16 +152,52 @@ Rozdzielamy je **na skali jasności**:
 
 Sześćdziesiąt punktów jasności różnicy sprawia, że nie da się ich pomylić, a marka zostaje zielona.
 
-### Paleta danych — wartości finalne (2026-07-30)
+### Paleta danych — wartości finalne (2026-07-30, poprawione po teście na dwusetnym ekranie)
+
+**Klas aktywów jest pięć, nie cztery.** Pierwsza wersja scalała lokaty z gotówką; aplikacja
+trzyma je osobno (`V2.deposit` i `V2.cash`), więc paleta musiała zostać przeliczona.
 
 | klasa | ciemny | jasny | marker |
 |---|---|---|---|
 | Akcje / ETF | `#3E7FB8` | `#20507E` | kwadrat |
 | Obligacje | `#C9A24F` | `#8F6B24` | romb |
-| Gotówka / lokaty | `#8FA6B8` | `#4A5A68` | koło |
+| Lokaty | `#B0A294` | `#7A6E63` | sześciokąt |
+| Gotówka | `#8FA6B8` | `#4A5A68` | koło |
 | Kryptowaluty | `#B6A2E4` | `#8A6FD0` | trójkąt |
 | Zysk | `#35A87A` | `#1E7A55` | `▲` |
 | Strata | `#D9463A` | `#AE1F14` | `▼` |
+
+Lokaty dostają **ciepły kamienny neutral** — semantycznie „nudne bezpieczne pieniądze”,
+a technicznie jedyne wolne pasmo, które nie wchodzi ani w zielony chrom, ani w parę zysk/strata.
+Wszystkie kontrasty ≥ 3,0 (najniższy: krypto 3,88 w jasnym, akcje 3,58 w ciemnym).
+Minimalny dystans przy CVD wynosi 18,6 w jasnym i 16,4 w ciemnym — mimo że przy markerach
+kształtowych nie musiał przekraczać progu.
+
+**Dobór ręczny wygrał z optymalizacją.** Trzy przebiegi wyszukiwania maksymalizującego dystans
+CVD produkowały wartości łamiące projekt: lokaty i gotówkę w zieleniach (kolor marki i zysku),
+gotówkę o L\* 18 lub 90 (kolor tekstu), a ostrzeżenie jako `#F7F70A`. Ograniczenie doboru
+**znaczeniem** dało lepszy wynik niż optymalizacja metryki.
+
+### Nie ma koloru ostrzeżenia — i nie będzie
+
+Ekran importu maluje wiersze czterema stanami: błąd, ostrzeżenie, pominięte, gotowe.
+Dziś mapuje je na `V2.loss`, `V2.gold`, `V2.muted`, `V2.profit`.
+
+Osobna barwa ostrzeżenia **nie może współistnieć z bursztynowymi obligacjami** — zmierzone
+dE przy CVD wynosi **6,0 w jasnym i 13,8 w ciemnym**, a w normalnym widzeniu tylko 11,2.
+Każdy bursztyn spełniający kontrast wpada w kolor obligacji.
+
+Rozwiązanie jest takie samo jak przy parze zysk/strata: **stan niesie słowo i glif, nie barwa.**
+Kolumna statusu w tabeli importu i tak zawiera pełny tekst („Gotowe”, „Pominięte”, albo zdanie
+z opisem błędu), więc kolor był tam ozdobą, a nie informacją. Konsekwencje:
+
+- **błąd** → prymityw `Alert`, z własnym traktowaniem, nie kolor komórki
+- **ostrzeżenie** → glif + słowo w atramencie
+- **pominięte** → `--ink-muted`
+- **gotowe** → atrament
+
+Kolor pozostaje zarezerwowany dla **klas aktywów** (pięć, wsparte kształtem) i dla **pary
+zysk/strata**. Paleta jest zamknięta i nie przyjmuje trzeciego ciepłego tonu obok akcentu i straty.
 
 **Każda klasa ma marker kształtowy, nie tylko barwę.** Kwadrat, romb, koło i trójkąt zastępują
 jednakowe kropki w tabelach i legendach. Dzięki temu klasa aktywu nie zależy od koloru w ogóle,
@@ -434,9 +488,29 @@ plus flaga `featured`. Odblokuje to telemetria (patrz sekcja 8) albo pierwsze ro
 naszym własnym rysunkiem, nie przerysem. Otwarte: czy zamawiamy znak u projektanta giloszy,
 i który obiekt z archiwum jest punktem wyjścia. Placeholder w lookbooku jest słaby i o tym wie.
 
-**Test na dwusetnym ekranie nie został przeprowadzony.** System jest sprawdzony na hero, dashboardzie
-i tabeli — czyli na widokach, które da się uładnić. Nie jest sprawdzony na błędach importu, edycji
-transakcji ani ustawieniach, a to tam rozsypują się systemy zbudowane pod portfolio.
+**~~Test na dwusetnym ekranie nie został przeprowadzony.~~** Wykonany 2026-07-30 na
+`import-page`, `add-transaction-modal` i `settings-page`. Znalazł: błąd w diagnozie (sekcja 1),
+piątą klasę aktywów, brak osi statusu i sześć brakujących prymitywów. Wszystko naprawione powyżej
+poza prymitywami — patrz niżej.
+
+**Sześć prymitywów do dopisania, znalezionych na brzydkich ekranach.** Lista z sekcji 7 powstała
+z widoków, które da się uładnić, i dlatego jest niepełna. Brakuje:
+
+| prymityw | gdzie występuje |
+|---|---|
+| `Alert` | `role="alert"` w imporcie — komunikaty błędu i wyniku |
+| `Toggle` | `role="switch"` w ustawieniach |
+| `RadioGroup` | `role="radiogroup"` w ustawieniach |
+| `Tabs` | 13 wystąpień w trzech plikach |
+| `Stepper` | wieloetapowy przepływ importu z paskiem postępu |
+| `Disclosure` | `<details>/<summary>` w modalu transakcji |
+
+`Select` i `Badge` **nie są brakami** — istnieją już jako `v2SelectStyle` i `V2Badge`.
+
+**`DataTable` był zaprojektowany pod liczby, a musi unieść prozę.** Tabela podglądu importu ma
+kolumnę statusu o `minWidth: 240` wypełnioną pełnymi zdaniami („Nieznany instrument, brak kursu
+na 2024-03-11”). Specyfikacja mówiła „liczby do prawej, tabelarycznie” i nic o kolumnie tekstowej,
+która się łamie i ma `verticalAlign: top`.
 
 ---
 
