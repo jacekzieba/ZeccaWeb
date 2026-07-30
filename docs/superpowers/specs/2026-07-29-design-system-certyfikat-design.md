@@ -312,6 +312,11 @@ istniejącą konfigurację Playwrighta; zrzut `/kit` w obu motywach łapie regre
    test blokujący obejmuje kolejny katalog
 6. Nowy domyślny preset dashboardu → weryfikacja: nowy użytkownik widzi 6 sekcji,
    istniejący config w localStorage nietknięty
+7. `src/domain/identity/rosette.ts` + test właściwościowy (sekcja 13.1) → weryfikacja:
+   dla `petals ∈ 4..9` liczba maksimów promienia równa się `petals`; podpięcie do `Seal`
+8. Przechwycenie `no` z NBP (sekcja 13.2) → weryfikacja: numer tabeli widoczny na rewersie
+   i pochodzi z odpowiedzi API, nie z literału. Dopiero potem rewers w UI, z `aria-expanded`
+   i wariantem dla `prefers-reduced-motion`
 
 ---
 
@@ -336,3 +341,93 @@ równorzędnych kafli komunikuje „sami nie wiemy, co jest najważniejsze", ale
 z rozmów z betatesterami, a nie analizy kodu. Do rozstrzygnięcia przy sekcji 4 planu.
 
 **Zamówienie giloszu jako znaku firmowego** — uzgodnione co do zasady, niezaplanowane co do wykonania.
+
+---
+
+## 13. Charakter — dwa przyjęte mechanizmy
+
+Diagnoza, która do tego doprowadziła: gilosz w wersji z sekcji 3 jest **tapetą**. W prawdziwym druku
+zabezpieczonym rozeta różnicuje emisje i nominały — coś koduje. Nasza nic nie robiła, więc czytała się
+jako ozdoba. Do tego interfejs wyglądał u każdego identycznie, a certyfikat jest *wystawiony komuś*.
+
+### 13.1 Rozeta jest funkcją portfela
+
+Parametry giloszu przestają być stałą i stają się wyliczeniem z danych użytkownika. Rozeta staje się
+wizualizacją, a przy okazji robi to, co gilosz robi na banknocie.
+
+**Seam:** czysta funkcja w `src/domain/identity/rosette.ts`, bez zależności od Reacta ani DOM.
+
+```
+rosetteParams(portfolio) → { petals, layers, phaseDeg }
+
+petals   = clamp(3 + liczba kont, 4, 9)
+layers   = clamp(3 + liczba klas aktywów, 5, 11)
+phaseDeg = f(data założenia portfela)      // NIE dzisiejsza data
+```
+
+`phaseDeg` liczymy z **daty założenia portfela**, nie z dnia dzisiejszego — inaczej rysunek zmieniałby
+się codziennie i przestałby być tożsamością. Ambientowy obrót 2°/min z sekcji 5 zostaje osobno,
+jako ruch, i przy `prefers-reduced-motion` nie działa.
+
+**Geometria — zweryfikowana pomiarem, nie założona:**
+
+```
+R = 210
+r = R / (petals − 1)      // liczba płatków hipotrochoidy = R/r + 1
+d = r × 1,1               // d MUSI być proporcjonalne do r
+próbkowanie: 2880 punktów, zapis z precyzją 2 miejsc
+```
+
+Pomyliłem się w tym dwa razy przy prototypowaniu, dlatego zapisuję oba błędy:
+
+1. Pierwszy wzór miał `r = R/(petals + 1)` i dawał konsekwentnie **o dwa płatki za dużo**.
+2. `d` było stałą absolutną niezależną od `r`, co przy małej liczbie płatków tworzyło
+   **pętle wewnętrzne** i liczba płatków przestawała się zgadzać.
+
+Po poprawce przemierzone 18 kombinacji `petals × d/r` — zero rozbieżności. Amplituda spada
+od 0,71 przy czterech płatkach do 0,27 przy dziewięciu; wszystkie policzalne wzrokiem.
+Limit dziewięciu jest **decyzją produktową** (nikt nie ma dziesięciu kont emerytalnych),
+nie ograniczeniem geometrii.
+
+**Test właściwościowy (obowiązkowy):** dla `petals ∈ 4..9` wygenerowana krzywa ma dokładnie
+`petals` maksimów promienia. Ten test wyłapałby oba powyższe błędy i jest jedynym powodem,
+dla którego wiem, że wzór jest teraz poprawny.
+
+### 13.2 Rewers — certyfikat ma drugą stronę
+
+Karta z sumą portfela odwraca się i pokazuje **skąd wzięła się ta liczba**. To nie jest gest
+dekoracyjny: odpowiada na pytanie, które spokojny właściciel naprawdę ma („skąd to wiecie?”),
+i jest jednocześnie jedynym zaplanowanym *momentem* w interfejsie.
+
+Pola rewersu i ich faktyczny stan w kodzie:
+
+| Pole | Stan |
+|---|---|
+| Kursy walut — numer tabeli NBP | **wymaga zmiany** — patrz niżej |
+| Inflacja — źródło i miesiąc | **jest** — `CpiObservation { provider:"gus", date:"RRRR-MM-01", yoyRate }` |
+| Obligacje — metoda wyceny | **jest** — `src/domain/valuation/` |
+| Metoda liczenia wyniku realnego | tekst statyczny |
+| Data przeliczenia i liczba transakcji | **jest** |
+
+**Numer tabeli NBP wymaga jednej zmiany.** API NBP zwraca pole `no` w każdym wpisie `rates`
+(potwierdzone na żywym endpoincie: `{"no":"146/A/NBP/2026","effectiveDate":"2026-07-30","mid":3.7644}`),
+ale schemat w `src/market-data/providers/nbp.ts:4` tego pola nie parsuje, więc je tracimy.
+Do zrobienia: `no: z.string()` w wewnętrznym obiekcie `rates` oraz odpowiadające pole w typie `FxRate`.
+Dopóki tego nie ma, **numer tabeli w makietach jest zmyślony** — nie wolno go wypuścić jako danej.
+
+**Dostępność jest tu warunkiem, nie dodatkiem.** Odwrócenie musi być prawdziwym `<button>`
+z `aria-expanded`, obsługiwanym z klawiatury — nie `div` z `onclick`. Przy
+`prefers-reduced-motion` zamiast obrotu 3D robimy przejście krzyżowe.
+
+Treść rewersu warto powtórzyć w FAQ, bo to jest realna odpowiedź na powtarzalne pytanie.
+
+### 13.3 Odrzucone w tej turze, dostępne później
+
+**Mikrodruk** — włosowe linie rozdzielające sekcje jako powtórzony mikrotekst, czytelny dopiero
+pod lupą. Klasyczne zabezpieczenie, zero kosztu dla interfejsu w skali 1:1. Nie wchodzi teraz,
+ale można dołożyć w dowolnym momencie bez zmian w tokenach.
+
+**Numer emisji** (`SERIA A · POZ. 0142 · 29.VII.2026`, z rzymskim miesiącem) i
+**perforacja kuponowa** jako rozdzielacz sekcji — obie tanie, obie zgodne z kierunkiem.
+Perforacja jest artefaktem obligacji (arkusze z odrywanymi kuponami odsetkowymi), więc
+nie koliduje z odrzuconym „rantem”, który był krawędzią monety.
