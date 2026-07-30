@@ -8,16 +8,49 @@ describe("tokeny", () => {
   });
 
   it("motyw jasny ma zatwierdzone wartości", () => {
-    expect(LIGHT.ground).toBe("#FBFCFA");
-    expect(LIGHT.ink).toBe("#123B2B");
-    expect(LIGHT.accent).toBe("#A0512F");
-    expect(LIGHT.assetDeposit).toBe("#7A6E63");
+    expect(LIGHT).toEqual({
+      ground: "#FBFCFA",
+      surface: "#FFFFFF",
+      surface2: "#F1F4F1",
+      line: "rgba(18,59,43,0.14)",
+      line2: "rgba(18,59,43,0.07)",
+      ink: "#123B2B",
+      inkMuted: "#55665C",
+      inkFaint: "#8A9890",
+      accent: "#A0512F",
+      onAccent: "#FFF6F2",
+      guilloche: "rgba(18,59,43,0.14)",
+      up: "#1E7A55",
+      down: "#AE1F14",
+      assetEquity: "#20507E",
+      assetBonds: "#8F6B24",
+      assetDeposit: "#7A6E63",
+      assetCash: "#4A5A68",
+      assetCrypto: "#8A6FD0",
+    });
   });
 
   it("motyw ciemny ma zatwierdzone wartości", () => {
-    expect(DARK.ground).toBe("#0B1A14");
-    expect(DARK.accent).toBe("#C9765F");
-    expect(DARK.assetDeposit).toBe("#B0A294");
+    expect(DARK).toEqual({
+      ground: "#0B1A14",
+      surface: "#122A20",
+      surface2: "#1A382A",
+      line: "rgba(159,191,174,0.16)",
+      line2: "rgba(159,191,174,0.08)",
+      ink: "#EDF2EE",
+      inkMuted: "#8FAE9C",
+      inkFaint: "#5E7A6B",
+      accent: "#C9765F",
+      onAccent: "#190A05",
+      guilloche: "rgba(159,191,174,0.09)",
+      up: "#35A87A",
+      down: "#D9463A",
+      assetEquity: "#3E7FB8",
+      assetBonds: "#C9A24F",
+      assetDeposit: "#B0A294",
+      assetCash: "#8FA6B8",
+      assetCrypto: "#B6A2E4",
+    });
   });
 
   it("jest pięć klas aktywów, nie cztery", () => {
