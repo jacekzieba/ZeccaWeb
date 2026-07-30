@@ -113,16 +113,33 @@ Rozdzielamy je **na skali jasności**:
 
 Sześćdziesiąt punktów jasności różnicy sprawia, że nie da się ich pomylić, a marka zostaje zielona.
 
-### Paleta danych
+### Paleta danych — wartości finalne (2026-07-30)
 
-| klasa | ciemny | jasny |
-|---|---|---|
-| Akcje / ETF | `#4A8FC7` | `#2C6394` |
-| Obligacje | `#C9A24F` | `#8F6B24` |
-| Gotówka / lokaty | `#8FA6B8` | `#566A7C` |
-| Kryptowaluty | `#9B84D4` | `#6B52A3` |
-| Zysk | `#35A87A` | `#1E7A55` |
-| Strata | `#D9463A` | `#AE1F14` |
+| klasa | ciemny | jasny | marker |
+|---|---|---|---|
+| Akcje / ETF | `#3E7FB8` | `#20507E` | kwadrat |
+| Obligacje | `#C9A24F` | `#8F6B24` | romb |
+| Gotówka / lokaty | `#8FA6B8` | `#4A5A68` | koło |
+| Kryptowaluty | `#B6A2E4` | `#8A6FD0` | trójkąt |
+| Zysk | `#35A87A` | `#1E7A55` | `▲` |
+| Strata | `#D9463A` | `#AE1F14` | `▼` |
+
+**Każda klasa ma marker kształtowy, nie tylko barwę.** Kwadrat, romb, koło i trójkąt zastępują
+jednakowe kropki w tabelach i legendach. Dzięki temu klasa aktywu nie zależy od koloru w ogóle,
+a kolor pozostaje przyspieszaczem. To była osobna decyzja, podjęta po zobaczeniu symulacji.
+
+**Akcent w ciemnym: `#C4715A` → `#C9765F`.** Przesunięcie dE 1,9, czyli wizualnie niewykrywalne;
+podnosi kontrast z 4,25 do 4,53 i domyka wymóg dla eyebrow, który jest małym tekstem.
+
+**Zysk i strata nie zmieniają barwy — zmienia się to, co jest pokolorowane.**
+Liczba renderuje się w atramencie (`--ink`), a barwę niesie **glif strzałki**. Wtedy kolor
+przestaje być tekstem i staje się grafiką, gdzie próg kontrastu to 3,0 zamiast 4,5 —
+a `#D9463A` osiąga 3,55 na obu ciemnych tłach. Rozwiązanie wynika wprost z decyzji, że nośnikiem
+znaczenia jest strzałka: skoro tak, to ona ma być kolorowa, a liczba ma być czytelna.
+Przy okazji liczby zyskują pełny kontrast atramentu (13,45) zamiast 3,55.
+
+Alternatywa, którą odrzuciłem: rozjaśnienie straty do progu 4,5 wymaga przesunięcia
+o dE ≥ 9 i psuje jej odległość CVD zarówno od akcentu, jak i od zysku.
 
 **Strata jest świadomie przesunięta w chłodniejszą, czystszą czerwień**, żeby odsunąć ją od
 terakotowego akcentu.
@@ -363,9 +380,9 @@ Zweryfikowana korekta przez rozsunięcie po jasności podnosi wynik do **22,7 w 
 | Kryptowaluty | `#6B52A3` → `#8A6FD0` | `#9B84D4` → `#B6A2E4` |
 | Gotówka | `#566A7C` → `#4A5A68` | bez zmian |
 
-Status: **czeka na decyzję** — zmiana jest widoczna (krypto wyraźnie jaśniejsze), więc wymaga
-akceptacji wizualnej, nie tylko liczbowej. Do rozważenia razem z nią: markery kształtowe
-(kwadrat / romb / koło / trójkąt) przy kropkach w tabeli, żeby klasa nie zależała od koloru w ogóle.
+Status: **przyjęte 2026-07-30, wraz z markerami kształtowymi.** Wartości finalne w sekcji 4.
+Obie usterki kontrastu w ciemnym też zamknięte: akcent przesunięty o dE 1,9, a zysk i strata
+rozwiązane przez przeniesienie barwy z liczby na glif. Paleta nie ma już otwartych pozycji.
 
 **Wartości palety danych nie są zweryfikowane.** To propozycja wyjściowa; część odcieni najpewniej
 drgnie po przepuszczeniu przez APCA.
