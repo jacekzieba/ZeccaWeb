@@ -58,8 +58,29 @@ Uzasadnienia, które to spinają:
   Obecna zieleń marki i ten kierunek trafiają się nawzajem.
 - **Terakota ma rodowód wenecki** — zielone okiennice, terakotowe dachy. Zecca to weneckie słowo
   (mennica) i weneckie miejsce.
-- Gilosz generujemy matematycznie w SVG (hipotrochoida, 14 płatków, 9 warstw) — bez zależności
-  od fotografii.
+- Gilosz generujemy matematycznie w SVG (hipotrochoida) — bez zależności od fotografii.
+
+### Sygnatura: rozeta w tle (potwierdzone 2026-07-30)
+
+Rozważana była alternatywa — **bordiura**, czyli ornament biegnący po obwodzie panelu, zamiast
+rozety w tle. Odrzucona; zostaje rozeta.
+
+**Reguła umiejscowienia, która z tego wynika.** Rozeta leży *pod* treścią, więc konkuruje z nią
+o czytelność. Żeby to nie stało się problemem:
+
+- rozeta **wolno** na powierzchniach o niskiej gęstości: hero z jedną wielką liczbą,
+  pusty stan, ciemny pas landingu, OG-image
+- rozeta **nie wolno** pod tabelą, listą pozycji ani żadnym widokiem wielowierszowym
+- krycie bez zmian: 14% na papierze, 9% na atramencie
+
+To jest jedyny warunek, pod którym wariant z rozetą w tle jest bezpieczny. Bez niego wiersze
+tabeli położone na ornamencie tracą kontrast.
+
+**Uczciwe źródło.** Wstępny ogląd kolekcji PWPW wskazuje, że obiekty mają **ornament brzegowy,
+a nie rozetę tokarską**. Nasza rozeta jest więc **własnym rysunkiem z rodziny giloszowej**,
+a nie przerysem z archiwum — i tak należy o niej mówić. Potwierdzone z archiwum:
+**zieleń jako kolor druku**. Przyjęty rodowód: **obligacja powstańcza z 1863** — jako historia
+opowiadana w tekście, nie jako źródło geometrii.
 
 Odrzucone kierunki: makrofotografia bitego metalu („Bicie"), krajobraz i horyzont („Długi horyzont").
 Konsekwencja: **budżet na fotografię jest wolny** — najlepsze zastosowanie to zamówienie prawdziwego
@@ -265,6 +286,24 @@ Dwa wyjątki:
 Landing idzie na **jasny** motyw, spójnie z aplikacją — ciemna strona prowadząca do jasnej
 aplikacji to przykry przeskok. Ciemny zostaje jako **jeden świadomy pas na landingu plus OG-image**.
 
+**Ciemny pas to sekcja „Zbudowane pod polskie realia"** (potwierdzone 2026-07-30). IKE, IKZE,
+obligacje detaliczne, NBP, GUS, podatek Belki — jedyna sekcja, której zagraniczny konkurent
+nie skopiuje, więc to jej należy się podkreślenie. Rozeta w tle jest tam dozwolona,
+bo to sekcja o niskiej gęstości.
+
+**Sekcja funkcji zostaje przy dziewięciu pozycjach.** Pierwotnie planowaliśmy zejście do trzech,
+ale to wymaga wiedzy z rozmów z betatesterami, a tej jeszcze nie ma. Dziewięć równorzędnych kafli
+jest złe, kiedy wiesz, co jest najważniejsze, i tego nie pokazujesz — kiedy naprawdę nie wiesz,
+jest po prostu uczciwe. Sekcję budujemy więc z **flagą `featured` w `copy.ts`**, tak żeby późniejsze
+wypromowanie trzech pozycji było zmianą danych, nie przeprojektowaniem.
+
+**Jak zdobyć brakującą odpowiedź.** Aplikacja ma już telemetrię ekranową: `ScreenView` emituje
+`*_viewed` na pięciu widokach (dashboard, pozycje, transakcje, zarobki, ustawienia). To rozstrzygnie
+najbardziej niepewną pozycję z dziewiątki — czy **„Moduł Zarobki"** zasługuje na landing, bo
+śledzenie dochodów w aplikacji inwestycyjnej jest albo ukrytym hitem, albo martwym kodem.
+Brakuje telemetrii na **imporcie**, raportach, porównaniu i instrumentach; import warto oznaczyć,
+bo to drugi kandydat na najmocniejszą funkcję.
+
 ---
 
 ## 9. Zakres — dashboard
@@ -384,17 +423,20 @@ Status: **przyjęte 2026-07-30, wraz z markerami kształtowymi.** Wartości fina
 Obie usterki kontrastu w ciemnym też zamknięte: akcent przesunięty o dE 1,9, a zysk i strata
 rozwiązane przez przeniesienie barwy z liczby na glif. Paleta nie ma już otwartych pozycji.
 
-**Wartości palety danych nie są zweryfikowane.** To propozycja wyjściowa; część odcieni najpewniej
-drgnie po przepuszczeniu przez APCA.
+**~~Wartości palety danych nie są zweryfikowane.~~** Zamknięte 2026-07-30 — patrz sekcja 4.
 
-**Ciemny pas na landingu nie został jeszcze zaprojektowany.** Wiadomo, że ma być, nie wiadomo,
-która sekcja.
+**~~Ciemny pas na landingu nie został zaprojektowany.~~** Zamknięte — sekcja „Zbudowane pod polskie realia".
 
-**Trzy najmocniejsze funkcje na landingu nie zostały wybrane.** Dzisiejsza lista dziewięciu
-równorzędnych kafli komunikuje „sami nie wiemy, co jest najważniejsze", ale wybór wymaga wiedzy
-z rozmów z betatesterami, a nie analizy kodu. Do rozstrzygnięcia przy sekcji 4 planu.
+**Trzy najmocniejsze funkcje — zablokowane brakiem danych, nie decyzją.** Zostaje dziewięć pozycji
+plus flaga `featured`. Odblokuje to telemetria (patrz sekcja 8) albo pierwsze rozmowy z betatesterami.
 
-**Zamówienie giloszu jako znaku firmowego** — uzgodnione co do zasady, niezaplanowane co do wykonania.
+**Znak nadal nie ma źródła ani wykonawcy.** Wiadomo, że rozeta zostaje jako sygnatura i że jest
+naszym własnym rysunkiem, nie przerysem. Otwarte: czy zamawiamy znak u projektanta giloszy,
+i który obiekt z archiwum jest punktem wyjścia. Placeholder w lookbooku jest słaby i o tym wie.
+
+**Test na dwusetnym ekranie nie został przeprowadzony.** System jest sprawdzony na hero, dashboardzie
+i tabeli — czyli na widokach, które da się uładnić. Nie jest sprawdzony na błędach importu, edycji
+transakcji ani ustawieniach, a to tam rozsypują się systemy zbudowane pod portfolio.
 
 ---
 
