@@ -125,7 +125,20 @@ Sześćdziesiąt punktów jasności różnicy sprawia, że nie da się ich pomyl
 | Strata | `#D9463A` | `#AE1F14` |
 
 **Strata jest świadomie przesunięta w chłodniejszą, czystszą czerwień**, żeby odsunąć ją od
-terakotowego akcentu. To najkruchszy punkt całej palety — patrz sekcja 10.
+terakotowego akcentu.
+
+**Wyniki weryfikacji (2026-07-30).** Kontrast WCAG i symulacja CVD policzone numerycznie
+(macierze Machado, severity 1.0, w przestrzeni liniowej):
+
+| Sprawdzenie | Jasny | Ciemny | Werdykt |
+|---|---|---|---|
+| Kontrast wszystkich barw wobec obu teł | ≥ 4,75 | akcent 4,25 / strata 3,55 na `--surface` | ciemny **do poprawy** |
+| Akcent vs strata, deuteranopia (dE76) | 11,2 | 14,9 | **oblane** (próg 15) |
+| Akcje vs krypto, deuteranopia (dE76) | 6,1 | 4,7 | **oblane** |
+| Zysk vs strata, deuteranopia | 29,2 | 28,3 | zdane |
+
+Dwie usterki kontrastu w ciemnym dotyczą małego tekstu (procenty w tabelach), nie grafiki —
+do podniesienia jasności przy implementacji tokenów.
 
 ### Zamknięta lista zadań akcentu
 
@@ -322,13 +335,37 @@ istniejącą konfigurację Playwrighta; zrzut `/kit` w obu motywach łapie regre
 
 ## 12. Ryzyka i rzeczy otwarte
 
-**Kolizja terakoty ze stratą jest realna.** W ciemnym akcent `#C4715A` i strata `#D9463A`,
-w jasnym `#A0512F` i `#AE1F14` — w obu motywach ta sama para leży w tym samym paśmie.
-Rozjeżdżają się temperaturą i nasyceniem, ale przy małych stopniach w tabeli zbliżają się
-do siebie, a przy protanopii i deuteranopii oba schodzą w ten sam brąz. Decyzja została podjęta
-świadomie; zabezpieczeniem jest obowiązkowy nośnik nie-kolorowy z sekcji 10. **Jeśli test na
-symulacji ślepoty barw nie przejdzie mimo strzałek, wariantem zapasowym jest odbarwienie pary
-zysk/strata do atramentu** — kolor zostaje wtedy wyłącznie dla klas aktywów.
+**Kolizja terakoty ze stratą — test oblany, decyzja podjęta świadomie.** Zmierzone dE76 przy
+deuteranopii: 11,2 w jasnym i 14,9 w ciemnym, przy progu 15. Przetestowano cztery warianty
+korekty w obrębie ciepłej rodziny — **każdy pogarszał wynik** (do 4,4). Przyczyna jest
+strukturalna: deuteranopia zwija terakotę i czerwień na tę samą oś, więc żadne przesunięcie
+odcienia tego nie ratuje.
+
+Decyzja (2026-07-30): **obie barwy zostają, a strzałka `▲`/`▼` przestaje być wzmocnieniem
+i staje się właściwym nośnikiem znaczenia.** Kolor jest wtedy przyspieszaczem dla tych,
+którzy go widzą, a nie informacją. Konsekwencja dla implementacji: `Stat` i `Figure` **nie mogą**
+renderować wartości zysku ani straty bez glifu — to jest niezmiennik komponentu, nie opcja stylu.
+
+Skala problemu jest przy tym wąska: akcent żyje na eyebrowach, znaczniku nawigacji, focusie i CTA,
+a strata na liczbach w tabelach. Stykają się realnie w jednym miejscu — w linii delty pod wielką liczbą.
+
+**Kolizja akcji z kryptowalutami — nowy problem, poważniejszy od powyższego.** Zmierzone dE76
+przy deuteranopii: 6,1 w jasnym i 4,7 w ciemnym, czyli praktycznie nierozróżnialne. Przyczyna:
+obie barwy mają niemal identyczną jasność (L\* 41 i 41), a różnią się wyłącznie odcieniem — czyli tym,
+co ślepota barw niszczy. Boli bardziej niż kolizja akcentu, bo wykres alokacji i kropki w tabeli
+identyfikują klasę **wyłącznie kolorem**, a akcje to zwykle największa pozycja w portfelu.
+
+Zweryfikowana korekta przez rozsunięcie po jasności podnosi wynik do **22,7 w jasnym i 17,6 w ciemnym**:
+
+| | jasny | ciemny |
+|---|---|---|
+| Akcje / ETF | `#2C6394` → `#20507E` | `#4A8FC7` → `#3E7FB8` |
+| Kryptowaluty | `#6B52A3` → `#8A6FD0` | `#9B84D4` → `#B6A2E4` |
+| Gotówka | `#566A7C` → `#4A5A68` | bez zmian |
+
+Status: **czeka na decyzję** — zmiana jest widoczna (krypto wyraźnie jaśniejsze), więc wymaga
+akceptacji wizualnej, nie tylko liczbowej. Do rozważenia razem z nią: markery kształtowe
+(kwadrat / romb / koło / trójkąt) przy kropkach w tabeli, żeby klasa nie zależała od koloru w ogóle.
 
 **Wartości palety danych nie są zweryfikowane.** To propozycja wyjściowa; część odcieni najpewniej
 drgnie po przepuszczeniu przez APCA.
