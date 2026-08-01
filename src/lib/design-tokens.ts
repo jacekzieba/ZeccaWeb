@@ -57,10 +57,9 @@ export const CHART_COLORS = {
 } as const;
 
 export const TYPOGRAPHY = {
-  system:
-    "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', system-ui, sans-serif",
-  serif: "'Newsreader', Georgia, 'Times New Roman', serif",
-  mono: "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+  system: "var(--font-text)",
+  serif: "var(--font-display)",
+  mono: "var(--font-code)",
 } as const;
 
 export const SHADOWS = {
