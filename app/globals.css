@@ -24,7 +24,9 @@ body {
   color: var(--ink);
 }
 
-/* Responsive grid helpers — avoids Tailwind arbitrary value conflicts with daisyUI */
+/* Responsive grid helpers. Powstały, żeby omijać konflikty wartości dowolnych
+   Tailwinda z daisyUI — daisyUI zostało usunięte, więc do sprawdzenia przy
+   migracji widoków, czy nadal są potrzebne. */
 .grid-chart-alloc {
   display: grid;
   grid-template-columns: 1fr;
