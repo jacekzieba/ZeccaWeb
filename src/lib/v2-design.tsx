@@ -142,7 +142,6 @@ export function V2Button({
       border: "none",
       background: V2.ink,
       color: V2.card,
-      boxShadow: `0 3px 10px ${v2Mix(V2.ink, 0.22)}, inset 0 0.5px 0 ${v2Mix("#ffffff", 0.16)}`,
     },
     soft: {
       border: `0.5px solid ${V2.line}`,

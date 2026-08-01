@@ -136,3 +136,36 @@ describe("v2Mix", () => {
     );
   });
 });
+
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
+
+describe("brak lokalnych kopii mieszania kolorow", () => {
+  it("pliki importujące COLORS lub V2 nie parsują koloru jako hex", () => {
+    const roots = ["src/features", "src/components", "src/lib"];
+    const files: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) {
+          walk(full);
+        } else if (/\.(ts|tsx)$/.test(entry.name)) {
+          files.push(full);
+        }
+      }
+    };
+    for (const root of roots) walk(root);
+
+    const offenders = files.filter((file) => {
+      const content = readFileSync(file, "utf8");
+      const parsesHex = /parseInt\([^)]*,\s*16\s*\)/.test(content) && content.includes(".slice(");
+      if (!parsesHex) return false;
+      return (
+        /import\s*\{[^}]*\bCOLORS\b[^}]*\}\s*from\s*["'][^"']*design-tokens["']/.test(content) ||
+        /import\s*\{[^}]*\bV2\b[^}]*\}\s*from\s*["'][^"']*v2-design["']/.test(content)
+      );
+    });
+
+    expect(offenders, `lokalne parsowanie hexa mimo importu COLORS/V2: ${offenders.join(", ")}`).toEqual([]);
+  });
+});
