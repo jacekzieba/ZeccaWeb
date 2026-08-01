@@ -50,9 +50,9 @@ export const CHART_COLORS = {
     COLORS.bonds,
     COLORS.cash,
     COLORS.neutral,
-    "#8A96A3",
+    COLORS.crypto,
     COLORS.other,
-    "#7A8B84",
+    COLORS.muted,
   ],
 } as const;
 
@@ -72,7 +72,7 @@ export const SHADOWS = {
 export const SURFACES = {
   glassCard: {
     background: COLORS.surface,
-    borderRadius: 16,
+    borderRadius: "var(--r-md)",
     border: `0.5px solid ${COLORS.border}`,
     boxShadow: SHADOWS.card,
   } satisfies CSSProperties,
