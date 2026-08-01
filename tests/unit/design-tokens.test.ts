@@ -158,7 +158,7 @@ describe("brak lokalnych kopii mieszania kolorow", () => {
 
     const offenders = files.filter((file) => {
       const content = readFileSync(file, "utf8");
-      const parsesHex = /parseInt\([^)]*,\s*16\s*\)/.test(content) && content.includes(".slice(");
+      const parsesHex = content.includes("parseInt(") && /,\s*16\s*\)/.test(content);
       if (!parsesHex) return false;
       return (
         /import\s*\{[^}]*\bCOLORS\b[^}]*\}\s*from\s*["'][^"']*design-tokens["']/.test(content) ||
