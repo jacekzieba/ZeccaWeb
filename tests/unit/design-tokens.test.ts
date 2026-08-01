@@ -91,3 +91,30 @@ describe("tokens.css", () => {
     expect(css).not.toMatch(/box-shadow|--shadow/);
   });
 });
+
+import { COLORS } from "@/lib/design-tokens";
+import { V2 } from "@/lib/v2-design";
+
+describe("warstwa zgodnosci", () => {
+  it("COLORS nie zawiera już literałów hex", () => {
+    for (const [key, value] of Object.entries(COLORS)) {
+      expect(value, `COLORS.${key}`).not.toMatch(/^#[0-9a-f]{3,8}$/i);
+    }
+  });
+
+  it("V2 nie zawiera już literałów hex", () => {
+    for (const [key, value] of Object.entries(V2)) {
+      expect(value, `V2.${key}`).not.toMatch(/^#[0-9a-f]{3,8}$/i);
+    }
+  });
+
+  it("klucze obu warstw zostały nietknięte", () => {
+    expect(Object.keys(COLORS)).toHaveLength(28);
+    expect(Object.keys(V2)).toHaveLength(20);
+  });
+
+  it("v2Glass zniknął — system nie ma cieni", async () => {
+    const mod = await import("@/lib/v2-design");
+    expect(mod).not.toHaveProperty("v2Glass");
+  });
+});

@@ -1,27 +1,28 @@
 import type { CSSProperties, ReactNode } from "react";
 import { TYPOGRAPHY } from "@/lib/design-tokens";
+import { token } from "@/design/tokens";
 
 export const V2 = {
-  page: "#E4E6E2",
-  card: "#F7F8F4",
-  card2: "#ECEEE7",
-  ink: "#161D18",
-  muted: "#4A544E",
-  subtle: "#717870",
-  line: "rgba(22,29,24,0.13)",
-  line2: "rgba(22,29,24,0.07)",
-  brand: "#214A35",
-  brandDeep: "#163022",
-  onBrand: "#F4F2E6",
-  gold: "#A2772E",
-  profit: "#23814F",
-  loss: "#A84432",
-  equity: "#34699A",
-  bonds: "#8C6F30",
-  deposit: "#5C6A60",
-  cash: "#8C8E82",
-  crypto: "#7E5AA5",
-  spec: "rgba(255,255,255,0.75)",
+  page: token("ground"),
+  card: token("surface"),
+  card2: token("surface2"),
+  ink: token("ink"),
+  muted: token("inkMuted"),
+  subtle: token("inkFaint"),
+  line: token("line"),
+  line2: token("line2"),
+  brand: token("ink"),
+  brandDeep: token("ink"),
+  onBrand: token("onAccent"),
+  gold: token("assetBonds"),
+  profit: token("up"),
+  loss: token("down"),
+  equity: token("assetEquity"),
+  bonds: token("assetBonds"),
+  deposit: token("assetDeposit"),
+  cash: token("assetCash"),
+  crypto: token("assetCrypto"),
+  spec: "transparent",
 } as const;
 
 export const V2_TYPE = {
@@ -38,37 +39,22 @@ export function v2Mix(hex: string, pct: number) {
   return `rgba(${r},${g},${b},${pct})`;
 }
 
-export const v2Glass: CSSProperties = {
-  background: v2Mix(V2.card, 0.7),
-  backdropFilter: "blur(38px) saturate(175%)",
-  WebkitBackdropFilter: "blur(38px) saturate(175%)",
-  border: `0.5px solid ${V2.spec}`,
-  boxShadow: `inset 0 1px 0 ${V2.spec}, 0 14px 36px ${v2Mix(V2.ink, 0.08)}`,
-};
-
 export function V2Card({
   children,
-  glass = false,
   pad = 22,
   style,
 }: {
   children: ReactNode;
-  glass?: boolean;
   pad?: number;
   style?: CSSProperties;
 }) {
   return (
     <div
       style={{
-        background: glass ? v2Mix(V2.card, 0.72) : V2.card,
-        backdropFilter: glass ? "blur(30px) saturate(170%)" : "none",
-        WebkitBackdropFilter: glass ? "blur(30px) saturate(170%)" : "none",
-        border: `0.5px solid ${glass ? V2.spec : V2.line}`,
-        borderRadius: 16,
+        background: V2.card,
+        border: `1px solid ${V2.line}`,
+        borderRadius: "var(--r-md)",
         padding: pad,
-        boxShadow: glass
-          ? `inset 0 1px 0 ${V2.spec}, 0 8px 28px ${v2Mix(V2.ink, 0.07)}`
-          : `0 1px 0 ${v2Mix(V2.ink, 0.03)}, 0 6px 20px ${v2Mix(V2.ink, 0.05)}`,
         ...style,
       }}
     >

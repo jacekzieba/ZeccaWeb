@@ -38,7 +38,7 @@ import {
   type SyncLoadResult,
 } from "@/features/sync/sync-unlock-panel";
 import { COLORS, SHADOWS, SURFACES, TYPOGRAPHY } from "@/lib/design-tokens";
-import { V2, v2Glass, v2Mix } from "@/lib/v2-design";
+import { V2, v2Mix } from "@/lib/v2-design";
 import { clearCachedUserDataKey } from "@/sync/encryption/key-cache";
 import { initials, useProfile } from "@/features/profile/profile-store";
 import { AppLock } from "@/features/auth/app-lock";
@@ -53,7 +53,6 @@ declare global {
 
 const glassSurface: CSSProperties = {
   ...SURFACES.glassPanel,
-  ...v2Glass,
 };
 
 // ── useMedia hook (SSR-safe, defaults to desktop to avoid shift) ──
