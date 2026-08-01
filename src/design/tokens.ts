@@ -64,9 +64,15 @@ export const RADIUS = {
 
 export const SPACE = [4, 8, 12, 16, 24, 32, 48, 64, 96] as const;
 
-/** Nazwa właściwości CSS dla tokenu: assetEquity -> --asset-equity */
+/**
+ * Nazwa właściwości CSS dla tokenu.
+ * assetEquity -> --asset-equity, surface2 -> --surface-2
+ *
+ * Cyfra też otwiera nowy człon: bez tego `surface2` dawało `--surface2`,
+ * co rozjeżdżało się z konwencją CSS i z konfiguracją Tailwinda.
+ */
 export function cssVarName(name: TokenName): string {
-  return "--" + name.replace(/[A-Z]/g, (c) => "-" + c.toLowerCase());
+  return "--" + name.replace(/[A-Z]|\d+/g, (part) => "-" + part.toLowerCase());
 }
 
 /** Odwołanie do tokenu w stylach JS: token("ink") -> "var(--ink)" */

@@ -67,3 +67,27 @@ describe("tokeny", () => {
     expect(SPACE).toEqual([4, 8, 12, 16, 24, 32, 48, 64, 96]);
   });
 });
+
+import { readFileSync } from "node:fs";
+import { cssVarName } from "@/design/tokens";
+
+describe("tokens.css", () => {
+  const css = readFileSync("src/design/tokens.css", "utf8");
+
+  it("deklaruje każdy token w :root", () => {
+    for (const name of TOKEN_NAMES) {
+      expect(css).toContain(`${cssVarName(name)}: ${LIGHT[name]}`);
+    }
+  });
+
+  it("nadpisuje każdy token w [data-theme='dark']", () => {
+    const dark = css.slice(css.indexOf('[data-theme="dark"]'));
+    for (const name of TOKEN_NAMES) {
+      expect(dark).toContain(`${cssVarName(name)}: ${DARK[name]}`);
+    }
+  });
+
+  it("nie deklaruje żadnego cienia", () => {
+    expect(css).not.toMatch(/box-shadow|--shadow/);
+  });
+});

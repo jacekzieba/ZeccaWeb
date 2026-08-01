@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
+import "@/design/tokens.css";
 import "./globals.css";
-import { COLORS } from "@/lib/design-tokens";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -25,8 +25,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pl" data-theme="investor">
-      <body className="antialiased" style={{ background: COLORS.bg, color: COLORS.text }}>
+    <html lang="pl" data-theme="light">
+      <body className="antialiased">
         {children}
         <Analytics />
         <SpeedInsights />

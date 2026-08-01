@@ -1,0 +1,56 @@
+/* Generowane ręcznie, ale pilnowane testem tests/unit/design-tokens.test.ts.
+   Zmieniasz tu — zmień też src/design/tokens.ts, inaczej test padnie. */
+
+:root {
+  color-scheme: light dark;
+
+  --ground: #FBFCFA;
+  --surface: #FFFFFF;
+  --surface-2: #F1F4F1;
+  --line: rgba(18,59,43,0.14);
+  --line-2: rgba(18,59,43,0.07);
+  --ink: #123B2B;
+  --ink-muted: #55665C;
+  --ink-faint: #8A9890;
+  --accent: #A0512F;
+  --on-accent: #FFF6F2;
+  --guilloche: rgba(18,59,43,0.14);
+  --up: #1E7A55;
+  --down: #AE1F14;
+  --asset-equity: #20507E;
+  --asset-bonds: #8F6B24;
+  --asset-deposit: #7A6E63;
+  --asset-cash: #4A5A68;
+  --asset-crypto: #8A6FD0;
+
+  --r-xs: 4px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-pill: 999px;
+
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px; --space-9: 96px;
+}
+
+[data-theme="dark"] {
+  --ground: #0B1A14;
+  --surface: #122A20;
+  --surface-2: #1A382A;
+  --line: rgba(159,191,174,0.16);
+  --line-2: rgba(159,191,174,0.08);
+  --ink: #EDF2EE;
+  --ink-muted: #8FAE9C;
+  --ink-faint: #5E7A6B;
+  --accent: #C9765F;
+  --on-accent: #190A05;
+  --guilloche: rgba(159,191,174,0.09);
+  --up: #35A87A;
+  --down: #D9463A;
+  --asset-equity: #3E7FB8;
+  --asset-bonds: #C9A24F;
+  --asset-deposit: #B0A294;
+  --asset-cash: #8FA6B8;
+  --asset-crypto: #B6A2E4;
+}
