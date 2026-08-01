@@ -62,6 +62,8 @@ export const TYPOGRAPHY = {
   mono: "var(--font-code)",
 } as const;
 
+// Pozostałość starego systemu — nowy system nie ma cieni. Nie dokładaj tu nowych
+// wpisów; ten blok zniknie razem z migracją src/features na tokeny (Plan 3).
 export const SHADOWS = {
   card: "0 1px 0 rgba(22,29,24,0.03), 0 6px 20px rgba(22,29,24,0.05)",
   cardStrong: "inset 0 1px 0 rgba(255,255,255,0.75), 0 14px 36px rgba(22,29,24,0.08)",
