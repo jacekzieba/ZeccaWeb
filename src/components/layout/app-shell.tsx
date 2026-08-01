@@ -529,7 +529,6 @@ export function AppShell({
                 padding: "6px 12px 6px 10px", borderRadius: 10,
                 background: V2.card,
                 border: `1px solid ${v2Mix(V2.ink, 0.28)}`,
-                boxShadow: `inset 0 1px 0 ${V2.spec}, 0 2px 8px ${v2Mix(V2.ink, 0.06)}`,
                 minWidth: 300, cursor: "text",
                 fontFamily: "inherit",
               }}

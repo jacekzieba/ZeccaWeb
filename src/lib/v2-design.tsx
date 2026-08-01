@@ -31,12 +31,8 @@ export const V2_TYPE = {
   mono: TYPOGRAPHY.mono,
 } as const;
 
-export function v2Mix(hex: string, pct: number) {
-  const h = hex.replace("#", "");
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return `rgba(${r},${g},${b},${pct})`;
+export function v2Mix(color: string, pct: number) {
+  return `color-mix(in srgb, ${color} ${Math.round(pct * 1000) / 10}%, transparent)`;
 }
 
 export function V2Card({

@@ -108,7 +108,6 @@ export function ManualSyncButton({ compact = false }: { compact?: boolean }) {
           border: `0.5px solid ${COLORS.border}`,
           background: v2Mix(V2.card, 0.7),
           color: COLORS.textMuted,
-          boxShadow: `inset 0 1px 0 ${V2.spec}`,
           fontFamily: "inherit",
           fontSize: 12,
           fontWeight: 700,

@@ -93,7 +93,7 @@ describe("tokens.css", () => {
 });
 
 import { COLORS } from "@/lib/design-tokens";
-import { V2 } from "@/lib/v2-design";
+import { V2, v2Mix } from "@/lib/v2-design";
 
 describe("warstwa zgodnosci", () => {
   it("COLORS nie zawiera już literałów hex", () => {
@@ -116,5 +116,23 @@ describe("warstwa zgodnosci", () => {
   it("v2Glass zniknął — system nie ma cieni", async () => {
     const mod = await import("@/lib/v2-design");
     expect(mod).not.toHaveProperty("v2Glass");
+  });
+});
+
+describe("v2Mix", () => {
+  it("wywołane z tokenem V2 nie produkuje NaN", () => {
+    expect(v2Mix(V2.ink, 0.32)).not.toContain("NaN");
+  });
+
+  it("zwraca poprawną składnię color-mix dla wejścia var()", () => {
+    expect(v2Mix("var(--ink)", 0.32)).toBe(
+      "color-mix(in srgb, var(--ink) 32%, transparent)"
+    );
+  });
+
+  it("nadal działa dla literału hex (zgodność wsteczna)", () => {
+    expect(v2Mix("#161D18", 0.07)).toBe(
+      "color-mix(in srgb, #161D18 7%, transparent)"
+    );
   });
 });
