@@ -19,15 +19,15 @@ const files = MIGRATED.flatMap(walk).filter((f) => !ALLOWED.has(f));
 
 describe("bramka wartosci zahardkodowanych", () => {
   it.each(files)("%s nie zawiera literalu hex", (file) => {
-    const hits = readFileSync(file, "utf8").match(/#[0-9a-fA-F]{6}\b/g) ?? [];
+    const hits = readFileSync(file, "utf8").match(/#[0-9a-fA-F]{3,8}\b/g) ?? [];
     expect(hits, `znaleziono: ${hits.join(", ")}`).toHaveLength(0);
   });
 
   it.each(files)("%s nie zawiera promienia spoza tokenow", (file) => {
     const src = readFileSync(file, "utf8");
     const hits = [
-      ...(src.match(/border-radius:\s*\d+px/g) ?? []),
-      ...(src.match(/borderRadius:\s*["']?\d+/g) ?? []),
+      ...(src.match(/border(?:-[a-z]+)*-radius:\s*\d+px/g) ?? []),
+      ...(src.match(/border(?:[A-Z][a-z]+)*Radius:\s*["']?\d+/g) ?? []),
     ];
     expect(hits, `znaleziono: ${hits.join(", ")}`).toHaveLength(0);
   });
