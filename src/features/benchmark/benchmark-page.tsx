@@ -21,7 +21,7 @@ const C = {
   subtle: token("inkFaint"),
   line: token("line"),
   line2: token("line2"),
-  brand: token("ink"),
+  brand: token("accent"),
   gold: token("assetBonds"),
   profit: token("up"),
   loss: token("down"),
