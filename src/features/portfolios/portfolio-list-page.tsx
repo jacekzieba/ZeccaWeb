@@ -1,5 +1,6 @@
 "use client";
 
+import { token } from "@/design/tokens";
 import Link from "next/link";
 import { useMemo, useState, type CSSProperties } from "react";
 import { PortfolioEditorModal } from "@/features/portfolios/portfolio-editor-modal";
@@ -10,13 +11,13 @@ import { useSyncStore } from "@/sync/store/sync-store";
 import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
 import { useProfile } from "@/features/profile/profile-store";
 
-const INK = "#1C3144";
+const INK = token("ink");
 const MUTED = "rgba(28,49,68,0.58)";
 const SUBTLE = "rgba(28,49,68,0.38)";
 const LINE_SOFT = "rgba(28,49,68,0.06)";
-const PROFIT = "#2D9C6B";
-const LOSS = "#B85042";
-const AMBER = "#B87830";
+const PROFIT = token("up");
+const LOSS = token("down");
+const AMBER = token("accent");
 const glassCard: CSSProperties = {
   background: "rgba(255,253,249,0.82)",
   backdropFilter: "blur(30px) saturate(160%)",
@@ -36,7 +37,7 @@ function fmtPct(n: number) {
 }
 
 const PORTFOLIO_COLORS = [
-  "#6B3F5A", "#34699A", "#7EA16B", "#C97B30", "#5E6C84", "#8A7A3C",
+  "#6B3F5A", token("assetEquity"), token("up"), token("accent"), token("inkMuted"), token("assetBonds"),
 ];
 
 export function PortfolioListPage() {

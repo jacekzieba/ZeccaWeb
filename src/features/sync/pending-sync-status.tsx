@@ -1,5 +1,6 @@
 "use client";
 
+import { token } from "@/design/tokens";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { COLORS, SHADOWS } from "@/lib/design-tokens";
 import {
@@ -144,7 +145,7 @@ export function PendingSyncStatus() {
           borderRadius: 9,
           border: `0.5px solid ${conflictCount > 0 ? "rgba(184,80,66,0.26)" : COLORS.border}`,
           background: conflictCount > 0 ? "rgba(184,80,66,0.10)" : COLORS.surface,
-          color: conflictCount > 0 ? "#B85042" : COLORS.textMuted,
+          color: conflictCount > 0 ? token("down") : COLORS.textMuted,
           fontSize: 12,
           fontWeight: 700,
           cursor: "pointer",
@@ -231,7 +232,7 @@ export function PendingSyncStatus() {
                         borderRadius: 7,
                         border: "0.5px solid rgba(184,80,66,0.20)",
                         background: "transparent",
-                        color: "#B85042",
+                        color: token("down"),
                         fontSize: 11,
                         cursor: !supabase || syncing ? "not-allowed" : "pointer",
                         fontFamily: "inherit",
@@ -258,7 +259,7 @@ export function PendingSyncStatus() {
                   </div>
                 </div>
                 {operation.error && (
-                  <div style={{ fontSize: 11, color: "#B85042", marginTop: 7 }}>
+                  <div style={{ fontSize: 11, color: token("down"), marginTop: 7 }}>
                     {operation.error}
                   </div>
                 )}

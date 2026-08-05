@@ -1,5 +1,6 @@
 "use client";
 
+import { token } from "@/design/tokens";
 import {
   ArcElement,
   Chart as ChartJS,
@@ -22,7 +23,7 @@ export function AllocationChart({ slices }: { slices: AllocationSlice[] }) {
           {
             data: slices.map((slice) => slice.percent),
             backgroundColor: palette,
-            borderColor: "#ffffff",
+            borderColor: token("surface"),
             borderWidth: 3,
           },
         ],

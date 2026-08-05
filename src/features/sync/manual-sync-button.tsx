@@ -1,5 +1,6 @@
 "use client";
 
+import { token } from "@/design/tokens";
 import { useEffect, useState, type CSSProperties } from "react";
 import { RefreshCw } from "lucide-react";
 import { COLORS, SHADOWS } from "@/lib/design-tokens";
@@ -131,7 +132,7 @@ export function ManualSyncButton({ compact = false }: { compact?: boolean }) {
           aria-live={feedback.kind === "error" ? "assertive" : "polite"}
           style={{
             ...feedbackStyle,
-            color: feedback.kind === "error" ? "#B85042" : COLORS.textMuted,
+            color: feedback.kind === "error" ? token("down") : COLORS.textMuted,
           }}
         >
           {feedback.text}

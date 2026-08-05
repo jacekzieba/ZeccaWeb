@@ -1,11 +1,12 @@
+import { token } from "@/design/tokens";
 import type { CSSProperties, ElementType, HTMLAttributes, ReactNode } from "react";
 import { formatCurrency, formatPercent } from "@/lib/money";
 import { AnimatedCurrencyMetric, AnimatedPercentMetric } from "./animated-metric";
 import { landingCopy } from "./copy";
 import { buildLandingDemoSnapshot } from "./landing-demo-data";
 import { StaticValueChart } from "./static-value-chart";
-const ALLOCATION_COLORS = ["#34699A", "#7E5AA5", "#56677D", "#8C6F30"];
-const PORTFOLIO_COLORS = ["#234d38", "#9a7b3c", "#34699a"];
+const ALLOCATION_COLORS = [token("assetEquity"), token("assetCrypto"), token("assetCash"), token("assetBonds")];
+const PORTFOLIO_COLORS = ["#234d38", "#9a7b3c", token("assetEquity")];
 
 type EditableHtmlProps = HTMLAttributes<HTMLElement> & {
   as: ElementType;

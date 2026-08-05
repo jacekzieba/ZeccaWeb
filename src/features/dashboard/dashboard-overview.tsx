@@ -1078,6 +1078,7 @@ function SummaryCard({
             padding: isMobile ? "22px 22px 6px" : "30px 30px 26px",
             borderRight: isTablet ? "none" : `0.5px solid ${PALETTE.line}`,
             position: "relative",
+            overflow: "hidden",
           }}
         >
           {/* Rozeta trzyma się górnej krawędzi i wychodzi poza kartę, żeby nie
@@ -1088,7 +1089,7 @@ function SummaryCard({
             layers={seal.layers}
             phase={seal.phase}
             size={300}
-            style={{ position: "absolute", right: -150, top: -90 }}
+            style={{ position: "absolute", right: -120, bottom: -120 }}
           />
           <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
             <Eyebrow>Wartość portfela</Eyebrow>

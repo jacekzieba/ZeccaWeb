@@ -1,5 +1,6 @@
 "use client";
 
+import { token } from "@/design/tokens";
 import Link from "next/link";
 import { use, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useSyncStore } from "@/sync/store/sync-store";
@@ -74,11 +75,11 @@ function useMedia(query: string) {
   return matches;
 }
 
-const INK = "#1C3144";
+const INK = token("ink");
 const MUTED = "rgba(28,49,68,0.58)";
 const SUBTLE = "rgba(28,49,68,0.38)";
 const LINE_SOFT = "rgba(28,49,68,0.06)";
-const PROFIT = "#2D9C6B";
+const PROFIT = token("up");
 
 const glassCard: CSSProperties = {
   background: "rgba(255,253,249,0.82)",
@@ -119,13 +120,13 @@ const KIND_LABELS: Record<string, string> = {
 };
 
 const KIND_COLORS: Record<string, string> = {
-  stock: "#34699A",
-  etf: "#2D9C6B",
-  treasuryBond: "#8A7A3C",
-  listedBond: "#7EA16B",
+  stock: token("assetEquity"),
+  etf: token("up"),
+  treasuryBond: token("assetBonds"),
+  listedBond: token("up"),
   crypto: "#9B6BC4",
-  deposit: "#C97B30",
-  cash: "#5E6C84",
+  deposit: token("accent"),
+  cash: token("inkMuted"),
 };
 
 // --- Registry & theme ---
@@ -169,9 +170,9 @@ const PD_REGISTRY: SectionRegistry<string> = {
 };
 
 const PD_THEME: SectionPanelTheme = {
-  card: "#FFFDF9",
-  ink: "#1C3144",
-  brand: "#34699A",
+  card: token("surface"),
+  ink: token("ink"),
+  brand: token("assetEquity"),
   muted: "rgba(28,49,68,0.58)",
   subtle: "rgba(28,49,68,0.38)",
   line: "rgba(28,49,68,0.10)",
@@ -213,7 +214,7 @@ function HistoryCard({
                 fontFamily: TYPOGRAPHY.system,
                 fontSize: 11.5,
                 fontWeight: period === option ? 700 : 500,
-                background: period === option ? "#FFFDF9" : "transparent",
+                background: period === option ? token("surface") : "transparent",
                 color: period === option ? INK : MUTED,
                 boxShadow: period === option ? "0 1px 4px rgba(28,49,68,0.12)" : "none",
                 transition: "all .15s",
@@ -611,7 +612,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
           style={{
             border: `0.5px solid ${PD_THEME.line}`,
             borderRadius: 10,
-            background: showCustomize ? "rgba(52,105,154,0.10)" : "#FFFDF9",
+            background: showCustomize ? "rgba(52,105,154,0.10)" : token("surface"),
             color: showCustomize ? PD_THEME.brand : INK,
             cursor: "pointer",
             fontFamily: TYPOGRAPHY.system,

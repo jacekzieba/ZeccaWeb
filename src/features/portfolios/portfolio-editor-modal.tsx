@@ -1,5 +1,6 @@
 "use client";
 
+import { token } from "@/design/tokens";
 import { createPortal } from "react-dom";
 import {
   useEffect,
@@ -18,13 +19,13 @@ import {
   normalizePortfolioType,
 } from "@/features/portfolios/portfolio-types";
 
-const INK = "#1C3144";
+const INK = token("ink");
 const MUTED = "rgba(28,49,68,0.58)";
 const SUBTLE = "rgba(28,49,68,0.38)";
 const LINE_SOFT = "rgba(28,49,68,0.06)";
-const LOSS = "#B85042";
-const AMBER = "#B87830";
-const PAPER = "#FBFAF6";
+const LOSS = token("down");
+const AMBER = token("accent");
+const PAPER = token("ground");
 
 const CURRENCIES = ["PLN", "USD", "EUR", "GBP", "CHF", "CZK"];
 
