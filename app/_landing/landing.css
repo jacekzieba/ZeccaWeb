@@ -1170,7 +1170,7 @@
   --lift: -4px;
   border-color: color-mix(in srgb, var(--brand) 22%, var(--line));
 }
-.zlanding .feat.reveal.in > * {
+.zlanding.js-reveal .feat.reveal.in > * {
   animation: feature-content-in 480ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
   animation-delay: calc(var(--feature-order) * 45ms);
 }
@@ -2114,20 +2114,24 @@
   color: rgba(244, 242, 230, 0.5);
 }
 
-.zlanding .reveal {
+/* Odslanianie przy przewijaniu jest WZBOGACENIEM, nie warunkiem widocznosci.
+   Tresc chowamy dopiero wtedy, gdy skrypt potwierdzi, ze ja odsloni — klasa
+   js-reveal jest dodawana tuz przed uruchomieniem obserwatora. Bez tego dowolny
+   blad w efekcie, wylaczony JavaScript albo wolne lacze daja pusta strone. */
+.zlanding.js-reveal .reveal {
   opacity: 0;
   transform: translateY(18px);
   transition:
     opacity 0.7s cubic-bezier(0.2, 0.6, 0.2, 1),
     transform 0.7s cubic-bezier(0.2, 0.6, 0.2, 1);
 }
-.zlanding .reveal.in {
+.zlanding.js-reveal .reveal.in {
   opacity: 1;
   transform: none;
 }
 /* Feature cards keep their scroll-reveal fade, but once revealed they own the
    transform so the pointer tilt isn't cancelled by .reveal.in { transform:none }. */
-.zlanding .feat.reveal.in {
+.zlanding.js-reveal .feat.reveal.in {
   transform: perspective(900px) translate3d(0, var(--lift), 0) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
   transition:
     opacity 0.6s cubic-bezier(0.2, 0.6, 0.2, 1),
@@ -2512,7 +2516,7 @@
   .zlanding .static-vvd-chart path,
   .zlanding .static-vvd-chart polyline,
   .zlanding .allocation-card circle,
-  .zlanding .feat.reveal.in > *,
+  .zlanding.js-reveal .feat.reveal.in > *,
   .zlanding details.faq[open] .ans {
     animation: none;
     opacity: 1;
@@ -2520,7 +2524,7 @@
     scale: none;
     filter: none;
   }
-  .zlanding .reveal {
+  .zlanding.js-reveal .reveal {
     opacity: 1;
     transform: none;
     transition: none;
@@ -2531,7 +2535,7 @@
   .zlanding .portfolios-card,
   .zlanding .feat,
   .zlanding .feat:hover,
-  .zlanding .feat.reveal.in {
+  .zlanding.js-reveal .feat.reveal.in {
     transform: none;
     transition: none;
   }

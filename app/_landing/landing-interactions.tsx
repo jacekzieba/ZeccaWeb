@@ -508,7 +508,10 @@ export function LandingInteractions() {
       };
     }
 
-    // Scroll reveal
+    // Scroll reveal. Klase js-reveal dodajemy DOPIERO TERAZ — dzieki temu, jesli
+    // cokolwiek wyzej rzuci wyjatkiem albo skrypt sie nie wykona, tresc pozostaje
+    // widoczna zamiast zniknac. Animacja jest wzbogaceniem, nie warunkiem.
+    root?.classList.add("js-reveal");
     const els = Array.from(document.querySelectorAll<HTMLElement>(".zlanding .reveal"));
     let io: IntersectionObserver | null = null;
     if (typeof IntersectionObserver === "undefined") {
