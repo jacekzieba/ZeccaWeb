@@ -57,7 +57,6 @@ export function LandingInteractions() {
       ".zlanding .nav-links a",
       ".zlanding .store-badge span",
       ".zlanding .hero-beta-link",
-      ".zlanding .compare-table [data-landing-edit-id]",
       ".zlanding .faq [data-landing-edit-id]",
     ].join(",");
     const dynamicTextSelector = [

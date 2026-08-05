@@ -49,31 +49,6 @@ const FEATURE_ICONS: { bg: string; svg: string }[] = [
   },
 ];
 
-// Compare-table row icons, aligned 1:1 with copy.comparison.rows.
-const COMPARE_ROW_ICONS: string[] = [
-  // Cena
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 9.3c0-1.1 1.2-1.9 2.8-1.9s2.8.8 2.8 1.9c0 1.6-5.6 1.4-5.6 4 0 1.1 1.2 1.9 2.8 1.9s2.8-.8 2.8-1.9M12 6v1.3M12 16.7V18"/></svg>`,
-  // Import transakcji od brokera
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v10m0 0l-3.5-3.5M12 13l3.5-3.5"/><path d="M4 15v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg>`,
-  // IKE i IKZE jako osobne portfele
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg>`,
-  // Obligacje detaliczne
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>`,
-  // Kursy walut z NBP
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h11m0 0l-3.5-3.5M18 7l-3.5 3.5"/><path d="M17 17H6m0 0l3.5-3.5M6 17l3.5 3.5"/></svg>`,
-  // Inflacja CPI z GUS
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 4 5-7 4 5"/><path d="M3 21h18"/></svg>`,
-  // XIRR / TWR / CAGR
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>`,
-  // Szyfrowanie end-to-end
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>`,
-  // Aplikacja natywna macOS / iOS
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="14" height="10" rx="1.5"/><path d="M1 16.5h16"/><rect x="18.5" y="5" width="4" height="14" rx="1"/><path d="M20.2 16.3h.1"/></svg>`,
-  // Pełna personalizacja
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h8M16 6h4M4 12h4M10 12h10M4 18h11M19 18h1"/><circle cx="12" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>`,
-  // Ryzyko błędu przy utrzymaniu
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l9.5 16.5H2.5z"/><path d="M12 9.5v5"/><circle cx="12" cy="17.2" r="0.9" fill="currentColor" stroke="none"/></svg>`,
-];
 
 // Investor-cell badge colours, aligned 1:1 with copy.investor.cells.
 const INVESTOR_BADGE_CLASSES = ["b-br", "b-bo", "b-eq", "b-go", "b-de", "b-br"];
@@ -281,7 +256,7 @@ const showcaseHtml = `
 </section>`;
 
 const investorHtml = `
-<section class="block" id="inwestor">
+<section class="block band-dark" id="inwestor">
   <div class="wrap">
     <div class="sec-head reveal">
       <div class="sec-num">${c.investor.eyebrow}</div>
@@ -303,53 +278,6 @@ const investorHtml = `
   </div>
 </section>`;
 
-const cmp = c.comparison;
-const comparisonHtml = `
-<section class="block compare-section" id="porownanie">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <div class="sec-num">${cmp.eyebrow}</div>
-      <h2 class="sec-title">${cmp.title}</h2>
-      <p class="sec-desc">${cmp.desc}</p>
-    </div>
-
-    <div class="compare-scroll reveal">
-      <table class="compare-table">
-        <colgroup>
-          <col class="compare-col-label" />
-          ${cmp.columns.map((_, i) => `<col class="${i === 0 ? "compare-us" : ""}" />`).join("\n          ")}
-        </colgroup>
-        <thead>
-          <tr>
-            <th scope="col" class="compare-col-label"><span class="sr-only">Kryterium</span></th>
-            ${cmp.columns
-              .map(
-                (col, i) =>
-                  `<th scope="col" class="${i === 0 ? "compare-us" : ""}">${i === 0 ? '<span class="compare-tag" data-landing-edit-id="comparison.recommended">Polecane</span>' : ""}<span data-landing-edit-id="comparison.columns.${i}">${col}</span></th>`,
-              )
-              .join("\n            ")}
-          </tr>
-        </thead>
-        <tbody>
-          ${cmp.rows
-            .map(
-              (row, r) => `<tr>
-            <th scope="row" class="compare-col-label">
-              <span class="compare-row-label">
-                <span class="compare-row-ic">${COMPARE_ROW_ICONS[r] ?? ""}</span>
-                <span data-landing-edit-id="comparison.rows.${r}.label">${row.label}</span>
-              </span>
-            </th>
-            ${row.values.map((value, i) => `<td class="${i === 0 ? "compare-us" : ""}" data-label="${cmp.columns[i]}"><span data-landing-edit-id="comparison.rows.${r}.values.${i}">${value}</span></td>`).join("\n            ")}
-          </tr>`,
-            )
-            .join("\n          ")}
-        </tbody>
-      </table>
-    </div>
-    <p class="compare-foot">${cmp.footnote}</p>
-  </div>
-</section>`;
 
 const faqHtml = `
 <section class="block" id="faq" style="background:var(--page);border-top:.5px solid var(--line);">
@@ -480,7 +408,6 @@ ${howItWorksHtml}
 ${featuresHtml}
 ${showcaseHtml}
 ${investorHtml}
-${comparisonHtml}
 ${faqHtml}
 ${betaListHtml}
 ${feedbackHtml}

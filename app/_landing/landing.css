@@ -70,8 +70,6 @@
   top: 0;
   z-index: 50;
   background: rgba(228, 224, 215, 0.78);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
   border-bottom: 1px solid rgba(26, 33, 27, 0.09);
 }
 .zlanding .nav-progress {
@@ -102,7 +100,7 @@
 .zlanding .mark {
   width: 34px;
   height: 34px;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   flex-shrink: 0;
   display: block;
   overflow: hidden;
@@ -128,7 +126,7 @@
   color: var(--gold);
   background: var(--gold-tint);
   padding: 3px 8px;
-  border-radius: 6px;
+  border-radius: var(--r-xs);
   margin-left: 2px;
   border: 0.5px solid color-mix(in srgb, var(--gold) 30%, transparent);
 }
@@ -143,7 +141,7 @@
   font-weight: 500;
   color: var(--muted);
   padding: 9px 12px;
-  border-radius: 9px;
+  border-radius: var(--r-sm);
   transition: 0.15s;
 }
 .zlanding .nav-links a.lnk:hover {
@@ -167,7 +165,7 @@
   font-family: var(--ui);
   font-weight: 600;
   font-size: 13.5px;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   border: none;
   cursor: pointer;
   padding: 10px 16px;
@@ -202,7 +200,7 @@
 .zlanding .btn-lg {
   padding: 14px 22px;
   font-size: 15px;
-  border-radius: 12px;
+  border-radius: var(--r-sm);
 }
 .zlanding .nav-burger {
   display: none;
@@ -214,7 +212,7 @@
   flex-shrink: 0;
   padding: 0;
   border: 1px solid var(--line);
-  border-radius: 11px;
+  border-radius: var(--r-sm);
   background: color-mix(in srgb, var(--card) 70%, transparent);
   color: var(--ink);
   cursor: pointer;
@@ -226,7 +224,7 @@
   display: block;
   width: 18px;
   height: 2px;
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   background: currentColor;
   transition: transform 0.2s ease, background-color 0.2s ease;
 }
@@ -270,7 +268,7 @@
   color: var(--muted);
   background: var(--card);
   border: 0.5px solid var(--line);
-  border-radius: 99px;
+  border-radius: var(--r-xl);
   padding: 8px 16px;
   margin-bottom: 28px;
 }
@@ -406,7 +404,7 @@
   align-items: center;
   gap: 12px;
   padding: 11px 20px 11px 16px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: var(--ink);
   color: var(--on-brand);
   position: relative;
@@ -460,7 +458,7 @@
   color: var(--brand-deep);
   background: var(--asset-bonds);
   padding: 2px 7px;
-  border-radius: 6px;
+  border-radius: var(--r-xs);
 }
 .zlanding .hero-beta-link {
   display: inline-flex;
@@ -506,6 +504,8 @@
   gap: 14px;
   perspective: 1300px;
   min-width: 0;
+  /* Wychodzi poza krawedz: ogladasz kawalek produktu, nie jego ilustracje. */
+  margin-right: -110px;
 }
 .zlanding .product-preview-secondary {
   display: grid;
@@ -520,15 +520,13 @@
   position: relative;
   min-width: 0;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.78);
-  border-radius: 19px;
-  background: rgba(250, 247, 237, 0.72);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
   transform: translate3d(0, var(--lift), 0) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
   transform-style: preserve-3d;
   transition: transform 180ms ease-out, box-shadow 180ms ease-out, border-color 180ms ease-out;
   will-change: transform;
-  backdrop-filter: blur(22px) saturate(135%);
-  -webkit-backdrop-filter: blur(22px) saturate(135%);
 }
 .zlanding .product-card::before {
   content: "";
@@ -561,7 +559,7 @@
   gap: 10px;
   padding: 10px 12px;
   border: 1px solid rgba(255, 255, 255, 0.72);
-  border-radius: 12px;
+  border-radius: var(--r-sm);
   background: rgba(26, 33, 27, 0.92);
   color: var(--on-brand);
   font-family: var(--ui);
@@ -576,7 +574,7 @@
 }
 .landing-edit-toolbar button {
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   padding: 6px 9px;
   background: var(--gold);
   color: var(--brand-deep);
@@ -667,7 +665,7 @@
 .zlanding .demo-status span {
   width: 6px;
   height: 6px;
-  border-radius: 99px;
+  border-radius: var(--r-xl);
   background: var(--profit);
 }
 .zlanding .value-card > div:last-child {
@@ -704,19 +702,19 @@
 .zlanding .static-chart-legend i {
   width: 9px;
   height: 9px;
-  border-radius: 99px;
+  border-radius: var(--r-xl);
   flex: 0 0 auto;
 }
 .zlanding .static-chart-ranges {
   display: inline-flex;
   padding: 3px;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   background: rgba(26, 33, 27, 0.06);
 }
 .zlanding .static-chart-ranges button {
   padding: 4px 9px;
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--r-xs);
   background: transparent;
   color: var(--muted);
   cursor: pointer;
@@ -823,7 +821,7 @@
 .zlanding .static-allocation-legend i {
   width: 9px;
   height: 9px;
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   flex: 0 0 auto;
 }
 .zlanding .static-allocation-legend span {
@@ -889,7 +887,7 @@
 .zlanding .portfolio-name > span {
   width: 7px;
   height: 7px;
-  border-radius: 99px;
+  border-radius: var(--r-xl);
   margin-top: 5px;
   flex: 0 0 auto;
 }
@@ -942,7 +940,7 @@
   transform: translateX(-50%);
   width: 48px;
   height: 2px;
-  border-radius: 2px;
+  border-radius: var(--r-xs);
   background: var(--gold);
 }
 .zlanding .trust-proof b {
@@ -953,7 +951,7 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   border: 0.5px solid var(--line);
-  border-radius: 17px;
+  border-radius: var(--r-md);
   background: color-mix(in srgb, var(--card) 60%, transparent);
 }
 .zlanding .trust-item {
@@ -1060,7 +1058,7 @@
   align-items: start;
   padding: clamp(30px, 4.4vw, 52px);
   border: 0.5px solid var(--line);
-  border-radius: 26px;
+  border-radius: var(--r-xl);
   background:
     radial-gradient(circle at 8% 12%, rgba(255, 255, 255, 0.58), transparent 34%),
     linear-gradient(145deg, color-mix(in srgb, var(--card) 92%, white), color-mix(in srgb, var(--brand) 6%, var(--card)));
@@ -1082,7 +1080,7 @@
   left: 26px;
   z-index: 0;
   width: 2px;
-  border-radius: 99px;
+  border-radius: var(--r-xl);
   background: linear-gradient(var(--gold), var(--brand));
   pointer-events: none;
 }
@@ -1093,7 +1091,7 @@
   align-items: start;
   padding: 20px;
   border: 0.5px solid var(--line);
-  border-radius: 18px;
+  border-radius: var(--r-lg);
   background: var(--card);
   position: relative;
   z-index: 1;
@@ -1107,7 +1105,7 @@
 .zlanding .step-index {
   width: 54px;
   height: 54px;
-  border-radius: 16px;
+  border-radius: var(--r-md);
   display: grid;
   place-items: center;
   color: var(--brand);
@@ -1217,7 +1215,7 @@
 .zlanding .feat .ic {
   width: 42px;
   height: 42px;
-  border-radius: 11px;
+  border-radius: var(--r-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1278,7 +1276,7 @@
   background: var(--card-2);
   border: 0.5px solid var(--line-2);
   padding: 3px 8px;
-  border-radius: 6px;
+  border-radius: var(--r-xs);
 }
 
 /* ============ SHOWCASE ============ */
@@ -1335,7 +1333,7 @@
   overflow: hidden;
   margin-top: clamp(42px, 6vw, 70px);
   border: 1px solid rgba(255, 255, 255, 0.82);
-  border-radius: 32px;
+  border-radius: var(--r-xl);
   background: var(--card);
 }
 .zlanding .platform-stage-bar {
@@ -1365,7 +1363,7 @@
   height: 34px;
   display: grid;
   place-items: center;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   background: var(--brand);
   color: var(--card);
   font: 600 15px var(--serif);
@@ -1377,7 +1375,7 @@
   gap: 4px;
   padding: 4px;
   border: 0.5px solid var(--line-2);
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: var(--card-2);
 }
 .zlanding .platform-tabs::before {
@@ -1387,7 +1385,7 @@
   bottom: 4px;
   left: 4px;
   width: calc((100% - 8px) / 3);
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   background: var(--card);
   transform: translateX(calc(var(--platform-index) * 100%));
   transition: transform 320ms cubic-bezier(0.2, 0.72, 0.2, 1);
@@ -1399,7 +1397,7 @@
   align-items: baseline;
   gap: 7px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   padding: 10px 15px;
   background: transparent;
   color: var(--muted);
@@ -1489,9 +1487,8 @@
   overflow-x: auto;
   scrollbar-width: none;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 13px;
+  border-radius: var(--r-md);
   background: rgba(7, 29, 20, 0.58);
-  backdrop-filter: blur(12px);
 }
 .zlanding .platform-shot-nav::-webkit-scrollbar {
   display: none;
@@ -1499,7 +1496,7 @@
 .zlanding .platform-shot-nav button {
   flex: 0 0 auto;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--r-sm);
   padding: 8px 11px;
   background: transparent;
   color: rgba(255, 255, 255, 0.58);
@@ -1524,7 +1521,7 @@
   margin: auto;
   overflow: hidden;
   border: 1px solid rgba(255,255,255,0.46);
-  border-radius: 16px;
+  border-radius: var(--r-md);
   background: var(--surface);
   transform: perspective(1200px) rotateX(1.4deg) rotateY(-1.3deg);
 }
@@ -1579,17 +1576,16 @@
   gap: 10px;
   padding: 10px 13px 10px 10px;
   border: 1px solid rgba(255,255,255,0.16);
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: rgba(14, 44, 32, 0.72);
   color: white;
-  backdrop-filter: blur(14px);
 }
 .zlanding .platform-data-chip > span {
   width: 30px;
   height: 30px;
   display: grid;
   place-items: center;
-  border-radius: 9px;
+  border-radius: var(--r-sm);
   background: rgba(255,255,255,0.12);
 }
 .zlanding .platform-data-chip .ck {
@@ -1683,7 +1679,7 @@
   width: min(210px, 78vw);
   max-width: 78vw;
   height: auto;
-  border-radius: 30px;
+  border-radius: var(--r-xl);
 }
 .zlanding .platform-stage-foot {
   display: grid;
@@ -1743,7 +1739,7 @@
   font-weight: 600;
   letter-spacing: 0.03em;
   padding: 3px 8px;
-  border-radius: 6px;
+  border-radius: var(--r-xs);
 }
 .zlanding .b-eq {
   color: var(--equity);
@@ -1789,146 +1785,6 @@
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
-}
-.zlanding .compare-scroll {
-  position: relative;
-  margin-top: 44px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  border: 0.5px solid var(--line);
-  border-radius: var(--r-lg);
-  background: var(--card);
-}
-.zlanding .compare-table {
-  width: 100%;
-  min-width: 760px;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-size: 14px;
-}
-.zlanding .compare-table col.compare-us {
-  width: 23%;
-}
-.zlanding .compare-table col.compare-col-label {
-  width: 30%;
-}
-.zlanding .compare-table th,
-.zlanding .compare-table td {
-  padding: 15px 20px;
-  text-align: left;
-  vertical-align: top;
-  border-bottom: 0.5px solid var(--line);
-  line-height: 1.52;
-  transition: background 160ms ease, color 160ms ease;
-}
-.zlanding .compare-table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  background: var(--card);
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--subtle);
-  border-bottom: 1px solid var(--line);
-}
-.zlanding .compare-table tbody th {
-  font-family: var(--serif);
-  font-size: 14.5px;
-  font-weight: 500;
-  color: var(--ink);
-  line-height: 1.35;
-}
-.zlanding .compare-row-label {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.zlanding .compare-row-ic {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  background: var(--brand-tint);
-  color: var(--brand);
-}
-.zlanding .compare-row-ic svg {
-  width: 16px;
-  height: 16px;
-}
-.zlanding .compare-table td {
-  color: var(--muted);
-  font-size: 13.5px;
-}
-.zlanding .compare-table tbody tr:last-child th,
-.zlanding .compare-table tbody tr:last-child td {
-  border-bottom: 0;
-}
-.zlanding .compare-table tbody tr:nth-child(even) td,
-.zlanding .compare-table tbody tr:nth-child(even) th {
-  background: var(--card-2);
-}
-.zlanding .compare-table tbody tr:hover td,
-.zlanding .compare-table tbody tr:hover th {
-  background: var(--line-2);
-}
-.zlanding .compare-table .compare-col-label {
-  position: sticky;
-  left: 0;
-  z-index: 2;
-  background: var(--card);
-}
-.zlanding .compare-table thead th.compare-col-label {
-  z-index: 4;
-}
-.zlanding .compare-table tbody tr:nth-child(even) .compare-col-label {
-  background: var(--card-2);
-}
-.zlanding .compare-table tbody tr:hover .compare-col-label {
-  background: var(--line-2);
-}
-.zlanding .compare-table .compare-us {
-  background: var(--brand-tint);
-  color: var(--brand);
-  font-weight: 500;
-}
-.zlanding .compare-table tbody tr:nth-child(even) td.compare-us {
-  background: color-mix(in srgb, var(--brand-tint) 70%, var(--card-2));
-}
-.zlanding .compare-table tbody tr:hover td.compare-us {
-  background: color-mix(in srgb, var(--brand-tint) 85%, var(--line-2));
-}
-.zlanding .compare-table thead th.compare-us {
-  color: var(--brand);
-  position: relative;
-}
-.zlanding .compare-tag {
-  display: block;
-  margin-bottom: 5px;
-  font-family: var(--mono);
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--on-brand);
-  background: var(--brand);
-  padding: 2px 7px;
-  border-radius: 99px;
-  width: fit-content;
-}
-.zlanding .compare-foot {
-  margin-top: 20px;
-  font-family: var(--mono);
-  font-size: 12px;
-  line-height: 1.7;
-  /* Darker than --subtle: at 12px, --subtle's 4.28:1 falls just short of the
-     4.5:1 WCAG AA minimum for normal text (confirmed by Lighthouse). */
-  color: var(--ink-muted);
-  max-width: 80ch;
 }
 
 /* ============ FAQ ============ */
@@ -2001,10 +1857,8 @@
 .zlanding .beta-waitlist-form {
   padding: 28px;
   border: 1px solid rgba(255, 255, 255, 0.72);
-  border-radius: 24px;
+  border-radius: var(--r-lg);
   background: rgba(250, 247, 237, 0.72);
-  backdrop-filter: blur(18px) saturate(130%);
-  -webkit-backdrop-filter: blur(18px) saturate(130%);
 }
 .zlanding .beta-waitlist-form .field {
   margin-bottom: 14px;
@@ -2027,7 +1881,7 @@
 .zlanding .beta-waitlist-form input {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-sm);
   padding: 13px 14px;
   background: color-mix(in srgb, var(--card-2) 82%, transparent);
   color: var(--muted);
@@ -2162,7 +2016,7 @@
   color: var(--ink);
   background: var(--card-2);
   border: 1px solid var(--line);
-  border-radius: 11px;
+  border-radius: var(--r-sm);
   padding: 12px 14px;
   outline: none;
   transition: 0.15s;
@@ -2404,80 +2258,7 @@
   }
 }
 @media (max-width: 840px) {
-  .zlanding .compare-scroll {
-    overflow: visible;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-  }
-  .zlanding .compare-table,
-  .zlanding .compare-table tbody,
-  .zlanding .compare-table tbody tr {
-    display: block;
-    min-width: 0;
-    width: 100%;
-  }
-  .zlanding .compare-table thead {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-  .zlanding .compare-table tbody tr {
-    overflow: hidden;
-    margin-bottom: 14px;
-    border: 0.5px solid var(--line);
-    border-radius: 16px;
-    background: var(--card);
-  }
-  .zlanding .compare-table th,
-  .zlanding .compare-table td {
-    display: grid;
-    grid-template-columns: minmax(96px, 0.8fr) minmax(0, 1fr);
-    gap: 12px;
-    padding: 13px 16px;
-    border-bottom: 0.5px solid var(--line);
-  }
-  .zlanding .compare-table tbody th {
-    display: block;
-    font-size: 16px;
-  }
-  .zlanding .compare-table td::before {
-    content: attr(data-label);
-    font-family: var(--mono);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: var(--subtle);
-  }
-  .zlanding .compare-table tbody tr:last-child th,
-  .zlanding .compare-table tbody tr:last-child td,
-  .zlanding .compare-table tbody tr td:last-child {
-    border-bottom: 0;
-  }
-  .zlanding .compare-table .compare-col-label {
-    position: static;
-  }
-  .zlanding .compare-table tbody tr:nth-child(even) th,
-  .zlanding .compare-table tbody tr:nth-child(even) td {
-    background: var(--card);
-  }
-  .zlanding .compare-table tbody tr:hover th,
-  .zlanding .compare-table tbody tr:hover td {
-    background: var(--card);
-  }
-  .zlanding .compare-table td.compare-us,
-  .zlanding .compare-table tbody tr:nth-child(even) td.compare-us,
-  .zlanding .compare-table tbody tr:hover td.compare-us {
-    background: var(--brand-tint);
-  }
-}
+                        }
 @media (max-width: 980px) {
   .zlanding .nav-burger {
     display: inline-flex;
@@ -2494,8 +2275,6 @@
     gap: 4px;
     padding: 12px 20px 18px;
     background: rgba(228, 224, 215, 0.96);
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
     border-bottom: 1px solid rgba(26, 33, 27, 0.12);
   }
   .zlanding .nav-links.is-open {
@@ -2504,7 +2283,7 @@
   .zlanding .nav-links a.lnk {
     font-size: 15px;
     padding: 12px 14px;
-    border-radius: 10px;
+    border-radius: var(--r-sm);
   }
   .zlanding .nav-links a.lnk[href="/register"] {
     margin-top: 4px;
@@ -2520,7 +2299,7 @@
   }
   .zlanding .process-shell {
     padding: 24px 18px;
-    border-radius: 21px;
+    border-radius: var(--r-lg);
   }
   .zlanding .process-step {
     grid-template-columns: 1fr;
@@ -2533,11 +2312,11 @@
   .zlanding .step-index {
     width: 46px;
     height: 46px;
-    border-radius: 14px;
+    border-radius: var(--r-md);
   }
   .zlanding .beta-waitlist-form {
     padding: 22px;
-    border-radius: 20px;
+    border-radius: var(--r-lg);
   }
   .zlanding .feat-grid,
   .zlanding .pl-grid {
@@ -2611,7 +2390,7 @@
     font-size: 40px;
   }
   .zlanding .platform-stage {
-    border-radius: 23px;
+    border-radius: var(--r-lg);
     touch-action: pan-y;
   }
   .zlanding .platform-stage-bar {
@@ -2639,7 +2418,7 @@
     left: 18px;
   }
   .zlanding .desktop-preview {
-    border-radius: 11px;
+    border-radius: var(--r-sm);
     transform: none;
   }
   .zlanding .desktop-preview-chrome {
@@ -2760,4 +2539,62 @@
   .zlanding .nav-progress {
     transition: none;
   }
+}
+
+/* ============ CIEMNY PAS ============
+   Jedna sekcja na całej stronie jest ciemna: „Zbudowane pod polskie realia".
+   To jedyna przewaga, której zagraniczny konkurent nie skopiuje, więc jej
+   należy się podkreślenie. Pas odwraca tokeny lokalnie — nie ma tu drugiej
+   palety, tylko te same zmienne z wartościami motywu ciemnego. */
+.zlanding .band-dark {
+  --ground: #0B1A14;
+  --surface: #122A20;
+  --surface-2: #1A382A;
+  --line: rgba(159, 191, 174, 0.16);
+  --line-2: rgba(159, 191, 174, 0.08);
+  --ink: #EDF2EE;
+  --ink-muted: #8FAE9C;
+  --ink-faint: #5E7A6B;
+  --accent: #C9765F;
+  --on-accent: #190A05;
+  --guilloche: rgba(159, 191, 174, 0.09);
+  --up: #35A87A;
+  --down: #D9463A;
+  --asset-equity: #3E7FB8;
+  --asset-bonds: #C9A24F;
+  --asset-deposit: #B0A294;
+  --asset-cash: #8FA6B8;
+  --asset-crypto: #B6A2E4;
+
+  position: relative;
+  overflow: hidden;
+  background: var(--ground);
+  color: var(--ink);
+}
+.zlanding .band-dark .sec-title,
+.zlanding .band-dark .card-title,
+.zlanding .band-dark h2,
+.zlanding .band-dark h3 { color: var(--ink); }
+.zlanding .band-dark .sec-desc,
+.zlanding .band-dark .card-desc,
+.zlanding .band-dark p { color: var(--ink-muted); }
+.zlanding .band-dark .card,
+.zlanding .band-dark .inv-card {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+/* Gilosz — sygnatura kierunku. Wolno go kłaść wyłącznie na powierzchniach
+   o niskiej gęstości; ciemny pas jest sekcją opisową, więc się kwalifikuje. */
+.zlanding .band-dark::before {
+  content: "";
+  position: absolute;
+  right: -160px;
+  bottom: -200px;
+  width: 560px;
+  height: 560px;
+  background-image: url("/guilloche.svg");
+  background-size: contain;
+  background-repeat: no-repeat;
+  pointer-events: none;
 }
