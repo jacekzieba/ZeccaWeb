@@ -1,5 +1,7 @@
 "use client";
 
+import { v2Mix } from "@/lib/v2-design";
+import { token } from "@/design/tokens";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { sampleSnapshot, SAMPLE_HISTORY } from "@/features/dashboard/sample-data";
 import { TYPOGRAPHY } from "@/lib/design-tokens";
@@ -11,23 +13,23 @@ const UI = TYPOGRAPHY.system;
 const MONO = TYPOGRAPHY.mono;
 
 const C = {
-  page: "#E4E6E2",
-  card: "#F7F8F4",
-  card2: "#ECEEE7",
-  ink: "#161D18",
-  muted: "#4A544E",
-  subtle: "#717870",
-  line: "rgba(22,29,24,0.13)",
-  line2: "rgba(22,29,24,0.07)",
-  brand: "#214A35",
-  gold: "#A2772E",
-  profit: "#23814F",
-  loss: "#A84432",
-  equity: "#34699A",
-  bonds: "#8C6F30",
-  deposit: "#5C6A60",
-  cash: "#8C8E82",
-  spec: "rgba(255,255,255,0.75)",
+  page: token("ground"),
+  card: token("surface"),
+  card2: token("surface2"),
+  ink: token("ink"),
+  muted: token("inkMuted"),
+  subtle: token("inkFaint"),
+  line: token("line"),
+  line2: token("line2"),
+  brand: token("ink"),
+  gold: token("assetBonds"),
+  profit: token("up"),
+  loss: token("down"),
+  equity: token("assetEquity"),
+  bonds: token("assetBonds"),
+  deposit: token("assetDeposit"),
+  cash: token("assetCash"),
+  spec: "transparent",
 } as const;
 
 type GrowthSeries = {
@@ -53,7 +55,7 @@ const BENCHMARKS: Benchmark[] = [
     id: "allweather",
     name: "All Weather",
     author: "Ray Dalio",
-    color: "#2F6E86",
+    color: C.equity,
     cagr: 0.07,
     vol: 0.075,
     seed: 71,
@@ -109,13 +111,6 @@ const BENCHMARKS: Benchmark[] = [
   },
 ];
 
-function mix(hex: string, pct: number) {
-  const h = hex.replace("#", "");
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return `rgba(${r},${g},${b},${pct})`;
-}
 
 function fmt(n: number, d = 0) {
   return n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -247,7 +242,7 @@ function allocColor(key: Benchmark["alloc"][number]["key"]) {
   return {
     eq: C.equity,
     lt: C.bonds,
-    it: mix(C.bonds, 0.65),
+    it: v2Mix(C.bonds, 0.65),
     gold: C.gold,
     comm: C.brand,
     cash: C.cash,
@@ -284,7 +279,7 @@ function Card({
         border: `0.5px solid ${C.line}`,
         borderRadius: 16,
         padding: pad,
-        boxShadow: `0 1px 0 ${mix(C.ink, 0.03)}, 0 6px 20px ${mix(C.ink, 0.05)}`,
+        boxShadow: `0 1px 0 ${v2Mix(C.ink, 0.03)}, 0 6px 20px ${v2Mix(C.ink, 0.05)}`,
         ...style,
       }}
     >
@@ -545,7 +540,7 @@ export function BenchmarkPage() {
                   fontWeight: 700,
                   background: active ? C.card : "transparent",
                   color: active ? C.ink : C.subtle,
-                  boxShadow: active ? `0 1px 3px ${mix(C.ink, 0.12)}` : "none",
+                  boxShadow: active ? `0 1px 3px ${v2Mix(C.ink, 0.12)}` : "none",
                   transition: "all .15s",
                 }}
               >
@@ -569,8 +564,8 @@ export function BenchmarkPage() {
                 borderRadius: 14,
                 cursor: "pointer",
                 border: `1px solid ${active ? item.color : C.line}`,
-                background: active ? mix(item.color, 0.08) : C.card,
-                boxShadow: active ? `0 2px 10px ${mix(item.color, 0.18)}` : "none",
+                background: active ? v2Mix(item.color, 0.08) : C.card,
+                boxShadow: active ? `0 2px 10px ${v2Mix(item.color, 0.18)}` : "none",
                 transition: "all .15s",
                 minWidth: 0,
               }}
@@ -644,7 +639,7 @@ export function BenchmarkPage() {
         </Card>
 
         <Card pad={0}>
-          <div style={{ display: "grid", gridTemplateColumns: "1.35fr 1fr 1fr", padding: "15px 22px", borderBottom: `0.5px solid ${C.line}`, background: mix(C.ink, 0.022) }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1.35fr 1fr 1fr", padding: "15px 22px", borderBottom: `0.5px solid ${C.line}`, background: v2Mix(C.ink, 0.022) }}>
             {["Miara", "Twój portfel", selected.name].map((label, index) => (
               <span
                 key={label}
@@ -682,7 +677,7 @@ export function BenchmarkPage() {
               </span>
             </div>
           ))}
-          <div style={{ padding: "11px 22px", borderTop: `0.5px solid ${C.line}`, background: mix(C.ink, 0.022), display: "flex", alignItems: "center", gap: 7 }}>
+          <div style={{ padding: "11px 22px", borderTop: `0.5px solid ${C.line}`, background: v2Mix(C.ink, 0.022), display: "flex", alignItems: "center", gap: 7 }}>
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.profit }} />
             <span style={{ fontSize: 11, color: C.subtle }}>kropka = przewaga Twojego portfela w danej mierze</span>
           </div>

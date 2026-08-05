@@ -1,5 +1,7 @@
 "use client";
 
+import { v2Mix } from "@/lib/v2-design";
+import { token } from "@/design/tokens";
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
@@ -61,25 +63,25 @@ const UI = TYPOGRAPHY.system;
 const MONO = TYPOGRAPHY.mono;
 
 const PALETTE = {
-  page: "#E4E6E2",
-  card: "#F7F8F4",
-  card2: "#ECEEE7",
-  ink: "#161D18",
-  muted: "#4A544E",
-  subtle: "#717870",
-  line: "rgba(22,29,24,0.13)",
-  line2: "rgba(22,29,24,0.07)",
-  brand: "#214A35",
-  brandDeep: "#163022",
-  onBrand: "#F4F2E6",
-  gold: "#A2772E",
-  profit: "#23814F",
-  loss: "#A84432",
-  equity: "#34699A",
-  bonds: "#8C6F30",
-  deposit: "#5C6A60",
-  cash: "#8C8E82",
-  spec: "rgba(255,255,255,0.75)",
+  page: token("ground"),
+  card: token("surface"),
+  card2: token("surface2"),
+  ink: token("ink"),
+  muted: token("inkMuted"),
+  subtle: token("inkFaint"),
+  line: token("line"),
+  line2: token("line2"),
+  brand: token("ink"),
+  brandDeep: token("ink"),
+  onBrand: token("onAccent"),
+  gold: token("assetBonds"),
+  profit: token("up"),
+  loss: token("down"),
+  equity: token("assetEquity"),
+  bonds: token("assetBonds"),
+  deposit: token("assetDeposit"),
+  cash: token("assetCash"),
+  spec: "transparent",
 } as const;
 
 const PERIOD_OPTIONS = ["1M", "3M", "6M", "1Y", "2Y", "MAX"] as const;
@@ -237,13 +239,6 @@ function computeMonthlyBars(series: ValuationPoint[]): { labels: string[]; profi
 }
 const DASHBOARD_HEAD_PADDING = "22px 2px 0";
 
-function mix(hex: string, pct: number) {
-  const h = hex.replace("#", "");
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return `rgba(${r},${g},${b},${pct})`;
-}
 
 function fmt(n: number, d = 0) {
   return n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -316,15 +311,15 @@ function Card({
     <div
       data-tour={dataTour}
       style={{
-        background: glass ? mix(PALETTE.card, 0.72) : PALETTE.card,
+        background: glass ? v2Mix(PALETTE.card, 0.72) : PALETTE.card,
         backdropFilter: glass ? "blur(30px) saturate(170%)" : "none",
         WebkitBackdropFilter: glass ? "blur(30px) saturate(170%)" : "none",
         border: `0.5px solid ${glass ? PALETTE.spec : PALETTE.line}`,
         borderRadius: 16,
         padding: pad,
         boxShadow: glass
-          ? `inset 0 1px 0 ${PALETTE.spec}, 0 8px 28px ${mix(PALETTE.ink, 0.07)}`
-          : `0 1px 0 ${mix(PALETTE.ink, 0.03)}, 0 6px 20px ${mix(PALETTE.ink, 0.05)}`,
+          ? `inset 0 1px 0 ${PALETTE.spec}, 0 8px 28px ${v2Mix(PALETTE.ink, 0.07)}`
+          : `0 1px 0 ${v2Mix(PALETTE.ink, 0.03)}, 0 6px 20px ${v2Mix(PALETTE.ink, 0.05)}`,
         boxSizing: "border-box",
         height: "100%",
         minHeight: 0,
@@ -388,7 +383,7 @@ function Badge({ label, color }: { label: string; color: string }) {
         padding: "3px 7px",
         borderRadius: 5,
         color,
-        background: mix(color, 0.13),
+        background: v2Mix(color, 0.13),
         whiteSpace: "nowrap",
       }}
     >
@@ -402,7 +397,7 @@ function PeriodBar({ value, onChange }: { value: Period; onChange: (period: Peri
     <div
       role="radiogroup"
       aria-label="Zakres wykresu historii"
-      style={{ display: "inline-flex", background: mix(PALETTE.ink, 0.06), borderRadius: 11, padding: 3 }}
+      style={{ display: "inline-flex", background: v2Mix(PALETTE.ink, 0.06), borderRadius: 11, padding: 3 }}
     >
       {PERIOD_OPTIONS.map((option) => (
         <button
@@ -420,7 +415,7 @@ function PeriodBar({ value, onChange }: { value: Period; onChange: (period: Peri
             fontWeight: value === option ? 700 : 500,
             background: value === option ? PALETTE.card : "transparent",
             color: value === option ? PALETTE.ink : PALETTE.muted,
-            boxShadow: value === option ? `0 1px 4px ${mix(PALETTE.ink, 0.1)}` : "none",
+            boxShadow: value === option ? `0 1px 4px ${v2Mix(PALETTE.ink, 0.1)}` : "none",
             transition: "all .15s",
           }}
         >
@@ -668,7 +663,7 @@ function V2HatchBars({ solid = true, height = 150, labels, profit, loss }: { sol
                 width={barWidth}
                 height={lossHeight}
                 rx="2.5"
-                fill={solid ? mix(PALETTE.ink, 0.32) : `url(#v2hl-${lossPattern})`}
+                fill={solid ? v2Mix(PALETTE.ink, 0.32) : `url(#v2hl-${lossPattern})`}
                 stroke={PALETTE.ink}
                 strokeOpacity={solid ? 0.18 : 0.4}
                 strokeWidth="1"
@@ -806,8 +801,8 @@ function DashboardLoading({
         <div style={{ padding: "30px", minHeight: 260, display: "flex", flexDirection: "column", justifyContent: "center", gap: 16 }}>
           <Eyebrow>Wartość portfela</Eyebrow>
           <div style={{ fontFamily: SERIF, fontSize: 48, color: PALETTE.subtle }}>Ładowanie danych</div>
-          <div style={{ width: "min(520px, 100%)", height: 10, borderRadius: 99, background: mix(PALETTE.ink, 0.07), overflow: "hidden" }}>
-            <div style={{ width: "42%", height: "100%", borderRadius: 99, background: mix(PALETTE.brand, 0.25) }} />
+          <div style={{ width: "min(520px, 100%)", height: 10, borderRadius: 99, background: v2Mix(PALETTE.ink, 0.07), overflow: "hidden" }}>
+            <div style={{ width: "42%", height: "100%", borderRadius: 99, background: v2Mix(PALETTE.brand, 0.25) }} />
           </div>
           <div style={{ fontSize: 13, color: PALETTE.muted }}>
             Czekam na odszyfrowany snapshot. Nie pokazuję danych przykładowych.
@@ -966,14 +961,14 @@ export function DashboardOverview() {
           style={{
             border: `0.5px solid ${PALETTE.line}`,
             borderRadius: 10,
-            background: showCustomize ? mix(PALETTE.brand, 0.1) : PALETTE.card,
+            background: showCustomize ? v2Mix(PALETTE.brand, 0.1) : PALETTE.card,
             color: showCustomize ? PALETTE.brand : PALETTE.ink,
             cursor: "pointer",
             fontFamily: UI,
             fontSize: 12.5,
             fontWeight: 700,
             padding: "8px 13px",
-            boxShadow: `0 1px 4px ${mix(PALETTE.ink, 0.06)}`,
+            boxShadow: `0 1px 4px ${v2Mix(PALETTE.ink, 0.06)}`,
           }}
         >
           Dostosuj
@@ -1086,7 +1081,7 @@ function SummaryCard({
                 fontSize: 11,
                 fontWeight: 500,
                 color: PALETTE.muted,
-                background: mix(PALETTE.ink, 0.05),
+                background: v2Mix(PALETTE.ink, 0.05),
                 padding: "5px 10px",
                 borderRadius: 99,
                 whiteSpace: "nowrap",
@@ -1135,7 +1130,7 @@ function SummaryCard({
           </div>
         </div>
 
-        <div style={{ padding: isMobile ? "12px 16px 18px" : "22px 26px 18px", background: mix(PALETTE.card2, 0.4) }}>
+        <div style={{ padding: isMobile ? "12px 16px 18px" : "22px 26px 18px", background: v2Mix(PALETTE.card2, 0.4) }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 6 }}>
             <Eyebrow>Historia · {period === "MAX" ? "maksimum" : period}</Eyebrow>
             <PeriodBar value={period} onChange={onPeriodChange} />
@@ -1219,7 +1214,7 @@ function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobil
         </Link>
       </div>
       {!isMobile && (
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,2.4fr) minmax(0,1fr) minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,.7fr)", padding: "9px 22px", background: mix(PALETTE.ink, 0.022) }}>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,2.4fr) minmax(0,1fr) minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,.7fr)", padding: "9px 22px", background: v2Mix(PALETTE.ink, 0.022) }}>
           {["Instrument", "Liczba / Kurs", "Wartość", "Zysk / Strata", "30D"].map((header, index) => (
             <div key={header} style={{ fontFamily: UI, fontSize: 9.5, fontWeight: 700, color: PALETTE.subtle, textTransform: "uppercase", letterSpacing: ".07em", textAlign: index === 0 ? "left" : "right" }}>
               {header}
@@ -1293,7 +1288,7 @@ function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobil
                 transition: "background .12s",
               }}
               onMouseEnter={(event) => {
-                event.currentTarget.style.background = mix(PALETTE.ink, 0.022);
+                event.currentTarget.style.background = v2Mix(PALETTE.ink, 0.022);
               }}
               onMouseLeave={(event) => {
                 event.currentTarget.style.background = "transparent";
@@ -1429,7 +1424,7 @@ function TransactionsCard({ transactions }: { transactions: TransactionView[] })
               key={transaction.id}
               style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 22px", borderTop: `0.5px solid ${PALETTE.line2}`, cursor: "pointer", transition: "background .12s" }}
               onMouseEnter={(event) => {
-                event.currentTarget.style.background = mix(PALETTE.ink, 0.022);
+                event.currentTarget.style.background = v2Mix(PALETTE.ink, 0.022);
               }}
               onMouseLeave={(event) => {
                 event.currentTarget.style.background = "transparent";
@@ -1501,7 +1496,7 @@ function PortfoliosCard({
               : 0;
 
           return (
-            <div key={portfolio.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", borderRadius: 12, background: mix(PALETTE.ink, 0.025), border: `0.5px solid ${PALETTE.line2}` }}>
+            <div key={portfolio.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", borderRadius: 12, background: v2Mix(PALETTE.ink, 0.025), border: `0.5px solid ${PALETTE.line2}` }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />

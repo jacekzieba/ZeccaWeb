@@ -75,14 +75,12 @@ export const SURFACES = {
   glassCard: {
     background: COLORS.surface,
     borderRadius: "var(--r-md)",
-    border: `0.5px solid ${COLORS.border}`,
-    boxShadow: SHADOWS.card,
+    border: `1px solid ${COLORS.border}`,
   } satisfies CSSProperties,
+  // Dawniej panel „szklany" z backdrop-filter i cieniem. Nowy system buduje
+  // wysokość wartością powierzchni i włosem — nigdy rozmyciem ani cieniem.
   glassPanel: {
-    background: "rgba(247,248,244,0.70)",
-    backdropFilter: "blur(38px) saturate(175%)",
-    WebkitBackdropFilter: "blur(38px) saturate(175%)",
-    border: "0.5px solid rgba(255,255,255,0.75)",
-    boxShadow: SHADOWS.cardStrong,
+    background: COLORS.surface,
+    border: `1px solid ${COLORS.border}`,
   } satisfies CSSProperties,
 } as const;
