@@ -290,34 +290,6 @@ export function LandingInteractions() {
     };
     betaForm?.addEventListener("submit", onBetaSubmit);
 
-    // Feedback form → mailto
-    const form = document.getElementById("fbForm") as HTMLFormElement | null;
-    const ok = document.getElementById("fbOk");
-    const onSubmit = (e: Event) => {
-      e.preventDefault();
-      const name = (document.getElementById("fb-name") as HTMLInputElement | null)?.value.trim() ?? "";
-      const email = (document.getElementById("fb-email") as HTMLInputElement | null)?.value.trim() ?? "";
-      const msg = (document.getElementById("fb-msg") as HTMLTextAreaElement | null)?.value.trim() ?? "";
-      // Target address + subject come from copy.ts via data-* attributes on the form.
-      const to = form?.dataset.email ?? "";
-      const subject = form?.dataset.subject ?? "";
-      const lines: string[] = [];
-      if (name) lines.push("Imię: " + name);
-      if (email) lines.push("E-mail: " + email);
-      lines.push("");
-      lines.push(msg);
-      const href =
-        "mailto:" +
-        to +
-        "?subject=" +
-        encodeURIComponent(subject) +
-        "&body=" +
-        encodeURIComponent(lines.join("\n"));
-      ok?.classList.add("show");
-      window.location.href = href;
-      window.setTimeout(() => ok?.classList.remove("show"), 6000);
-    };
-    form?.addEventListener("submit", onSubmit);
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const landingAnchors = root
@@ -464,50 +436,6 @@ export function LandingInteractions() {
     navFrame = requestAnimationFrame(updateNav);
     window.addEventListener("hashchange", onScroll);
 
-    // Pointer tilt on feature cards — the same tactile lean as the hero cards,
-    // applied to the statically-injected `.feat` grid. Fine pointers only.
-    let teardownTilt = () => {};
-    const finePointer =
-      typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches;
-    if (finePointer && !reduceMotion) {
-      const cards = Array.from(
-        document.querySelectorAll<HTMLElement>(".zlanding .feat, .zlanding .product-card"),
-      );
-      const frames = new WeakMap<HTMLElement, number>();
-      const onTiltMove = (event: PointerEvent) => {
-        const el = event.currentTarget as HTMLElement;
-        const bounds = el.getBoundingClientRect();
-        const x = (event.clientX - bounds.left) / bounds.width - 0.5;
-        const y = (event.clientY - bounds.top) / bounds.height - 0.5;
-        cancelAnimationFrame(frames.get(el) ?? 0);
-        frames.set(
-          el,
-          requestAnimationFrame(() => {
-            el.style.setProperty("--tilt-x", `${(-y * 4).toFixed(2)}deg`);
-            el.style.setProperty("--tilt-y", `${(x * 5).toFixed(2)}deg`);
-            el.style.setProperty("--lift", "-5px");
-          }),
-        );
-      };
-      const onTiltLeave = (event: PointerEvent) => {
-        const el = event.currentTarget as HTMLElement;
-        cancelAnimationFrame(frames.get(el) ?? 0);
-        el.style.setProperty("--tilt-x", "0deg");
-        el.style.setProperty("--tilt-y", "0deg");
-        el.style.setProperty("--lift", "0px");
-      };
-      cards.forEach((card) => {
-        card.addEventListener("pointermove", onTiltMove);
-        card.addEventListener("pointerleave", onTiltLeave);
-      });
-      teardownTilt = () => {
-        cards.forEach((card) => {
-          card.removeEventListener("pointermove", onTiltMove);
-          card.removeEventListener("pointerleave", onTiltLeave);
-        });
-      };
-    }
-
     // Scroll reveal. Klase js-reveal dodajemy DOPIERO TERAZ — dzieki temu, jesli
     // cokolwiek wyzej rzuci wyjatkiem albo skrypt sie nie wykona, tresc pozostaje
     // widoczna zamiast zniknac. Animacja jest wzbogaceniem, nie warunkiem.
@@ -538,13 +466,11 @@ export function LandingInteractions() {
       document.removeEventListener("keydown", onMenuKeydown);
       window.removeEventListener("resize", onMenuResize);
       betaForm?.removeEventListener("submit", onBetaSubmit);
-      form?.removeEventListener("submit", onSubmit);
       landingAnchors.forEach((anchor) => anchor.removeEventListener("click", onAnchorClick));
       platformTabHandlers.forEach(([element, eventName, handler]) => {
         element.removeEventListener(eventName, handler);
       });
       teardownTextEditor();
-      teardownTilt();
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("hashchange", onScroll);
       cancelAnimationFrame(navFrame);

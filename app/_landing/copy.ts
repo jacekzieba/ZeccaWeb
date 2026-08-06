@@ -30,15 +30,27 @@ export const landingCopy = {
   // ── Sekcja główna (hero) ──────────────────────────────────────────────────
   hero: {
     betaBanner: "Trwają beta testy, które mają na celu eliminację ewentualnych błędów.",
-    eyebrow: "Natywnie na macOS i iOS oraz przez przeglądarkę",
-    title: "Wszystkie Twoje inwestycje w jednym miejscu",
-    lede: "W aplikacji Zecca możesz śledzić swoje portfele inwestycyjne oraz monitorować wartość Twoich akcji, ETF-ów, obligacji i innych aktywów. Program samodzielnie przelicza całą historię Twoich inwestycji.",
+    eyebrow: "macOS · iOS · przeglądarka",
+    title: "Każda liczba ma źródło.",
+    lede: "Zecca składa Twoje portfele inwestycyjne w jeden obraz — IKE, IKZE, akcje, ETF-y, obligacje skarbowe, lokaty i gotówkę — i odtwarza wartość od pierwszej transakcji. Kursy z NBP, inflacja z GUS, wynik liczony na Twoim urządzeniu.",
     ctaPrimary: "Dołącz do listy beta",
     ctaPrimaryHref: "#lista-beta",
     ctaDemo: "Zobacz demo",
     ctaDemoHref: "/demo",
     // Realne wejścia silnika — krótki „stempel" pod ledem, nie ozdoba.
     sources: ["Kursy NBP", "Inflacja GUS", "XIRR / TWR"],
+    // Rejestr: wiersz = jedna wartość z portfela demo plus cecha jej źródła.
+    // Reguła kierunku: na szynie stoi wyłącznie to, co da się ocechować.
+    register: {
+      note: "Liczby pochodzą z portfela demonstracyjnego — te same przeliczenia, które Zecca robi na Twoich danych.",
+      rows: [
+        { what: "Wartość portfela", source: "Kurs NBP", detail: "tabela A" },
+        { what: "Wynik realny po inflacji", source: "Inflacja GUS", detail: "wskaźnik CPI" },
+        { what: "Stopa zwrotu XIRR", source: "Liczone lokalnie", detail: "na Twoim urządzeniu" },
+        { what: "Zysk niezrealizowany", source: "FIFO", detail: "wg kosztu nabycia" },
+        { what: "Kapitał wpłacony", source: "Transakcje", detail: "od pierwszej wpłaty" },
+      ],
+    },
     proof:
       "Monitoruj swój główny portfel inwestycyjny oraz konta&nbsp;<b>IKE</b> i <b>IKZE.</b>",
     storeBadges: [
