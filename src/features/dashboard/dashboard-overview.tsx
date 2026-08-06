@@ -2,7 +2,6 @@
 
 import { v2Mix } from "@/lib/v2-design";
 import { token } from "@/design/tokens";
-import { Seal, rosetteParams } from "@/design/seal";
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
@@ -874,13 +873,6 @@ export function DashboardOverview() {
   const holdings = records ? toHoldingViews(instruments) : [];
   const txRows = records ? toTransactionViews(transactions) : [];
   const allocation = normalizeAllocation(snapshot.allocation);
-  // Gilosz jest funkcją portfela: płatki z liczby kont, warstwy z liczby klas
-  // aktywów. Faza zostaje na zero, dopóki nie mamy daty założenia portfela —
-  // liczenie jej z dzisiejszej daty zmieniałoby rysunek codziennie.
-  const seal = rosetteParams({
-    accounts: snapshot.portfolios?.length ?? 1,
-    assetClasses: allocation.length,
-  });
   const totalValue = snapshot.totalValue;
   const deltaPLN = calculateDeltaPLN(historySource);
   const monthlyChange = snapshot.monthlyChange;
@@ -919,7 +911,6 @@ export function DashboardOverview() {
           period={period}
           onPeriodChange={setPeriod}
           chartData={chartData}
-          seal={seal}
         />
       );
     }
@@ -1031,7 +1022,6 @@ function SummaryCard({
   period,
   onPeriodChange,
   chartData,
-  seal,
 }: {
   isMobile: boolean;
   isTablet: boolean;
@@ -1045,7 +1035,6 @@ function SummaryCard({
   invested: number;
   unrealized: number;
   period: Period;
-  seal: { petals: number; layers: number; phase: number };
   onPeriodChange: (period: Period) => void;
   chartData: ValuationPoint[];
 }) {
@@ -1081,16 +1070,6 @@ function SummaryCard({
             overflow: "hidden",
           }}
         >
-          {/* Rozeta trzyma się górnej krawędzi i wychodzi poza kartę, żeby nie
-              wchodzić na wiersz metryk — reguła mówi, że gilosz wolno kłaść
-              wyłącznie pod treścią o niskiej gęstości. */}
-          <Seal
-            petals={seal.petals}
-            layers={seal.layers}
-            phase={seal.phase}
-            size={300}
-            style={{ position: "absolute", right: -120, bottom: -120 }}
-          />
           <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
             <Eyebrow>Wartość portfela</Eyebrow>
             <span

@@ -14,7 +14,7 @@
   --ink-faint: #8A9890;
   --accent: #A0512F;
   --on-accent: #FFF6F2;
-  --guilloche: rgba(18,59,43,0.14);
+  --rail: rgba(18,59,43,0.22);
   --up: #1E7A55;
   --down: #AE1F14;
   --asset-equity: #20507E;
@@ -33,9 +33,14 @@
   --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
   --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px; --space-9: 96px;
 
-  --font-display: var(--font-serif), Georgia, serif;
-  --font-text: var(--font-sans), system-ui, sans-serif;
-  --font-code: var(--font-mono), ui-monospace, Menlo, monospace;
+  /* Podział ról jest regułą kierunku „Próba", nie preferencją:
+     proza szeryfem, etykiety i przyciski groteskiem, każda liczba mono. */
+  --font-display: var(--font-display-src), system-ui, sans-serif;
+  --font-text: var(--font-text-src), Georgia, serif;
+  --font-code: var(--font-code-src), ui-monospace, Menlo, monospace;
+
+  /* Skok podziałki szyny — jeden dla całego produktu. */
+  --rail-step: 12px;
 }
 
 [data-theme="dark"] {
@@ -49,7 +54,7 @@
   --ink-faint: #5E7A6B;
   --accent: #C9765F;
   --on-accent: #190A05;
-  --guilloche: rgba(159,191,174,0.09);
+  --rail: rgba(159,191,174,0.16);
   --up: #35A87A;
   --down: #D9463A;
   --asset-equity: #3E7FB8;

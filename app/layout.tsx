@@ -3,26 +3,28 @@ import "@/design/tokens.css";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { Source_Serif_4, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Space_Grotesk, Newsreader, IBM_Plex_Mono } from "next/font/google";
 
-const serif = Source_Serif_4({
+// Grotesk niesie nagłówki i etykiety, szeryf prozę, mono każdą liczbę.
+// Rozdział ról jest regułą kierunku „Próba" — patrz src/design/tokens.css.
+const display = Space_Grotesk({
   subsets: ["latin", "latin-ext"],
-  weight: ["400", "600"],
-  variable: "--font-serif",
+  weight: ["500", "700"],
+  variable: "--font-display-src",
   display: "swap",
 });
 
-const sans = IBM_Plex_Sans({
+const text = Newsreader({
   subsets: ["latin", "latin-ext"],
-  weight: ["400", "500", "600"],
-  variable: "--font-sans",
+  weight: ["400", "500"],
+  variable: "--font-text-src",
   display: "swap",
 });
 
 const mono = IBM_Plex_Mono({
   subsets: ["latin", "latin-ext"],
   weight: ["400", "500"],
-  variable: "--font-mono",
+  variable: "--font-code-src",
   display: "swap",
 });
 
@@ -47,7 +49,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pl" data-theme="light" className={`${serif.variable} ${sans.variable} ${mono.variable}`}>
+    <html lang="pl" data-theme="light" className={`${display.variable} ${text.variable} ${mono.variable}`}>
       <body className="antialiased">
         {children}
         <Analytics />

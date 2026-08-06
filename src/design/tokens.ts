@@ -3,7 +3,7 @@
 export const TOKEN_NAMES = [
   "ground", "surface", "surface2", "line", "line2",
   "ink", "inkMuted", "inkFaint",
-  "accent", "onAccent", "guilloche",
+  "accent", "onAccent", "rail",
   "up", "down",
   "assetEquity", "assetBonds", "assetDeposit", "assetCash", "assetCrypto",
 ] as const;
@@ -22,7 +22,7 @@ export const LIGHT: ThemeTokens = {
   inkFaint: "#8A9890",
   accent: "#A0512F",
   onAccent: "#FFF6F2",
-  guilloche: "rgba(18,59,43,0.14)",
+  rail: "rgba(18,59,43,0.22)",
   up: "#1E7A55",
   down: "#AE1F14",
   assetEquity: "#20507E",
@@ -43,7 +43,7 @@ export const DARK: ThemeTokens = {
   inkFaint: "#5E7A6B",
   accent: "#C9765F",
   onAccent: "#190A05",
-  guilloche: "rgba(159,191,174,0.09)",
+  rail: "rgba(159,191,174,0.16)",
   up: "#35A87A",
   down: "#D9463A",
   assetEquity: "#3E7FB8",
