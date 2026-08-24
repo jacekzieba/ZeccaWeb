@@ -137,3 +137,104 @@ describe("AddTransactionModal inline instrument creation", () => {
     expect(screen.getByRole("button", { name: "Anuluj" })).toBeTruthy();
   });
 });
+
+describe("AddTransactionModal funding deposit", () => {
+  const buyID = "55555555-5555-4555-8555-555555555551";
+  const depositID = "55555555-5555-4555-8555-555555555552";
+
+  beforeEach(() => {
+    store.state.records = [accountRecord];
+    store.state.snapshot = null;
+    store.state.setSync = vi.fn();
+    store.state.closeAddTransaction = vi.fn();
+    let issued = 0;
+    vi.spyOn(globalThis.crypto, "randomUUID").mockImplementation(
+      () => (issued++ === 0 ? buyID : depositID) as `${string}-${string}-${string}-${string}-${string}`,
+    );
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ data: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.mocked(saveRecord).mockResolvedValue({ queued: false });
+    vi.mocked(refreshSyncStore).mockResolvedValue({
+      records: [accountRecord],
+      snapshot: null as never,
+      summary: null as never,
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  const fillBuy = () => {
+    render(<AddTransactionModal open initialValue={null} onClose={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("Portfel"), { target: { value: accountID } });
+    fireEvent.change(screen.getByLabelText("Kwota (brutto)"), { target: { value: "1000" } });
+    fireEvent.change(screen.getByLabelText("Prowizja"), { target: { value: "12.5" } });
+  };
+
+  it("writes a matching cash deposit when the funding box is checked", async () => {
+    fillBuy();
+
+    fireEvent.click(screen.getByRole("checkbox", { name: /Dopisz wpłatę gotówki/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Dodaj zakup" }));
+
+    await waitFor(() => {
+      expect(saveRecord).toHaveBeenCalledWith(
+        store.state.supabase,
+        store.state.userDataKey,
+        "transaction",
+        expect.objectContaining({
+          id: depositID,
+          transactionType: "cashDeposit",
+          portfolioID: accountID,
+          grossAmount: 1012.5,
+          currency: "PLN",
+        }),
+        { baseUpdatedAt: null },
+      );
+    });
+  });
+
+  it("writes only the trade when the funding box is left alone", async () => {
+    fillBuy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Dodaj zakup" }));
+
+    await waitFor(() => {
+      expect(saveRecord).toHaveBeenCalledTimes(1);
+    });
+    expect(vi.mocked(saveRecord).mock.calls[0]?.[3]).toMatchObject({
+      transactionType: "buy",
+    });
+  });
+
+  it("offers no funding box while editing an existing trade", async () => {
+    render(
+      <AddTransactionModal
+        open
+        initialValue={{
+          id: buyID,
+          portfolioId: accountID,
+          instrumentId: null,
+          date: "2026-05-10",
+          transactionType: "buy",
+          quantity: 10,
+          price: 100,
+          grossAmount: 1000,
+          currency: "PLN",
+          fees: 0,
+          taxes: 0,
+          updatedAt: "2026-05-10T10:00:00.000Z",
+        }}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("checkbox", { name: /Dopisz wpłatę gotówki/ })).toBeNull();
+  });
+});

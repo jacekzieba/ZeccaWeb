@@ -47,6 +47,7 @@ import {
   showsFXSettlement as showsFXSettlementRule,
   fxRateToBaseForSave,
 } from "./transaction-rules";
+import { fundingDepositForTrade } from "./funding-deposit";
 
 // Fetches the NBP Table A mid rate (PLN per 1 unit of `code`) on `date`. The
 // API applies forward-fill server-side (latest published fixing on/before the
@@ -371,6 +372,7 @@ export function AddTransactionModal({
   const [sourcePortfolioId, setSourcePortfolioId] = useState("");
   const [transferKind, setTransferKind] = useState<"cash" | "asset">("cash");
   const [countAsContribution, setCountAsContribution] = useState(false);
+  const [addFundingDeposit, setAddFundingDeposit] = useState(false);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -412,6 +414,7 @@ export function AddTransactionModal({
     setCountAsContribution(
       initialValue?.contributionTreatment === "countAsContribution",
     );
+    setAddFundingDeposit(false);
     setNotes(initialValue?.notes ?? "");
     setSaving(false);
     setError(null);
@@ -724,6 +727,28 @@ export function AddTransactionModal({
       : `Dodaj ${txDef.label.toLowerCase()}`;
   const selectedPortfolioName = portfolios.find((portfolio) => portfolio.id === portfolioId)?.name ?? "Portfel";
 
+  // Offered only when adding a buy: on edit it would write a second deposit on
+  // every save, and the first one is already in the ledger.
+  const showsFundingDeposit = txType === "buy" && !isEditing;
+  // Preview for the label only. The record saved below is recomputed from the
+  // FX rate that submit validated, so what lands in the ledger is never this.
+  const fundingPreview = showsFundingDeposit
+    ? fundingDepositForTrade({
+        transactionType: txType,
+        currency,
+        grossAmount: gross,
+        fees: feeValue,
+        fxRateToBase: showsFX
+          ? fxRateToBaseForSave({
+              type: txType,
+              currency,
+              settleInPLN,
+              rate: parseAmount(fxRateToBase),
+            })
+          : null,
+      })
+    : null;
+
   function reset() {
     setTxType("buy");
     setInstrumentId("");
@@ -744,6 +769,7 @@ export function AddTransactionModal({
     setSourcePortfolioId("");
     setTransferKind("cash");
     setCountAsContribution(false);
+    setAddFundingDeposit(false);
     setNotes("");
     setError(null);
     setSaving(false);
@@ -887,6 +913,35 @@ export function AddTransactionModal({
         price: priceValue,
       });
 
+      // Built from the FX rate the trade actually saved with, so the deposit
+      // cancels the ledger's drain exactly rather than to the nearest grosz.
+      const funding = addFundingDeposit
+        ? fundingDepositForTrade({
+            transactionType: txType,
+            currency,
+            grossAmount: grossValue,
+            fees: feeAmount,
+            fxRateToBase: fxRateValue,
+          })
+        : null;
+      const fundingSymbol = instruments.find((i) => i.id === instrumentId)?.symbol;
+      const fundingPayload =
+        funding && funding.grossAmount > 0
+          ? makeTransactionPayload({
+              id: crypto.randomUUID(),
+              date: dateSeconds,
+              portfolioID: portfolioId,
+              transactionType: "cashDeposit",
+              grossAmount: funding.grossAmount,
+              currency: funding.currency,
+              fees: 0,
+              taxes: 0,
+              notes: fundingSymbol
+                ? `Zasilenie pod zakup ${fundingSymbol}`
+                : "Zasilenie pod zakup",
+            })
+          : null;
+
       if (isFakeSyncEnabled() && records) {
         const now = new Date().toISOString();
         const nextRecords = [
@@ -903,6 +958,20 @@ export function AddTransactionModal({
               payload,
             },
           },
+          ...(fundingPayload
+            ? [{
+                id: fundingPayload.id,
+                deviceId: "fake-sync-web",
+                updatedAt: now,
+                deletedAt: null,
+                envelope: {
+                  type: "transaction" as const,
+                  payloadVersion: 1,
+                  schemaVersion: 1,
+                  payload: fundingPayload,
+                },
+              }]
+            : []),
         ];
         setSync(
           nextRecords,
@@ -922,9 +991,31 @@ export function AddTransactionModal({
           { baseUpdatedAt: initialValue?.updatedAt ?? null },
         );
 
+        // Two writes, no transaction — and the offline queue makes a rollback
+        // illusory anyway. If the deposit is the one that fails, the trade still
+        // stands, so say so plainly instead of failing the whole save.
+        let fundingFailed = false;
+        if (fundingPayload) {
+          try {
+            await saveRecord(supabase, userDataKey, "transaction", fundingPayload, {
+              baseUpdatedAt: null,
+            });
+          } catch {
+            fundingFailed = true;
+          }
+        }
+
         if (!result.queued) {
           const { records: newRecords, snapshot } = await refreshSyncStore(supabase, userDataKey);
           setSync(newRecords, snapshot);
+        }
+
+        if (fundingFailed) {
+          setError(
+            "Zapisano transakcję, ale nie udało się dopisać wpłaty gotówki. Dodaj ją ręcznie.",
+          );
+          setSaving(false);
+          return;
         }
       }
 
@@ -1436,6 +1527,41 @@ export function AddTransactionModal({
                     </div>
                   )}
                 </section>
+              )}
+
+              {showsFundingDeposit && (
+                <label
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    alignItems: "flex-start",
+                    marginTop: 18,
+                    cursor: "pointer",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={addFundingDeposit}
+                    onChange={(e) => setAddFundingDeposit(e.target.checked)}
+                    style={{ marginTop: 2, accentColor: INK }}
+                  />
+                  <span style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.35 }}>
+                    <span style={{ fontWeight: 700, color: INK }}>
+                      Dopisz wpłatę gotówki
+                      {fundingPreview && fundingPreview.grossAmount > 0
+                        ? `: ${fundingPreview.grossAmount.toLocaleString("pl-PL", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })} ${fundingPreview.currency}`
+                        : ""}
+                    </span>
+                    <br />
+                    Zapisze osobną wpłatę na dokładnie tę kwotę, którą zakup zdejmie z
+                    salda — dla portfela, w którym nie prowadzisz gotówki. Zaznacz tylko,
+                    jeśli te pieniądze faktycznie wpłynęły z zewnątrz: wpłata liczy się do
+                    „wpłat”, zainwestowanego kapitału i XIRR.
+                  </span>
+                </label>
               )}
 
               <details style={{ marginTop: 18 }}>
