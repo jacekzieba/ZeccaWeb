@@ -164,6 +164,123 @@ describe("realised P&L (FIFO)", () => {
     expect(snapshot.metrics.realizedPnl).toBeCloseTo(300, 5);
   });
 
+  it("books nothing for a sell that carries no price, matching native", () => {
+    const snapshot = buildInvestorDataSnapshot([
+      ...baseRecords(),
+      record("transaction", "55555555-5555-4555-8555-555555555558", {
+        recordType: "transaction",
+        id: "55555555-5555-4555-8555-555555555558",
+        date: "2026-03-01T10:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID,
+        transactionType: "sell",
+        quantity: 10,
+        price: null,
+        grossAmount: 1_200,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+    ]);
+
+    // Native `LedgerEngine` guards `.sell` on instrumentID, quantity AND price,
+    // so a price-less sell books no realised P&L and leaves the lot open.
+    // Deriving a price from grossAmount here would report profit on a position
+    // the ledger still holds.
+    expect(snapshot.metrics.realizedPnl).toBeCloseTo(0, 5);
+  });
+
+  it("books a bond redemption that carries no price, matching native", () => {
+    const snapshot = buildInvestorDataSnapshot([
+      ...baseRecords(),
+      record("transaction", "55555555-5555-4555-8555-555555555559", {
+        recordType: "transaction",
+        id: "55555555-5555-4555-8555-555555555559",
+        date: "2026-03-01T10:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID,
+        transactionType: "bondRedemption",
+        quantity: 10,
+        price: null,
+        grossAmount: 1_200,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+    ]);
+
+    // Native guards `.bondRedemption` on instrumentID and quantity only — a
+    // redemption is priced by its redemption amount, not a unit price.
+    // 1 200 − (10 × 100) = 200
+    expect(snapshot.metrics.realizedPnl).toBeCloseTo(200, 5);
+  });
+
+  it("gives a price-less buy no cost basis, matching the ledger's own guard", () => {
+    const snapshot = buildInvestorDataSnapshot([
+      record("account", accountID, {
+        recordType: "account",
+        id: accountID,
+        name: "Core",
+        baseCurrency: "PLN",
+      }),
+      record("asset", instrumentID, {
+        recordType: "asset",
+        id: instrumentID,
+        kind: "etf",
+        symbol: "VWCE",
+        name: "Vanguard FTSE All-World",
+        currency: "PLN",
+      }),
+      record("transaction", "33333333-3333-4333-8333-333333333333", {
+        recordType: "transaction",
+        id: "33333333-3333-4333-8333-333333333333",
+        date: "2026-01-02T10:00:00.000Z",
+        portfolioID: accountID,
+        transactionType: "cashDeposit",
+        grossAmount: 10_000,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+      record("transaction", "44444444-4444-4444-8444-44444444444a", {
+        recordType: "transaction",
+        id: "44444444-4444-4444-8444-44444444444a",
+        date: "2026-01-03T10:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID,
+        transactionType: "buy",
+        quantity: 4,
+        price: null,
+        grossAmount: 1_000,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+      record("transaction", "55555555-5555-4555-8555-55555555555a", {
+        recordType: "transaction",
+        id: "55555555-5555-4555-8555-55555555555a",
+        date: "2026-03-01T10:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID,
+        transactionType: "sell",
+        quantity: 4,
+        price: 300,
+        grossAmount: 1_200,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+    ]);
+
+    // Native `LedgerEngine` guards `.buy` on price and skips the record whole:
+    // no cash movement, no position, no lot. `applyTransaction` mirrors that,
+    // so this FIFO pass must too — deriving a 250/unit basis from `grossAmount`
+    // here would leave the ledger holding no lot while realised P&L priced one,
+    // and the same synced record would value differently on web than on native.
+    // With no basis to consume, the priced sell books its full proceeds.
+    expect(snapshot.metrics.realizedPnl).toBeCloseTo(1_200, 5);
+  });
+
   it("is zero while no position has been closed", () => {
     const snapshot = buildInvestorDataSnapshot(baseRecords());
     expect(snapshot.metrics.realizedPnl).toBeCloseTo(0, 5);

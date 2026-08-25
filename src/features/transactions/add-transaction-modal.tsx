@@ -871,6 +871,25 @@ export function AddTransactionModal({
       }
     }
 
+    // Native `TransactionValidator.validateInstrumentTransaction` rejects a buy
+    // or a sell without an instrument, a positive quantity or a positive price,
+    // and `LedgerEngine` skips such a record anyway. Saving one here would file
+    // a trade that neither engine ever values.
+    if (txType === "buy" || txType === "sell") {
+      if (!instrumentId) {
+        setError("Brakuje instrumentu dla transakcji.");
+        return;
+      }
+      if (quantityValue == null || !(quantityValue > 0)) {
+        setError("Brakuje liczby jednostek.");
+        return;
+      }
+      if (priceValue == null || !(priceValue > 0)) {
+        setError("Brakuje ceny jednostkowej.");
+        return;
+      }
+    }
+
     let targetGrossValue: number | null = null;
     if (txType === "fxConversion") {
       targetGrossValue = parseAmount(targetGrossAmount);

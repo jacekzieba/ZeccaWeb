@@ -19,15 +19,18 @@ describe("snapshot diagnostics", () => {
         name: "Apple",
         currency: "USD",
       }),
-      // A buy establishes the holding but carries no price and no fxRateToBase,
-      // so both the price and the USD rate are unresolved.
+      // An incoming asset transfer establishes the holding without a purchase
+      // price, and carries no fxRateToBase, so both the price and the USD rate
+      // are unresolved. (A price-less *buy* can't stand in here: both engines
+      // skip one outright, so it establishes no holding to warn about.)
       record("transaction", "33333333-3333-4333-8333-333333333333", {
         recordType: "transaction",
         id: "33333333-3333-4333-8333-333333333333",
         date: "2026-01-05T00:00:00.000Z",
         portfolioID: ACCOUNT,
         instrumentID: USD_ASSET,
-        transactionType: "buy",
+        transactionType: "accountTransferIn",
+        transferKind: "asset",
         quantity: 10,
         grossAmount: 0,
         currency: "USD",

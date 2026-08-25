@@ -955,10 +955,19 @@ function buildRealizedPnl(
     const fx = toBase(transaction.currency, transaction.fxRateToBase);
     switch (transaction.transactionType) {
       case "buy": {
-        const costPerUnit =
-          transaction.price ??
-          (quantity > EPSILON ? transaction.grossAmount / quantity : 0);
-        pushLot(transaction.instrumentID, quantity, costPerUnit * fx);
+        // Native `LedgerEngine` guards `.buy` on instrument, quantity AND price
+        // and skips the record whole, so no lot exists to price a later
+        // disposal against. `applyTransaction` mirrors that guard; this FIFO
+        // pass must agree, or the ledger would hold no lot while realised P&L
+        // priced one off `grossAmount`.
+        if (
+          !transaction.instrumentID ||
+          transaction.quantity == null ||
+          transaction.price == null
+        ) {
+          break;
+        }
+        pushLot(transaction.instrumentID, quantity, transaction.price * fx);
         break;
       }
       case "depositOpen":
@@ -983,8 +992,22 @@ function buildRealizedPnl(
           }
         }
         break;
+      // Native `LedgerEngine` books realised P&L *inside* its guarded branches,
+      // and the two guards differ: `.sell` requires an instrument, a quantity
+      // and a price, while `.bondRedemption` requires only an instrument and a
+      // quantity — a redemption is priced by its redemption amount, not by a
+      // unit price. Without the sell guard a price-less sell derives a price
+      // from `grossAmount` and books profit on a position the ledger still
+      // holds open.
       case "sell":
       case "bondRedemption": {
+        if (
+          !transaction.instrumentID ||
+          transaction.quantity == null ||
+          (transaction.transactionType === "sell" && transaction.price == null)
+        ) {
+          break;
+        }
         const costBase = consume(transaction.instrumentID, quantity);
         const proceedsBase = transaction.grossAmount * fx;
         realizedBase += proceedsBase - costBase;
@@ -1388,12 +1411,34 @@ function applyTransaction(ledger: Ledger, transaction: TransactionPayload) {
       addCash(ledger, currency, -grossAmount);
       break;
     case "buy":
+      // Native `LedgerEngine` skips a buy missing any of instrument/quantity/
+      // price, so the cash never leaves the account there. Draining cash here
+      // would value the same synced records differently on web than on
+      // macOS/iOS.
+      if (
+        !transaction.instrumentID ||
+        transaction.quantity == null ||
+        transaction.price == null
+      ) {
+        break;
+      }
       addCashForTrade(ledger, transaction, -(grossAmount + fees));
-      addPosition(ledger, transaction.instrumentID, transaction.quantity ?? 0);
+      addPosition(ledger, transaction.instrumentID, transaction.quantity);
       addLot(ledger, transaction);
       break;
     case "sell": {
-      const soldQuantity = transaction.quantity ?? 0;
+      // Native `LedgerEngine` skips a sell missing any of instrument/quantity/
+      // price, so no proceeds are credited and the position stays open there.
+      // Crediting them here would value the same synced records differently on
+      // web than on macOS/iOS.
+      if (
+        !transaction.instrumentID ||
+        transaction.quantity == null ||
+        transaction.price == null
+      ) {
+        break;
+      }
+      const soldQuantity = transaction.quantity;
       const consumed = consumeLots(ledger, transaction.instrumentID, soldQuantity);
       const coverage = lotCoverage(transaction.instrumentID, soldQuantity, consumed);
       addCashForTrade(ledger, transaction, (grossAmount - fees - taxes) * coverage);

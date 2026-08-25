@@ -2040,3 +2040,189 @@ describe("InvestorDataSnapshot mapper", () => {
     ]);
   });
 });
+
+/**
+ * Native `LedgerEngine.swift` (case .buy) skips a buy that is missing any of
+ * instrumentID / quantity / price. The web ledger must skip the same records,
+ * or the same synced data values differently on web than on macOS/iOS.
+ */
+describe("buy transactions missing instrument, quantity or price", () => {
+  const buyAccountID = "12121212-1212-4121-8121-121212121212";
+  const buyInstrumentID = "13131313-1313-4131-8131-131313131313";
+
+  const baseRecords = () => [
+    record("account", buyAccountID, {
+      recordType: "account",
+      id: buyAccountID,
+      name: "Parytet",
+      baseCurrency: "PLN",
+    }),
+    record("asset", buyInstrumentID, {
+      recordType: "asset",
+      id: buyInstrumentID,
+      kind: "etf",
+      symbol: "VWCE",
+      name: "Vanguard FTSE All-World",
+      currency: "PLN",
+    }),
+    record("transaction", "14141414-1414-4141-8141-141414141414", {
+      recordType: "transaction",
+      id: "14141414-1414-4141-8141-141414141414",
+      date: "2026-05-01T10:00:00.000Z",
+      portfolioID: buyAccountID,
+      instrumentID: null,
+      transactionType: "cashDeposit",
+      grossAmount: 1_000,
+      currency: "PLN",
+      fees: 0,
+      taxes: 0,
+    }),
+  ];
+
+  const malformedBuy = (overrides: Record<string, unknown>) =>
+    record("transaction", "15151515-1515-4151-8151-151515151515", {
+      recordType: "transaction",
+      id: "15151515-1515-4151-8151-151515151515",
+      date: "2026-05-02T10:00:00.000Z",
+      portfolioID: buyAccountID,
+      instrumentID: buyInstrumentID,
+      transactionType: "buy",
+      quantity: 4,
+      price: 250,
+      grossAmount: 1_000,
+      currency: "PLN",
+      fees: 5,
+      taxes: 0,
+      ...overrides,
+    });
+
+  it("leaves cash untouched for a buy with no instrument", () => {
+    const detail = buildPortfolioDetail(
+      [...baseRecords(), malformedBuy({ instrumentID: null })],
+      buyAccountID,
+    );
+
+    expect(detail?.cashBalances).toEqual([{ currency: "PLN", amount: 1_000 }]);
+    expect(detail?.holdings).toEqual([]);
+  });
+
+  it("leaves cash untouched for a buy with no quantity", () => {
+    const detail = buildPortfolioDetail(
+      [...baseRecords(), malformedBuy({ quantity: null })],
+      buyAccountID,
+    );
+
+    expect(detail?.cashBalances).toEqual([{ currency: "PLN", amount: 1_000 }]);
+    expect(detail?.holdings).toEqual([]);
+  });
+
+  it("leaves cash untouched for a buy with no price", () => {
+    const detail = buildPortfolioDetail(
+      [...baseRecords(), malformedBuy({ price: null })],
+      buyAccountID,
+    );
+
+    expect(detail?.cashBalances).toEqual([{ currency: "PLN", amount: 1_000 }]);
+    expect(detail?.holdings).toEqual([]);
+  });
+});
+
+/**
+ * Native `LedgerEngine.swift` (case .sell) skips a sell that is missing any of
+ * instrumentID / quantity / price. The web ledger must skip the same records,
+ * or the same synced data values differently on web than on macOS/iOS.
+ */
+describe("sell transactions missing instrument, quantity or price", () => {
+  const sellAccountID = "16161616-1616-4161-8161-161616161616";
+  const sellInstrumentID = "17171717-1717-4171-8171-171717171717";
+
+  const baseRecords = () => [
+    record("account", sellAccountID, {
+      recordType: "account",
+      id: sellAccountID,
+      name: "Parytet",
+      baseCurrency: "PLN",
+    }),
+    record("asset", sellInstrumentID, {
+      recordType: "asset",
+      id: sellInstrumentID,
+      kind: "etf",
+      symbol: "VWCE",
+      name: "Vanguard FTSE All-World",
+      currency: "PLN",
+    }),
+    record("transaction", "18181818-1818-4181-8181-181818181818", {
+      recordType: "transaction",
+      id: "18181818-1818-4181-8181-181818181818",
+      date: "2026-05-01T10:00:00.000Z",
+      portfolioID: sellAccountID,
+      instrumentID: null,
+      transactionType: "cashDeposit",
+      grossAmount: 1_200,
+      currency: "PLN",
+      fees: 0,
+      taxes: 0,
+    }),
+    record("transaction", "19191919-1919-4191-8191-191919191919", {
+      recordType: "transaction",
+      id: "19191919-1919-4191-8191-191919191919",
+      date: "2026-05-02T10:00:00.000Z",
+      portfolioID: sellAccountID,
+      instrumentID: sellInstrumentID,
+      transactionType: "buy",
+      quantity: 4,
+      price: 250,
+      grossAmount: 1_000,
+      currency: "PLN",
+      fees: 0,
+      taxes: 0,
+    }),
+  ];
+
+  const malformedSell = (overrides: Record<string, unknown>) =>
+    record("transaction", "20202020-2020-4202-8202-202020202020", {
+      recordType: "transaction",
+      id: "20202020-2020-4202-8202-202020202020",
+      date: "2026-05-03T10:00:00.000Z",
+      portfolioID: sellAccountID,
+      instrumentID: sellInstrumentID,
+      transactionType: "sell",
+      quantity: 4,
+      price: 300,
+      grossAmount: 1_200,
+      currency: "PLN",
+      fees: 0,
+      taxes: 0,
+      ...overrides,
+    });
+
+  it("leaves cash and the position untouched for a sell with no instrument", () => {
+    const detail = buildPortfolioDetail(
+      [...baseRecords(), malformedSell({ instrumentID: null })],
+      sellAccountID,
+    );
+
+    expect(detail?.cashBalances).toEqual([{ currency: "PLN", amount: 200 }]);
+    expect(detail?.holdings[0]?.quantity).toBe(4);
+  });
+
+  it("leaves cash and the position untouched for a sell with no quantity", () => {
+    const detail = buildPortfolioDetail(
+      [...baseRecords(), malformedSell({ quantity: null })],
+      sellAccountID,
+    );
+
+    expect(detail?.cashBalances).toEqual([{ currency: "PLN", amount: 200 }]);
+    expect(detail?.holdings[0]?.quantity).toBe(4);
+  });
+
+  it("leaves cash and the position untouched for a sell with no price", () => {
+    const detail = buildPortfolioDetail(
+      [...baseRecords(), malformedSell({ price: null })],
+      sellAccountID,
+    );
+
+    expect(detail?.cashBalances).toEqual([{ currency: "PLN", amount: 200 }]);
+    expect(detail?.holdings[0]?.quantity).toBe(4);
+  });
+});
