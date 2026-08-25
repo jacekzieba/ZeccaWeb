@@ -378,7 +378,12 @@ function parseTransactionRow(
   if (values.fees && fees == null) errors.push("Nieprawidłowe opłaty.");
   if (values.taxes && taxes == null) errors.push("Nieprawidłowy podatek.");
   if (price == null && TYPES_USING_QUANTITY.has(transactionType)) {
-    warnings.push("Brak ceny. Transakcja zostanie zapisana bez ceny jednostkowej.");
+    // Both engines skip an instrument transaction with no unit price, so it is
+    // stored but contributes nothing until the price is filled in. The snapshot
+    // raises a matching `transaction-incomplete` diagnostic.
+    warnings.push(
+      "Brak ceny. Transakcja zostanie zapisana, ale nie wliczy się do wyników, dopóki nie uzupełnisz ceny jednostkowej.",
+    );
   }
 
   const payload =

@@ -45,6 +45,44 @@ describe("snapshot diagnostics", () => {
     expect(snapshot.diagnostics?.find((d) => d.code === "price-missing")?.context).toBe("AAPL");
   });
 
+  it("flags an instrument transaction the engines skip as incomplete", () => {
+    const records = [
+      record("account", ACCOUNT, { recordType: "account", id: ACCOUNT, name: "Core", baseCurrency: "PLN" }),
+      record("asset", USD_ASSET, {
+        recordType: "asset",
+        id: USD_ASSET,
+        kind: "stock",
+        symbol: "PKN",
+        name: "Orlen",
+        currency: "PLN",
+      }),
+      record("transaction", "33333333-3333-4333-8333-333333333334", {
+        recordType: "transaction",
+        id: "33333333-3333-4333-8333-333333333334",
+        date: "2026-01-05T00:00:00.000Z",
+        portfolioID: ACCOUNT,
+        instrumentID: USD_ASSET,
+        transactionType: "buy",
+        quantity: 4,
+        price: null,
+        grossAmount: 1_000,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+    ];
+
+    // Both engines skip a buy with no price, so it moves no cash and opens no
+    // position. Import deliberately lets such a record through, so without a
+    // diagnostic the transaction would sit in the data contributing nothing and
+    // the user would have no way to tell.
+    const snapshot = buildInvestorDataSnapshot(records, { asOf: new Date("2026-06-30T00:00:00.000Z") });
+    const incomplete = (snapshot.diagnostics ?? []).filter((d) => d.code === "transaction-incomplete");
+    expect(incomplete).toHaveLength(1);
+    expect(incomplete[0].context).toBe("buy");
+    expect(incomplete[0].severity).toBe("warning");
+  });
+
   it("emits no diagnostics when a held asset has a market price", () => {
     const records = [
       record("account", ACCOUNT, { recordType: "account", id: ACCOUNT, name: "Core", baseCurrency: "PLN" }),

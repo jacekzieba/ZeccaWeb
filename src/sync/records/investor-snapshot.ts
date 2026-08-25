@@ -449,6 +449,18 @@ function collectDiagnostics(
     diagnostics.push({ code: "record-skipped", severity: "warning", context: type });
   }
 
+  // A transaction that decoded fine but lacks an instrument, a quantity or a
+  // price is skipped by both engines. Import lets such a record through on a
+  // warning, so without this the record would sit in the data contributing
+  // nothing and the gap would be invisible.
+  for (const type of new Set(
+    dataset.transactions
+      .filter(isIncompleteInstrumentTransaction)
+      .map((transaction) => transaction.transactionType),
+  )) {
+    diagnostics.push({ code: "transaction-incomplete", severity: "warning", context: type });
+  }
+
   const checkFx = (currency: string) => {
     const code = currency.trim().toUpperCase();
     if (code === "PLN" || !/^[A-Z]{3}$/.test(code) || missingFx.has(code)) return;
@@ -923,8 +935,8 @@ function buildRealizedPnl(
   const consume = (
     instrumentID: string | null | undefined,
     quantity: number,
-  ): number => {
-    if (!instrumentID || quantity <= EPSILON) return 0;
+  ): { costBase: number; quantity: number } => {
+    if (!instrumentID || quantity <= EPSILON) return { costBase: 0, quantity: 0 };
     const lots = lotsByInstrument.get(instrumentID) ?? [];
     let remaining = quantity;
     let costBase = 0;
@@ -939,7 +951,7 @@ function buildRealizedPnl(
       if (lot.quantity <= EPSILON) lots.shift();
     }
     lotsByInstrument.set(instrumentID, lots);
-    return costBase;
+    return { costBase, quantity: quantity - remaining };
   };
 
   const transactions = dataset.transactions
@@ -955,19 +967,12 @@ function buildRealizedPnl(
     const fx = toBase(transaction.currency, transaction.fxRateToBase);
     switch (transaction.transactionType) {
       case "buy": {
-        // Native `LedgerEngine` guards `.buy` on instrument, quantity AND price
-        // and skips the record whole, so no lot exists to price a later
-        // disposal against. `applyTransaction` mirrors that guard; this FIFO
-        // pass must agree, or the ledger would hold no lot while realised P&L
-        // priced one off `grossAmount`.
-        if (
-          !transaction.instrumentID ||
-          transaction.quantity == null ||
-          transaction.price == null
-        ) {
+        // A skipped buy leaves no lot to price a later disposal against, so the
+        // ledger and this FIFO pass have to skip exactly the same records.
+        if (isIncompleteInstrumentTransaction(transaction)) {
           break;
         }
-        pushLot(transaction.instrumentID, quantity, transaction.price * fx);
+        pushLot(transaction.instrumentID, quantity, (transaction.price ?? 0) * fx);
         break;
       }
       case "depositOpen":
@@ -992,25 +997,24 @@ function buildRealizedPnl(
           }
         }
         break;
-      // Native `LedgerEngine` books realised P&L *inside* its guarded branches,
-      // and the two guards differ: `.sell` requires an instrument, a quantity
-      // and a price, while `.bondRedemption` requires only an instrument and a
-      // quantity — a redemption is priced by its redemption amount, not by a
-      // unit price. Without the sell guard a price-less sell derives a price
-      // from `grossAmount` and books profit on a position the ledger still
-      // holds open.
+      // Native books realised P&L inside its guarded branches; without the
+      // guard a price-less sell derives a price from `grossAmount` and reports
+      // profit on a position the ledger still holds open.
       case "sell":
       case "bondRedemption": {
-        if (
-          !transaction.instrumentID ||
-          transaction.quantity == null ||
-          (transaction.transactionType === "sell" && transaction.price == null)
-        ) {
+        if (isIncompleteInstrumentTransaction(transaction)) {
           break;
         }
-        const costBase = consume(transaction.instrumentID, quantity);
-        const proceedsBase = transaction.grossAmount * fx;
-        realizedBase += proceedsBase - costBase;
+        const consumed = consume(transaction.instrumentID, quantity);
+        // Credit proceeds only for the fraction actually backed by open lots,
+        // mirroring `lotCoverage` on the ledger side. Without it a disposal the
+        // ledger paid no cash for would still book a full gain — profit on
+        // units that were never acquired. A consistent dataset always has full
+        // coverage, so this is a no-op there and parity with native holds.
+        const coverage =
+          quantity > EPSILON ? consumed.quantity / quantity : 1;
+        const proceedsBase = transaction.grossAmount * fx * coverage;
+        realizedBase += proceedsBase - consumed.costBase;
         break;
       }
       case "depositClose":
@@ -1386,6 +1390,27 @@ function computeLedger(transactions: TransactionPayload[], asOf: Date): Ledger {
   return ledger;
 }
 
+/**
+ * Whether an instrument transaction is missing a field both engines require, so
+ * neither the ledger nor the FIFO pass can book it. Native `LedgerEngine`
+ * guards `.buy`/`.sell` on instrument, quantity and price, and
+ * `.bondRedemption` on instrument and quantity only — a redemption is priced by
+ * its redemption amount, not a unit price.
+ *
+ * Single source for the guards and the `transaction-incomplete` diagnostic, so
+ * what the engines silently skip is always exactly what the banner reports.
+ */
+function isIncompleteInstrumentTransaction(transaction: TransactionPayload) {
+  const type = transaction.transactionType;
+  if (type !== "buy" && type !== "sell" && type !== "bondRedemption") {
+    return false;
+  }
+  if (!transaction.instrumentID || transaction.quantity == null) {
+    return true;
+  }
+  return type !== "bondRedemption" && transaction.price == null;
+}
+
 function applyTransaction(ledger: Ledger, transaction: TransactionPayload) {
   const type = transaction.transactionType;
   const grossAmount = transaction.grossAmount;
@@ -1415,15 +1440,11 @@ function applyTransaction(ledger: Ledger, transaction: TransactionPayload) {
       // price, so the cash never leaves the account there. Draining cash here
       // would value the same synced records differently on web than on
       // macOS/iOS.
-      if (
-        !transaction.instrumentID ||
-        transaction.quantity == null ||
-        transaction.price == null
-      ) {
+      if (isIncompleteInstrumentTransaction(transaction)) {
         break;
       }
       addCashForTrade(ledger, transaction, -(grossAmount + fees));
-      addPosition(ledger, transaction.instrumentID, transaction.quantity);
+      addPosition(ledger, transaction.instrumentID, transaction.quantity ?? 0);
       addLot(ledger, transaction);
       break;
     case "sell": {
@@ -1431,14 +1452,10 @@ function applyTransaction(ledger: Ledger, transaction: TransactionPayload) {
       // price, so no proceeds are credited and the position stays open there.
       // Crediting them here would value the same synced records differently on
       // web than on macOS/iOS.
-      if (
-        !transaction.instrumentID ||
-        transaction.quantity == null ||
-        transaction.price == null
-      ) {
+      if (isIncompleteInstrumentTransaction(transaction)) {
         break;
       }
-      const soldQuantity = transaction.quantity;
+      const soldQuantity = transaction.quantity ?? 0;
       const consumed = consumeLots(ledger, transaction.instrumentID, soldQuantity);
       const coverage = lotCoverage(transaction.instrumentID, soldQuantity, consumed);
       addCashForTrade(ledger, transaction, (grossAmount - fees - taxes) * coverage);

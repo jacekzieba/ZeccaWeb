@@ -160,3 +160,24 @@ describe("parseCsvImport manual valuations", () => {
     );
   });
 });
+
+describe("import warning for a price-less instrument transaction", () => {
+  it("says the transaction will not count towards results", () => {
+    const preview = parseTransactionCsvImport(
+      [
+        "date,portfolio,instrument,transactionType,quantity,price,grossAmount,currency,fees,taxes",
+        "2026-05-17,IKE,AAPL,buy,2,,381,USD,0,0",
+      ].join("\n"),
+      references,
+    );
+
+    // Import deliberately accepts this record, but both engines skip it, so the
+    // old wording ("zostanie zapisana") was only half the story — the user had
+    // no way to learn it contributes nothing until the snapshot silently
+    // ignored it. The snapshot now also raises a `transaction-incomplete`
+    // diagnostic; the two messages have to agree.
+    expect(preview.errorRows).toHaveLength(0);
+    expect(preview.validRows).toHaveLength(1);
+    expect(preview.validRows[0].warnings.join(" ")).toContain("nie wliczy się do wyników");
+  });
+});

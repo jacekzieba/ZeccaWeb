@@ -275,10 +275,40 @@ describe("realised P&L (FIFO)", () => {
     // Native `LedgerEngine` guards `.buy` on price and skips the record whole:
     // no cash movement, no position, no lot. `applyTransaction` mirrors that,
     // so this FIFO pass must too — deriving a 250/unit basis from `grossAmount`
-    // here would leave the ledger holding no lot while realised P&L priced one,
-    // and the same synced record would value differently on web than on native.
-    // With no basis to consume, the priced sell books its full proceeds.
-    expect(snapshot.metrics.realizedPnl).toBeCloseTo(1_200, 5);
+    // would leave the ledger holding no lot while realised P&L priced one.
+    //
+    // With no lot to consume, `lotCoverage` scales the proceeds to 0, matching
+    // the cash the ledger actually credited. Native books the full 1 200 here
+    // because it has no coverage concept; web deliberately stays conservative
+    // rather than reporting profit it never received, and flags the skipped buy
+    // through the `transaction-incomplete` diagnostic instead of staying quiet.
+    expect(snapshot.metrics.realizedPnl).toBeCloseTo(0, 5);
+  });
+
+  it("scales proceeds to the fraction of the sale actually backed by lots", () => {
+    const snapshot = buildInvestorDataSnapshot([
+      ...baseRecords(),
+      // Sells 20 against a 10-unit holding: only half the disposal is backed by
+      // an open lot, so the ledger credits half the proceeds. Realised P&L has
+      // to use the same fraction, or it books gains on units never acquired.
+      record("transaction", "55555555-5555-4555-8555-55555555555b", {
+        recordType: "transaction",
+        id: "55555555-5555-4555-8555-55555555555b",
+        date: "2026-03-01T10:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID,
+        transactionType: "sell",
+        quantity: 20,
+        price: 130,
+        grossAmount: 2_600,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+    ]);
+
+    // Coverage 10/20 = 0.5 → proceeds 2 600 × 0.5 = 1 300, cost 10 × 100 = 1 000.
+    expect(snapshot.metrics.realizedPnl).toBeCloseTo(300, 5);
   });
 
   it("is zero while no position has been closed", () => {
