@@ -933,7 +933,7 @@ export function EarningsPage() {
       )}
 
       <div data-tour="earnings-summary">
-      <V2Card glass pad={0} style={{ overflow: "hidden" }}>
+      <V2Card pad={0} style={{ overflow: "hidden" }}>
         <div style={{ display: "grid", gridTemplateColumns: isTablet ? "1fr" : "minmax(300px, 430px) 1fr" }}>
           <div style={{ padding: isMobile ? 20 : 28, borderRight: isTablet ? "none" : `0.5px solid ${V2.line}`, borderBottom: isTablet ? `0.5px solid ${V2.line}` : "none" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 12 }}>

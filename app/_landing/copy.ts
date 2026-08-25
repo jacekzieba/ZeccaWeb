@@ -30,15 +30,27 @@ export const landingCopy = {
   // ── Sekcja główna (hero) ──────────────────────────────────────────────────
   hero: {
     betaBanner: "Trwają beta testy, które mają na celu eliminację ewentualnych błędów.",
-    eyebrow: "Natywnie na macOS i iOS oraz przez przeglądarkę",
-    title: "Wszystkie Twoje inwestycje w jednym miejscu",
-    lede: "W aplikacji Zecca możesz śledzić swoje portfele inwestycyjne oraz monitorować wartość Twoich akcji, ETF-ów, obligacji i innych aktywów. Program samodzielnie przelicza całą historię Twoich inwestycji.",
+    eyebrow: "macOS · iOS · przeglądarka",
+    title: "Każda liczba ma źródło.",
+    lede: "Zecca składa Twoje portfele inwestycyjne w jeden obraz — IKE, IKZE, akcje, ETF-y, obligacje skarbowe, lokaty i gotówkę — i odtwarza wartość od pierwszej transakcji. Kursy z NBP, inflacja z GUS, wynik liczony na Twoim urządzeniu.",
     ctaPrimary: "Dołącz do listy beta",
     ctaPrimaryHref: "#lista-beta",
     ctaDemo: "Zobacz demo",
     ctaDemoHref: "/demo",
     // Realne wejścia silnika — krótki „stempel" pod ledem, nie ozdoba.
     sources: ["Kursy NBP", "Inflacja GUS", "XIRR / TWR"],
+    // Rejestr: wiersz = jedna wartość z portfela demo plus cecha jej źródła.
+    // Reguła kierunku: na szynie stoi wyłącznie to, co da się ocechować.
+    register: {
+      note: "Liczby pochodzą z portfela demonstracyjnego — te same przeliczenia, które Zecca robi na Twoich danych.",
+      rows: [
+        { what: "Wartość portfela", source: "Kurs NBP", detail: "tabela A" },
+        { what: "Wynik realny po inflacji", source: "Inflacja GUS", detail: "wskaźnik CPI" },
+        { what: "Stopa zwrotu XIRR", source: "Liczone lokalnie", detail: "na Twoim urządzeniu" },
+        { what: "Zysk niezrealizowany", source: "FIFO", detail: "wg kosztu nabycia" },
+        { what: "Kapitał wpłacony", source: "Transakcje", detail: "od pierwszej wpłaty" },
+      ],
+    },
     proof:
       "Monitoruj swój główny portfel inwestycyjny oraz konta&nbsp;<b>IKE</b> i <b>IKZE.</b>",
     storeBadges: [
@@ -224,104 +236,6 @@ export const landingCopy = {
   },
 
   // ── 03 · Porównanie (Zecca vs MyFund vs arkusz) ───────────────────────────
-  comparison: {
-    eyebrow: "03 · PORÓWNANIE",
-    title: "Zecca kontra MyFund i arkusz kalkulacyjny.",
-    desc: "Uczciwe porównanie trzech sposobów monitorowania portfela — łącznie z zaawansowanymi, darmowymi szablonami arkuszy, nie tylko podstawowym Excelem.",
-    columns: ["Zecca", "MyFund", "Arkusz (Excel / Sheets)"],
-    rows: [
-      {
-        label: "Cena",
-        values: [
-          "Bezpłatna w wersji beta",
-          "Od 4,49 zł/mies. (płatne portfele od pierwszego)",
-          "Darmowy — nawet zaawansowane szablony społecznościowe",
-        ],
-      },
-      {
-        label: "Import transakcji od brokera",
-        values: [
-          "Automatyczny, z plików XTB i PKO Obligacje",
-          "Import operacji z e-maila od planu Pro",
-          "Brak — każdą transakcję wpisujesz ręcznie",
-        ],
-      },
-      {
-        label: "IKE i IKZE jako osobne portfele",
-        values: [
-          "Tak, wbudowane od zera",
-          "Tak, ale limity wpłat tylko w płatnych planach",
-          "Da się zbudować, ale limity i podział pilnujesz sam",
-        ],
-      },
-      {
-        label: "Obligacje detaliczne (ROD, EDO, COI…)",
-        values: [
-          "Automatyczne naliczanie wg serii i marży",
-          "Wymaga ręcznego wprowadzenia parametrów serii",
-          "Da się policzyć, ale każda nowa seria to nowa formuła",
-        ],
-      },
-      {
-        label: "Kursy walut z NBP",
-        values: [
-          "Automatycznie, także historycznie",
-          "Automatycznie",
-          "Tylko w Google Sheets (nie działa w Excelu)",
-        ],
-      },
-      {
-        label: "Inflacja CPI z GUS",
-        values: [
-          "Automatycznie, dla całego portfela",
-          "Brak wprost — liczysz samodzielnie",
-          "Tylko dla obligacji indeksowanych w najlepszych szablonach",
-        ],
-      },
-      {
-        label: "XIRR / TWR / CAGR",
-        values: [
-          "Wszystkie trzy, liczone natywnie",
-          "XIRR i porównania z benchmarkiem od planu Standard",
-          "XIRR zwykle tak, TWR i CAGR trzeba dobudować",
-        ],
-      },
-      {
-        label: "Szyfrowanie end-to-end",
-        values: [
-          "Tak, domyślnie",
-          "Brak informacji o szyfrowaniu end-to-end",
-          "Zależy od zabezpieczeń Twojego konta Google/Microsoft",
-        ],
-      },
-      {
-        label: "Aplikacja natywna macOS / iOS",
-        values: [
-          "Tak",
-          "iPhone / Android od planu Pro, brak macOS",
-          "Brak — tylko przeglądarka",
-        ],
-      },
-      {
-        label: "Pełna personalizacja pod własne potrzeby",
-        values: [
-          "Ograniczona do funkcji aplikacji",
-          "Ograniczona do funkcji aplikacji",
-          "Pełna — zmieniasz dowolną formułę i widok",
-        ],
-      },
-      {
-        label: "Ryzyko błędu przy utrzymaniu",
-        values: [
-          "Niskie — silnik liczy za Ciebie",
-          "Niskie — liczy dostawca",
-          "Wysokie — jedna zepsuta formuła psuje cały portfel bez ostrzeżenia",
-        ],
-      },
-    ],
-    footnote:
-      "Ceny i zakres funkcji MyFund wg cennika dostawcy w dniu publikacji — mogą się zmienić. Kolumna „Arkusz” uwzględnia też zaawansowane, darmowe szablony społecznościowe, nie tylko podstawowy Excel.",
-  },
 
   // ── 04 · FAQ (`open: true` = rozwinięte na starcie) ───────────────────────
   faq: {

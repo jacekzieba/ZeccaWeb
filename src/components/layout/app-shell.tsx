@@ -38,7 +38,7 @@ import {
   type SyncLoadResult,
 } from "@/features/sync/sync-unlock-panel";
 import { COLORS, SHADOWS, SURFACES, TYPOGRAPHY } from "@/lib/design-tokens";
-import { V2, v2Glass, v2Mix } from "@/lib/v2-design";
+import { V2, v2Mix } from "@/lib/v2-design";
 import { clearCachedUserDataKey } from "@/sync/encryption/key-cache";
 import { initials, useProfile } from "@/features/profile/profile-store";
 import { AppLock } from "@/features/auth/app-lock";
@@ -53,7 +53,6 @@ declare global {
 
 const glassSurface: CSSProperties = {
   ...SURFACES.glassPanel,
-  ...v2Glass,
 };
 
 // ── useMedia hook (SSR-safe, defaults to desktop to avoid shift) ──
@@ -319,10 +318,11 @@ function SidebarContent({ onNav, publicDemo = false }: { onNav?: () => void; pub
       <div style={{ padding: "4px 10px 12px" }}>
         <div
           style={{
-            padding: "14px", borderRadius: 12,
+            padding: "14px", borderRadius: "var(--r-md)",
+            // Karta celowo odwrócona: atrament jako tło. W ciemnym motywie
+            // odwraca się razem z tokenami i pozostaje kontrastowym akcentem.
             background: COLORS.text, color: COLORS.white,
-            border: `0.5px solid ${COLORS.border}`,
-            boxShadow: "0 10px 26px rgba(22,29,24,0.24)",
+            border: `1px solid ${COLORS.border}`,
             position: "relative", overflow: "hidden",
           }}
         >
@@ -530,7 +530,6 @@ export function AppShell({
                 padding: "6px 12px 6px 10px", borderRadius: 10,
                 background: V2.card,
                 border: `1px solid ${v2Mix(V2.ink, 0.28)}`,
-                boxShadow: `inset 0 1px 0 ${V2.spec}, 0 2px 8px ${v2Mix(V2.ink, 0.06)}`,
                 minWidth: 300, cursor: "text",
                 fontFamily: "inherit",
               }}

@@ -1,5 +1,6 @@
 "use client";
 
+import { token } from "@/design/tokens";
 import {
   CategoryScale,
   Chart as ChartJS,
@@ -56,13 +57,13 @@ export function PortfolioValueChart({ points }: { points: ValuationPoint[] }) {
         scales: {
           x: {
             grid: { display: false },
-            ticks: { color: "#65736a", font: { size: 11 } },
+            ticks: { color: token("inkMuted"), font: { size: 11 } },
           },
           y: {
             border: { display: false },
             grid: { color: "rgb(23 32 28 / 0.08)" },
             ticks: {
-              color: "#65736a",
+              color: token("inkMuted"),
               font: { size: 11 },
               callback: (value) => formatCurrencyCompact(Number(value), "PLN"),
             },

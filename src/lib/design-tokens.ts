@@ -1,34 +1,35 @@
 import type { CSSProperties } from "react";
+import { token } from "@/design/tokens";
 
 export const COLORS = {
-  bg: "#E4E6E2",
-  surface: "#F7F8F4",
-  surfaceAlt: "#ECEEE7",
-  border: "rgba(22,29,24,0.13)",
-  text: "#161D18",
-  textMuted: "#4A544E",
-  green: "#214A35",
-  profit: "#23814F",
-  loss: "#A84432",
-  cash: "#56677D",
-  bonds: "#8C6F30",
-  equity: "#34699A",
-  forest: "#214A35",
-  accent: "#214A35",
-  neutral: "#A0ADB8",
-  gold: "#A2772E",
-  crypto: "#7E5AA5",
-  other: "#8E7A64",
-  plum: "#9A6B83",
-  white: "#F4F2E6",
-  overlay: "rgba(22,29,24,0.42)",
-  subtle: "#717870",
-  muted: "#4A544E",
-  lineSoft: "rgba(22,29,24,0.13)",
-  lineSofter: "rgba(22,29,24,0.07)",
-  accentSoft: "rgba(33,74,53,0.10)",
-  textSoft: "rgba(22,29,24,0.05)",
-  textSofter: "rgba(22,29,24,0.03)",
+  bg: token("ground"),
+  surface: token("surface"),
+  surfaceAlt: token("surface2"),
+  border: token("line"),
+  text: token("ink"),
+  textMuted: token("inkMuted"),
+  green: token("ink"),
+  profit: token("up"),
+  loss: token("down"),
+  cash: token("assetCash"),
+  bonds: token("assetBonds"),
+  equity: token("assetEquity"),
+  forest: token("ink"),
+  accent: token("accent"),
+  neutral: token("inkFaint"),
+  gold: token("assetBonds"),
+  crypto: token("assetCrypto"),
+  other: token("assetDeposit"),
+  plum: token("assetCrypto"),
+  white: token("onAccent"),
+  overlay: "rgba(11,26,20,0.42)",
+  subtle: token("inkFaint"),
+  muted: token("inkMuted"),
+  lineSoft: token("line"),
+  lineSofter: token("line2"),
+  accentSoft: "color-mix(in srgb, var(--accent) 10%, transparent)",
+  textSoft: "color-mix(in srgb, var(--ink) 5%, transparent)",
+  textSofter: "color-mix(in srgb, var(--ink) 3%, transparent)",
 } as const;
 
 export const CHART_COLORS = {
@@ -49,19 +50,20 @@ export const CHART_COLORS = {
     COLORS.bonds,
     COLORS.cash,
     COLORS.neutral,
-    "#8A96A3",
+    COLORS.crypto,
     COLORS.other,
-    "#7A8B84",
+    COLORS.muted,
   ],
 } as const;
 
 export const TYPOGRAPHY = {
-  system:
-    "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', system-ui, sans-serif",
-  serif: "'Newsreader', Georgia, 'Times New Roman', serif",
-  mono: "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+  system: "var(--font-text)",
+  serif: "var(--font-display)",
+  mono: "var(--font-code)",
 } as const;
 
+// Pozostałość starego systemu — nowy system nie ma cieni. Nie dokładaj tu nowych
+// wpisów; ten blok zniknie razem z migracją src/features na tokeny (Plan 3).
 export const SHADOWS = {
   card: "0 1px 0 rgba(22,29,24,0.03), 0 6px 20px rgba(22,29,24,0.05)",
   cardStrong: "inset 0 1px 0 rgba(255,255,255,0.75), 0 14px 36px rgba(22,29,24,0.08)",
@@ -72,15 +74,13 @@ export const SHADOWS = {
 export const SURFACES = {
   glassCard: {
     background: COLORS.surface,
-    borderRadius: 16,
-    border: `0.5px solid ${COLORS.border}`,
-    boxShadow: SHADOWS.card,
+    borderRadius: "var(--r-md)",
+    border: `1px solid ${COLORS.border}`,
   } satisfies CSSProperties,
+  // Dawniej panel „szklany" z backdrop-filter i cieniem. Nowy system buduje
+  // wysokość wartością powierzchni i włosem — nigdy rozmyciem ani cieniem.
   glassPanel: {
-    background: "rgba(247,248,244,0.70)",
-    backdropFilter: "blur(38px) saturate(175%)",
-    WebkitBackdropFilter: "blur(38px) saturate(175%)",
-    border: "0.5px solid rgba(255,255,255,0.75)",
-    boxShadow: SHADOWS.cardStrong,
+    background: COLORS.surface,
+    border: `1px solid ${COLORS.border}`,
   } satisfies CSSProperties,
 } as const;

@@ -1,5 +1,6 @@
 "use client";
 
+import { token } from "@/design/tokens";
 import type { Session } from "@supabase/supabase-js";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
@@ -47,13 +48,13 @@ declare global {
 }
 
 // ── Design tokens ────────────────────────────────────────────────
-const INK = "#1C3144";
+const INK = token("ink");
 const MUTED = "rgba(28,49,68,0.58)";
 const SUBTLE = "rgba(28,49,68,0.38)";
-const PROFIT = "#2D9C6B";
-const LOSS = "#B85042";
-const AMBER = "#B87830";
-const PAPER = "#FBFAF6";
+const PROFIT = token("up");
+const LOSS = token("down");
+const AMBER = token("accent");
+const PAPER = token("ground");
 
 type SessionStatus =
   | "checking"
@@ -1007,7 +1008,7 @@ function StatusRow({
   );
 }
 
-function SpinnerDot({ size = 10, color = "#1C3144" }: { size?: number; color?: string }) {
+function SpinnerDot({ size = 10, color = token("ink") }: { size?: number; color?: string }) {
   return (
     <span
       style={{

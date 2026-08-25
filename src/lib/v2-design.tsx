@@ -1,27 +1,28 @@
 import type { CSSProperties, ReactNode } from "react";
 import { TYPOGRAPHY } from "@/lib/design-tokens";
+import { token } from "@/design/tokens";
 
 export const V2 = {
-  page: "#E4E6E2",
-  card: "#F7F8F4",
-  card2: "#ECEEE7",
-  ink: "#161D18",
-  muted: "#4A544E",
-  subtle: "#717870",
-  line: "rgba(22,29,24,0.13)",
-  line2: "rgba(22,29,24,0.07)",
-  brand: "#214A35",
-  brandDeep: "#163022",
-  onBrand: "#F4F2E6",
-  gold: "#A2772E",
-  profit: "#23814F",
-  loss: "#A84432",
-  equity: "#34699A",
-  bonds: "#8C6F30",
-  deposit: "#5C6A60",
-  cash: "#8C8E82",
-  crypto: "#7E5AA5",
-  spec: "rgba(255,255,255,0.75)",
+  page: token("ground"),
+  card: token("surface"),
+  card2: token("surface2"),
+  ink: token("ink"),
+  muted: token("inkMuted"),
+  subtle: token("inkFaint"),
+  line: token("line"),
+  line2: token("line2"),
+  brand: token("accent"),
+  brandDeep: token("accent"),
+  onBrand: token("onAccent"),
+  gold: token("assetBonds"),
+  profit: token("up"),
+  loss: token("down"),
+  equity: token("assetEquity"),
+  bonds: token("assetBonds"),
+  deposit: token("assetDeposit"),
+  cash: token("assetCash"),
+  crypto: token("assetCrypto"),
+  spec: "transparent",
 } as const;
 
 export const V2_TYPE = {
@@ -30,45 +31,26 @@ export const V2_TYPE = {
   mono: TYPOGRAPHY.mono,
 } as const;
 
-export function v2Mix(hex: string, pct: number) {
-  const h = hex.replace("#", "");
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return `rgba(${r},${g},${b},${pct})`;
+export function v2Mix(color: string, pct: number) {
+  return `color-mix(in srgb, ${color} ${Math.round(pct * 1000) / 10}%, transparent)`;
 }
-
-export const v2Glass: CSSProperties = {
-  background: v2Mix(V2.card, 0.7),
-  backdropFilter: "blur(38px) saturate(175%)",
-  WebkitBackdropFilter: "blur(38px) saturate(175%)",
-  border: `0.5px solid ${V2.spec}`,
-  boxShadow: `inset 0 1px 0 ${V2.spec}, 0 14px 36px ${v2Mix(V2.ink, 0.08)}`,
-};
 
 export function V2Card({
   children,
-  glass = false,
   pad = 22,
   style,
 }: {
   children: ReactNode;
-  glass?: boolean;
   pad?: number;
   style?: CSSProperties;
 }) {
   return (
     <div
       style={{
-        background: glass ? v2Mix(V2.card, 0.72) : V2.card,
-        backdropFilter: glass ? "blur(30px) saturate(170%)" : "none",
-        WebkitBackdropFilter: glass ? "blur(30px) saturate(170%)" : "none",
-        border: `0.5px solid ${glass ? V2.spec : V2.line}`,
-        borderRadius: 16,
+        background: V2.card,
+        border: `1px solid ${V2.line}`,
+        borderRadius: "var(--r-md)",
         padding: pad,
-        boxShadow: glass
-          ? `inset 0 1px 0 ${V2.spec}, 0 8px 28px ${v2Mix(V2.ink, 0.07)}`
-          : `0 1px 0 ${v2Mix(V2.ink, 0.03)}, 0 6px 20px ${v2Mix(V2.ink, 0.05)}`,
         ...style,
       }}
     >
@@ -106,7 +88,7 @@ export function V2Badge({ label, color }: { label: string; color: string }) {
         fontWeight: 700,
         letterSpacing: ".04em",
         padding: "3px 7px",
-        borderRadius: 5,
+        borderRadius: "var(--r-xs)",
         color,
         background: v2Mix(color, 0.13),
         whiteSpace: "nowrap",
@@ -160,7 +142,6 @@ export function V2Button({
       border: "none",
       background: V2.ink,
       color: V2.card,
-      boxShadow: `0 3px 10px ${v2Mix(V2.ink, 0.22)}, inset 0 0.5px 0 ${v2Mix("#ffffff", 0.16)}`,
     },
     soft: {
       border: `0.5px solid ${V2.line}`,
@@ -189,7 +170,7 @@ export function V2Button({
         justifyContent: "center",
         gap: 7,
         padding: "10px 16px",
-        borderRadius: 10,
+        borderRadius: "var(--r-sm)",
         fontFamily: V2_TYPE.ui,
         fontSize: 13,
         fontWeight: 600,
@@ -237,7 +218,7 @@ export const v2InputStyle: CSSProperties = {
   paddingRight: 12,
   paddingBottom: 8,
   paddingLeft: 31,
-  borderRadius: 9,
+  borderRadius: "var(--r-sm)",
   border: `0.5px solid ${V2.line}`,
   background: v2Mix(V2.card, 0.72),
   color: V2.ink,
@@ -249,7 +230,7 @@ export const v2InputStyle: CSSProperties = {
 
 export const v2SelectStyle: CSSProperties = {
   padding: "8px 12px",
-  borderRadius: 9,
+  borderRadius: "var(--r-sm)",
   border: `0.5px solid ${V2.line}`,
   background: v2Mix(V2.card, 0.72),
   color: V2.ink,

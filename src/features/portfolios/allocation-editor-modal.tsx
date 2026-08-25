@@ -1,5 +1,6 @@
 "use client";
 
+import { token } from "@/design/tokens";
 import { createPortal } from "react-dom";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useSyncStore } from "@/sync/store/sync-store";
@@ -26,7 +27,7 @@ export type AllocationDraft = {
   updatedAt: string;
 };
 
-const PAPER = "#FBFAF6";
+const PAPER = token("ground");
 
 const numberInputStyle: CSSProperties = {
   width: 56,

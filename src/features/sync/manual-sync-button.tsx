@@ -1,5 +1,6 @@
 "use client";
 
+import { token } from "@/design/tokens";
 import { useEffect, useState, type CSSProperties } from "react";
 import { RefreshCw } from "lucide-react";
 import { COLORS, SHADOWS } from "@/lib/design-tokens";
@@ -108,7 +109,6 @@ export function ManualSyncButton({ compact = false }: { compact?: boolean }) {
           border: `0.5px solid ${COLORS.border}`,
           background: v2Mix(V2.card, 0.7),
           color: COLORS.textMuted,
-          boxShadow: `inset 0 1px 0 ${V2.spec}`,
           fontFamily: "inherit",
           fontSize: 12,
           fontWeight: 700,
@@ -132,7 +132,7 @@ export function ManualSyncButton({ compact = false }: { compact?: boolean }) {
           aria-live={feedback.kind === "error" ? "assertive" : "polite"}
           style={{
             ...feedbackStyle,
-            color: feedback.kind === "error" ? "#B85042" : COLORS.textMuted,
+            color: feedback.kind === "error" ? token("down") : COLORS.textMuted,
           }}
         >
           {feedback.text}

@@ -1,5 +1,6 @@
 "use client";
 
+import { token } from "@/design/tokens";
 import { useMemo, useState } from "react";
 import type { ValuationPoint } from "@/domain/models/investor-data";
 
@@ -16,8 +17,8 @@ const RANGE_DAYS: Partial<Record<(typeof PERIOD_OPTIONS)[number], number>> = {
   "2Y": 731,
 };
 
-const VALUE_COLOR = "#214A35";
-const DEPOSIT_COLOR = "#8C6F30";
+const VALUE_COLOR = token("accent");
+const DEPOSIT_COLOR = token("assetBonds");
 
 function compactAxis(value: number) {
   if (Math.abs(value) >= 1_000_000) {

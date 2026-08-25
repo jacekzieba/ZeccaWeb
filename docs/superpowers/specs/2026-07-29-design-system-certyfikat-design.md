@@ -1,7 +1,8 @@
 # Design system „Certyfikat" — kierunek wizualny i warstwa tokenów
 
 Data: 2026-07-29
-Status: zatwierdzony w brainstormie, gotowy do planu wdrożenia
+Status: ODRZUCONY 2026-08-05 — zastąpiony przez [kierunek „Próba"](2026-08-05-design-system-proba-design.md).
+Powody odrzucenia opisane w sekcji 1 nowego dokumentu.
 
 ---
 

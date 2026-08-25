@@ -1,13 +1,6 @@
 import type { SnapshotDiagnostic } from "@/domain/models/investor-data";
 import { COLORS, TYPOGRAPHY } from "@/lib/design-tokens";
-
-function mix(hex: string, pct: number) {
-  const h = hex.replace("#", "");
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return `rgba(${r},${g},${b},${pct})`;
-}
+import { v2Mix } from "@/lib/v2-design";
 
 /**
  * Warns that displayed portfolio values may be approximate because some market
@@ -45,8 +38,8 @@ export function DataQualityBanner({
         display: "flex",
         flexDirection: "column",
         gap: 4,
-        border: `0.5px solid ${mix(COLORS.gold, 0.4)}`,
-        background: mix(COLORS.gold, 0.08),
+        border: `0.5px solid ${v2Mix(COLORS.gold, 0.4)}`,
+        background: v2Mix(COLORS.gold, 0.08),
         borderRadius: 12,
         padding: "10px 14px",
         fontFamily: TYPOGRAPHY.system,
