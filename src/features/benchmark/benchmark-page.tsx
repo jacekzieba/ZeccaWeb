@@ -29,6 +29,7 @@ const C = {
   bonds: token("assetBonds"),
   deposit: token("assetDeposit"),
   cash: token("assetCash"),
+  crypto: token("assetCrypto"),
   spec: "transparent",
 } as const;
 
@@ -50,6 +51,8 @@ type Benchmark = {
   alloc: { label: string; value: number; key: "eq" | "lt" | "it" | "gold" | "comm" | "cash" }[];
 };
 
+// Kolory serii biorą się z palety klas aktywów, nigdy z up/down — zielony i czerwony
+// znaczą w produkcie znak wyniku, więc nie mogą oznaczać "który to benchmark".
 const BENCHMARKS: Benchmark[] = [
   {
     id: "allweather",
@@ -72,7 +75,7 @@ const BENCHMARKS: Benchmark[] = [
     id: "6040",
     name: "60 / 40",
     author: "Klasyczny",
-    color: C.profit,
+    color: C.crypto,
     cagr: 0.088,
     vol: 0.11,
     seed: 33,
@@ -102,7 +105,7 @@ const BENCHMARKS: Benchmark[] = [
     id: "sp500",
     name: "S&P 500",
     author: "100% akcje",
-    color: C.loss,
+    color: C.deposit,
     cagr: 0.135,
     vol: 0.17,
     seed: 19,

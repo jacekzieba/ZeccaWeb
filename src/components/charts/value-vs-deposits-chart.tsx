@@ -5,8 +5,10 @@ import { COLORS, SHADOWS, TYPOGRAPHY } from "@/lib/design-tokens";
 import { formatAxisValue } from "@/lib/money";
 import type { ValuationPoint } from "@/domain/models/investor-data";
 
-const VALUE_COLOR = COLORS.accent;
-const DEPOSIT_COLOR = COLORS.bonds;
+// Wpłaty to linia odniesienia, nie wynik — dlatego neutralny grafit, a nie kolor
+// klasy aktywów. Kolor linii wartości niesie znak: liczy się to, czy portfel jest
+// nad wpłatami, czy pod nimi.
+const DEPOSIT_COLOR = COLORS.muted;
 const MIN_CHART_WIDTH = 240;
 
 const PERIOD_OPTIONS = ["1M", "3M", "6M", "1Y", "2Y", "MAX"] as const;
@@ -125,6 +127,8 @@ export function ValueVsDepositsChart({
 
   const tx = (i: number) => pl + (i / (n - 1)) * W;
   const ty = (v: number) => pt + H - ((v - mn) / rng) * H;
+  const VALUE_COLOR = valueVals[n - 1] >= depositVals[n - 1] ? COLORS.profit : COLORS.loss;
+  const fillId = `vvd-fill-${VALUE_COLOR.replace(/[^a-z0-9]/gi, "")}`;
   const valuePts = valueVals.map((v, i) => `${tx(i)},${ty(v)}`).join(" ");
   const depositPts = depositVals.map((v, i) => `${tx(i)},${ty(v)}`).join(" ");
 
@@ -187,7 +191,7 @@ export function ValueVsDepositsChart({
         style={{ display: "block", maxWidth: "100%" }}
       >
         <defs>
-          <linearGradient id="vvd-fill" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={VALUE_COLOR} stopOpacity="0.16" />
             <stop offset="100%" stopColor={VALUE_COLOR} stopOpacity="0" />
           </linearGradient>
@@ -213,7 +217,7 @@ export function ValueVsDepositsChart({
 
         <g ref={fadeRef}>
           {/* Value area */}
-          <path d={`M${pl},${pt + H} L${valuePts} L${pl + W},${pt + H} Z`} fill="url(#vvd-fill)" />
+          <path d={`M${pl},${pt + H} L${valuePts} L${pl + W},${pt + H} Z`} fill={`url(#${fillId})`} />
 
           {/* Deposits line (dashed) */}
           <polyline points={depositPts} fill="none" stroke={DEPOSIT_COLOR} strokeWidth="2" strokeDasharray="5 4" strokeLinecap="round" strokeLinejoin="round" />

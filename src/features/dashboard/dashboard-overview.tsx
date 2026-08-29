@@ -426,6 +426,16 @@ function PeriodBar({ value, onChange }: { value: Period; onChange: (period: Peri
   );
 }
 
+/** Zaokrągla krok osi do 1/2/5 x 10^n, żeby podziałka miała czytelne liczby
+ * (30k, 60k, 90k) zamiast ćwiartek surowego zakresu (30k, 56k, 81k). */
+function niceAxisStep(raw: number) {
+  const step = Math.abs(raw) || 1;
+  const magnitude = 10 ** Math.floor(Math.log10(step));
+  const normalized = step / magnitude;
+  const factor = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
+  return factor * magnitude;
+}
+
 function V2Area({ data, height = 240 }: { data: ValuationPoint[]; height?: number }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const { displayCurrency } = useProfile();
@@ -457,8 +467,12 @@ function V2Area({ data, height = 240 }: { data: ValuationPoint[]; height?: numbe
   const tx = (index: number) => pl + (index / (data.length - 1)) * innerWidth;
   const ty = (value: number) => pt + innerHeight - ((value - min) / range) * innerHeight;
   const points = data.map((point, index) => `${tx(index).toFixed(1)},${ty(point.value).toFixed(1)}`).join(" ");
-  const yTicks = [0, 0.25, 0.5, 0.75, 1].map((factor) => min + factor * range);
+  const tickStep = niceAxisStep(range / 4);
+  const yTicks: number[] = [];
+  for (let value = Math.ceil(min / tickStep) * tickStep; value <= max; value += tickStep) yTicks.push(value);
   const xStep = Math.max(1, Math.ceil(data.length / Math.min(8, Math.max(3, Math.floor(width / 130)))));
+  // Wykres jest liczbą, nie akcentem: zielony gdy okres kończy się wyżej niż zaczął, czerwony gdy niżej.
+  const trend = (values.at(-1) ?? 0) >= values[0] ? PALETTE.profit : PALETTE.loss;
   const summary = describeSeries(data, "Historia wartości");
 
   function handleMove(event: React.MouseEvent<SVGSVGElement>) {
@@ -480,33 +494,45 @@ function V2Area({ data, height = 240 }: { data: ValuationPoint[]; height?: numbe
       >
         <defs>
           <linearGradient id={`v2area-${gradId}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={PALETTE.brand} stopOpacity="0.42" />
-            <stop offset="55%" stopColor={PALETTE.brand} stopOpacity="0.16" />
-            <stop offset="100%" stopColor={PALETTE.brand} stopOpacity="0.03" />
+            <stop offset="0%" stopColor={trend} stopOpacity="0.34" />
+            <stop offset="55%" stopColor={trend} stopOpacity="0.13" />
+            <stop offset="100%" stopColor={trend} stopOpacity="0.02" />
           </linearGradient>
         </defs>
         {yTicks.map((value, index) => (
           <g key={index}>
             <line x1={pl} x2={pl + innerWidth} y1={ty(value)} y2={ty(value)} stroke={PALETTE.line} strokeDasharray="2 5" />
             <text x={pl - 9} y={ty(value) + 4} textAnchor="end" fontSize="10.5" fill={PALETTE.subtle} fontFamily={MONO}>
-              {formatAxisValue(value, range)}
+              {formatAxisValue(value, tickStep * 4)}
             </text>
           </g>
         ))}
         <path d={`M${pl},${pt + innerHeight} L${points.split(" ").join(" L")} L${pl + innerWidth},${pt + innerHeight} Z`} fill={`url(#v2area-${gradId})`} />
-        <polyline points={points} fill="none" stroke={PALETTE.brand} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-        {data.map((point, index) =>
-          index % xStep === 0 || index === data.length - 1 ? (
-            <text key={point.date} x={tx(index)} y={pt + innerHeight + 20} textAnchor="middle" fontSize="10.5" fill={PALETTE.subtle} fontFamily={MONO}>
+        <polyline points={points} fill="none" stroke={trend} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+        {data.map((point, index) => {
+          const isLast = index === data.length - 1;
+          // Ostatnia data jest kotwiczona do prawej krawędzi, żeby nie wychodziła poza SVG.
+          // Etykieta ma ok. 40 px, więc sąsiadka bliżej niż 20 + 40 + 14 px wpadłaby pod nią.
+          if (!isLast && (index % xStep !== 0 || tx(data.length - 1) - tx(index) < 74)) return null;
+          return (
+            <text
+              key={point.date}
+              x={tx(index)}
+              y={pt + innerHeight + 20}
+              textAnchor={isLast ? "end" : "middle"}
+              fontSize="10.5"
+              fill={PALETTE.subtle}
+              fontFamily={MONO}
+            >
               {point.label}
             </text>
-          ) : null,
-        )}
-        <circle cx={tx(data.length - 1)} cy={ty(values.at(-1) ?? 0)} r="4.5" fill={PALETTE.gold} stroke={PALETTE.card} strokeWidth="2" />
+          );
+        })}
+        <circle cx={tx(data.length - 1)} cy={ty(values.at(-1) ?? 0)} r="4.5" fill={trend} stroke={PALETTE.card} strokeWidth="2" />
         {hover != null && (
           <g>
             <line x1={tx(hover)} x2={tx(hover)} y1={pt} y2={pt + innerHeight} stroke={PALETTE.ink} strokeWidth="1" strokeDasharray="3 3" opacity=".35" />
-            <circle cx={tx(hover)} cy={ty(data[hover].value)} r="5" fill={PALETTE.card} stroke={PALETTE.brand} strokeWidth="2.2" />
+            <circle cx={tx(hover)} cy={ty(data[hover].value)} r="5" fill={PALETTE.card} stroke={trend} strokeWidth="2.2" />
           </g>
         )}
       </svg>
@@ -1039,23 +1065,23 @@ function SummaryCard({
   chartData: ValuationPoint[];
 }) {
   const stat = (label: string, value: string, color: string = PALETTE.ink) => (
-    <div style={{ minWidth: 0 }}>
-      <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, lineHeight: 1.2, minHeight: 24, letterSpacing: ".1em", textTransform: "uppercase", color: PALETTE.subtle }}>
+    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 14 }}>
+      <span style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, lineHeight: 1.2, letterSpacing: ".1em", textTransform: "uppercase", color: PALETTE.subtle }}>
         {label}
-      </div>
-      <div
+      </span>
+      <span
         style={{
           fontFamily: SERIF,
-          fontSize: isMobile ? 21 : 25,
+          fontSize: isMobile ? 20 : 22,
           fontWeight: 500,
           color,
-          marginTop: 3,
-          lineHeight: 1,
+          lineHeight: 1.1,
+          whiteSpace: "nowrap",
           fontVariantNumeric: "tabular-nums",
         }}
       >
         {value}
-      </div>
+      </span>
     </div>
   );
 
@@ -1116,11 +1142,11 @@ function SummaryCard({
             <span style={{ fontSize: 12, color: PALETTE.subtle }}>vs 30 dni temu</span>
           </div>
           <div style={{ height: "0.5px", background: PALETTE.line, margin: isMobile ? "20px 0" : "24px 0" }} />
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 18 }}>
+          <div style={{ display: "grid", gap: 10 }}>
             {stat(
               "MWR · XIRR",
               metrics.xirrPct == null ? "—" : fmtPct(metrics.xirrPct),
-              metrics.xirrPct != null && metrics.xirrPct < 0 ? PALETTE.loss : PALETTE.brand,
+              metrics.xirrPct == null ? PALETTE.muted : metrics.xirrPct >= 0 ? PALETTE.profit : PALETTE.loss,
             )}
             {stat(
               "Wynik realny",
@@ -1495,6 +1521,9 @@ function PortfoliosCard({
             series.length >= 2 && Math.abs(series[0]) > 1e-6
               ? ((series[series.length - 1] - series[0]) / series[0]) * 100
               : 0;
+          // Miniwykres trzyma ten sam znak co liczba obok niego; kropka przy nazwie
+          // zostaje kolorem tożsamości portfela.
+          const trend = change30d >= 0 ? PALETTE.profit : PALETTE.loss;
 
           return (
             <div key={portfolio.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", borderRadius: 12, background: v2Mix(PALETTE.ink, 0.025), border: `0.5px solid ${PALETTE.line2}` }}>
@@ -1513,7 +1542,7 @@ function PortfoliosCard({
                 <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: PALETTE.subtle, marginBottom: 3 }}>
                   30 dni
                 </div>
-                <V2Spark data={series} color={color} />
+                <V2Spark data={series} color={trend} />
                 <div style={{ display: "inline-flex", alignItems: "baseline", gap: 5, fontFamily: UI, fontSize: 12, fontWeight: 700, color: change30d >= 0 ? PALETTE.profit : PALETTE.loss, marginTop: 4 }}>
                   <span style={{ fontSize: 9.5, fontWeight: 700, color: PALETTE.subtle, letterSpacing: ".06em" }}>30D</span>
                   <span>{fmtPct(change30d)}</span>

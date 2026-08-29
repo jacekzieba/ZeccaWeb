@@ -10,11 +10,13 @@ const MIN_CHART_WIDTH = 240;
 export function AreaChart({
   data,
   height = 220,
-  color = COLORS.accent,
-  dotColor = COLORS.gold,
+  color,
+  dotColor,
 }: {
   data: Point[];
   height?: number;
+  /** Domyślnie zielony/czerwony wg kierunku serii — podaj tylko, gdy wykres
+   * niesie tożsamość serii, a nie znak wyniku. */
   color?: string;
   dotColor?: string;
 }) {
@@ -34,6 +36,8 @@ export function AreaChart({
   if (data.length < 2) return null;
 
   const vals = data.map((d) => d.value);
+  const lineColor = color ?? ((vals.at(-1) ?? 0) >= vals[0] ? COLORS.profit : COLORS.loss);
+  const dot = dotColor ?? lineColor;
   const mn = Math.min(...vals) * 0.985;
   const mx = Math.max(...vals) * 1.015;
   const rng = mx - mn || 1;
@@ -44,7 +48,7 @@ export function AreaChart({
   const tx = (i: number) => pl + (i / (data.length - 1)) * W;
   const ty = (v: number) => pt + H - ((v - mn) / rng) * H;
   const pts = data.map((d, i) => `${tx(i)},${ty(d.value)}`).join(" ");
-  const gradId = `ag-${color.replace(/[^a-z0-9]/gi, "")}`;
+  const gradId = `ag-${lineColor.replace(/[^a-z0-9]/gi, "")}`;
 
   const yTicks = [0, 0.25, 0.5, 0.75, 1].map((f) => mn + f * rng);
   const xStep = Math.max(
@@ -72,8 +76,8 @@ export function AreaChart({
       >
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.28" />
-            <stop offset="100%" stopColor={color} stopOpacity="0" />
+            <stop offset="0%" stopColor={lineColor} stopOpacity="0.28" />
+            <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
           </linearGradient>
         </defs>
 
@@ -106,7 +110,7 @@ export function AreaChart({
         <polyline
           points={pts}
           fill="none"
-          stroke={color}
+          stroke={lineColor}
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -137,7 +141,7 @@ export function AreaChart({
           cx={tx(data.length - 1)}
           cy={ty(vals[vals.length - 1])}
           r="4.5"
-          fill={dotColor}
+          fill={dot}
           stroke={COLORS.surface}
           strokeWidth="2"
         />
@@ -154,7 +158,7 @@ export function AreaChart({
               cx={tx(hover)} cy={ty(data[hover].value)}
               r="5"
               fill={COLORS.surface}
-              stroke={dotColor}
+              stroke={dot}
               strokeWidth="2"
             />
           </g>

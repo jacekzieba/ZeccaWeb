@@ -230,7 +230,7 @@ export function ReportsPage() {
                 {perf.length} punktów · {perf.length > 0 && new Date(perf[0].date).toLocaleDateString("pl-PL", { month: "long", year: "numeric" })} → {asOfLabel}
               </div>
             </div>
-            <AreaChart data={perf} height={220} color={V2.brand} />
+            <AreaChart data={perf} height={220} />
           </div>
 
           {snapshot.valuationSeries.length > 1 && (
