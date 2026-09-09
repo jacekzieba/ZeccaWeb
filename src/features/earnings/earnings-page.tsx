@@ -303,10 +303,10 @@ function MonthlyChart({
               </div>
               <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 4, minWidth: 0 }}>
                 <div style={{ height: 5, borderRadius: 4, background: v2Mix(V2.ink, 0.06), overflow: "hidden" }}>
-                  <div title={`Przed obciążeniami: ${fmt(item.sourcePLN)} PLN`} style={{ width: `${sourceWidth}%`, height: "100%", borderRadius: 4, background: v2Mix(V2.equity, 0.32) }} />
+                  <div title={`Przed obciążeniami: ${fmt(item.sourcePLN)} ${currencyLabel("PLN")}`} style={{ width: `${sourceWidth}%`, height: "100%", borderRadius: 4, background: v2Mix(V2.equity, 0.32) }} />
                 </div>
                 <div style={{ height: 7, borderRadius: 4, background: v2Mix(V2.ink, 0.06), overflow: "hidden" }}>
-                  <div title={`Po obciążeniach: ${fmt(item.totalPLN)} PLN`} style={{ width: `${totalWidth}%`, height: "100%", borderRadius: 4, background: item.totalPLN >= 0 ? V2.profit : V2.loss }} />
+                  <div title={`Po obciążeniach: ${fmt(item.totalPLN)} ${currencyLabel("PLN")}`} style={{ width: `${totalWidth}%`, height: "100%", borderRadius: 4, background: item.totalPLN >= 0 ? V2.profit : V2.loss }} />
                 </div>
               </div>
               <div style={{ minWidth: 0, textAlign: "right" }}>
@@ -435,7 +435,7 @@ function YearlyAverageChart({
                 x={x(index)}
                 y={height - 24}
                 textAnchor="middle"
-                fontFamily={V2_TYPE.ui}
+                fontFamily={V2_TYPE.mono}
                 fontSize={compact ? 10 : 11}
                 fontWeight={item.year === items.at(-1)?.year ? 700 : 500}
                 fill={item.year === items.at(-1)?.year ? V2.ink : V2.subtle}
@@ -447,7 +447,7 @@ function YearlyAverageChart({
                   x={x(index)}
                   y={height - 9}
                   textAnchor="middle"
-                  fontFamily={V2_TYPE.ui}
+                  fontFamily={V2_TYPE.mono}
                   fontSize={compact ? 10 : 10}
                   fill={V2.subtle}
                 >
@@ -947,9 +947,9 @@ export function EarningsPage() {
                 {incomeLists.years.map((year) => <option key={year} value={year}>{year}</option>)}
               </select>
             </div>
-            <div style={{ fontFamily: V2_TYPE.serif, fontWeight: 500, fontSize: isMobile ? 44 : 58, lineHeight: 0.98, color: V2.profit, fontVariantNumeric: "tabular-nums" }}>
+            <div style={{ fontFamily: V2_TYPE.mono, fontWeight: 500, fontSize: isMobile ? 44 : 58, lineHeight: 0.98, color: V2.profit, fontVariantNumeric: "tabular-nums" }}>
               {fmt(summariesForSelection.totals.totalPLN)}
-              <span style={{ fontSize: 21, fontStyle: "italic", color: V2.subtle, marginLeft: 8 }}>PLN</span>
+              <span style={{ fontSize: 21, fontStyle: "italic", color: V2.subtle, marginLeft: 8 }}>{currencyLabel("PLN")}</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 18, marginTop: 24 }}>
               <V2Kpi label="Średnia / m-c" value={`${fmt(summariesForSelection.totals.averagePLN)} zł`} sub="po obciążeniach" />
@@ -979,7 +979,7 @@ export function EarningsPage() {
             <V2Kpi label="Zatrudnienie" value={`${fmt(summariesForSelection.summaries.reduce((sum, item) => sum + item.employmentPLN, 0))} zł`} accent={V2.profit} />
           </V2Card>
           <V2Card style={{ minWidth: 0 }}>
-            <V2Kpi label="B2B" value={`${fmt(summariesForSelection.summaries.reduce((sum, item) => sum + item.businessRevenuePLN, 0))} zł`} accent={V2.equity} />
+            <V2Kpi label="B2B" value={`${fmt(summariesForSelection.summaries.reduce((sum, item) => sum + item.businessRevenuePLN, 0))} zł`} accent={V2.profit} />
           </V2Card>
           <V2Card style={{ minWidth: 0 }}>
             <V2Kpi label="Obciążenia" value={`${fmt(summariesForSelection.summaries.reduce((sum, item) => sum + item.burdenPLN, 0))} zł`} accent={V2.loss} />
@@ -1024,7 +1024,7 @@ export function EarningsPage() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             {(["all", "earnings", "burdens"] as EarningsTableFilter[]).map((filter) => (
-              <button key={filter} type="button" onClick={() => setTableFilter(filter)} style={{ padding: "8px 13px", borderRadius: 9, border: `0.5px solid ${tableFilter === filter ? "transparent" : V2.line}`, background: tableFilter === filter ? V2.ink : V2.card, color: tableFilter === filter ? V2.card : V2.muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+              <button key={filter} type="button" onClick={() => setTableFilter(filter)} style={{ padding: "8px 13px", borderRadius: 9, border: `0.5px solid ${tableFilter === filter ? "transparent" : V2.line}`, background: tableFilter === filter ? V2.brand : V2.card, color: tableFilter === filter ? V2.onBrand : V2.muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 {filter === "all" ? "Wszystko" : filter === "earnings" ? "Zarobki" : "Obciążenia"}
               </button>
             ))}
@@ -1063,7 +1063,9 @@ export function EarningsPage() {
             {visibleRows.map((row, index) => {
               const summary = buildEarningsMonthSummary(row.year, row.month, incomeLists.earnings, incomeLists.burdens);
               const isEarning = row.kind === "earning";
-              const color = isEarning ? (row.employmentType === "employment" ? V2.profit : V2.equity) : V2.loss;
+              // Kierunek niesie kwota po prawej. Plakietka i sygnet nazywają
+              // rodzaj wpisu, a rodzaj to nie wzrost ani spadek.
+              const color = V2.muted;
               return (
                 <div key={`${row.kind}-${row.id}`} style={{ display: "grid", gridTemplateColumns: isMobile ? "34px minmax(0, 1fr) auto" : "38px minmax(0, 1fr) minmax(180px, auto) auto", alignItems: "center", gap: 12, padding: "13px 16px", borderTop: index ? `0.5px solid ${V2.line2}` : "none" }}>
                   <div style={{ width: 32, height: 32, display: "grid", placeItems: "center", borderRadius: 8, background: v2Mix(color, 0.12), color }}>
@@ -1079,14 +1081,14 @@ export function EarningsPage() {
                     </div>
                     {(!isMobile && (!isEarning || row.employmentType === "business")) && (
                       <div style={{ fontSize: 11, color: V2.subtle, marginTop: 2 }}>
-                        Obciążenia miesiąca: {fmt(summary.burdenPLN)} PLN · wynik: {fmt(summary.totalPLN)} PLN
+                        Obciążenia miesiąca: {fmt(summary.burdenPLN)} {currencyLabel("PLN")} · wynik: {fmt(summary.totalPLN)} {currencyLabel("PLN")}
                       </div>
                     )}
                   </div>
                   {!isMobile && (
                     <div style={{ textAlign: "right" }}>
-                      <div style={{ fontFamily: V2_TYPE.serif, fontSize: 18, fontWeight: 500, color, whiteSpace: "nowrap" }}>
-                        {isEarning ? "+" : "-"}{fmt(isEarning ? row.plnAmount : row.amountPLN)} PLN
+                      <div style={{ fontFamily: V2_TYPE.mono, fontSize: 18, fontWeight: 500, color, whiteSpace: "nowrap" }}>
+                        {isEarning ? "+" : "-"}{fmt(isEarning ? row.plnAmount : row.amountPLN)} {currencyLabel("PLN")}
                       </div>
                       {isEarning && (
                         <div style={{ fontFamily: V2_TYPE.mono, fontSize: 10, color: V2.subtle }}>

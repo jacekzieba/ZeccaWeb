@@ -55,7 +55,7 @@ import {
   treasuryBondFamilyLabel,
   type GroupedTreasuryBondFamily,
 } from "@/domain/bonds/bond-series-groups";
-import { KpiCard, KPI_TILE_META, getKpiTiles } from "@/components/metrics/portfolio-kpi-strip";
+import { KpiCard, KpiRegister, KPI_TILE_META, getKpiTiles } from "@/components/metrics/portfolio-kpi-strip";
 import { ValueVsDepositsChart } from "@/components/charts/value-vs-deposits-chart";
 import { assetClassColor, portfolioDotColor } from "@/lib/asset-colors";
 
@@ -135,6 +135,8 @@ const DASHBOARD_REGISTRY: SectionRegistry<string> = {
 type DashboardSectionId = string;
 
 const KPI_SECTION_IDS = new Set<string>(KPI_TILE_META.map((tile) => tile.id));
+/** Syntetyczna sekcja: wszystkie widoczne wskaźniki jako jeden rejestr kafelków. */
+const KPI_REGISTER_ID = "kpiRegister";
 
 const DASHBOARD_THEME: SectionPanelTheme = {
   card: PALETTE.card,
@@ -923,9 +925,25 @@ export function DashboardOverview() {
     }).map((tile) => [tile.id, tile]),
   );
   const visibleSections = new Set(dashboardConfig.visibleSections);
-  const orderedVisibleSections = dashboardConfig.sectionOrder.filter((s) => visibleSections.has(s));
+  // Dziesięć osobnych kart wskaźników to dziesięć osobnych ramek na jednym
+  // ekranie. Zwijamy je w jeden rejestr kafelków, na miejscu pierwszej z nich —
+  // widoczność i kolejność ustawione przez użytkownika zostają uszanowane.
+  const kpiWidoczne = dashboardConfig.sectionOrder.filter(
+    (s) => visibleSections.has(s) && KPI_SECTION_IDS.has(s),
+  );
+  const orderedVisibleSections = dashboardConfig.sectionOrder
+    .filter((s) => visibleSections.has(s))
+    .flatMap((s) =>
+      KPI_SECTION_IDS.has(s)
+        ? s === kpiWidoczne[0]
+          ? [KPI_REGISTER_ID as DashboardSectionId]
+          : []
+        : [s],
+    );
   const sectionSize = (id: DashboardSectionId) =>
-    dashboardConfig.sectionSizes[id] ?? DASHBOARD_REGISTRY.sections.find((s) => s.id === id)!.sizePresets[0];
+    id === KPI_REGISTER_ID
+      ? ({ width: 4 } as const)
+      : dashboardConfig.sectionSizes[id] ?? DASHBOARD_REGISTRY.sections.find((s) => s.id === id)!.sizePresets[0];
   const renderSection = (section: DashboardSectionId) => {
     if (section === "summary") {
       return (
@@ -946,6 +964,12 @@ export function DashboardOverview() {
           chartData={chartData}
         />
       );
+    }
+    if (section === KPI_REGISTER_ID) {
+      const tiles = kpiWidoczne
+        .map((id) => kpiTileById.get(id))
+        .filter((tile): tile is NonNullable<typeof tile> => Boolean(tile));
+      return <KpiRegister tiles={tiles} />;
     }
     if (KPI_SECTION_IDS.has(section)) {
       const tile = kpiTileById.get(section);
@@ -978,8 +1002,23 @@ export function DashboardOverview() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: UI, color: PALETTE.ink }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 10, padding: DASHBOARD_HEAD_PADDING }}>
-        <div>
+      <div style={{ position: "relative", overflow: "hidden", display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 10, padding: DASHBOARD_HEAD_PADDING }}>
+        {/* Rondel — ten sam przedmiot co w hero landingu, tu w płytszym kadrze.
+            Maska wypuszcza go dopiero za powitaniem, żeby nie wchodził pod tekst. */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute", inset: 0, zIndex: 0,
+            backgroundImage: "url(/app/rondel-pas.webp)",
+            backgroundSize: "cover",
+            backgroundPosition: "center 62%",
+            opacity: 0.55,
+            maskImage: "linear-gradient(90deg, transparent 0%, #000 34%, #000 100%)",
+            WebkitMaskImage: "linear-gradient(90deg, transparent 0%, #000 34%, #000 100%)",
+            pointerEvents: "none",
+          }}
+        />
+        <div style={{ position: "relative", zIndex: 1 }}>
           {/* Tytuł ekranu to h1 — bez nagłówków czytnik nie ma czym nawigować. */}
           <h1 style={{ fontFamily: SERIF, fontSize: isMobile ? 26 : 31, fontWeight: 500, color: PALETTE.ink, letterSpacing: "-.01em", margin: 0 }}>
             Dzień dobry, <span style={{ fontStyle: "italic", color: PALETTE.brand }}>{firstName(profile.name)}</span>
@@ -1187,16 +1226,16 @@ function SummaryCard({
             }}
           >
             <span style={{ color: PALETTE.muted }}>
-              Zainwestowano <b style={{ color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>{fmt(invested)} {currencyLabel(displayCurrency)}</b>
+              Zainwestowano <b style={{ fontFamily: MONO, color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>{fmt(invested)} {currencyLabel(displayCurrency)}</b>
             </span>
             <span style={{ color: PALETTE.muted }}>
               Wynik{" "}
-              <b style={{ color: unrealized >= 0 ? PALETTE.profit : PALETTE.loss }}>
+              <b style={{ fontFamily: MONO, fontVariantNumeric: "tabular-nums", color: unrealized >= 0 ? PALETTE.profit : PALETTE.loss }}>
                 {fmtSigned(unrealized)} {currencyLabel(displayCurrency)}
               </b>
             </span>
             <span style={{ color: PALETTE.muted }}>
-              Inflacja YOY <b style={{ color: PALETTE.ink }}>{fmt(metrics.inflationPct, 2)}%</b>
+              Inflacja YOY <b style={{ fontFamily: MONO, fontVariantNumeric: "tabular-nums", color: PALETTE.ink }}>{fmt(metrics.inflationPct, 2)}%</b>
             </span>
           </div>
         </div>
@@ -1347,20 +1386,20 @@ function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobil
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontFamily: SERIF, fontSize: 15, fontWeight: 500, color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>{fmt(holding.valuePLN)}</div>
+                <div style={{ fontFamily: MONO, fontSize: 15, fontWeight: 500, color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>{fmt(holding.valuePLN)}</div>
                 <div style={{ fontFamily: MONO, fontSize: 10, color: PALETTE.subtle }}>{currencyLabel(displayCurrency)}</div>
               </div>
               <div style={{ textAlign: "right" }}>
                 {holding.pnl != null ? (
                   <>
                     <div style={{ fontFamily: UI, fontSize: 13, fontWeight: 700, color: holding.pnl >= 0 ? PALETTE.profit : PALETTE.loss, fontVariantNumeric: "tabular-nums" }}>{fmtSigned(holding.pnl)}</div>
-                    <div style={{ fontFamily: UI, fontSize: 11, color: holding.pnl >= 0 ? PALETTE.profit : PALETTE.loss, opacity: 0.82 }}>{holding.pnlPct != null ? fmtPct(holding.pnlPct) : "—"}</div>
+                    <div style={{ fontFamily: MONO, fontVariantNumeric: "tabular-nums", fontSize: 11, color: holding.pnl >= 0 ? PALETTE.profit : PALETTE.loss, opacity: 0.82 }}>{holding.pnlPct != null ? fmtPct(holding.pnlPct) : "—"}</div>
                   </>
                 ) : (
                   <span style={{ fontFamily: MONO, fontSize: 11, color: PALETTE.subtle }}>{holding.source ?? "wycena"}</span>
                 )}
               </div>
-              <div style={{ textAlign: "right", fontFamily: UI, fontSize: 12, fontWeight: 700, color: holding.d30Pct == null ? PALETTE.subtle : holding.d30Pct >= 0 ? PALETTE.profit : PALETTE.loss }}>
+              <div style={{ textAlign: "right", fontFamily: MONO, fontVariantNumeric: "tabular-nums", fontSize: 12, fontWeight: 700, color: holding.d30Pct == null ? PALETTE.subtle : holding.d30Pct >= 0 ? PALETTE.profit : PALETTE.loss }}>
                 {holding.d30Pct == null ? "—" : fmtPct(holding.d30Pct)}
               </div>
             </div>
@@ -1478,7 +1517,7 @@ function TransactionsCard({ transactions }: { transactions: TransactionView[] })
                   {fmtDate(transaction.date)} · {transaction.portfolioName}
                 </div>
               </div>
-              <div style={{ fontFamily: SERIF, fontSize: 15, fontWeight: 500, color: income ? PALETTE.profit : PALETTE.ink, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+              <div style={{ fontFamily: MONO, fontSize: 15, fontWeight: 500, color: income ? PALETTE.profit : PALETTE.ink, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
                 {income ? "+" : ""}
                 {fmt(transaction.amount)} {currencyLabel(transaction.currency)}
               </div>
@@ -1558,7 +1597,7 @@ function PortfoliosCard({
                   30 dni
                 </div>
                 <V2Spark data={series} color={trend} />
-                <div style={{ display: "inline-flex", alignItems: "baseline", gap: 5, fontFamily: UI, fontSize: 12, fontWeight: 700, color: change30d >= 0 ? PALETTE.profit : PALETTE.loss, marginTop: 4 }}>
+                <div style={{ display: "inline-flex", alignItems: "baseline", gap: 5, fontFamily: MONO, fontVariantNumeric: "tabular-nums", fontSize: 12, fontWeight: 700, color: change30d >= 0 ? PALETTE.profit : PALETTE.loss, marginTop: 4 }}>
                   <span style={{ fontSize: 10, fontWeight: 700, color: PALETTE.subtle, letterSpacing: ".06em" }}>30D</span>
                   <span>{fmtPct(change30d)}</span>
                 </div>

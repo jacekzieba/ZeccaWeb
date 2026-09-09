@@ -54,7 +54,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pl" data-theme="light" className={`${display.variable} ${text.variable} ${mono.variable}`}>
+    <html lang="pl" data-theme="dark" className={`${display.variable} ${text.variable} ${mono.variable}`}>
       <body className="antialiased">
         {children}
         <Analytics />

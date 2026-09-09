@@ -563,15 +563,12 @@ export function InstrumentsPage() {
                 padding: "7px 14px",
                 borderRadius: 99,
                 border: `0.5px solid ${heldFilter === value ? "transparent" : V2.line}`,
-                background: heldFilter === value ? V2.ink : V2.card,
-                color: heldFilter === value ? V2.card : V2.muted,
+                background: heldFilter === value ? V2.brand : V2.card,
+                color: heldFilter === value ? V2.onBrand : V2.muted,
                 fontSize: 12,
                 fontWeight: 600,
                 cursor: "pointer",
                 fontFamily: "inherit",
-                boxShadow: heldFilter === value
-                  ? `0 2px 8px ${v2Mix(V2.ink, 0.18)}`
-                  : "none",
                 transition: "all .15s",
               }}
             >

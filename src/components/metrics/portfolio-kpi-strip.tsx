@@ -6,6 +6,7 @@ import type { SectionSize } from "@/components/customize/section-customization";
 import type { CashflowSummary, PortfolioMetrics } from "@/domain/models/investor-data";
 import { V2, V2_TYPE, v2Mix } from "@/lib/v2-design";
 import { currencyLabel } from "@/lib/money";
+import { MetricTiles } from "@/components/layout/metric-tiles";
 
 const cardStyle: CSSProperties = {
   background: V2.card,
@@ -202,27 +203,25 @@ export const KPI_MARKS: Record<KpiTileId, { source: string; detail: string }> = 
   kpiOpenPositions: { source: "Pozycje", detail: "liczba obserwacji" },
 };
 
-/** Wiersze KPI jako jeden rejestr: cecha po lewej stronie szyny, liczba po prawej. */
+/** Wskaźniki jako kafelki z cechą źródła.
+ *
+ * Wcześniej stały w rejestrze wierszy na szynie — przy dziesięciu pozycjach
+ * czytało się to jak jedna bryła. Cecha przenosi się do kafelka i stoi nad nazwą
+ * wskaźnika: reguła „każda liczba ma źródło" zostaje, zmienia się nośnik. */
 export function KpiRegister({ tiles }: { tiles: KpiTile[] }) {
   if (!tiles.length) return null;
   return (
-    <div className="rail kpi-register">
-      {tiles.map((tile) => {
-        const mark = KPI_MARKS[tile.id];
-        return (
-          <div className="rail-row" key={tile.id}>
-            <span className="rail-mark">
-              {mark.source}
-              <em>{mark.detail}</em>
-            </span>
-            <div className="rail-body kpi-register-body">
-              <span className="kpi-register-label">{tile.label}</span>
-              <span className="kpi-register-value" style={{ color: tile.color }}>{tile.value}</span>
-              <span className="kpi-register-sub">{tile.sub ?? ""}</span>
-            </div>
-          </div>
-        );
-      })}
-    </div>
+    <MetricTiles
+      rows={tiles.map((tile) => ({
+        key: tile.id,
+        source: KPI_MARKS[tile.id].source,
+        detail: KPI_MARKS[tile.id].detail,
+        label: tile.label,
+        value: tile.value,
+        color: tile.color,
+        sub: tile.sub,
+        helpHref: tile.helpHref,
+      }))}
+    />
   );
 }

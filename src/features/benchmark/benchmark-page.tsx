@@ -283,7 +283,6 @@ function Card({
         border: `0.5px solid ${C.line}`,
         borderRadius: 16,
         padding: pad,
-        boxShadow: `0 1px 0 ${v2Mix(C.ink, 0.03)}, 0 6px 20px ${v2Mix(C.ink, 0.05)}`,
         ...style,
       }}
     >
@@ -400,7 +399,6 @@ function MultiLineChart({
             padding: "8px 11px",
             borderRadius: 10,
             pointerEvents: "none",
-            boxShadow: "0 8px 22px rgba(0,0,0,.22)",
             minWidth: 140,
           }}
         >
@@ -409,7 +407,7 @@ function MultiLineChart({
             <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 3 }}>
               <span style={{ width: 8, height: 8, borderRadius: 2, background: item.color }} />
               <span style={{ fontSize: 11, opacity: 0.8, flex: 1 }}>{item.label}</span>
-              <span style={{ fontFamily: SERIF, fontSize: 13, fontVariantNumeric: "tabular-nums" }}>{fmt(item.data[hover], 1)}</span>
+              <span style={{ fontFamily: MONO, fontSize: 13, fontVariantNumeric: "tabular-nums" }}>{fmt(item.data[hover], 1)}</span>
             </div>
           ))}
         </div>
@@ -544,7 +542,6 @@ export function BenchmarkPage() {
                   fontWeight: 700,
                   background: active ? C.card : "transparent",
                   color: active ? C.ink : C.subtle,
-                  boxShadow: active ? `0 1px 3px ${v2Mix(C.ink, 0.12)}` : "none",
                   transition: "all .15s",
                 }}
               >
@@ -569,7 +566,6 @@ export function BenchmarkPage() {
                 cursor: "pointer",
                 border: `1px solid ${active ? item.color : C.line}`,
                 background: active ? v2Mix(item.color, 0.08) : C.card,
-                boxShadow: active ? `0 2px 10px ${v2Mix(item.color, 0.18)}` : "none",
                 transition: "all .15s",
                 minWidth: 0,
               }}
@@ -620,7 +616,7 @@ export function BenchmarkPage() {
       <div style={{ display: "grid", gridTemplateColumns: isTablet ? "1fr" : "1fr 1.1fr", gap: 14 }}>
         <Card>
           <Eyebrow>Werdykt</Eyebrow>
-          <div style={{ fontFamily: SERIF, fontSize: isMobile ? 22 : 26, fontWeight: 500, color: diff >= 0 ? C.profit : C.loss, marginTop: 6, lineHeight: 1.15 }}>
+          <div style={{ fontFamily: MONO, fontSize: isMobile ? 22 : 26, fontWeight: 500, color: diff >= 0 ? C.profit : C.loss, marginTop: 6, lineHeight: 1.15 }}>
             {diff >= 0 ? "Wyprzedzasz" : "Pozostajesz za"} {selected.name}
             <br />o {fmtPct(Math.abs(diff), 2)} <span style={{ fontSize: 13, color: C.subtle, fontStyle: "italic" }}>rocznie</span>
           </div>
@@ -672,11 +668,11 @@ export function BenchmarkPage() {
               }}
             >
               <span style={{ fontSize: 12, color: C.muted }}>{row.label}</span>
-              <span style={{ fontFamily: SERIF, fontSize: 15, fontWeight: 500, color: C.ink, textAlign: "right", fontVariantNumeric: "tabular-nums", display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 5 }}>
+              <span style={{ fontFamily: MONO, fontSize: 15, fontWeight: 500, color: C.ink, textAlign: "right", fontVariantNumeric: "tabular-nums", display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 5 }}>
                 {row.better && <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.profit }} />}
                 {row.portfolio}
               </span>
-              <span style={{ fontFamily: SERIF, fontSize: 15, fontWeight: 500, color: C.muted, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+              <span style={{ fontFamily: MONO, fontSize: 15, fontWeight: 500, color: C.muted, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
                 {row.benchmark}
               </span>
             </div>

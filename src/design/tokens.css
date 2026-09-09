@@ -1,33 +1,38 @@
 /* Generowane ręcznie, ale pilnowane testem tests/unit/design-tokens.test.ts.
-   Zmieniasz tu — zmień też src/design/tokens.ts, inaczej test padnie. */
+   Zmieniasz tu — zmień też src/design/tokens.ts, inaczej test padnie.
+
+   Kanoniczny jest motyw ciemny („skarbiec"): #020A0B z bursztynem #F0A43C.
+   To paleta, którą niesie marka i którą wdrożył landing. Motyw jasny poniżej
+   jest jej odpowiednikiem na papierze — ten sam bursztyn przyciemniony do
+   kontrastu na jasnym tle — a nie osobnym kierunkiem. */
 
 :root {
-  color-scheme: light dark;
+  color-scheme: dark light;
 
-  --ground: #FBFCFA;
+  --ground: #FAF8F4;
   --surface: #FFFFFF;
-  --surface-2: #F1F4F1;
-  --line: rgba(18,59,43,0.14);
-  --line-2: rgba(18,59,43,0.07);
-  --ink: #123B2B;
-  --ink-muted: #55665C;
-  --ink-faint: #8A9890;
-  --accent: #A0512F;
-  --on-accent: #FFF6F2;
-  --rail: rgba(18,59,43,0.22);
+  --surface-2: #F2EFE9;
+  --line: rgba(26,23,18,0.14);
+  --line-2: rgba(26,23,18,0.07);
+  --ink: #1A1712;
+  --ink-muted: #5E574C;
+  --ink-faint: #8C857A;
+  --accent: #A9682A;
+  --on-accent: #FFF8EF;
+  --rail: rgba(26,23,18,0.22);
   --up: #1E7A55;
   --down: #AE1F14;
-  --asset-equity: #20507E;
+  --asset-equity: #2F6B55;
   --asset-bonds: #8F6B24;
   --asset-deposit: #7A6E63;
   --asset-cash: #4A5A68;
-  --asset-crypto: #8A6FD0;
+  --asset-crypto: #6E52B0;
 
-  --r-xs: 4px;
-  --r-sm: 10px;
-  --r-md: 14px;
-  --r-lg: 20px;
-  --r-xl: 28px;
+  --r-xs: 2px;
+  --r-sm: 3px;
+  --r-md: 4px;
+  --r-lg: 8px;
+  --r-xl: 12px;
   --r-pill: 999px;
 
   --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
@@ -53,10 +58,12 @@
   --t-9: 31px;   /* tytuł ekranu */
   --t-10: 52px;  /* liczba wiodąca */
 
-  /* Podział ról jest regułą kierunku „Próba", nie preferencją:
-     proza szeryfem, etykiety i przyciski groteskiem, każda liczba mono. */
-  --font-display: var(--font-display-src), system-ui, sans-serif;
-  --font-text: var(--font-text-src), Georgia, serif;
+  /* Podział ról jest regułą kierunku, nie preferencją:
+     nagłówki Didone, proza i etykiety groteskiem, każda liczba mono.
+     Nazwa trzyma ROLĘ, nie krój — wcześniej --display znaczyło grotesk
+     w aplikacji i szeryf na landingu, co łamało ten invariant. */
+  --font-display: var(--font-display-src), Didot, "Bodoni MT", Georgia, serif;
+  --font-text: var(--font-text-src), "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-code: var(--font-code-src), ui-monospace, Menlo, monospace;
 
   /* Skok podziałki szyny — jeden dla całego produktu. */
@@ -64,22 +71,22 @@
 }
 
 [data-theme="dark"] {
-  --ground: #0B1A14;
-  --surface: #122A20;
-  --surface-2: #1A382A;
-  --line: rgba(159,191,174,0.16);
-  --line-2: rgba(159,191,174,0.08);
-  --ink: #EDF2EE;
-  --ink-muted: #8FAE9C;
-  --ink-faint: #5E7A6B;
-  --accent: #C9765F;
-  --on-accent: #190A05;
-  --rail: rgba(159,191,174,0.16);
-  --up: #35A87A;
-  --down: #D9463A;
-  --asset-equity: #3E7FB8;
+  --ground: #020A0B;
+  --surface: #06110F;
+  --surface-2: #0B1917;
+  --line: rgba(198,232,222,0.11);
+  --line-2: rgba(198,232,222,0.06);
+  --ink: #ECEFEC;
+  --ink-muted: #9FB0AA;
+  --ink-faint: #80958E;
+  --accent: #F0A43C;
+  --on-accent: #160C02;
+  --rail: rgba(198,232,222,0.22);
+  --up: #4FC79A;
+  --down: #E2685A;
+  --asset-equity: #63A594;
   --asset-bonds: #C9A24F;
-  --asset-deposit: #B0A294;
-  --asset-cash: #8FA6B8;
+  --asset-deposit: #8A9E97;
+  --asset-cash: #5C7E93;
   --asset-crypto: #B6A2E4;
 }

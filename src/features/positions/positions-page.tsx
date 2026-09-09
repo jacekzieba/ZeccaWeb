@@ -10,7 +10,6 @@ import { V2, V2Card, V2ScreenHead, V2_TYPE, v2Mix } from "@/lib/v2-design";
 import { currencyLabel, formatShare } from "@/lib/money";
 
 const UI = V2_TYPE.ui;
-const SERIF = V2_TYPE.serif;
 const MONO = V2_TYPE.mono;
 
 type SortKey = "symbol" | "kind" | "quantity" | "marketValue" | "lastPrice";
@@ -360,11 +359,11 @@ export function PositionsPage() {
           <div style={{ padding: "16px 22px", borderBottom: `0.5px solid ${V2.line}`, display: "flex", alignItems: "center", gap: 22, flexWrap: "wrap" }}>
             <div>
               <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: V2.subtle }}>Pozycji</div>
-              <div style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 500, color: V2.ink }}>{filtered.length}</div>
+              <div style={{ fontFamily: MONO, fontSize: 26, fontWeight: 500, color: V2.ink }}>{filtered.length}</div>
             </div>
             <div>
               <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: V2.subtle }}>Wartość (przefiltrowana)</div>
-              <div style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 500, color: V2.ink }}>{fmt(totalValue)} <span style={{ fontSize: 12, color: V2.subtle, fontStyle: "italic" }}>{currencyLabel(displayCurrency)}</span></div>
+              <div style={{ fontFamily: MONO, fontSize: 26, fontWeight: 500, color: V2.ink }}>{fmt(totalValue)} <span style={{ fontSize: 12, color: V2.subtle, fontStyle: "italic" }}>{currencyLabel(displayCurrency)}</span></div>
             </div>
           </div>
 
@@ -426,7 +425,7 @@ export function PositionsPage() {
                           <div style={{ fontSize: 10, color: V2.subtle }}>{instrument.currency}</div>
                         </td>
                         <td style={{ ...tdStyle, textAlign: "right" }}>
-                          <div style={{ fontFamily: SERIF, fontSize: 15, fontWeight: 500 }}>{fmt(instrument.marketValue)}</div>
+                          <div style={{ fontFamily: MONO, fontSize: 15, fontWeight: 500 }}>{fmt(instrument.marketValue)}</div>
                         </td>
                         <td style={{ ...tdStyle, textAlign: "right", fontFamily: MONO, fontSize: 12 }}>
                           {formatShare(totalValue > 0 ? (instrument.marketValue / totalValue) * 100 : 0)}

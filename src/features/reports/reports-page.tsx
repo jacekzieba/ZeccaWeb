@@ -257,7 +257,7 @@ export function ReportsPage() {
               <div style={{ ...card, padding: "18px 20px" }}>
                 <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 8 }}>Miesiące z zyskiem</div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                  <span style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 500, color: PROFIT }}>{monthlyStats.positive}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 26, fontWeight: 500, color: PROFIT }}>{monthlyStats.positive}</span>
                   <span style={{ fontSize: 13, color: SUBTLE }}>/ {monthlyStats.total}</span>
                 </div>
                 <div style={{ display: "flex", borderRadius: 4, overflow: "hidden", marginTop: 8, height: 6 }}>
@@ -282,11 +282,11 @@ export function ReportsPage() {
               const isPos = yr.returnPct >= 0;
               return (
                 <div key={yr.year} style={{ display: "grid", gridTemplateColumns: "90px 1fr 110px", padding: "14px 22px", borderTop: i === 0 ? "none" : `0.5px solid ${LINE_SOFT}`, alignItems: "center", gap: 12 }}>
-                  <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 500, color: INK }}>{yr.year}</div>
+                  <div style={{ fontFamily: MONO, fontSize: 18, fontWeight: 500, color: INK }}>{yr.year}</div>
                   <div style={{ height: 8, borderRadius: 4, background: v2Mix(V2.ink, 0.06), position: "relative", overflow: "hidden" }}>
                     <div style={{ width: `${Math.min(Math.abs(yr.returnPct) * 2.5, 100)}%`, height: "100%", borderRadius: 4, background: isPos ? PROFIT : LOSS }} />
                   </div>
-                  <div style={{ textAlign: "right", fontFamily: SERIF, fontSize: 18, fontWeight: 500, color: isPos ? PROFIT : LOSS }}>{fmtPct(yr.returnPct)}</div>
+                  <div style={{ textAlign: "right", fontFamily: MONO, fontSize: 18, fontWeight: 500, color: isPos ? PROFIT : LOSS }}>{fmtPct(yr.returnPct)}</div>
                 </div>
               );
             })
@@ -307,7 +307,7 @@ export function ReportsPage() {
             {(() => {
               const net = cashflows.dividends + cashflows.interest - cashflows.fees - cashflows.taxes;
               return (
-                <div style={{ fontFamily: SERIF, fontSize: 31, fontWeight: 500, marginTop: 8, color: net >= 0 ? PROFIT : LOSS }}>
+                <div style={{ fontFamily: MONO, fontSize: 31, fontWeight: 500, marginTop: 8, color: net >= 0 ? PROFIT : LOSS }}>
                   {net >= 0 ? "+" : ""}{fmt(net)} {ccy}
                 </div>
               );
@@ -329,7 +329,7 @@ export function ReportsPage() {
           </div>
           <div style={{ ...card, padding: "20px 22px" }}>
             <SectionHead>Zarobki i obciążenia</SectionHead>
-            <div style={{ fontFamily: SERIF, fontSize: 31, fontWeight: 500, marginTop: 8, color: personalIncome.netPLN >= 0 ? PROFIT : LOSS }}>
+            <div style={{ fontFamily: MONO, fontSize: 31, fontWeight: 500, marginTop: 8, color: personalIncome.netPLN >= 0 ? PROFIT : LOSS }}>
               {personalIncome.netPLN >= 0 ? "+" : ""}{fmt(personalIncome.netPLN)} {ccy}
             </div>
             <div style={{ fontSize: 12, color: MUTED, marginTop: 6 }}>

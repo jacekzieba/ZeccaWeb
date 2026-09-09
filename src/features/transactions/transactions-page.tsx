@@ -531,7 +531,7 @@ export function TransactionsPage() {
             <V2Kpi label="Wpłaty" value={`+${fmt(deposits)} zł`} />
             <div style={{ width: "0.5px", background: V2.line, alignSelf: "stretch" }} />
             <V2Kpi label="Dywidendy" value={`+${fmt(dividends)} zł`} accent={V2.profit} />
-            <V2Kpi label="Odsetki" value={`+${fmt(interest)} zł`} accent={V2.bonds} />
+            <V2Kpi label="Odsetki" value={`+${fmt(interest)} zł`} accent={V2.profit} />
             <V2Kpi label="Prowizje" value={`−${fmt(fees)} zł`} accent={V2.loss} />
           </div>
         </V2Card>
@@ -892,7 +892,7 @@ export function TransactionsPage() {
               <div role="cell" className="transactions-table-amount" style={{ textAlign: "right" }}>
                 <div
                   style={{
-                    fontFamily: V2_TYPE.serif,
+                    fontFamily: V2_TYPE.mono,
                     fontSize: 15,
                     fontWeight: 500,
                     // Kolor kwoty niesie KIERUNEK. Zakup to wyjście gotówki, ale nie strata —
