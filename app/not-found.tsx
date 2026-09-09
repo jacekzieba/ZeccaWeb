@@ -23,12 +23,12 @@ export default function NotFound() {
           textAlign: "center",
         }}
       >
-        <div style={{ fontSize: 40, fontWeight: 800, color: COLORS.subtle, letterSpacing: "-0.02em" }}>
+        <div style={{ fontSize: 31, fontWeight: 700, color: COLORS.subtle, letterSpacing: "-0.02em" }}>
           404
         </div>
         <h1
           style={{
-            fontSize: 22,
+            fontSize: 21,
             fontWeight: 700,
             color: COLORS.text,
             letterSpacing: "-0.01em",
@@ -50,7 +50,7 @@ export default function NotFound() {
             border: "none",
             background: COLORS.text,
             color: COLORS.white,
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: 600,
             textDecoration: "none",
             boxShadow: SHADOWS.button,

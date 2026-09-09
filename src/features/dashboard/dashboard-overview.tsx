@@ -40,7 +40,7 @@ import type {
   ValuationPoint,
 } from "@/domain/models/investor-data";
 import { TYPOGRAPHY } from "@/lib/design-tokens";
-import { formatAxisValue } from "@/lib/money";
+import { formatAxisValue, currencyLabel, formatShare } from "@/lib/money";
 import {
   buildInstrumentList,
   buildTransactionList,
@@ -57,6 +57,7 @@ import {
 } from "@/domain/bonds/bond-series-groups";
 import { KpiCard, KPI_TILE_META, getKpiTiles } from "@/components/metrics/portfolio-kpi-strip";
 import { ValueVsDepositsChart } from "@/components/charts/value-vs-deposits-chart";
+import { assetClassColor, portfolioDotColor } from "@/lib/asset-colors";
 
 const SERIF = TYPOGRAPHY.serif;
 const UI = TYPOGRAPHY.system;
@@ -81,6 +82,7 @@ const PALETTE = {
   bonds: token("assetBonds"),
   deposit: token("assetDeposit"),
   cash: token("assetCash"),
+  crypto: token("assetCrypto"),
   spec: "transparent",
 } as const;
 
@@ -337,7 +339,7 @@ function Eyebrow({ children, style }: { children: React.ReactNode; style?: CSSPr
     <div
       style={{
         fontFamily: UI,
-        fontSize: 10.5,
+        fontSize: 10,
         fontWeight: 700,
         letterSpacing: ".13em",
         textTransform: "uppercase",
@@ -364,7 +366,7 @@ function Pnl({ value, pct, size = 13 }: { value: number; pct?: number | null; si
         fontVariantNumeric: "tabular-nums",
       }}
     >
-      {fmtSigned(value)} {displayCurrency}
+      {fmtSigned(value)} {currencyLabel(displayCurrency)}
       {pct != null && <span style={{ opacity: 0.72, marginLeft: 4 }}>({fmtPct(pct)})</span>}
     </span>
   );
@@ -411,7 +413,7 @@ function PeriodBar({ value, onChange }: { value: Period; onChange: (period: Peri
             border: "none",
             cursor: "pointer",
             fontFamily: UI,
-            fontSize: 11.5,
+            fontSize: 11,
             fontWeight: value === option ? 700 : 500,
             background: value === option ? PALETTE.card : "transparent",
             color: value === option ? PALETTE.ink : PALETTE.muted,
@@ -502,7 +504,7 @@ function V2Area({ data, height = 240 }: { data: ValuationPoint[]; height?: numbe
         {yTicks.map((value, index) => (
           <g key={index}>
             <line x1={pl} x2={pl + innerWidth} y1={ty(value)} y2={ty(value)} stroke={PALETTE.line} strokeDasharray="2 5" />
-            <text x={pl - 9} y={ty(value) + 4} textAnchor="end" fontSize="10.5" fill={PALETTE.subtle} fontFamily={MONO}>
+            <text x={pl - 9} y={ty(value) + 4} textAnchor="end" fontSize="10" fill={PALETTE.subtle} fontFamily={MONO}>
               {formatAxisValue(value, tickStep * 4)}
             </text>
           </g>
@@ -520,7 +522,7 @@ function V2Area({ data, height = 240 }: { data: ValuationPoint[]; height?: numbe
               x={tx(index)}
               y={pt + innerHeight + 20}
               textAnchor={isLast ? "end" : "middle"}
-              fontSize="10.5"
+              fontSize="10"
               fill={PALETTE.subtle}
               fontFamily={MONO}
             >
@@ -552,8 +554,8 @@ function V2Area({ data, height = 240 }: { data: ValuationPoint[]; height?: numbe
           }}
         >
           <div style={{ opacity: 0.6, fontSize: 10, fontFamily: MONO, letterSpacing: ".03em" }}>{data[hover].label}</div>
-          <div style={{ fontWeight: 500, fontFamily: SERIF, fontSize: 17, marginTop: 1, fontVariantNumeric: "tabular-nums" }}>
-            {fmt(data[hover].value)} <span style={{ fontSize: 11, opacity: 0.65 }}>{displayCurrency}</span>
+          <div style={{ fontWeight: 500, fontFamily: MONO, fontSize: 15, marginTop: 1, fontVariantNumeric: "tabular-nums", wordSpacing: "-.26em" }}>
+            {fmt(data[hover].value)} <span style={{ fontSize: 11, opacity: 0.65 }}>{currencyLabel(displayCurrency)}</span>
           </div>
         </div>
       )}
@@ -565,13 +567,13 @@ function V2Alloc({ data, height = 18 }: { data: { id: string; label: string; val
   return (
     <div
       role="img"
-      aria-label={`Alokacja: ${data.map((segment) => `${segment.label} ${segment.value.toFixed(1)}%`).join(", ")}`}
+      aria-label={`Alokacja: ${data.map((segment) => `${segment.label} ${formatShare(segment.value)}`).join(", ")}`}
       style={{ display: "flex", width: "100%", height, borderRadius: height / 2, overflow: "hidden", gap: 2 }}
     >
       {data.map((segment) => (
         <div
           key={segment.id}
-          title={`${segment.label}: ${segment.value.toFixed(1)}%`}
+          title={`${segment.label}: ${formatShare(segment.value)}`}
           style={{ flex: segment.value, background: segment.color, transition: "flex .25s" }}
         />
       ))}
@@ -694,7 +696,7 @@ function V2HatchBars({ solid = true, height = 150, labels, profit, loss }: { sol
                 strokeOpacity={solid ? 0.18 : 0.4}
                 strokeWidth="1"
               />
-              <text x={centerX} y={height - 7} textAnchor="middle" fontSize="9.5" fill={PALETTE.subtle} fontFamily={MONO}>
+              <text x={centerX} y={height - 7} textAnchor="middle" fontSize="10" fill={PALETTE.subtle} fontFamily={MONO}>
                 {month}
               </text>
             </g>
@@ -796,12 +798,17 @@ function normalizeAllocation(snapshotAllocation: AllocationSlice[]) {
     return [{ id: "cash", label: "Gotówka", value: 100, color: PALETTE.cash }];
   }
 
-  const colors = [PALETTE.equity, PALETTE.gold, PALETTE.bonds, PALETTE.deposit, PALETTE.cash, PALETTE.brand];
+  // Kolor idzie za KLASĄ aktywu, nie za miejscem w tablicy. Wcześniej lista
+  // brzmiała [equity, gold, bonds, deposit, cash, brand], a `gold` i `bonds` to
+  // dwa aliasy tego samego tokenu — więc druga i trzecia pozycja dostawały
+  // bajtowo ten sam kolor, `--asset-crypto` nie był rysowany ani razu, a barwa
+  // nie znaczyła klasy, tylko indeks. W wykresie składu kolor JEST daną.
+  // Etykiety pochodzą z assetClassLabel() w investor-snapshot.ts i są zamknięte.
   return snapshotAllocation.map((item, index) => ({
     id: `${item.label}-${index}`,
     label: item.label,
     value: item.percent,
-    color: colors[index % colors.length],
+    color: assetClassColor(item.label),
   }));
 }
 
@@ -815,9 +822,9 @@ function DashboardLoading({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: UI, color: PALETTE.ink }}>
       <div style={{ padding: DASHBOARD_HEAD_PADDING }}>
-        <div style={{ fontFamily: SERIF, fontSize: 31, fontWeight: 500, color: PALETTE.ink, letterSpacing: "-.01em" }}>
+        <h1 style={{ fontFamily: SERIF, fontSize: 31, fontWeight: 500, color: PALETTE.ink, letterSpacing: "-.01em", margin: 0 }}>
           Dzień dobry, <span style={{ fontStyle: "italic", color: PALETTE.brand }}>{firstName(profileName)}</span>
-        </div>
+        </h1>
         <div style={{ fontFamily: UI, fontSize: 13, color: PALETTE.muted, marginTop: 3 }}>
           {dateText} · synchronizuję dane.
         </div>
@@ -826,7 +833,7 @@ function DashboardLoading({
       <Card glass pad={0} style={{ overflow: "hidden" }}>
         <div style={{ padding: "30px", minHeight: 260, display: "flex", flexDirection: "column", justifyContent: "center", gap: 16 }}>
           <Eyebrow>Wartość portfela</Eyebrow>
-          <div style={{ fontFamily: SERIF, fontSize: 48, color: PALETTE.subtle }}>Ładowanie danych</div>
+          <div style={{ fontFamily: SERIF, fontSize: 52, color: PALETTE.subtle }}>Ładowanie danych</div>
           <div style={{ width: "min(520px, 100%)", height: 10, borderRadius: 99, background: v2Mix(PALETTE.ink, 0.07), overflow: "hidden" }}>
             <div style={{ width: "42%", height: "100%", borderRadius: 99, background: v2Mix(PALETTE.brand, 0.25) }} />
           </div>
@@ -991,7 +998,7 @@ export function DashboardOverview() {
             color: showCustomize ? PALETTE.brand : PALETTE.ink,
             cursor: "pointer",
             fontFamily: UI,
-            fontSize: 12.5,
+            fontSize: 12,
             fontWeight: 700,
             padding: "8px 13px",
             boxShadow: `0 1px 4px ${v2Mix(PALETTE.ink, 0.06)}`,
@@ -1071,13 +1078,14 @@ function SummaryCard({
       </span>
       <span
         style={{
-          fontFamily: SERIF,
-          fontSize: isMobile ? 20 : 22,
+          fontFamily: MONO,
+          fontSize: isMobile ? 18 : 20,
           fontWeight: 500,
           color,
           lineHeight: 1.1,
           whiteSpace: "nowrap",
           fontVariantNumeric: "tabular-nums",
+          wordSpacing: "-.26em",
         }}
       >
         {value}
@@ -1123,18 +1131,20 @@ function SummaryCard({
           </div>
           <div
             style={{
-              fontFamily: SERIF,
+              fontFamily: MONO,
               fontWeight: 400,
-              fontSize: isMobile ? 52 : "clamp(38px, 3.2vw, 66px)",
+              // Płynny stopień między krokami skali: t-9 (31) na dole, t-10 (52) na górze.
+              fontSize: isMobile ? 31 : "clamp(31px, 2.7vw, 52px)",
               lineHeight: 0.98,
               letterSpacing: "-.015em",
+              wordSpacing: "-.26em",
               color: PALETTE.ink,
               fontVariantNumeric: "tabular-nums lining-nums",
             }}
           >
             {fmt(totalValue)}
-            <span style={{ fontFamily: SERIF, fontSize: isMobile ? 22 : "clamp(18px, 1.3vw, 26px)", fontStyle: "italic", color: PALETTE.subtle, fontWeight: 400, marginLeft: 8 }}>
-              {displayCurrency}
+            <span style={{ fontFamily: MONO, fontSize: isMobile ? 18 : "clamp(15px, 1.1vw, 21px)", color: PALETTE.subtle, fontWeight: 400, marginLeft: 8 }}>
+              {currencyLabel(displayCurrency)}
             </span>
           </div>
           <div style={{ marginTop: 12, display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
@@ -1176,12 +1186,12 @@ function SummaryCard({
             }}
           >
             <span style={{ color: PALETTE.muted }}>
-              Zainwestowano <b style={{ color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>{fmt(invested)} {displayCurrency}</b>
+              Zainwestowano <b style={{ color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>{fmt(invested)} {currencyLabel(displayCurrency)}</b>
             </span>
             <span style={{ color: PALETTE.muted }}>
               Wynik{" "}
               <b style={{ color: unrealized >= 0 ? PALETTE.profit : PALETTE.loss }}>
-                {fmtSigned(unrealized)} {displayCurrency}
+                {fmtSigned(unrealized)} {currencyLabel(displayCurrency)}
               </b>
             </span>
             <span style={{ color: PALETTE.muted }}>
@@ -1232,7 +1242,7 @@ function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobil
       <div style={{ padding: "18px 22px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `0.5px solid ${PALETTE.line}` }}>
         <div>
           <Eyebrow>Instrumenty</Eyebrow>
-          <div style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 500, color: PALETTE.ink, marginTop: 2, whiteSpace: "nowrap" }}>
+          <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 500, color: PALETTE.ink, marginTop: 2, whiteSpace: "nowrap" }}>
             {groupedHoldings.length} pozycji w portfelu
           </div>
         </div>
@@ -1243,7 +1253,7 @@ function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobil
       {!isMobile && (
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0,2.4fr) minmax(0,1fr) minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,.7fr)", padding: "9px 22px", background: v2Mix(PALETTE.ink, 0.022) }}>
           {["Instrument", "Liczba / Kurs", "Wartość", "Zysk / Strata", "30D"].map((header, index) => (
-            <div key={header} style={{ fontFamily: UI, fontSize: 9.5, fontWeight: 700, color: PALETTE.subtle, textTransform: "uppercase", letterSpacing: ".07em", textAlign: index === 0 ? "left" : "right" }}>
+            <div key={header} style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, color: PALETTE.subtle, textTransform: "uppercase", letterSpacing: ".07em", textAlign: index === 0 ? "left" : "right" }}>
               {header}
             </div>
           ))}
@@ -1275,12 +1285,12 @@ function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobil
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                   <Badge label={tag} color={tagColor} />
-                  <div style={{ fontFamily: UI, fontSize: 14, fontWeight: 700, color: PALETTE.ink }}>{holding.symbol}</div>
+                  <div style={{ fontFamily: UI, fontSize: 13, fontWeight: 700, color: PALETTE.ink }}>{holding.symbol}</div>
                   {isGroup && <span aria-hidden="true" style={{ marginLeft: "auto", color: PALETTE.bonds }}>{expandedFamilies.has(family!) ? "⌄" : "›"}</span>}
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
-                  <div style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 500, color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>
-                    {fmt(holding.valuePLN)} {displayCurrency}
+                  <div style={{ fontFamily: MONO, fontSize: 15, fontWeight: 500, color: PALETTE.ink, fontVariantNumeric: "tabular-nums", wordSpacing: "-.26em" }}>
+                    {fmt(holding.valuePLN)} {currencyLabel(displayCurrency)}
                   </div>
                   {holding.pnl != null ? (
                     <Pnl value={holding.pnl} pct={holding.pnlPct} />
@@ -1324,20 +1334,20 @@ function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobil
               <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
                 <Badge label={tag} color={tagColor} />
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontFamily: UI, fontSize: 13.5, fontWeight: 700, color: PALETTE.ink }}>{holding.symbol}</div>
+                  <div style={{ fontFamily: UI, fontSize: 13, fontWeight: 700, color: PALETTE.ink }}>{holding.symbol}</div>
                   <div style={{ fontFamily: UI, fontSize: 11, color: PALETTE.subtle, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{holding.name}</div>
                 </div>
                 {isGroup && <span aria-hidden="true" style={{ marginLeft: "auto", color: PALETTE.bonds, flexShrink: 0 }}>{expandedFamilies.has(family!) ? "⌄" : "›"}</span>}
               </div>
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontFamily: MONO, fontSize: 12.5, color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>{fmtQty(holding.quantity)}</div>
-                <div style={{ fontFamily: MONO, fontSize: 10.5, color: PALETTE.subtle }}>
-                  {holding.price > 0 ? `${holding.currency} ${fmt(holding.price, 2)}` : "—"}
+                <div style={{ fontFamily: MONO, fontSize: 12, color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>{fmtQty(holding.quantity)}</div>
+                <div style={{ fontFamily: MONO, fontSize: 10, color: PALETTE.subtle }}>
+                  {holding.price > 0 ? `${currencyLabel(holding.currency)} ${fmt(holding.price, 2)}` : "—"}
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontFamily: SERIF, fontSize: 16, fontWeight: 500, color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>{fmt(holding.valuePLN)}</div>
-                <div style={{ fontFamily: MONO, fontSize: 10.5, color: PALETTE.subtle }}>{displayCurrency}</div>
+                <div style={{ fontFamily: SERIF, fontSize: 15, fontWeight: 500, color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>{fmt(holding.valuePLN)}</div>
+                <div style={{ fontFamily: MONO, fontSize: 10, color: PALETTE.subtle }}>{currencyLabel(displayCurrency)}</div>
               </div>
               <div style={{ textAlign: "right" }}>
                 {holding.pnl != null ? (
@@ -1349,7 +1359,7 @@ function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobil
                   <span style={{ fontFamily: MONO, fontSize: 11, color: PALETTE.subtle }}>{holding.source ?? "wycena"}</span>
                 )}
               </div>
-              <div style={{ textAlign: "right", fontFamily: UI, fontSize: 12.5, fontWeight: 700, color: holding.d30Pct == null ? PALETTE.subtle : holding.d30Pct >= 0 ? PALETTE.profit : PALETTE.loss }}>
+              <div style={{ textAlign: "right", fontFamily: UI, fontSize: 12, fontWeight: 700, color: holding.d30Pct == null ? PALETTE.subtle : holding.d30Pct >= 0 ? PALETTE.profit : PALETTE.loss }}>
                 {holding.d30Pct == null ? "—" : fmtPct(holding.d30Pct)}
               </div>
             </div>
@@ -1372,7 +1382,7 @@ function ValueVsDepositsCard({
   return (
     <Card>
       <Eyebrow>Wartość vs wpłaty</Eyebrow>
-      <div style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 500, color: PALETTE.ink, margin: "4px 0 16px" }}>
+      <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 500, color: PALETTE.ink, margin: "4px 0 16px" }}>
         Wartość konta na tle wpłat
       </div>
       <ValueVsDepositsChart value={value} deposits={deposits} currency={currency} height={236} />
@@ -1384,15 +1394,15 @@ function AllocationCard({ allocation }: { allocation: { id: string; label: strin
   return (
     <Card>
       <Eyebrow>Alokacja</Eyebrow>
-      <div style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 500, color: PALETTE.ink, margin: "4px 0 16px" }}>Struktura aktywów</div>
+      <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 500, color: PALETTE.ink, margin: "4px 0 16px" }}>Struktura aktywów</div>
       <V2Alloc data={allocation} />
       <div style={{ display: "flex", flexDirection: "column", gap: 11, marginTop: 16 }}>
         {allocation.map((item) => (
           <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ width: 10, height: 10, borderRadius: 3, background: item.color }} />
-            <span style={{ flex: 1, fontFamily: UI, fontSize: 12.5, color: PALETTE.ink }}>{item.label}</span>
-            <span style={{ fontFamily: MONO, fontSize: 12.5, fontWeight: 600, color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>
-              {item.value.toFixed(1)}%
+            <span style={{ flex: 1, fontFamily: UI, fontSize: 12, color: PALETTE.ink }}>{item.label}</span>
+            <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 500, color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>
+              {formatShare(item.value)}
             </span>
           </div>
         ))}
@@ -1408,7 +1418,7 @@ function MonthlyCard({ valuationSeries }: { valuationSeries: ValuationPoint[] })
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
         <div>
           <Eyebrow>Zysk / strata</Eyebrow>
-          <div style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 500, color: PALETTE.ink, marginTop: 4 }}>Miesięcznie</div>
+          <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 500, color: PALETTE.ink, marginTop: 4 }}>Miesięcznie</div>
         </div>
         <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
           <span style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: UI, fontSize: 11, color: PALETTE.muted }}>
@@ -1434,7 +1444,7 @@ function TransactionsCard({ transactions }: { transactions: TransactionView[] })
       <div style={{ padding: "18px 22px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <Eyebrow>Ostatnie transakcje</Eyebrow>
-          <div style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 500, color: PALETTE.ink, marginTop: 2 }}>Aktywność konta</div>
+          <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 500, color: PALETTE.ink, marginTop: 2 }}>Aktywność konta</div>
         </div>
         <Link href="/transactions" style={{ fontFamily: UI, fontSize: 12, color: PALETTE.brand, fontWeight: 600, textDecoration: "none" }}>
           Wszystkie →
@@ -1463,13 +1473,13 @@ function TransactionsCard({ transactions }: { transactions: TransactionView[] })
                   {transaction.symbol}
                   {transaction.quantity ? <span style={{ color: PALETTE.subtle, fontWeight: 400, marginLeft: 6 }}>· {fmtQty(transaction.quantity)} szt.</span> : null}
                 </div>
-                <div style={{ fontFamily: MONO, fontSize: 10.5, color: PALETTE.subtle, marginTop: 2 }}>
+                <div style={{ fontFamily: MONO, fontSize: 10, color: PALETTE.subtle, marginTop: 2 }}>
                   {fmtDate(transaction.date)} · {transaction.portfolioName}
                 </div>
               </div>
-              <div style={{ fontFamily: SERIF, fontSize: 16, fontWeight: 500, color: income ? PALETTE.profit : PALETTE.ink, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+              <div style={{ fontFamily: SERIF, fontSize: 15, fontWeight: 500, color: income ? PALETTE.profit : PALETTE.ink, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
                 {income ? "+" : ""}
-                {fmt(transaction.amount)} {transaction.currency}
+                {fmt(transaction.amount)} {currencyLabel(transaction.currency)}
               </div>
             </div>
           );
@@ -1496,16 +1506,16 @@ function PortfoliosCard({
   const asOfLabel = fmtDate(asOf);
   const cashflowPeriod = `Narastająco do ${asOfLabel}`;
   const cashflowRows = [
-    ["Dywidendy", cashflowPeriod, `+${fmt(dividends)} ${displayCurrency}`, PALETTE.profit],
-    ["Odsetki", cashflowPeriod, `+${fmt(interest)} ${displayCurrency}`, PALETTE.bonds],
-    ["Prowizje", cashflowPeriod, `-${fmt(fees)} ${displayCurrency}`, PALETTE.loss],
+    ["Dywidendy", cashflowPeriod, `+${fmt(dividends)} ${currencyLabel(displayCurrency)}`, PALETTE.profit],
+    ["Odsetki", cashflowPeriod, `+${fmt(interest)} ${currencyLabel(displayCurrency)}`, PALETTE.profit],
+    ["Prowizje", cashflowPeriod, `-${fmt(fees)} ${currencyLabel(displayCurrency)}`, PALETTE.loss],
   ] as const;
 
   return (
     <Card>
       <Eyebrow>Portfele</Eyebrow>
-      <div style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 500, color: PALETTE.ink, margin: "4px 0 16px" }}>Podział na konta</div>
-      <div style={{ fontFamily: UI, fontSize: 11.5, color: PALETTE.subtle, margin: "-10px 0 16px" }}>
+      <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 500, color: PALETTE.ink, margin: "4px 0 16px" }}>Podział na konta</div>
+      <div style={{ fontFamily: UI, fontSize: 11, color: PALETTE.subtle, margin: "-10px 0 16px" }}>
         Wycena na {asOfLabel} · miniwykresy: ostatnie 30 dni · zmiana: 30 dni
       </div>
       {portfolios.length === 0 ? (
@@ -1513,7 +1523,11 @@ function PortfoliosCard({
       ) : (
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {portfolios.map((portfolio, index) => {
-          const color = index === 0 ? PALETTE.brand : PALETTE.bonds;
+          // Kolor kropki wynika z tożsamości portfela, nie z jego miejsca w tablicy.
+          // Wcześniej pierwsze konto dostawało bursztyn (akcent w danych), a każde
+          // kolejne ten sam kolor obligacji — trzy konta, dwie barwy, dwie
+          // identyczne. Dołożenie portfela przesuwało bursztyn na inne konto.
+          const color = portfolioDotColor(portfolio.id);
           const series = portfolio.sparkline.length >= 2 ? portfolio.sparkline : [portfolio.value, portfolio.value];
           // 30d change derived from the same points as the sparkline, so the
           // number and the chart always agree.
@@ -1530,12 +1544,12 @@ function PortfoliosCard({
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />
-                  <span style={{ fontFamily: UI, fontSize: 13.5, fontWeight: 700, color: PALETTE.ink }}>{portfolio.name}</span>
-                  <span style={{ fontFamily: MONO, fontSize: 10, color: PALETTE.subtle, textTransform: "uppercase", letterSpacing: ".06em" }}>{displayCurrency}</span>
+                  <span style={{ fontFamily: UI, fontSize: 13, fontWeight: 700, color: PALETTE.ink }}>{portfolio.name}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 10, color: PALETTE.subtle, textTransform: "uppercase", letterSpacing: ".06em" }}>{currencyLabel(displayCurrency)}</span>
                 </div>
-                <div style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 500, color: PALETTE.ink, marginTop: 4, fontVariantNumeric: "tabular-nums" }}>
+                <div style={{ fontFamily: MONO, fontSize: 18, fontWeight: 500, color: PALETTE.ink, marginTop: 4, fontVariantNumeric: "tabular-nums", wordSpacing: "-.26em" }}>
                   {fmt(portfolio.value)}
-                  <span style={{ fontSize: 12, fontStyle: "italic", color: PALETTE.subtle, marginLeft: 4 }}>{displayCurrency}</span>
+                  <span style={{ fontSize: 12, fontStyle: "italic", color: PALETTE.subtle, marginLeft: 4 }}>{currencyLabel(displayCurrency)}</span>
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
@@ -1544,7 +1558,7 @@ function PortfoliosCard({
                 </div>
                 <V2Spark data={series} color={trend} />
                 <div style={{ display: "inline-flex", alignItems: "baseline", gap: 5, fontFamily: UI, fontSize: 12, fontWeight: 700, color: change30d >= 0 ? PALETTE.profit : PALETTE.loss, marginTop: 4 }}>
-                  <span style={{ fontSize: 9.5, fontWeight: 700, color: PALETTE.subtle, letterSpacing: ".06em" }}>30D</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: PALETTE.subtle, letterSpacing: ".06em" }}>30D</span>
                   <span>{fmtPct(change30d)}</span>
                 </div>
               </div>
@@ -1559,10 +1573,10 @@ function PortfoliosCard({
             <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: PALETTE.subtle }}>
               {label}
             </div>
-            <div style={{ fontFamily: UI, fontSize: 9.5, color: PALETTE.subtle, marginTop: 2 }}>
+            <div style={{ fontFamily: UI, fontSize: 10, color: PALETTE.subtle, marginTop: 2 }}>
               {period}
             </div>
-            <div style={{ fontFamily: MONO, fontSize: 13.5, fontWeight: 600, color, marginTop: 3 }}>{value}</div>
+            <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 500, color, marginTop: 3 }}>{value}</div>
           </div>
         ))}
       </div>

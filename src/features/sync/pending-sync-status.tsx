@@ -13,6 +13,7 @@ import {
   type PendingSyncOperation,
 } from "@/sync/records/record-writer";
 import { useSyncStore } from "@/sync/store/sync-store";
+import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 
 const panelStyle: CSSProperties = {
   position: "absolute",
@@ -100,12 +101,16 @@ export function PendingSyncStatus() {
     }
   }
 
+  // Potwierdzenia były natywnymi oknami systemu: nie nazywały zmiany, wyglądały
+  // obco i blokowały wątek. Odrzucenie kasuje niezsynchronizowaną edycję na stałe,
+  // a wymuszenie może nadpisać dane z innego urządzenia — obie zasługują na okno,
+  // które mówi, czego dotyczą.
+  const [potwierdzenie, setPotwierdzenie] = useState<
+    { rodzaj: "force" | "discard"; id: string; opis: string } | null
+  >(null);
+
   async function handleForce(operationId: string) {
     if (!supabase) return;
-    const confirmed = window.confirm(
-      "Wymusić zapis tej lokalnej zmiany? Może nadpisać zmianę z innego urządzenia.",
-    );
-    if (!confirmed) return;
 
     setSyncing(true);
     setMessage(null);
@@ -122,8 +127,6 @@ export function PendingSyncStatus() {
   }
 
   function handleDiscard(operationId: string) {
-    const confirmed = window.confirm("Odrzucić tę lokalną oczekującą zmianę?");
-    if (!confirmed) return;
     removePendingSyncOperation(operationId);
     setOperations(getPendingSyncOperations());
     setMessage("Odrzucono zmianę z kolejki.");
@@ -160,7 +163,7 @@ export function PendingSyncStatus() {
         <div style={panelStyle}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 800, color: COLORS.text }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.text }}>
                 Oczekujące zmiany
               </div>
               <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>
@@ -216,7 +219,7 @@ export function PendingSyncStatus() {
               >
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: COLORS.text }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.text }}>
                       {operationLabel(operation)}
                     </div>
                     <div style={{ fontSize: 10, color: COLORS.subtle, marginTop: 2 }}>
@@ -225,7 +228,7 @@ export function PendingSyncStatus() {
                   </div>
                   <div style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
                     <button
-                      onClick={() => void handleForce(operation.operationId)}
+                      onClick={() => setPotwierdzenie({ rodzaj: "force", id: operation.operationId, opis: `${operationLabel(operation)} · #${operation.id.slice(0, 8)}` })}
                       disabled={!supabase || syncing}
                       style={{
                         padding: "5px 8px",
@@ -241,7 +244,7 @@ export function PendingSyncStatus() {
                       Wymuś
                     </button>
                     <button
-                      onClick={() => handleDiscard(operation.operationId)}
+                      onClick={() => setPotwierdzenie({ rodzaj: "discard", id: operation.operationId, opis: `${operationLabel(operation)} · #${operation.id.slice(0, 8)}` })}
                       disabled={syncing}
                       style={{
                         padding: "5px 8px",
@@ -268,6 +271,27 @@ export function PendingSyncStatus() {
           </div>
         </div>
       )}
+
+    <ConfirmDialog
+      open={potwierdzenie !== null}
+      title={potwierdzenie?.rodzaj === "force" ? "Wymusić zapis tej zmiany?" : "Odrzucić tę zmianę?"}
+      body={
+        potwierdzenie?.rodzaj === "force"
+          ? `${potwierdzenie.opis}. Może nadpisać zmianę zapisaną na innym urządzeniu.`
+          : potwierdzenie
+            ? `${potwierdzenie.opis}. Zmiana nie została jeszcze zsynchronizowana — tego nie da się cofnąć.`
+            : undefined
+      }
+      confirmLabel={potwierdzenie?.rodzaj === "force" ? "Wymuś" : "Odrzuć"}
+      onCancel={() => setPotwierdzenie(null)}
+      onConfirm={() => {
+        const zadanie = potwierdzenie;
+        setPotwierdzenie(null);
+        if (zadanie?.rodzaj === "force") void handleForce(zadanie.id);
+        else if (zadanie?.rodzaj === "discard") handleDiscard(zadanie.id);
+      }}
+    />
+
     </div>
   );
 }

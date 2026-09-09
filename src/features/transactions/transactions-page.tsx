@@ -10,9 +10,16 @@ import {
 import {
   deleteRecord,
   refreshSyncStore,
+  restoreRecord,
   SyncConflictError,
 } from "@/sync/records/record-writer";
 import { isFakeSyncEnabled } from "@/lib/env";
+import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
+import { pluralPl } from "@/lib/plural-pl";
+import { TRANSACTION_LABELS } from "@/lib/transaction-labels";
+import { useProfile } from "@/features/profile/profile-store";
+import { currencyLabel } from "@/lib/money";
+import { announce } from "@/components/feedback/status-announcer";
 import {
   V2,
   V2Badge,
@@ -31,8 +38,6 @@ const SUBTLE = V2.subtle;
 const LINE_SOFT = V2.line2;
 const PROFIT = V2.profit;
 const LOSS = V2.loss;
-const AMBER = V2.bonds;
-const BLUE = V2.equity;
 
 const glassCard: CSSProperties = {
   background: V2.card,
@@ -43,45 +48,16 @@ const glassCard: CSSProperties = {
   boxShadow: `0 1px 0 ${v2Mix(V2.ink, 0.03)}, 0 6px 20px ${v2Mix(V2.ink, 0.05)}`,
 };
 
-const TX_LABELS: Record<string, string> = {
-  buy: "Kupno",
-  sell: "Sprzedaż",
-  cashDeposit: "Wpłata",
-  cashWithdrawal: "Wypłata",
-  dividend: "Dywidenda",
-  interest: "Odsetki",
-  bondCoupon: "Kupon",
-  bondRedemption: "Wykup",
-  depositOpen: "Otwarcie lokaty",
-  depositClose: "Zamknięcie lokaty",
-  fee: "Opłata",
-  tax: "Podatek",
-  fxConversion: "Przewalutowanie",
-  transferIn: "Transfer IN",
-  transferOut: "Transfer OUT",
-  accountTransferIn: "Przeniesienie",
-  correction: "Korekta",
-};
+const TX_LABELS = TRANSACTION_LABELS;
 
-const TX_COLORS: Record<string, string> = {
-  buy: BLUE,
-  sell: LOSS,
-  cashDeposit: PROFIT,
-  cashWithdrawal: LOSS,
-  dividend: PROFIT,
-  interest: PROFIT,
-  bondCoupon: PROFIT,
-  bondRedemption: PROFIT,
-  depositOpen: AMBER,
-  depositClose: PROFIT,
-  fee: LOSS,
-  tax: LOSS,
-  fxConversion: MUTED,
-  transferIn: PROFIT,
-  transferOut: LOSS,
-  accountTransferIn: BLUE,
-  correction: SUBTLE,
-};
+// Plakietka typu transakcji jest neutralna. Wcześniej mapowała szesnaście
+// TYPÓW na tokeny kierunku: wpłata, dywidenda, odsetki i kupon szły na --up,
+// sprzedaż, opłata i podatek na --down, a otwarcie lokaty na token obligacji.
+// To łamie dwie twarde reguły naraz — zieleń znaczy kierunek, nie kategorię,
+// a bursztyn nie wchodzi w dane. Typ niesie własna etykieta („Kupno",
+// „Dywidenda"), kierunek niesie znak przy kwocie i jego kolor. Jeden kanał na
+// jedno znaczenie.
+const TX_BADGE = MUTED;
 
 function fmt(n: number, d = 0) {
   return n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -114,6 +90,9 @@ export function TransactionsPage() {
   const supabase = useSyncStore((s) => s.supabase);
   const setSync = useSyncStore((s) => s.setSync);
   const openAddTransaction = useSyncStore((s) => s.openAddTransaction);
+  const publicDemo = useSyncStore((s) => s.publicDemo);
+  const snapshot = useSyncStore((s) => s.snapshot);
+  const { displayCurrency } = useProfile();
 
   const allTransactions = useMemo(
     () => (records ? buildTransactionList(records) : []),
@@ -223,7 +202,25 @@ export function TransactionsPage() {
     });
   }, [allTransactions, portfolioFilter, typeFilter, search]);
 
-  const displayedTransactions = useMemo(() => filtered.slice(0, 200), [filtered]);
+  // Najgęstsza tabela w produkcie nie dawała się ułożyć po kwocie ani po dacie.
+  const [sort, setSort] = useState<{ key: "date" | "grossAmount"; dir: "asc" | "desc" }>({
+    key: "date",
+    dir: "desc",
+  });
+
+  const sorted = useMemo(() => {
+    const znak = sort.dir === "asc" ? 1 : -1;
+    return [...filtered].sort((a, b) => {
+      if (sort.key === "grossAmount") return (a.grossAmount - b.grossAmount) * znak;
+      return (Date.parse(a.date) - Date.parse(b.date)) * znak;
+    });
+  }, [filtered, sort]);
+
+  function toggleSort(key: "date" | "grossAmount") {
+    setSort((prev) => (prev.key === key ? { key, dir: prev.dir === "asc" ? "desc" : "asc" } : { key, dir: "desc" }));
+  }
+
+  const displayedTransactions = useMemo(() => sorted.slice(0, 200), [sorted]);
   const displayedIds = useMemo(
     () => displayedTransactions.map((transaction) => transaction.id),
     [displayedTransactions],
@@ -289,16 +286,20 @@ export function TransactionsPage() {
     });
   }
 
+  // Natywny confirm nie mówił, CO usuwa, wyglądał jak okno systemu i blokował
+  // wątek. Potwierdzenie jest teraz oknem aplikacji i nazywa usuwaną pozycję.
+  const [confirmDelete, setConfirmDelete] = useState<
+    { rodzaj: "jedna"; id: string; opis: string } | { rodzaj: "wiele"; ids: string[] } | null
+  >(null);
+
   async function handleDeleteTransaction(id: string) {
     if (!userDataKey || !supabase || !records) {
       return;
     }
 
-    if (!window.confirm("Usunąć transakcję?")) {
-      return;
-    }
-
     if (isFakeSyncEnabled()) {
+      const przed = records;
+      const przedSnapshot = snapshot;
       markTransactionsDeletedLocally([id]);
       setSelectedIds((current) => {
         if (!current.has(id)) return current;
@@ -306,6 +307,10 @@ export function TransactionsPage() {
         next.delete(id);
         return next;
       });
+      announce(
+        "Transakcja usunięta.",
+        przedSnapshot ? { label: "Cofnij", run: () => setSync(przed, przedSnapshot) } : undefined,
+      );
       return;
     }
 
@@ -338,11 +343,61 @@ export function TransactionsPage() {
         next.delete(id);
         return next;
       });
+      // Usunięcie jest miękkie — szyfrogram został w wierszu, zmienił się tylko
+      // znacznik. Cofnięcie czyści go, podając znacznik z chwili usunięcia.
+      const usunieteO = result.updatedAt;
+      announce(
+        "Transakcja usunięta.",
+        usunieteO
+          ? { label: "Cofnij", run: () => void przywrocTransakcje(id, usunieteO) }
+          : undefined,
+      );
     } catch (error) {
       setDeleteError(describeDeleteError(error));
     } finally {
       setDeletingId(null);
     }
+  }
+
+  async function przywrocTransakcje(id: string, baseUpdatedAt: string) {
+    if (!userDataKey || !supabase) return;
+    try {
+      await restoreRecord(supabase, "transaction", id, { baseUpdatedAt });
+      const { records: nextRecords, snapshot: nextSnapshot } = await refreshSyncStore(
+        supabase,
+        userDataKey,
+      );
+      setSync(nextRecords, nextSnapshot);
+      announce("Transakcja przywrócona.");
+    } catch (error) {
+      setDeleteError(describeDeleteError(error));
+    }
+  }
+
+  /** Cofnięcie hurtowe. Każdy rekord ma własny znacznik z chwili usunięcia,
+   *  więc strażnik konfliktów sprawdza każdy z osobna — jeśli któryś zmienił
+   *  się w międzyczasie na innym urządzeniu, tylko on zostaje usunięty. */
+  async function przywrocWiele(pary: Array<[string, string]>) {
+    if (!userDataKey || !supabase) return;
+    let bledy = 0;
+    for (const [id, baseUpdatedAt] of pary) {
+      try {
+        await restoreRecord(supabase, "transaction", id, { baseUpdatedAt });
+      } catch {
+        bledy += 1;
+      }
+    }
+    const { records: nextRecords, snapshot: nextSnapshot } = await refreshSyncStore(
+      supabase,
+      userDataKey,
+    );
+    setSync(nextRecords, nextSnapshot);
+    const przywrocone = pary.length - bledy;
+    announce(
+      bledy === 0
+        ? `Przywrócono ${przywrocone} ${pluralPl(przywrocone, "transakcję", "transakcje", "transakcji")}.`
+        : `Przywrócono ${przywrocone} z ${pary.length} — reszta zmieniła się na innym urządzeniu.`,
+    );
   }
 
   async function handleDeleteSelectedTransactions() {
@@ -356,17 +411,20 @@ export function TransactionsPage() {
       return;
     }
 
-    if (!window.confirm(`Usunąć zaznaczone transakcje (${idsToDelete.length})?`)) {
-      return;
-    }
 
     if (isFakeSyncEnabled()) {
+      const przed = records;
+      const przedSnapshot = snapshot;
       markTransactionsDeletedLocally(idsToDelete);
       setSelectedIds((current) => {
         const next = new Set(current);
         for (const id of idsToDelete) next.delete(id);
         return next;
       });
+      announce(
+        `Usunięto ${idsToDelete.length} ${pluralPl(idsToDelete.length, "transakcję", "transakcje", "transakcji")}.`,
+        przedSnapshot ? { label: "Cofnij", run: () => setSync(przed, przedSnapshot) } : undefined,
+      );
       return;
     }
 
@@ -374,6 +432,7 @@ export function TransactionsPage() {
     setDeleteError(null);
     const queuedIds: string[] = [];
     const deletedIds: string[] = [];
+    const doCofniecia: Array<[string, string]> = [];
     let failure: unknown = null;
 
     try {
@@ -389,6 +448,7 @@ export function TransactionsPage() {
             baseUpdatedAt: sourceRecord?.updatedAt ?? null,
           });
           deletedIds.push(id);
+          if (result.updatedAt) doCofniecia.push([id, result.updatedAt]);
           if (result.queued) {
             queuedIds.push(id);
           }
@@ -414,6 +474,12 @@ export function TransactionsPage() {
           for (const id of deletedIds) next.delete(id);
           return next;
         });
+        announce(
+          `Usunięto ${deletedIds.length} ${pluralPl(deletedIds.length, "transakcję", "transakcje", "transakcji")}.`,
+          doCofniecia.length === deletedIds.length && doCofniecia.length > 0
+            ? { label: "Cofnij", run: () => void przywrocWiele(doCofniecia) }
+            : undefined,
+        );
       }
 
       if (failure) {
@@ -432,10 +498,23 @@ export function TransactionsPage() {
   }
 
   const selectStyle: CSSProperties = v2SelectStyle;
-  const deposits = allTransactions.filter((tx) => tx.transactionType === "cashDeposit").reduce((sum, tx) => sum + tx.grossAmount, 0);
-  const dividends = allTransactions.filter((tx) => tx.transactionType === "dividend").reduce((sum, tx) => sum + tx.grossAmount, 0);
-  const interest = allTransactions.filter((tx) => ["interest", "bondCoupon"].includes(tx.transactionType)).reduce((sum, tx) => sum + tx.grossAmount, 0);
-  const fees = allTransactions.filter((tx) => ["fee", "tax"].includes(tx.transactionType)).reduce((sum, tx) => sum + tx.grossAmount, 0);
+  // Sumy liczą się TYLKO w walucie bazowej. Wcześniej `reduce` dodawał kwoty
+  // z różnych walut i doklejał „zł": dywidenda 46 USD i 756 PLN dawały „802 zł",
+  // choć uczciwa wartość to około 941. Ten widok nie ma kursów z dnia transakcji,
+  // więc zamiast zmyślać przeliczenie, zawęża zakres i mówi o tym w cesze.
+  const wBazowej = allTransactions.filter((tx) => tx.currency === displayCurrency);
+  const pominietych = allTransactions.length - wBazowej.length;
+  const deposits = wBazowej.filter((tx) => tx.transactionType === "cashDeposit").reduce((sum, tx) => sum + tx.grossAmount, 0);
+  const dividends = wBazowej.filter((tx) => tx.transactionType === "dividend").reduce((sum, tx) => sum + tx.grossAmount, 0);
+  const interest = wBazowej.filter((tx) => ["interest", "bondCoupon"].includes(tx.transactionType)).reduce((sum, tx) => sum + tx.grossAmount, 0);
+  // Prowizja siedzi w polu `fees`/`taxes` KAŻDEJ transakcji — to ją pokazują
+  // wiersze („prowizja 9,00"). Kafelek sumował wyłącznie transakcje typu fee/tax,
+  // więc pisał „−0 zł" nad sześcioma widocznymi prowizjami.
+  const fees = wBazowej.reduce(
+    (sum, tx) => sum + tx.fees + tx.taxes + (["fee", "tax"].includes(tx.transactionType) ? tx.grossAmount : 0),
+    0,
+  );
+  const cechaZakresu = pominietych > 0 ? `tylko w ${currencyLabel(displayCurrency)}` : "wszystkie waluty";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: V2_TYPE.ui, color: V2.ink }}>
@@ -443,7 +522,7 @@ export function TransactionsPage() {
         eyebrow="Analiza"
         title="Transakcje"
         sub={records ? `${allTransactions.length} operacji · ${filtered.length} widocznych` : "Odblokuj dane w panelu synchronizacji"}
-        action={<V2Button onClick={openAddTransaction}><span style={{ fontSize: 16, lineHeight: 1 }}>+</span>Dodaj transakcję</V2Button>}
+        action={<V2Button onClick={openAddTransaction}><span style={{ fontSize: 15, lineHeight: 1 }}>+</span>Dodaj transakcję</V2Button>}
       />
 
       {records && (
@@ -486,7 +565,7 @@ export function TransactionsPage() {
             </span>
             <input
               type="text"
-              placeholder="Szukaj instrumentu, portfela…"
+              aria-label="Szukaj w transakcjach" placeholder="Szukaj instrumentu, portfela…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{
@@ -498,7 +577,7 @@ export function TransactionsPage() {
 
           {/* Portfolio filter */}
           <select
-            value={portfolioFilter}
+            aria-label="Filtr portfela" value={portfolioFilter}
             onChange={(e) => setPortfolioFilter(e.target.value)}
             style={selectStyle}
           >
@@ -510,7 +589,7 @@ export function TransactionsPage() {
 
           {/* Type filter */}
           <select
-            value={typeFilter}
+            aria-label="Filtr typu transakcji" value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
             style={selectStyle}
           >
@@ -554,7 +633,7 @@ export function TransactionsPage() {
             border: `0.5px solid ${v2Mix(V2.brand, 0.16)}`,
           }}
         >
-          <div style={{ fontFamily: V2_TYPE.ui, fontSize: 12.5, fontWeight: 650, color: V2.brand }}>
+          <div style={{ fontFamily: V2_TYPE.ui, fontSize: 12, fontWeight: 650, color: V2.brand }}>
             Zaznaczone: {selectedIds.size}
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -575,7 +654,11 @@ export function TransactionsPage() {
               Odznacz
             </button>
             <button
-              onClick={() => void handleDeleteSelectedTransactions()}
+              onClick={() => {
+                const liveIds = new Set(allTransactions.map((transaction) => transaction.id));
+                const ids = [...selectedIds].filter((id) => liveIds.has(id));
+                if (ids.length) setConfirmDelete({ rodzaj: "wiele", ids });
+              }}
               disabled={!userDataKey || bulkDeleting}
               style={{
                 padding: "7px 10px",
@@ -608,7 +691,7 @@ export function TransactionsPage() {
             border: `0.5px solid ${v2Mix(V2.loss, 0.22)}`,
           }}
         >
-          <div style={{ fontFamily: V2_TYPE.ui, fontSize: 12.5, fontWeight: 600, color: V2.loss }}>
+          <div style={{ fontFamily: V2_TYPE.ui, fontSize: 12, fontWeight: 600, color: V2.loss }}>
             {deleteError}
           </div>
           <button
@@ -631,17 +714,41 @@ export function TransactionsPage() {
       )}
 
       {/* Table */}
-      <div className="transactions-table" style={{ ...glassCard, padding: 0 }}>
+      {/* Siatka div-ów dostaje semantykę tabeli: nagłówki kolumn, wiersze i komórki.
+          Bez tego czytnik ekranu dostawał 17 wierszy po 8 kolumn jako jeden ciąg
+          tekstu, bez powiązania wartości z nazwą kolumny. */}
+      {!userDataKey && (
+        <div
+          id="powod-wylaczenia"
+          style={{
+            padding: "11px 16px",
+            borderRadius: "var(--r-md)",
+            border: `1px solid ${v2Mix(V2.brand, 0.35)}`,
+            background: v2Mix(V2.brand, 0.06),
+            fontFamily: V2_TYPE.ui,
+            fontSize: 12,
+            color: V2.brand,
+            fontWeight: 500,
+          }}
+        >
+          {publicDemo
+            ? "Tryb demo — możesz przeglądać, sortować i filtrować cały rejestr, ale edycja i usuwanie są wyłączone. Załóż konto, żeby prowadzić własny."
+            : "Odblokuj dane w panelu synchronizacji, żeby edytować i usuwać transakcje."}
+        </div>
+      )}
+
+      <div className="transactions-table" role="table" aria-label="Transakcje" style={{ ...glassCard, padding: 0 }}>
         {/* Header row */}
         <div
           className="transactions-table-header"
+          role="row"
           style={{
             display: "grid",
             gridTemplateColumns: "32px 100px minmax(0,1.5fr) minmax(0,1.2fr) 90px minmax(0,1fr) 90px 126px",
             padding: "10px 22px",
             background: v2Mix(V2.ink, 0.022),
             borderBottom: `0.5px solid ${LINE_SOFT}`,
-            borderRadius: "16px 16px 0 0",
+            borderRadius: "var(--r-xl) var(--r-xl) 0 0",
           }}
         >
           <div style={{ display: "flex", alignItems: "center" }}>
@@ -655,27 +762,57 @@ export function TransactionsPage() {
               style={{ width: 15, height: 15, accentColor: V2.brand, cursor: bulkDeleting ? "not-allowed" : "pointer" }}
             />
           </div>
-          {["Data", "Instrument", "Portfel", "Typ", "Kwota", "Waluta", "Akcje"].map((h, i) => (
-            <div
-              key={h}
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: V2.subtle,
-                textTransform: "uppercase",
-                letterSpacing: ".08em",
-                textAlign: i >= 3 ? "right" : "left",
-              }}
-            >
-              {h}
-            </div>
-          ))}
+          {["Data", "Instrument", "Portfel", "Typ", "Kwota", "Waluta", "Akcje"].map((h, i) => {
+            const klucz = h === "Data" ? "date" : h === "Kwota" ? "grossAmount" : null;
+            const aktywny = klucz !== null && sort.key === klucz;
+            const styl: CSSProperties = {
+              fontSize: 10,
+              fontWeight: 700,
+              color: aktywny ? V2.ink : V2.subtle,
+              textTransform: "uppercase",
+              letterSpacing: ".08em",
+              textAlign: i >= 3 ? "right" : "left",
+            };
+            return (
+              <div
+                key={h}
+                role="columnheader"
+                className={klucz ? "transactions-th is-sortable" : "transactions-th"}
+                aria-sort={klucz === null ? undefined : aktywny ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}
+                style={styl}
+              >
+                {klucz === null ? (
+                  h
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => toggleSort(klucz)}
+                    style={{
+                      ...styl,
+                      background: "none",
+                      border: "none",
+                      padding: 0,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      width: "100%",
+                      textAlign: styl.textAlign,
+                    }}
+                  >
+                    {h}
+                    <span aria-hidden="true" style={{ marginLeft: 4, opacity: aktywny ? 1 : 0.35 }}>
+                      {aktywny && sort.dir === "asc" ? "↑" : "↓"}
+                    </span>
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {!records && (
           <div style={{ padding: "48px 22px", textAlign: "center" }}>
-            <div style={{ fontSize: 32, opacity: 0.12, marginBottom: 12 }}>↕</div>
-            <div style={{ fontSize: 14, color: SUBTLE }}>
+            <div style={{ fontSize: 31, opacity: 0.12, marginBottom: 12 }}>↕</div>
+            <div style={{ fontSize: 13, color: SUBTLE }}>
               Odblokuj dane w panelu synchronizacji
             </div>
           </div>
@@ -688,15 +825,18 @@ export function TransactionsPage() {
         )}
 
         {displayedTransactions.map((tx) => {
-          const color = TX_COLORS[tx.transactionType] ?? SUBTLE;
+          const color = TX_BADGE;
           const label = TX_LABELS[tx.transactionType] ?? tx.transactionType;
-          const isInflow = ["cashDeposit", "dividend", "interest", "bondCoupon", "bondRedemption", "depositClose", "transferIn", "correction"].includes(tx.transactionType);
+          // Sprzedaż PRZYNOSI gotówkę. Brakowało jej na tej liście, więc każda
+          // sprzedaż w rejestrze miała minus i kolor straty — tak samo jak zakup.
+          const isInflow = ["sell", "cashDeposit", "dividend", "interest", "bondCoupon", "bondRedemption", "depositClose", "transferIn", "correction"].includes(tx.transactionType);
           const isSelected = selectedIds.has(tx.id);
 
           return (
             <div
               key={tx.id}
               className="transactions-table-row"
+              role="row"
               style={{
                 display: "grid",
                 gridTemplateColumns: "32px 100px minmax(0,1.5fr) minmax(0,1.2fr) 90px minmax(0,1fr) 90px 126px",
@@ -709,11 +849,11 @@ export function TransactionsPage() {
               onMouseEnter={(e) => (e.currentTarget.style.background = v2Mix(V2.ink, 0.022))}
               onMouseLeave={(e) => (e.currentTarget.style.background = isSelected ? v2Mix(V2.brand, 0.055) : "transparent")}
             >
-              <div className="transactions-table-select" style={{ display: "flex", alignItems: "center" }}>
+              <div role="cell" className="transactions-table-select" style={{ display: "flex", alignItems: "center" }}>
                 <input
                   type="checkbox"
                   checked={isSelected}
-                  aria-label={`Zaznacz transakcję ${tx.instrumentName ?? tx.transactionType}`}
+                  aria-label={`Zaznacz transakcję: ${label} · ${tx.instrumentName ?? tx.portfolioName} · ${fmtDate(tx.date)}`}
                   onChange={() => toggleSelected(tx.id)}
                   disabled={bulkDeleting || deletingId === tx.id}
                   style={{ width: 15, height: 15, accentColor: V2.brand, cursor: bulkDeleting || deletingId === tx.id ? "not-allowed" : "pointer" }}
@@ -721,14 +861,14 @@ export function TransactionsPage() {
               </div>
 
               {/* Date */}
-              <div className="transactions-table-date" style={{ fontFamily: V2_TYPE.mono, fontSize: 11.5, color: V2.muted }}>{fmtDate(tx.date)}</div>
+              <div role="cell" className="transactions-table-date" style={{ fontFamily: V2_TYPE.mono, fontSize: 11, color: V2.muted }}>{fmtDate(tx.date)}</div>
 
               {/* Instrument */}
-              <div className="transactions-table-instrument">
+              <div role="cell" className="transactions-table-instrument">
                 {tx.instrumentName ? (
                   <>
-                    <div style={{ fontSize: 13.5, fontWeight: 700, color: V2.ink }}>{tx.instrumentName}</div>
-                    <div style={{ fontSize: 11.5, color: V2.subtle, marginTop: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: V2.ink }}>{tx.instrumentName}</div>
+                    <div style={{ fontSize: 11, color: V2.subtle, marginTop: 1 }}>
                       {tx.instrumentSymbol}
                       {tx.quantity != null && ` · ${tx.quantity.toLocaleString("pl-PL", { maximumFractionDigits: 6 })} szt.`}
                     </div>
@@ -739,42 +879,46 @@ export function TransactionsPage() {
               </div>
 
               {/* Portfolio */}
-              <div className="transactions-table-portfolio" style={{ fontFamily: V2_TYPE.mono, fontSize: 11.5, color: V2.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <div role="cell" className="transactions-table-portfolio" style={{ fontFamily: V2_TYPE.mono, fontSize: 11, color: V2.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {tx.portfolioName}
               </div>
 
               {/* Type badge */}
-              <div className="transactions-table-type" style={{ textAlign: "right" }}>
+              <div role="cell" className="transactions-table-type" style={{ textAlign: "right" }}>
                 <V2Badge label={label} color={color} />
               </div>
 
               {/* Amount */}
-              <div className="transactions-table-amount" style={{ textAlign: "right" }}>
+              <div role="cell" className="transactions-table-amount" style={{ textAlign: "right" }}>
                 <div
                   style={{
                     fontFamily: V2_TYPE.serif,
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: 500,
-                    color: isInflow ? PROFIT : tx.transactionType === "buy" ? BLUE : LOSS,
+                    // Kolor kwoty niesie KIERUNEK. Zakup to wyjście gotówki, ale nie strata —
+                    // dostaje ton neutralny, a nie token klasy akcji, który tu nic nie znaczył.
+                    color: isInflow ? PROFIT : tx.transactionType === "buy" ? MUTED : LOSS,
                     fontVariantNumeric: "tabular-nums",
                   }}
                 >
                   {isInflow ? "+" : "−"}{fmt(tx.grossAmount, 2)}
                 </div>
                 {(tx.fees > 0 || tx.taxes > 0) && (
-                  <div style={{ fontFamily: V2_TYPE.mono, fontSize: 10.5, color: V2.subtle }}>
+                  <div style={{ fontFamily: V2_TYPE.mono, fontSize: 10, color: V2.subtle }}>
                     prowizja {fmt(tx.fees + tx.taxes, 2)}
                   </div>
                 )}
               </div>
 
               {/* Currency */}
-              <div className="transactions-table-currency" style={{ textAlign: "right", fontFamily: V2_TYPE.mono, fontSize: 11.5, color: V2.muted, fontWeight: 500 }}>
+              <div role="cell" className="transactions-table-currency" style={{ textAlign: "right", fontFamily: V2_TYPE.mono, fontSize: 11, color: V2.muted, fontWeight: 500 }}>
                 {tx.currency}
               </div>
 
-              <div className="transactions-table-actions" style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <div role="cell" className="transactions-table-actions" style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                 <button
+                  aria-label={`Edytuj transakcję: ${label} · ${tx.instrumentName ?? tx.portfolioName} · ${fmtDate(tx.date)}`}
+                  aria-describedby={!userDataKey ? "powod-wylaczenia" : undefined}
                   onClick={() => setEditingTransactionId(tx.id)}
                   disabled={!userDataKey}
                   style={{
@@ -791,7 +935,15 @@ export function TransactionsPage() {
                   Edytuj
                 </button>
                 <button
-                  onClick={() => void handleDeleteTransaction(tx.id)}
+                  aria-label={`Usuń transakcję: ${label} · ${tx.instrumentName ?? tx.portfolioName} · ${fmtDate(tx.date)}`}
+                  aria-describedby={!userDataKey ? "powod-wylaczenia" : undefined}
+                  onClick={() =>
+                    setConfirmDelete({
+                      rodzaj: "jedna",
+                      id: tx.id,
+                      opis: `${label} · ${tx.instrumentName ?? tx.portfolioName} · ${fmtDate(tx.date)}`,
+                    })
+                  }
                   disabled={!userDataKey || deletingId === tx.id}
                   style={{
                     padding: "6px 10px",
@@ -831,6 +983,26 @@ export function TransactionsPage() {
         initialValue={editingTransaction}
         onClose={() => setEditingTransactionId(null)}
       />
+
+    <ConfirmDialog
+      open={confirmDelete !== null}
+      title={confirmDelete?.rodzaj === "wiele" ? "Usunąć zaznaczone transakcje?" : "Usunąć transakcję?"}
+      body={
+        confirmDelete?.rodzaj === "wiele"
+          ? `${confirmDelete.ids.length} ${pluralPl(confirmDelete.ids.length, "transakcja", "transakcje", "transakcji")} zniknie z rejestru. Cofniesz to zaraz po usunięciu.`
+          : confirmDelete?.rodzaj === "jedna"
+            ? `${confirmDelete.opis}. Cofniesz to zaraz po usunięciu.`
+            : undefined
+      }
+      onCancel={() => setConfirmDelete(null)}
+      onConfirm={() => {
+        const zadanie = confirmDelete;
+        setConfirmDelete(null);
+        if (zadanie?.rodzaj === "jedna") void handleDeleteTransaction(zadanie.id);
+        else if (zadanie?.rodzaj === "wiele") void handleDeleteSelectedTransactions();
+      }}
+    />
+
     </div>
   );
 }

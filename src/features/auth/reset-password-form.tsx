@@ -70,7 +70,7 @@ export function ResetPasswordForm() {
     borderRadius: 10,
     border: `0.5px solid ${COLORS.border}`,
     background: COLORS.surface,
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.text,
     outline: "none",
     boxShadow: "inset 0 1px 2px rgba(28,49,68,0.04)",
@@ -101,7 +101,7 @@ export function ResetPasswordForm() {
     border: `0.5px solid ${COLORS.border}`,
     background: COLORS.surface,
     color: COLORS.text,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 600,
     textDecoration: "none",
   };
@@ -118,7 +118,7 @@ export function ResetPasswordForm() {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={panelStyle}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: COLORS.text, marginBottom: 4 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: COLORS.text, marginBottom: 4 }}>
             Link wygasł lub jest nieprawidłowy
           </div>
           <p style={{ fontSize: 13, color: COLORS.textMuted, lineHeight: 1.5 }}>
@@ -137,7 +137,7 @@ export function ResetPasswordForm() {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={panelStyle}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: COLORS.text, marginBottom: 4 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: COLORS.text, marginBottom: 4 }}>
             Hasło zmienione
           </div>
           <p style={{ fontSize: 13, color: COLORS.textMuted, lineHeight: 1.5 }}>
@@ -198,7 +198,7 @@ export function ResetPasswordForm() {
           border: "none",
           background: isLoading ? COLORS.surfaceAlt : COLORS.text,
           color: isLoading ? COLORS.textMuted : COLORS.white,
-          fontSize: 14,
+          fontSize: 13,
           fontWeight: 600,
           cursor: isLoading ? "not-allowed" : "pointer",
           boxShadow: isLoading ? "none" : SHADOWS.button,

@@ -256,7 +256,7 @@ export function TourOverlay({
   }
 
   const btn = (primary: boolean): React.CSSProperties => ({
-    fontFamily: V2_TYPE.ui, fontWeight: 600, fontSize: 12.5, borderRadius: 9,
+    fontFamily: V2_TYPE.ui, fontWeight: 600, fontSize: 12, borderRadius: 9,
     padding: "9px 15px", cursor: "pointer",
     border: primary ? "none" : `1px solid ${V2.line}`,
     background: primary ? V2.brand : "transparent",
@@ -321,13 +321,13 @@ export function TourOverlay({
           className="onboarding-tip-content"
           style={{ animation: `onboarding-tip-content-in .48s ${EASE} .1s both` }}
         >
-          <div style={{ fontFamily: V2_TYPE.mono, fontSize: 10, letterSpacing: ".08em", color: V2.gold }}>
+          <div style={{ fontFamily: V2_TYPE.mono, fontSize: 10, letterSpacing: ".08em", color: V2.brand }}>
             TOUR · KROK {stepIndex + 1} / {steps.length}
           </div>
-          <div style={{ fontFamily: V2_TYPE.serif, fontWeight: 500, fontSize: 19, marginTop: 7, lineHeight: 1.2 }}>
+          <div style={{ fontFamily: V2_TYPE.serif, fontWeight: 500, fontSize: 18, marginTop: 7, lineHeight: 1.2 }}>
             {step.title}
           </div>
-          <p style={{ fontSize: 12.5, lineHeight: 1.6, color: V2.muted, marginTop: 8 }}>{step.body}</p>
+          <p style={{ fontSize: 12, lineHeight: 1.6, color: V2.muted, marginTop: 8 }}>{step.body}</p>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14 }}>
             {stepIndex > 0 && (
               <button style={btn(false)} onClick={() => goTo(-1)}>

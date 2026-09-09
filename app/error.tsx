@@ -30,7 +30,7 @@ export default function GlobalError({
           textAlign: "center",
         }}
       >
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: COLORS.text, letterSpacing: "-0.01em" }}>
+        <h1 style={{ fontSize: 21, fontWeight: 700, color: COLORS.text, letterSpacing: "-0.01em" }}>
           Coś poszło nie tak
         </h1>
         <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 8, lineHeight: 1.5 }}>
@@ -52,7 +52,7 @@ export default function GlobalError({
               border: "none",
               background: COLORS.text,
               color: COLORS.white,
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: 600,
               cursor: "pointer",
               boxShadow: SHADOWS.button,
@@ -69,7 +69,7 @@ export default function GlobalError({
               border: `0.5px solid ${COLORS.border}`,
               background: COLORS.surface,
               color: COLORS.text,
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: 600,
               textDecoration: "none",
             }}

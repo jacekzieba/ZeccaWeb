@@ -32,9 +32,9 @@ export function ImportProgressIndicator({
         fontFamily: V2_TYPE.ui,
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12.5 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12 }}>
         <span>{label}</span>
-        <span style={{ color: V2.brand, fontFamily: V2_TYPE.mono, fontWeight: 700 }}>
+        <span style={{ color: V2.brand, fontFamily: V2_TYPE.mono, fontWeight: 500 }}>
           {progress}%
         </span>
       </div>

@@ -139,7 +139,7 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "18px 20px", borderBottom: `0.5px solid ${V2.line2}` }}>
           <div>
-            <div style={{ fontFamily: V2_TYPE.serif, fontSize: 22, fontWeight: 500 }}>Import zarobków</div>
+            <div style={{ fontFamily: V2_TYPE.serif, fontSize: 21, fontWeight: 500 }}>Import zarobków</div>
             <div style={{ color: V2.subtle, fontSize: 12, marginTop: 3 }}>CSV lub pierwszy arkusz XLSX · zapis dopiero po podglądzie</div>
           </div>
           <button type="button" aria-label="Zamknij" onClick={onClose} style={iconButtonStyle}>
@@ -203,7 +203,7 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
               {preview.issues.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                   {preview.issues.map((issue, index) => (
-                    <div key={`${issue.rowNumber}-${index}`} style={{ color: issue.severity === "error" ? V2.loss : V2.gold, fontSize: 12 }}>
+                    <div key={`${issue.rowNumber}-${index}`} style={{ color: issue.severity === "error" ? V2.loss : V2.brand, fontSize: 12 }}>
                       {issue.rowNumber ? `Wiersz ${issue.rowNumber}: ` : ""}{issue.message}
                     </div>
                   ))}
@@ -247,7 +247,7 @@ function Summary({ label, value, color }: { label: string; value: number; color:
   return (
     <div aria-label={`${label}: ${value}`} style={{ padding: "10px 11px", borderRadius: 9, background: V2.card2 }}>
       <div style={sectionLabelStyle}>{label}</div>
-      <div style={{ marginTop: 3, color, fontFamily: V2_TYPE.mono, fontSize: 20, fontWeight: 700 }}>{value}</div>
+      <div style={{ marginTop: 3, color, fontFamily: V2_TYPE.mono, fontSize: 21, fontWeight: 500 }}>{value}</div>
     </div>
   );
 }
@@ -264,7 +264,7 @@ function ImportRow({ item }: { item: EarningsImportItem }) {
       <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12 }}>
         {payload.year}-{String(payload.month).padStart(2, "0")} · {title}
       </span>
-      <span style={{ color: payload.entryKind === "earning" ? V2.ink : V2.loss, fontFamily: V2_TYPE.mono, fontSize: 11.5, whiteSpace: "nowrap" }}>
+      <span style={{ color: payload.entryKind === "earning" ? V2.ink : V2.loss, fontFamily: V2_TYPE.mono, fontSize: 11, whiteSpace: "nowrap" }}>
         {payload.entryKind === "burden" ? "−" : ""}{amount?.toLocaleString("pl-PL", { maximumFractionDigits: 2 })} PLN
       </span>
     </div>
@@ -273,7 +273,7 @@ function ImportRow({ item }: { item: EarningsImportItem }) {
 
 const sectionLabelStyle = {
   color: V2.subtle,
-  fontSize: 10.5,
+  fontSize: 10,
   fontWeight: 700,
   letterSpacing: ".1em",
   textTransform: "uppercase" as const,

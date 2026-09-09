@@ -169,6 +169,30 @@ export async function upsertEncryptedRecord(
   if (error) throw error;
 }
 
+/** Cofnięcie miękkiego usunięcia — czyści `deleted_at`.
+ *
+ * Usuwanie nigdy nie kasowało szyfrogramu: `softDeleteEncryptedRecord` stawia
+ * wyłącznie znacznik, a rekord znika z widoku, bo budowniczy migawki go
+ * odfiltrowuje. Przywrócenie to więc ta sama kwerenda z `null` — dane leżą
+ * nietknięte przez cały czas.
+ */
+export async function restoreEncryptedRecord(
+  supabase: BrowserSupabaseClient,
+  payload: Pick<UpsertPayload, "id" | "user_id" | "record_type" | "updated_at">,
+): Promise<void> {
+  const { error } = await supabase
+    .from("encrypted_records")
+    .update({
+      deleted_at: null,
+      updated_at: payload.updated_at,
+    } as never)
+    .eq("id", payload.id)
+    .eq("user_id", payload.user_id)
+    .eq("record_type", payload.record_type);
+
+  if (error) throw error;
+}
+
 export async function softDeleteEncryptedRecord(
   supabase: BrowserSupabaseClient,
   payload: Pick<UpsertPayload, "id" | "user_id" | "record_type" | "updated_at">,

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { COLORS, SHADOWS, TYPOGRAPHY } from "@/lib/design-tokens";
-import { formatAxisValue } from "@/lib/money";
+import { formatAxisValue, currencyLabel } from "@/lib/money";
 import type { ValuationPoint } from "@/domain/models/investor-data";
 
 // Wpłaty to linia odniesienia, nie wynik — dlatego neutralny grafit, a nie kolor
@@ -206,7 +206,7 @@ export function ValueVsDepositsChart({
             />
             <text
               x={pl - 8} y={ty(v) + 4}
-              textAnchor="end" fontSize="10.5"
+              textAnchor="end" fontSize="10"
               fill={COLORS.subtle}
               fontFamily={TYPOGRAPHY.mono}
             >
@@ -234,7 +234,7 @@ export function ValueVsDepositsChart({
                   x={tx(safeIdx)}
                   y={pt + H + 22}
                   textAnchor="middle"
-                  fontSize="10.5"
+                  fontSize="10"
                   fill={COLORS.subtle}
                   fontFamily={TYPOGRAPHY.system}
                 >
@@ -276,10 +276,10 @@ export function ValueVsDepositsChart({
           <div style={{ color: COLORS.textMuted, fontSize: 10, letterSpacing: ".04em", marginBottom: 2 }}>
             {value[hover].label}
           </div>
-          <Row color={VALUE_COLOR} label="Wartość" value={`${fmt(valueVals[hover])} ${currency}`} />
-          <Row color={DEPOSIT_COLOR} label="Wpłaty" value={`${fmt(depositVals[hover])} ${currency}`} />
+          <Row color={VALUE_COLOR} label="Wartość" value={`${fmt(valueVals[hover])} ${currencyLabel(currency)}`} />
+          <Row color={DEPOSIT_COLOR} label="Wpłaty" value={`${fmt(depositVals[hover])} ${currencyLabel(currency)}`} />
           <div style={{ marginTop: 3, paddingTop: 3, borderTop: `0.5px solid ${COLORS.border}`, fontWeight: 700, color: gain >= 0 ? COLORS.profit : COLORS.loss }}>
-            {gain >= 0 ? "+" : ""}{fmt(gain)} {currency}
+            {gain >= 0 ? "+" : ""}{fmt(gain)} {currencyLabel(currency)}
           </div>
         </div>
       )}
@@ -289,7 +289,7 @@ export function ValueVsDepositsChart({
 
 function Legend({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: TYPOGRAPHY.system, fontSize: 11.5, color: COLORS.muted }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: TYPOGRAPHY.system, fontSize: 11, color: COLORS.muted }}>
       <span
         style={{
           width: 16,
@@ -310,7 +310,7 @@ function Row({ color, label, value }: { color: string; label: string; value: str
         <span style={{ width: 8, height: 8, borderRadius: 2, background: color }} />
         {label}
       </span>
-      <span style={{ fontFamily: TYPOGRAPHY.mono, fontWeight: 600 }}>{value}</span>
+      <span style={{ fontFamily: TYPOGRAPHY.mono, fontWeight: 500 }}>{value}</span>
     </div>
   );
 }

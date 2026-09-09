@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useState, useEffect, useMemo, type CSSProperties } from "react";
+import { useCallback, useState, useEffect, useMemo, useRef, type CSSProperties } from "react";
 import type { Route } from "next";
 import {
   ArrowDownUp,
@@ -43,6 +43,8 @@ import { clearCachedUserDataKey } from "@/sync/encryption/key-cache";
 import { initials, useProfile } from "@/features/profile/profile-store";
 import { AppLock } from "@/features/auth/app-lock";
 import { useTranslation } from "@/features/i18n/translate";
+import { currencyLabel } from "@/lib/money";
+import { StatusAnnouncer } from "@/components/feedback/status-announcer";
 
 declare global {
   interface Window {
@@ -298,7 +300,7 @@ function SidebarContent({ onNav, publicDemo = false }: { onNav?: () => void; pub
                     <span
                       style={{
                         fontFamily: TYPOGRAPHY.mono,
-                        fontSize: 10.5,
+                        fontSize: 10,
                         color: active ? "rgba(255,255,255,0.8)" : COLORS.subtle,
                         flexShrink: 0,
                       }}
@@ -326,19 +328,19 @@ function SidebarContent({ onNav, publicDemo = false }: { onNav?: () => void; pub
             position: "relative", overflow: "hidden",
           }}
         >
-          <div style={{ fontSize: 9.5, fontWeight: 700, color: "rgba(244,242,230,0.62)", textTransform: "uppercase", letterSpacing: ".13em", position: "relative" }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(244,242,230,0.62)", textTransform: "uppercase", letterSpacing: ".13em", position: "relative" }}>
             {t("Łączna wartość")}
           </div>
-          <div style={{ fontFamily: TYPOGRAPHY.serif, fontSize: 27, fontWeight: 500, marginTop: 5, position: "relative", fontVariantNumeric: "tabular-nums", letterSpacing: "-.01em" }}>
+          <div style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 26, fontWeight: 500, marginTop: 5, position: "relative", fontVariantNumeric: "tabular-nums", letterSpacing: "-.01em", wordSpacing: "-.26em" }}>
             {totalValue == null ? "—" : fmtNavNumber(totalValue, numberLocale)}
-            <span style={{ fontSize: 13, fontStyle: "italic", opacity: 0.6, marginLeft: 5 }}>{displayCurrency}</span>
+            <span style={{ fontSize: 13, fontStyle: "italic", opacity: 0.6, marginLeft: 5 }}>{currencyLabel(displayCurrency)}</span>
           </div>
-          <div style={{ fontSize: 11.5, color: "#7FD9A8", fontWeight: 600, marginTop: 4, fontVariantNumeric: "tabular-nums", position: "relative" }}>
+          <div style={{ fontSize: 11, color: "#7FD9A8", fontWeight: 600, marginTop: 4, fontVariantNumeric: "tabular-nums", position: "relative" }}>
             {changePLN == null || changePct == null
               ? t("Ładowanie danych")
-              : `${changeSign}${fmtNavNumber(changePLN, numberLocale)} ${displayCurrency} (${changePct >= 0 ? "+" : ""}${fmtNavNumber(changePct, numberLocale, 2)}%)`}
+              : `${changeSign}${fmtNavNumber(changePLN, numberLocale)} ${currencyLabel(displayCurrency)} (${changePct >= 0 ? "+" : ""}${fmtNavNumber(changePct, numberLocale, 2)}%)`}
           </div>
-          <div style={{ fontSize: 10.5, color: "rgba(244,242,230,0.50)", marginTop: 1, position: "relative" }}>{t("vs 30 dni temu")}</div>
+          <div style={{ fontSize: 10, color: "rgba(244,242,230,0.50)", marginTop: 1, position: "relative" }}>{t("vs 30 dni temu")}</div>
         </div>
       </div>
 
@@ -377,6 +379,26 @@ export function AppShell({
   publicDemo?: boolean;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const drawerRef = useRef<HTMLElement | null>(null);
+  const drawerTriggerRef = useRef<HTMLButtonElement | null>(null);
+
+  // Szuflada jest warstwą modalną, więc zachowuje się jak dialog: Escape zamyka,
+  // ognisko wchodzi do środka i wraca na przycisk, który ją otworzył. Wcześniej
+  // Escape nic nie robił, a Tab wędrował po przyciskach nagłówka za nią.
+  useEffect(() => {
+    if (!drawerOpen) return;
+    drawerRef.current?.focus();
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      setDrawerOpen(false);
+    }
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown, true);
+      drawerTriggerRef.current?.focus();
+    };
+  }, [drawerOpen]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [accountOnboardingCompleted, setAccountOnboardingCompleted] = useState(
     initialUser?.onboardingCompleted ?? true,
@@ -456,6 +478,11 @@ export function AppShell({
 
   return (
     <AppLock>
+    {/* Osiemnaście przystanków Tab przez menu boczne dzieliło klawiaturę od treści
+        na każdym wejściu na stronę. Odsyłacz jest pierwszy w kolejności i pokazuje
+        się dopiero po sfokusowaniu. */}
+    <a href="#tresc" className="skip-link">Przejdź do treści</a>
+    <StatusAnnouncer />
     <div style={{ minHeight: "100vh", background: V2.page, padding: `${PAD}px ${PAD}px ${PAD + 8}px`, overflowX: "hidden" }}>
 
       {/* ── FLOATING TOPBAR ──────────────────────────────────── */}
@@ -495,7 +522,7 @@ export function AppShell({
 
           {/* Mobile: brand text */}
           {!isDesktop && (
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 800, color: COLORS.text, letterSpacing: ".01em" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, color: COLORS.text, letterSpacing: ".01em" }}>
               <Image src="/zecca-logo.png" alt="" width={24} height={24} style={{ width: 24, height: 24, borderRadius: 7, objectFit: "cover" }} />
               Zecca
             </span>
@@ -505,7 +532,7 @@ export function AppShell({
           {isDesktop && (
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <Image src="/zecca-logo.png" alt="" width={24} height={24} style={{ width: 24, height: 24, borderRadius: 7, objectFit: "cover" }} />
-              <span style={{ fontSize: 13, fontWeight: 800, color: COLORS.text, letterSpacing: ".02em" }}>Zecca</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: COLORS.text, letterSpacing: ".02em" }}>Zecca</span>
               <span
                 style={{
                   fontSize: 10, color: COLORS.subtle,
@@ -588,7 +615,7 @@ export function AppShell({
               fontFamily: "inherit",
             }}
           >
-            <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
+            <span style={{ fontSize: 15, lineHeight: 1 }}>+</span>
             {isDesktop && "Dodaj transakcję"}
           </button>
 
@@ -699,7 +726,7 @@ export function AppShell({
             position: "fixed", right: 16, bottom: 16, zIndex: 902,
             fontSize: 11, fontWeight: 700,
             letterSpacing: ".08em", textTransform: "uppercase",
-            color: V2.gold, background: "rgba(255,252,244,.82)",
+            color: V2.brand, background: "rgba(255,252,244,.82)",
             padding: "6px 11px", borderRadius: 99,
             border: "0.5px solid rgba(162,119,46,.35)",
             backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
@@ -768,7 +795,7 @@ function SyncUnlockGate({
                 alignItems: "center",
                 justifyContent: "center",
                 fontFamily: TYPOGRAPHY.serif,
-                fontSize: 17,
+                fontSize: 18,
                 fontWeight: 600,
                 boxShadow: SHADOWS.button,
               }}
@@ -782,11 +809,11 @@ function SyncUnlockGate({
               />
             </div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text }}>Zecca</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.text }}>Zecca</div>
               <div
                 style={{
                   fontFamily: TYPOGRAPHY.mono,
-                  fontSize: 9.5,
+                  fontSize: 10,
                   color: COLORS.subtle,
                   textTransform: "uppercase",
                   letterSpacing: ".10em",
@@ -797,7 +824,7 @@ function SyncUnlockGate({
               </div>
             </div>
           </div>
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: COLORS.text, letterSpacing: "-0.01em" }}>
+          <h1 style={{ fontSize: 21, fontWeight: 700, color: COLORS.text, letterSpacing: "-0.01em" }}>
             Odblokuj swoje dane
           </h1>
           <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 6, lineHeight: 1.5 }}>

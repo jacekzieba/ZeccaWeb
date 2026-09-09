@@ -40,12 +40,12 @@ export function DataQualityBanner({
         display: "flex",
         flexDirection: "column",
         gap: 4,
-        border: `0.5px solid ${v2Mix(COLORS.gold, 0.4)}`,
-        background: v2Mix(COLORS.gold, 0.08),
+        border: `0.5px solid ${v2Mix(COLORS.brand, 0.4)}`,
+        background: v2Mix(COLORS.brand, 0.08),
         borderRadius: 12,
         padding: "10px 14px",
         fontFamily: TYPOGRAPHY.system,
-        fontSize: 12.5,
+        fontSize: 12,
         color: COLORS.text,
       }}
     >

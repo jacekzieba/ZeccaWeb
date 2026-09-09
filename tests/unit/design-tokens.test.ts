@@ -110,7 +110,15 @@ describe("warstwa zgodnosci", () => {
 
   it("klucze obu warstw zostały nietknięte", () => {
     expect(Object.keys(COLORS)).toHaveLength(28);
-    expect(Object.keys(V2)).toHaveLength(20);
+    expect(Object.keys(V2)).toHaveLength(19);
+  });
+
+  // `gold` był drugim aliasem --asset-bonds. Trzy pliki nazywały go AMBER,
+  // przez co „bursztynowe" elementy świeciły kolorem klasy aktywu, a wykresy
+  // składu rysowały dwa wycinki tym samym kolorem. Alias bez własnej wartości
+  // wraca jako pomyłka, więc bramka pilnuje, żeby nie wrócił.
+  it("V2 nie ma aliasu gold", () => {
+    expect(V2).not.toHaveProperty("gold");
   });
 
   it("v2Glass zniknął — system nie ma cieni", async () => {

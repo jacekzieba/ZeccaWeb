@@ -41,7 +41,7 @@ export function StatCard({ label, value, sub, spark, accent }: StatCardProps) {
       )}
       <div
         style={{
-          fontSize: 10.5,
+          fontSize: 10,
           fontWeight: 700,
           color: COLORS.subtle,
           textTransform: "uppercase",

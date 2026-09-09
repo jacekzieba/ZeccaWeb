@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { COLORS, TYPOGRAPHY } from "@/lib/design-tokens";
+import { formatShare } from "@/lib/money";
 
 type Slice = { label: string; percent: number };
 
@@ -90,7 +91,7 @@ export function AllocationDonut({ slices }: { slices: Slice[] }) {
             <text x={cx} y={cy + 12} textAnchor="middle" fontSize="18" fill={COLORS.text} fontWeight="700" fontFamily={TYPOGRAPHY.system}>
               {slices.length}
             </text>
-            <text x={cx} y={cy + 26} textAnchor="middle" fontSize="9.5" fill={COLORS.subtle} fontFamily={TYPOGRAPHY.system}>
+            <text x={cx} y={cy + 26} textAnchor="middle" fontSize="10" fill={COLORS.subtle} fontFamily={TYPOGRAPHY.system}>
               klas
             </text>
           </g>
@@ -103,8 +104,8 @@ export function AllocationDonut({ slices }: { slices: Slice[] }) {
               pointerEvents: "none",
             }}
           >
-            <text data-testid="allocation-donut-active-percent" x={cx} y={cy - 2} textAnchor="middle" fontSize="22" fill={COLORS.text} fontWeight="700" style={{ fontVariantNumeric: "tabular-nums" }} fontFamily={TYPOGRAPHY.system}>
-              {activeSlice ? `${activeSlice.percent.toFixed(1)}%` : ""}
+            <text data-testid="allocation-donut-active-percent" x={cx} y={cy - 2} textAnchor="middle" fontSize="21" fill={COLORS.text} fontWeight="700" style={{ fontVariantNumeric: "tabular-nums" }} fontFamily={TYPOGRAPHY.system}>
+              {activeSlice ? formatShare(activeSlice.percent) : ""}
             </text>
             <text data-testid="allocation-donut-active-label" x={cx} y={cy + 18} textAnchor="middle" fontSize="11" fill={COLORS.subtle} fontWeight="600" fontFamily={TYPOGRAPHY.system}>
               {activeSlice ? clampLabel(activeSlice.label) : ""}
@@ -151,7 +152,7 @@ export function AllocationDonut({ slices }: { slices: Slice[] }) {
               <span
                 style={{
                   flex: 1,
-                  fontSize: 12.5,
+                  fontSize: 12,
                   color: COLORS.text,
                   fontWeight: isActive ? 600 : 400,
                   whiteSpace: "nowrap",
@@ -169,7 +170,7 @@ export function AllocationDonut({ slices }: { slices: Slice[] }) {
                   fontVariantNumeric: "tabular-nums",
                 }}
               >
-                {slice.percent.toFixed(1)}%
+                {formatShare(slice.percent)}
               </span>
           </button>
           );

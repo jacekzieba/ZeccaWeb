@@ -1,1366 +1,1267 @@
-/* Landing page styles for zecca.pl — imported from the Claude Design project
-   "Investor" (Zecca - Landing.html). All selectors are scoped under .zlanding
-   so nothing leaks into the rest of the app. */
+/* Landing page zecca.pl — kierunek „Depozyt".
+   Bursztyn zatopiony w szkle: fotografia niesie atmosferę, konstrukcję niesie cisza.
+   Paleta próbkowana z wygenerowanych zdjęć — patrz .design-work/depozyt.
+   Zakres: wyłącznie landing. Tokeny aplikacji (src/design/tokens.css) nietknięte. */
+
+.zlanding {
+  --vault: #020A0B;
+  --vault-2: #06110F;
+  --vault-3: #0B1917;
+  --ink: #ECEFEC;
+  --ink-2: #9FB0AA;
+  --ink-3:#80958E;
+  --amber: #F0A43C;
+  --amber-hi: #FFCE8A;
+  --amber-lo: #8A5A16;
+  --up: #4FC79A;
+  --down: #E2685A;
+  --hair: rgba(198, 232, 222, 0.11);
+  --hair-2: rgba(198, 232, 222, 0.06);
+
+  --display: var(--font-landing-display), Didot, "Bodoni MT", Georgia, serif;
+  --text: var(--font-landing-text), "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  --shell: 1320px;
+  --gut: 60px;
+
+  /* Jedna siatka na całą stronę: 12 kolumn po 88px, rynna 24px.
+     12 x 88 + 11 x 24 = 1320 = --shell. Linie startu kolumn przy 1440px wypadają
+     na 60, 172, 284, 396, 508, 620, 732, 844, 956, 1068, 1180, 1292.
+     Wcześniej strona miała pięć niezależnych układów kolumn — 440/440/440,
+     408/408/408 z rynną 48, 628/628 z rynną 64, 420/660 oraz stopkę z ułamkowym
+     517,7/345,1/345,2 (czyli auto, nie projekt). Żaden z nich nie trafiał w drugi,
+     więc prawa szyna skakała między 956, 980 i 1008. Teraz każdy blok deklaruje
+     rozpiętość w kolumnach tej jednej siatki. */
+  --col-gap: 24px;
+
+  position: relative;
+  background: var(--vault);
+  color: var(--ink);
+  font-family: var(--text);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
 
 .zlanding *,
 .zlanding *::before,
-.zlanding *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+.zlanding *::after { box-sizing: border-box; }
 
-.zlanding {
-  /* Nazwy lokalne trzymają rolę, nie krój: --display to grotesk nagłówkowy,
-     --text to szeryf prozy, --mono to krój każdej liczby. */
-  --display: var(--font-display);
-  --text: var(--font-text);
-  --mono: var(--font-code);
-  --r-sm: 10px;
-  --r-md: 14px;
-  --r-lg: 20px;
-  --r-xl: 28px;
-  --shadow-card: none;
-  --shadow-pop: none;
+.zlanding a { color: var(--amber); text-decoration: none; }
+.zlanding a:hover { color: var(--amber-hi); }
+.zlanding :focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; border-radius: 2px; }
+.zlanding [id] { scroll-margin-top: 96px; }
 
-  /* Pine */
-  --page: var(--ground);
-  --board: var(--ground);
-  --card: var(--surface);
-  --card-2: var(--surface-2);
-  --muted: var(--ink-muted);
-  --subtle: var(--ink-faint);
-  --brand: var(--accent);
-  --brand-deep: var(--accent);
-  --brand-tint: color-mix(in srgb, var(--accent) 10%, transparent);
-  --on-brand: var(--on-accent);
-  --gold: var(--asset-bonds);
-  --gold-tint: color-mix(in srgb, var(--asset-bonds) 13%, transparent);
-  --profit: var(--up);
-  --loss: var(--down);
-  --equity: var(--asset-equity);
-  --bonds: var(--asset-bonds);
-  --deposit: var(--asset-deposit);
-  --cash: var(--asset-cash);
-  --spec: transparent;
-
-  background: var(--board);
-  min-height: 100vh;
-  font-family: var(--text);
-  color: var(--ink);
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-  overflow-x: hidden;
-}
-
-.zlanding a {
-  color: inherit;
-  text-decoration: none;
-}
-.zlanding [id] {
-  scroll-margin-top: 76px;
-}
 .zlanding .wrap {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 0 32px;
+  width: min(100% - var(--gut) * 2, var(--shell));
+  margin-inline: auto;
 }
 
-/* ============ NAV ============ */
+/* Nośnik siatki. Dzieci deklarują `grid-column: span n`. */
+.zlanding .grid-12 {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--col-gap);
+}
+
+/* ── Typografia ─────────────────────────────────────────────────────────── */
+.zlanding h1,
+.zlanding h2,
+.zlanding h3,
+.zlanding .disp {
+  font-family: var(--display);
+  font-weight: 400;
+  line-height: 1.04;
+  letter-spacing: -0.012em;
+  margin: 0;
+  text-wrap: balance;
+}
+.zlanding h1 { font-size: clamp(38px, 5.6vw, 82px); line-height: 1.02; }
+.zlanding h2 { font-size: clamp(32px, 3.4vw, 52px); }
+.zlanding h3 { font-size: clamp(19px, 1.6vw, 23px); }
+.zlanding .card h3,
+.zlanding .investor-row h3,
+.zlanding .platform-story h3 {
+  font-family: var(--text);
+  font-weight: 500;
+  font-size: 17px;
+  line-height: 1.32;
+  letter-spacing: -0.005em;
+}
+.zlanding .asset-rows dt { display: flex; align-items: center; gap: 13px; font-family: var(--text); font-weight: 500; font-size: 17px; }
+.zlanding .register-note,
+.zlanding .closing-note,
+.zlanding .asset-note,
+.zlanding .beta-banner { font-family: var(--text); font-weight: 400; font-size: 13px; letter-spacing: 0; }
+.zlanding em { font-style: italic; color: var(--amber); }
+
+.zlanding p { margin: 0; line-height: 1.62; color: var(--ink-2); text-wrap: pretty; }
+.zlanding .lede { font-size: clamp(16px, 1.3vw, 18px); font-weight: 300; }
+.zlanding .sec-desc { font-size: clamp(15px, 1.15vw, 16px); }
+
+/* Intl rozdziela tysiące spacją nierozdzielającą. W kroju mono ta spacja ma
+   pełną szerokość znaku, więc „306 424" rozjeżdżało się na dwie grupy z dziurą
+   szerszą od cyfry. Ujemne word-spacing sprowadza przerwę do proporcji, jaką
+   miała w grotesku, nie ruszając odstępów między cyframi. */
+.zlanding .product-value,
+.zlanding .register-value,
+.zlanding .alloc-center-value,
+.zlanding .portfolio-name small,
+.zlanding .portfolio-preview-total b { word-spacing: -0.26em; }
+
+.zlanding .num,
+.zlanding .mono {
+  /* Każda liczba jest mono — ta sama reguła, co w aplikacji. Wcześniej landing
+     składał cyfry groteskiem, a aplikacja IBM Plex Mono, więc ta sama kwota
+     miała dwa kroje w zależności od tego, po której stronie się ją oglądało. */
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: -0.005em;
+}
+
+.zlanding .sec-kicker,
+.zlanding .label {
+  display: inline-block;
+  font-family: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.zlanding .micro {
+  font-family: var(--text);
+  font-size: 13px;
+  color: var(--ink-3);
+  line-height: 1.6;
+}
+
+.zlanding .amber-text { color: var(--amber); }
+/* Złoto niesie wyłącznie wartość pieniężną. Stopy zwrotu i wskaźniki są neutralne. */
+.zlanding .register-row:not(:first-of-type):not(:nth-of-type(4)):not(:nth-of-type(5)) .register-what b { color: var(--ink); }
+
+/* ── Szkło — powierzchnia wzięta z „Płyt": tafla, faza, jedno światło z góry ── */
+.zlanding .glass {
+  position: relative;
+  border-radius: 4px;
+  background: rgba(196, 232, 222, 0.045);
+  backdrop-filter: blur(26px) saturate(126%);
+  -webkit-backdrop-filter: blur(26px) saturate(126%);
+  border: 1px solid var(--hair);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.34),
+    0 22px 54px rgba(0, 0, 0, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.34);
+}
+
+/* ── Przyciski — bursztyn zatopiony w szkle, świeci od spodu ─────────────── */
+.zlanding .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 26px;
+  border-radius: 3px;
+  font-family: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+.zlanding .btn-accent {
+  background: rgba(240, 164, 60, 0.88);
+  color: #160C02;
+  border-color: rgba(240, 164, 60, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: none;
+}
+.zlanding .btn-accent:hover,
+.zlanding a.btn-accent:hover { background: rgba(255, 182, 90, 0.96); border-color: rgba(255, 182, 90, 0.72); color: #160C02; }
+
+.zlanding .btn-quiet,
+.zlanding .btn-ink,
+.zlanding .btn-brand {
+  background: linear-gradient(158deg, rgba(196, 232, 222, 0.055), rgba(196, 232, 222, 0.02));
+  border-color: rgba(198, 232, 222, 0.11);
+  color: var(--ink-2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.zlanding a.btn-quiet:hover,
+.zlanding a.btn-ink:hover,
+.zlanding a.btn-brand:hover { color: var(--ink); border-color: rgba(198, 232, 222, 0.58); background: rgba(196, 232, 222, 0.075); }
+/* Skala przycisków ma dwa stopnie i tyle: akcja (52px) i kompaktowy w
+   nawigacji (36px). Wcześniej .btn-lg dawało trzeci — 54px z paddingiem 30px —
+   przez co ten sam przycisk „Załóż konto" renderował się jako 129×52 w hero
+   i 137×54 w domknięciu. Ta sama etykieta, inne pudełko. */
+
+/* ── Znacznik źródła — cechuje liczbę, nie zdobi ─────────────────────────── */
+.zlanding .src {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+
+.zlanding .src-quiet { color: var(--ink-3); }
+
+
+/* ── Sekcje ─────────────────────────────────────────────────────────────── */
+.zlanding .block { position: relative; padding: clamp(64px, 7vw, 104px) 0; overflow: hidden; }
+.zlanding .block > .wrap { position: relative; z-index: 3; }
+
+.zlanding .sec-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.zlanding .sec-scrim { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+
+/* Miary w pikselach siadają na liniach siatki (od 60px: 88, 200, 312, 424,
+   536, 648, 760, 872 …), inaczej prawa krawędź tekstu mija każdą z nich
+   o kilka–kilkadziesiąt pikseli i oko nie ma się o co zaczepić. */
+.zlanding .sec-head { max-width: 648px; }
+.zlanding .sec-head .sec-title { margin-top: 16px; }
+.zlanding .sec-head .sec-desc { margin-top: 18px; }
+
+.zlanding .sec-split {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 48px;
+  flex-wrap: wrap;
+}
+.zlanding .sec-split .sec-aside { max-width: 424px; padding-bottom: 8px; }
+
+/* ── Siatki kart ────────────────────────────────────────────────────────── */
+.zlanding .card-grid { display: grid; gap: 14px; margin-top: 46px; }
+.zlanding .card-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.zlanding .card-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+
+.zlanding .card {
+  padding: 24px 22px 22px;
+  display: flex;
+  flex-direction: column;
+}
+.zlanding .card h3 { margin-top: 16px; }
+.zlanding .card p { font-size: 14px; margin-top: 10px; }
+.zlanding .card-anchor {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--hair-2);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/* ── Dostępność ─────────────────────────────────────────────────────────── */
+.zlanding .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zlanding *,
+  .zlanding *::before,
+  .zlanding *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Nawigacja ──────────────────────────────────────────────────────────── */
 .zlanding .nav {
   position: sticky;
   top: 0;
-  z-index: 50;
-  background: var(--page);
-  border-bottom: 1px solid var(--ink);
-}
-.zlanding .nav-progress {
-  --scroll-progress: 0;
-  position: absolute;
-  right: 0;
-  bottom: -1px;
-  left: 0;
-  height: 2px;
-  background: var(--accent);
-  transform: scaleX(var(--scroll-progress));
-  transform-origin: left;
-  transition: transform 80ms linear;
+  z-index: 40;
+  background: rgba(2, 10, 11, 0.72);
+  backdrop-filter: blur(20px) saturate(120%);
+  -webkit-backdrop-filter: blur(20px) saturate(120%);
+  border-bottom: 1px solid var(--hair-2);
 }
 .zlanding .nav-in {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 13px 32px;
+  width: min(100% - var(--gut) * 2, var(--shell));
+  margin-inline: auto;
   display: flex;
   align-items: center;
-  gap: 14px;
+  justify-content: space-between;
+  gap: 24px;
+  height: 74px;
 }
-.zlanding .brand {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-}
+.zlanding .brand { display: inline-flex; align-items: center; gap: 11px; color: var(--ink); }
+.zlanding .brand:hover { color: var(--ink); }
 .zlanding .mark {
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 3px;
   overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(152deg, #1E7A55, #0B2E20);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -1px 0 rgba(0, 0, 0, 0.45);
 }
-.zlanding .mark img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-}
-.zlanding .wordmark {
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 20px;
-  letter-spacing: -0.03em;
-}
-/* Stan bety to cecha, więc wygląda jak cecha — nie jak odznaka. */
+.zlanding .mark img { width: 20px; height: 20px; object-fit: contain; }
+.zlanding .wordmark { font-family: var(--display); font-size: 20px; font-weight: 400; }
+/* 10px, nie 9 — drabina mikrotypografii ma pięć stopni (10 · 11 · 12 · 13 · 14)
+   i nie potrzebuje szóstego dla jednej plakietki. */
 .zlanding .beta-pill {
-  font-family: var(--mono);
+  font-family: var(--text);
   font-size: 10px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--accent);
-  padding-left: 10px;
-  border-left: 1px solid var(--line);
+  color: var(--ink-3);
 }
-.zlanding .nav-links {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+
+.zlanding .nav-links { display: flex; align-items: center; gap: 26px; }
+.zlanding .nav-links a.lnk { font-size: 14px; font-weight: 300; color: var(--ink-2); }
+.zlanding .nav-links a.lnk:hover { color: var(--ink); }
+.zlanding .nav-links a.lnk[href="/register"] { color: var(--ink); font-weight: 500; }
+
+.zlanding .nav-progress {
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  height: 1px;
+  width: calc(var(--scroll-progress, 0) * 100%);
+  background: rgba(198, 232, 222, 0.28);
+  --scroll-progress: 0;
 }
-.zlanding .nav-links a.lnk {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted);
-  padding: 9px 12px;
-  transition: color 0.15s;
-}
-.zlanding .nav-links a.lnk:hover {
-  color: var(--ink);
-}
-.zlanding .nav-links a.lnk.is-active {
-  color: var(--ink);
-  box-shadow: inset 0 -1px 0 var(--ink);
-}
-.zlanding .nav-links a.lnk[href="/register"] {
-  color: var(--on-accent);
-  background: var(--accent);
-  border-radius: var(--r-sm);
-}
-.zlanding .btn {
-  font-family: var(--display);
-  font-weight: 500;
-  font-size: 14px;
-  border: none;
-  cursor: pointer;
-  padding: 12px 20px;
-  border-radius: var(--r-sm);
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  transition: opacity 0.15s;
-  white-space: nowrap;
-}
-.zlanding .btn:hover {
-  opacity: 0.88;
-}
-.zlanding .btn-ink {
-  background: var(--ink);
-  color: var(--page);
-}
-.zlanding .btn-brand {
-  background: var(--accent);
-  color: var(--on-accent);
-}
-.zlanding .btn-ghost {
-  background: transparent;
-  color: var(--ink);
-  box-shadow: inset 0 0 0 1px var(--line);
-}
-.zlanding .btn-lg {
-  padding: 15px 26px;
-  font-size: 15px;
-}
+
 .zlanding .nav-burger {
   display: none;
-  margin-left: auto;
-  width: 42px;
-  height: 42px;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  padding: 0;
-  border: none;
+  width: 40px;
+  height: 40px;
   background: none;
-  color: var(--ink);
+  border: 1px solid var(--hair);
+  border-radius: 3px;
   cursor: pointer;
+  position: relative;
 }
 .zlanding .nav-burger-lines,
 .zlanding .nav-burger-lines::before,
 .zlanding .nav-burger-lines::after {
-  content: "";
-  display: block;
-  width: 20px;
+  position: absolute;
+  left: 50%;
+  width: 18px;
   height: 1px;
-  background: currentColor;
-  transition: transform 0.2s ease, background-color 0.2s ease;
+  background: var(--ink-2);
+  transform: translateX(-50%);
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
-.zlanding .nav-burger-lines {
-  position: relative;
-}
-.zlanding .nav-burger-lines::before {
+.zlanding .nav-burger-lines { top: 50%; }
+.zlanding .nav-burger-lines::before { content: ""; top: -6px; }
+.zlanding .nav-burger-lines::after { content: ""; top: 6px; }
+.zlanding .nav-burger[aria-expanded="true"] .nav-burger-lines { background: transparent; }
+.zlanding .nav-burger[aria-expanded="true"] .nav-burger-lines::before { transform: translateX(-50%) translateY(6px) rotate(45deg); }
+.zlanding .nav-burger[aria-expanded="true"] .nav-burger-lines::after { transform: translateX(-50%) translateY(-6px) rotate(-45deg); }
+
+/* ── Hero ───────────────────────────────────────────────────────────────── */
+.zlanding .hero { position: relative; padding: 0 0 clamp(72px, 8vw, 120px); overflow: hidden; }
+.zlanding .hero-bg {
   position: absolute;
-  top: -6px;
-  left: 0;
-}
-.zlanding .nav-burger-lines::after {
-  position: absolute;
-  top: 6px;
-  left: 0;
-}
-.zlanding .nav-burger[aria-expanded="true"] .nav-burger-lines {
-  background: transparent;
-}
-.zlanding .nav-burger[aria-expanded="true"] .nav-burger-lines::before {
-  transform: translateY(6px) rotate(45deg);
-}
-.zlanding .nav-burger[aria-expanded="true"] .nav-burger-lines::after {
-  transform: translateY(-6px) rotate(-45deg);
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Rondel kadrujemy centralnie: rant przechodzi nisko przez kadr, a lewa
+     trzecia część zostaje czarna pod nagłówkiem. Poprzednie 58%/34% było
+     dobrane pod wstęgę i wypychało krążek na środek, wprost pod akapit. */
+  object-position: center;
 }
 
-/* ============ OTWARCIE ============
-   Kierunek „Próba": strona wisi na pionowej szynie z podziałką. Po lewej
-   stronie szyny stoją wyłącznie cechy — źródło, jednostka, data. Po prawej
-   treść. Jeśli czegoś nie da się ocechować, nie ma prawa stać na szynie. */
-.zlanding .rail-row {
-  display: grid;
-  grid-template-columns: 170px minmax(0, 1fr);
-  gap: 0 32px;
+@media (prefers-reduced-motion: reduce) {  }
+
+.zlanding .hero-banner { position: relative; z-index: 5; padding-top: 22px; }
+.zlanding .beta-banner { font-size: 13px; color: var(--ink-3); }
+
+.zlanding .hero-inner {
   position: relative;
-}
-/* Szyna jest jedna i ciągła — rysuje ją kontener sekcji, nie wiersz,
-   inaczej podziałka rwie się na styku wierszy. */
-.zlanding .hero .wrap,
-.zlanding .register .wrap,
-.zlanding .preview .wrap {
-  position: relative;
-}
-.zlanding .hero .wrap:not(.hero-banner)::before,
-.zlanding .register .wrap::before,
-.zlanding .preview .wrap::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: calc(32px + 162px);
-  width: 8px;
-  border-right: 1px solid var(--ink);
-  background: repeating-linear-gradient(180deg, var(--rail) 0 1px, transparent 1px var(--rail-step));
-}
-.zlanding .rail-mark {
-  font-family: var(--mono);
-  font-size: 10px;
-  line-height: 1.5;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--accent);
-  text-align: right;
-  padding-right: 20px;
-  padding-top: 4px;
-}
-.zlanding .rail-mark em {
-  display: block;
-  font-style: normal;
-  color: var(--subtle);
-}
-
-.zlanding .hero {
-  padding: 48px 0 8px;
-}
-.zlanding .hero-banner {
-  margin-bottom: 44px;
-}
-.zlanding .beta-banner {
-  display: block;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted);
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  padding: 10px 0;
-  margin-bottom: 56px;
-}
-.zlanding .hero h1 {
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: clamp(38px, 6.4vw, 78px);
-  line-height: 0.98;
-  letter-spacing: -0.035em;
-  max-width: 13ch;
-}
-.zlanding .hero .lede {
-  font-size: 19px;
-  line-height: 1.55;
-  color: var(--ink);
-  max-width: 48ch;
-  margin-top: 26px;
-}
-.zlanding .hero .lede b {
-  font-weight: 500;
-}
-.zlanding .hero-actions {
-  display: flex;
-  align-items: center;
-  gap: 22px;
-  flex-wrap: wrap;
-  margin-top: 40px;
-}
-.zlanding .btn-accent {
-  font-family: var(--display);
-  font-weight: 500;
-  font-size: 14px;
-  padding: 15px 26px;
-  border-radius: var(--r-sm);
-  background: var(--accent);
-  color: var(--on-accent);
-}
-.zlanding .btn-quiet {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink);
-  border-bottom: 1px solid var(--line);
-  padding-bottom: 3px;
-}
-.zlanding .btn-quiet:hover {
-  border-bottom-color: var(--ink);
-}
-
-/* ============ REJESTR ============
-   Zdanie po prawej, cecha jego źródła po lewej. Wiersz bez ramki: dzieli je
-   włos, bo to rejestr, a nie zestaw kafli. */
-.zlanding .register {
-  padding: 56px 0 8px;
-}
-.zlanding .register-what {
-  font-size: 18px;
-  line-height: 1.5;
-}
-.zlanding .register-what b {
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-.zlanding .register-note {
-  font-family: var(--mono);
-  font-size: 11px;
-  line-height: 1.6;
-  color: var(--subtle);
-  padding-top: 16px;
-  max-width: 60ch;
-}
-
-/* ============ PODGLĄD NA DANYCH DEMO ============
-   Bez kart, bez cieni, bez przechyłu — dane leżą na papierze. */
-.zlanding .preview {
-  padding: 48px 0 24px;
-}
-.zlanding .preview-body {
+  z-index: 5;
   display: grid;
-  gap: 16px;
-  min-width: 0;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--col-gap);
+  align-items: start;
+  padding-top: clamp(40px, 5vw, 62px);
 }
-.zlanding .preview-split {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.9fr);
-  gap: 16px;
-  min-width: 0;
+.zlanding .hero-copy { grid-column: span 8; }
+/* Panel hero siada w tych samych czterech kolumnach, co karty pod nim.
+   Wcześniej miał 372px przy ich 400px, więc prawa szyna zaczynała się raz na
+   1008, raz na 980. */
+.zlanding .hero-panel { grid-column: 9 / span 4; }
+.zlanding .hero-copy > .sec-kicker { text-transform: none; letter-spacing: 0.02em; font-size: 13px; }
+.zlanding .hero-copy h1 { margin-top: 24px; max-width: 12ch; }
+.zlanding .hero-copy .lede { margin-top: 26px; max-width: 46ch; }
+.zlanding .hero-actions { display: flex; flex-wrap: wrap; gap: 13px; margin-top: 32px; }
+.zlanding .hero-sources {
+  margin: 32px 0 0;
+  font-size: 13px;
+  color: var(--ink-2);
+  letter-spacing: 0.02em;
 }
-.zlanding .product-card {
-  position: relative;
-  min-width: 0;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  padding: 24px 26px;
-}
-.zlanding .product-card-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: flex-start;
-}
-.zlanding .product-kicker {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--subtle);
-}
+
+.zlanding .hero-panel { padding: 26px 28px 24px; }
+.zlanding .hero-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .zlanding .product-value {
-  margin-top: 10px;
-  color: var(--ink);
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: clamp(30px, 3vw, 42px);
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-  letter-spacing: -0.035em;
+  font-family: var(--mono); font-variant-numeric: tabular-nums;
+  /* Mono jest szersze od Archivo o mniej więcej ósmą część, więc stopień
+     schodzi, żeby kwota nie wyszła poza panel. */
+  font-size: clamp(28px, 2.6vw, 37px);
+  font-weight: 500;
+  margin-top: 14px;
+  color: var(--amber);
 }
 .zlanding .product-change {
-  margin-top: 9px;
-  color: var(--profit);
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  margin-top: 8px;
   font-family: var(--mono);
-  font-size: 12px;
   font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  color: var(--up);
 }
-.zlanding .product-change span {
-  margin-left: 6px;
-  color: var(--muted);
-}
-.zlanding .value-card > div:last-child {
-  margin-top: 18px;
-}
+.zlanding .product-change span { font-family: var(--text); font-size: 12px; color: var(--ink-3); }
 
-.landing-copy-editing .zlanding [contenteditable="true"] {
-  cursor: text;
-}
-.landing-copy-editing .zlanding [contenteditable="true"]:focus {
-  outline: none;
-}
-.landing-copy-editing .zlanding .landing-copy-empty {
-  display: none !important;
-}
-
-@media (max-width: 900px) {
-  .zlanding .rail-row {
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
-  .zlanding .hero .wrap:not(.hero-banner)::before,
-  .zlanding .register .wrap::before,
-  .zlanding .preview .wrap::before {
-    display: none;
-  }
-  .zlanding .rail-mark {
-    text-align: left;
-    padding: 0 0 8px;
-  }
-  .zlanding .rail-mark em {
-    display: inline;
-    margin-left: 8px;
-  }
-  .zlanding .register-what {
-    padding: 4px 0 18px;
-  }
-  .zlanding .preview-split {
-    grid-template-columns: 1fr;
-  }
-}
-
-.zlanding .static-vvd-chart {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
+.zlanding .hero-foot {
   position: relative;
+  z-index: 5;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-top: clamp(48px, 6vw, 86px);
+  padding-top: 14px;
 }
+.zlanding .hero-foot::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--amber-lo) 14%, var(--amber) 50%, var(--amber-lo) 86%, transparent);
+  opacity: 0.55;
+}
+
+/* Zasłona pod kolumną tekstu — wstęga nie może przecinać leadu. */
+.zlanding .hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(2, 10, 11, 0.96) 0%, rgba(2, 10, 11, 0.84) 30%, rgba(2, 10, 11, 0.22) 58%, transparent 76%),
+    linear-gradient(180deg, rgba(2, 10, 11, 0.72) 0%, transparent 18%, transparent 82%, var(--vault) 100%);
+}
+
+/* ── Wykres wartości w panelu hero ──────────────────────────────────────── */
+.zlanding .static-vvd-chart { margin-top: 18px; }
 .zlanding .static-chart-head {
   display: flex;
-  gap: 16px;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-.zlanding .static-chart-legend {
-  display: flex;
   gap: 16px;
   flex-wrap: wrap;
 }
+.zlanding .static-chart-legend { display: flex; gap: 16px; flex-wrap: wrap; }
 .zlanding .static-chart-legend span {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  color: var(--muted);
-  font: 500 11px var(--text);
-}
-.zlanding .static-chart-legend i {
-  width: 9px;
-  height: 9px;
-  border-radius: var(--r-xl);
-  flex: 0 0 auto;
-}
-.zlanding .static-chart-ranges {
-  display: inline-flex;
-  gap: 16px;
-}
-.zlanding .static-chart-ranges button {
-  padding: 2px 0;
-  border: 0;
-  background: transparent;
-  color: var(--subtle);
-  cursor: pointer;
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-.zlanding .static-chart-ranges button[aria-checked="true"] {
-  color: var(--ink);
-  box-shadow: inset 0 -1px 0 var(--ink);
-}
-.zlanding .static-vvd-chart svg {
-  display: block;
-  width: 100%;
-  height: auto;
-  max-width: 100%;
-}
-.zlanding .static-vvd-chart line {
-  stroke: var(--line-2);
-  stroke-width: 1;
-  stroke-dasharray: 3 4;
-}
-.zlanding .static-vvd-chart text {
-  fill: var(--subtle);
-  font: 10.5px var(--mono);
-}
-.zlanding .static-vvd-chart path {
-  fill: url(#landing-vvd-fill);
-  animation: chart-area-in 760ms 420ms ease-out both;
-}
-.zlanding .static-vvd-chart polyline {
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.zlanding .static-vvd-chart .deposit-line {
-  stroke: var(--asset-bonds);
-  stroke-width: 2;
-  stroke-dasharray: 5 4;
-  animation: chart-deposit-in 680ms 340ms ease-out both;
-}
-.zlanding .static-vvd-chart .value-line {
-  stroke: var(--ink);
-  stroke-width: 2.4;
-  stroke-dasharray: 1;
-  stroke-dashoffset: 0;
-  animation: chart-line-in 980ms 300ms cubic-bezier(0.2, 0.65, 0.2, 1) both;
-}
-.zlanding .allocation-card > *,
-.zlanding .portfolios-card > * {
-  position: relative;
-  z-index: 1;
-}
-.zlanding .product-heading {
-  margin-top: 4px;
-  font-family: var(--display);
-  font-size: 18px;
-  font-weight: 500;
-}
-.zlanding .allocation-card [data-testid="allocation-donut"] {
-  margin-top: 0;
-}
-.zlanding .allocation-card [data-testid="allocation-donut"] svg {
-  max-width: 104px;
-  height: auto;
-}
-.zlanding .allocation-card [data-testid="allocation-donut"] circle {
-  animation: donut-sweep-in 780ms cubic-bezier(0.2, 0.72, 0.2, 1) both;
-}
-.zlanding .allocation-card [data-testid="allocation-donut"] > div:first-child {
-  padding: 0 0 4px;
-}
-.zlanding .allocation-card [data-testid="allocation-donut-legend"] {
+  gap: 7px;
   font-family: var(--text);
-}
-.zlanding .static-allocation-plot {
-  display: flex;
-  justify-content: center;
-  padding: 0 0 4px;
-}
-.zlanding .static-allocation .donut-label {
-  fill: var(--subtle);
-  font: 600 10px var(--text);
-  letter-spacing: 0.06em;
-}
-.zlanding .static-allocation .donut-count {
-  fill: var(--ink);
-  font: 700 18px var(--text);
-}
-.zlanding .static-allocation .donut-caption {
-  fill: var(--subtle);
-  font: 9.5px var(--text);
-}
-.zlanding .static-allocation-legend {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.zlanding .static-allocation-legend div {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-}
-.zlanding .static-allocation-legend i {
-  width: 9px;
-  height: 9px;
-  border-radius: var(--r-xs);
-  flex: 0 0 auto;
-}
-.zlanding .static-allocation-legend span {
-  min-width: 0;
-  flex: 1;
-  overflow: hidden;
-  color: var(--ink);
-  font-size: 12.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.zlanding .static-allocation-legend b {
-  color: var(--ink);
-  font-size: 13px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-.zlanding .portfolio-preview-list {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  flex: 1;
-  margin-top: 8px;
-}
-.zlanding .portfolio-preview-total {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 8px;
-  padding-top: 11px;
-  border-top: 0.5px solid var(--line);
-}
-.zlanding .portfolio-preview-total span {
-  color: var(--subtle);
-  font: 600 10px var(--text);
+  font-size: 10px;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
+  color: var(--ink-3);
 }
-.zlanding .portfolio-preview-total b {
-  color: var(--ink);
-  font: 600 13px var(--mono);
+.zlanding .static-chart-legend i { width: 12px; height: 2px; border-radius: 1px; }
+.zlanding .static-chart-ranges { display: flex; gap: 2px; }
+.zlanding .static-chart-ranges button {
+  min-height: 26px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: none;
+  font-family: var(--text);
   font-variant-numeric: tabular-nums;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 }
-.zlanding .portfolio-preview-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 9px 0;
-  border-top: 0.5px solid var(--line-2);
+.zlanding .static-chart-ranges button:hover { color: var(--ink); background: rgba(198, 232, 222, 0.06); }
+.zlanding .static-chart-ranges button[aria-checked="true"] {
+  background: rgba(198, 232, 222, 0.08);
+  border-color: var(--hair);
+  color: var(--ink);
 }
-.zlanding .portfolio-preview-row:first-child {
-  border-top: 0;
-  padding-top: 0;
-}
-.zlanding .portfolio-name {
-  display: flex;
-  gap: 8px;
-  min-width: 0;
-  align-items: flex-start;
-}
-.zlanding .portfolio-name > span {
-  width: 7px;
-  height: 7px;
-  border-radius: var(--r-xl);
-  margin-top: 5px;
-  flex: 0 0 auto;
-}
-.zlanding .portfolio-name strong {
+.zlanding .static-vvd-chart svg { display: block; width: 100%; height: auto; margin-top: 14px; }
+.zlanding .static-vvd-chart line { stroke: rgba(198, 232, 222, 0.055); stroke-width: 1; }
+.zlanding .static-vvd-chart text { font-family: var(--text); font-size: 10px; fill: var(--ink-3); }
+.zlanding .static-vvd-chart text.x-axis { font-size: 10px; }
+.zlanding .static-vvd-chart .value-line { stroke: var(--amber); stroke-width: 2.4; fill: none; stroke-linejoin: round; }
+.zlanding .static-vvd-chart .value-area { stroke: none; }
+
+.zlanding .static-vvd-chart .deposit-line { stroke: rgba(198, 232, 222, 0.3); stroke-width: 1.6; fill: none; stroke-linejoin: round; }
+
+/* Licznik przy wstędze musi minąć złotą linię stopki hero. */
+
+/* ── 02 · Proweniencja — liczba obok swojego źródła ───────────────────────── */
+.zlanding .register { position: relative; padding: clamp(56px, 6vw, 88px) 0; overflow: hidden; }
+
+
+/* Ta siatka nigdy nic nie układała — oba dzieci i tak brały pełną szerokość. */
+.zlanding .register > .wrap { position: relative; z-index: 3; }
+.zlanding .register .sec-head { max-width: 26ch; }
+.zlanding .register-rows { min-width: 0; }
+.zlanding .register-row { display: flex; align-items: baseline; gap: 20px; padding: 17px 0; border-top: 1px solid var(--hair-2); }
+.zlanding .register-row:first-of-type { border-top: 0; }
+.zlanding .register-what { flex: 1; font-size: 16px; font-weight: 300; color: var(--ink-2); }
+.zlanding .register-what b {
   display: block;
-  overflow: hidden;
+  margin-top: 4px;
+  font-family: var(--text); font-variant-numeric: tabular-nums;
+  font-size: 19px;
+  font-weight: 500;
   color: var(--ink);
-  font: 600 11.5px var(--text);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
-.zlanding .portfolio-name small {
-  display: block;
-  margin-top: 2px;
-  color: var(--subtle);
-  font: 500 10px var(--mono);
-  font-variant-numeric: tabular-nums;
-}
-.zlanding .portfolio-trend {
-  display: grid;
-  min-width: 98px;
-  justify-items: end;
-}
-.zlanding .portfolio-trend b {
-  color: var(--profit);
-  font: 700 10px var(--text);
-  font-variant-numeric: tabular-nums;
-}
-
-
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .zlanding .product-card {
-    background: var(--card);
-  }
-}
-
-/* ============ SEKCJE NA SZYNIE ============
-   Szyna biegnie przez każdą sekcję, więc rysuje ją .wrap, a nie pojedynczy
-   wiersz. Kolumna lewa jest zarezerwowana dla cech; nagłówki sekcji zostawiają
-   ją pustą, bo hasła nie da się ocechować. */
-.zlanding section.block {
-  padding: 60px 0;
-}
-.zlanding section.block .wrap {
-  position: relative;
-}
-.zlanding section.block .wrap::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: calc(32px + 162px);
-  width: 8px;
-  border-right: 1px solid var(--ink);
-  background: repeating-linear-gradient(180deg, var(--rail) 0 1px, transparent 1px var(--rail-step));
-}
-.zlanding .sec-head {
-  padding-bottom: 28px;
-}
-.zlanding .sec-kicker {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--subtle);
-  margin-bottom: 14px;
-}
-.zlanding .sec-title {
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: clamp(30px, 4.2vw, 48px);
-  line-height: 1.02;
-  letter-spacing: -0.035em;
-  max-width: 18ch;
-}
-.zlanding .sec-title em {
-  font-style: normal;
-  color: var(--accent);
-}
-.zlanding .sec-desc {
-  font-size: 18px;
-  line-height: 1.55;
-  color: var(--ink);
-  margin-top: 20px;
-  max-width: 52ch;
-}
-
-
-/* ============ POWIERZCHNIE ============
-   Wiersz szyny ma dwie warstwy: cecha leży na papierze, treść na panelu.
-   Panel niesie ciepło i gęstość; szyna zostaje znakiem, nie gorsetem. */
-.zlanding .register-row > .register-what,
-.zlanding .step > div,
-.zlanding .scope-item > div,
-.zlanding .pl-row > div,
-.zlanding .faq-row > .faq,
-.zlanding .platform-story,
-.zlanding .beta-waitlist-form {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  padding: 18px 22px;
-}
-.zlanding .register-row > .register-what {
-  padding: 14px 22px;
-}
-.zlanding .register-row,
-.zlanding .step,
-.zlanding .scope-item,
-.zlanding .pl-row,
-.zlanding .faq-row {
-  border: none;
-  padding: 0;
-  margin-bottom: 8px;
-}
-.zlanding .rail-mark {
-  padding-top: 18px;
-}
+/* Kwoty w złotych — złote. Procenty — nie. */
+.zlanding .register-row:nth-of-type(1) .register-what b,
+.zlanding .register-row:nth-of-type(4) .register-what b,
+.zlanding .register-row:nth-of-type(5) .register-what b { color: var(--amber); }
 .zlanding .register-row .rail-mark {
-  padding-top: 14px;
-}
-
-/* ============ KROKI ============
-   Numeracja zostaje wyłącznie tutaj, bo to jedyna prawdziwa sekwencja na
-   stronie: najpierw transakcje, potem przeliczenie, na końcu wynik. */
-.zlanding .step h3 {
-  font-family: var(--display);
-  font-weight: 500;
-  font-size: 21px;
-  line-height: 1.25;
-  letter-spacing: -0.02em;
-  max-width: 44ch;
-}
-.zlanding .step p {
-  font-size: 16px;
-  line-height: 1.55;
-  color: var(--muted);
-  margin-top: 10px;
-  max-width: 52ch;
-}
-
-/* ============ ZAKRES ============
-   Lista, nie kafle. Przy każdej pozycji widać, czym ona operuje — to jest
-   powód, dla którego lista wygrywa tu z siatką. */
-.zlanding .scope-item h3 {
-  font-family: var(--display);
-  font-weight: 500;
-  font-size: 19px;
-  letter-spacing: -0.02em;
-}
-.zlanding .scope-item p {
-  font-size: 16px;
-  line-height: 1.55;
-  color: var(--muted);
-  margin-top: 8px;
-  max-width: 58ch;
-}
-.zlanding .scope-item .rail-mark em {
-  display: block;
-  font-style: normal;
-  color: var(--accent);
-}
-.zlanding .scope-item .rail-mark em ~ em {
-  color: var(--subtle);
-}
-
-/* ============ PODGLĄD PLATFORM ============
-   Zrzut leży na papierze — bez ramki okna, bez świateł tytułowych, bez cienia.
-   Oglądasz produkt, a nie jego opakowanie. */
-.zlanding .platform-stage {
-  padding-top: 8px;
-}
-.zlanding .platform-tabs {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  align-items: flex-end;
-  padding-right: 20px;
-}
-.zlanding .platform-tabs button {
-  font-family: var(--mono);
+  order: 2;
+  flex: 0 0 176px;
+  text-align: right;
+  font-family: var(--text);
   font-size: 10px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: var(--subtle);
-  background: none;
-  border: none;
-  padding: 5px 0;
-  cursor: pointer;
+  color: var(--ink-2);
 }
-.zlanding .platform-tabs button[aria-selected="true"] {
-  color: var(--accent);
-}
-.zlanding .platform-stage-main {
-  min-width: 0;
-}
-.zlanding .platform-stage-main figure {
-  margin: 0 0 28px;
-  min-width: 0;
-}
-.zlanding .platform-stage-main figure img {
-  display: block;
-  width: 100%;
-  height: auto;
-  border: 1px solid var(--line);
-}
-.zlanding .platform-stage-main figure[data-device="phone"] img {
-  width: auto;
-  max-height: 620px;
-}
-.zlanding [data-platform-shot].is-changing {
-  animation: platform-image-change 320ms ease-out;
-}
-@keyframes platform-image-change {
-  from { opacity: 0.5; }
-  to { opacity: 1; }
-}
-.zlanding .platform-shot-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px;
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
-}
-.zlanding .platform-shot-nav button {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--subtle);
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-}
-.zlanding .platform-shot-nav button[aria-pressed="true"] {
-  color: var(--ink);
-  box-shadow: inset 0 -1px 0 var(--ink);
-}
-.zlanding .platform-story h3 {
-  font-family: var(--display);
-  font-weight: 500;
-  font-size: 22px;
-  letter-spacing: -0.025em;
-  max-width: 30ch;
-}
-.zlanding .platform-story p {
-  font-size: 16px;
-  line-height: 1.55;
-  color: var(--muted);
-  margin-top: 10px;
-  max-width: 58ch;
-}
-.zlanding .show-list {
-  list-style: none;
-  margin-top: 16px;
+.zlanding .register-row .rail-mark em { display: block; margin-top: 4px; font-style: normal; color: var(--ink-3); letter-spacing: 0.03em; text-transform: none; }
+.zlanding .register-note { font-size: 13px; color: var(--ink-3); margin-top: 18px; }
+
+/* ── 03 · Klasy aktywów ─────────────────────────────────────────────────── */
+.zlanding .asset-classes { padding: clamp(56px, 6vw, 88px) 0 clamp(40px, 4vw, 56px); }
+.zlanding .asset-classes-inner {
   display: grid;
-  gap: 8px;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--col-gap);
+  align-items: start;
 }
-.zlanding .show-list li {
-  font-size: 15px;
-  line-height: 1.5;
-  color: var(--muted);
-  padding-left: 18px;
+.zlanding .asset-classes-inner > .alloc-ring { grid-column: 9 / span 4; }
+/* Lista klas kończy się kolumnę wcześniej niż reszta bloków ośmiokolumnowych:
+   jej prawa krawędź to wartości dosunięte do prawej, a pierścień stoi tuż obok,
+   więc przy rynnie 24px jedno wchodziło w drugie. Siedem kolumn daje 136px
+   przerwy zamiast 24. */
+.zlanding .asset-classes-inner > :not(.alloc-ring) { grid-column: 1 / span 7; grid-row: 1; }
+/* Pierścień wypełnia swoją kolumnę zamiast pływać w jej środku. Wcześniej cała
+   grupa była wyśrodkowana, a dwie karty bezpośrednio nad nią szły w tej samej
+   kolumnie od krawędzi do krawędzi — szyna czytała się „równo, równo, unosi się". */
+.zlanding .alloc-ring { display: flex; flex-direction: column; align-items: stretch; padding-top: 40px; }
+/* Jawna szerokość znosi rozciąganie na osi poprzecznej, więc SVG lądowało przy
+   lewej krawędzi kolumny — środek koła na 1098, środek legendy pod nim na 1168,
+   czyli 70px rozjazdu widocznego gołym okiem. Wyśrodkowanie własnym marginesem. */
+.zlanding .alloc-ring svg { width: min(284px, 100%); height: auto; overflow: visible; margin-inline: auto; }
+.zlanding .alloc-legend { list-style: none; margin: 26px 0 0; padding: 0; width: 100%; max-width: 250px; display: flex; flex-direction: column; gap: 9px; }
+.zlanding .alloc-legend li { display: flex; align-items: center; gap: 10px; }
+.zlanding .alloc-swatch { width: 9px; height: 9px; border-radius: 2px; opacity: 0.7; flex: 0 0 9px; }
+.zlanding .alloc-name { flex: 1; font-size: 13px; font-weight: 300; color: var(--ink-2); }
+.zlanding .alloc-legend .num { font-size: 13px; }
+.zlanding .asset-rows { margin: 26px 0 0; border-top: 1px solid var(--hair-2); }
+.zlanding .asset-rows > div { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; padding: 12px 0; border-bottom: 1px solid var(--hair-2); }
+
+.zlanding .asset-rows dd { margin: 0; text-align: right; }
+.zlanding .asset-note { margin-top: 14px; }
+
+/* ── 04 · Portfel demo ──────────────────────────────────────────────────── */
+
+.zlanding .preview-body { display: flex; flex-direction: column; gap: 20px; }
+.zlanding .preview-split { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+.zlanding .value-card,
+.zlanding .allocation-card,
+.zlanding .portfolios-card {
   position: relative;
+  border-radius: 4px;
+  padding: 26px 28px 24px;
+  background: rgba(196, 232, 222, 0.045);
+  backdrop-filter: blur(26px) saturate(126%);
+  -webkit-backdrop-filter: blur(26px) saturate(126%);
+  border: 1px solid var(--hair);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 22px 54px rgba(0, 0, 0, 0.5);
 }
-.zlanding .show-list li::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 10px;
-  width: 8px;
-  height: 1px;
-  background: var(--accent);
-}
+.zlanding .product-kicker { font-family: var(--text); font-weight: 500; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+.zlanding .static-allocation { display: flex; align-items: center; gap: 20px; margin-top: 14px; flex-wrap: wrap; }
+.zlanding .static-allocation-legend { list-style: none; margin: 0; padding: 0; flex: 1; display: flex; flex-direction: column; gap: 11px; }
+.zlanding .static-allocation-legend li { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--ink-2); }
+.zlanding .portfolio-preview-list { margin-top: 10px; }
+.zlanding .portfolio-preview-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 0; border-bottom: 1px solid var(--hair-2); }
+.zlanding .portfolio-name { display: flex; align-items: center; gap: 10px; }
+.zlanding .portfolio-name strong { display: block; font-size: 15px; font-weight: 400; }
+.zlanding .portfolio-name small { display: block; margin-top: 4px; font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 12px; color: var(--ink-3); }
+.zlanding .portfolio-trend { display: flex; align-items: center; gap: 10px; }
+.zlanding .portfolio-trend b { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 13px; font-weight: 500; color: var(--up); }
+.zlanding .portfolio-preview-total { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-top: 14px; flex-wrap: wrap; }
+.zlanding .portfolio-preview-total span { min-width: 0; flex: 1 1 auto; font-family: var(--text); font-weight: 500; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+.zlanding .portfolio-preview-total b { flex: 0 0 auto; white-space: nowrap; font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 500; }
 
-/* Sklepy: cecha mówi „wkrótce", więc kafel nie udaje działającego przycisku. */
-.zlanding .store-row {
-  margin-top: 56px;
-  padding-top: 26px;
-  border-top: 1px solid var(--line);
-}
-.zlanding .store-badges {
-  display: flex;
-  gap: 32px;
-  flex-wrap: wrap;
-}
-.zlanding .store-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--muted);
-}
-.zlanding .store-badge small {
-  display: block;
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--subtle);
-}
-.zlanding .store-badge strong {
-  font-family: var(--display);
-  font-weight: 500;
-  font-size: 15px;
-  color: var(--ink);
-}
-.zlanding .store-badge em {
-  font-family: var(--mono);
-  font-style: normal;
-  font-size: 9px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
+/* ── 08 · Prywatność ────────────────────────────────────────────────────── */
+.zlanding .privacy { padding: clamp(72px, 8vw, 120px) 0; }
+.zlanding .privacy-head { max-width: 648px; }
+.zlanding .privacy-marks { display: flex; flex-wrap: wrap; gap: 30px; margin: 32px 0 0; padding: 0; list-style: none; }
 
-/* ============ POLSKIE REALIA ============
-   Jedyny ciemny pas na stronie. Dostaje go sekcja, której zagraniczny
-   konkurent nie skopiuje: IKE, IKZE, obligacje detaliczne, NBP, GUS. */
-.zlanding .pl-row h3 {
-  font-family: var(--display);
-  font-weight: 500;
-  font-size: 19px;
-  letter-spacing: -0.02em;
-}
-.zlanding .pl-row p {
-  font-size: 16px;
-  line-height: 1.55;
-  color: var(--muted);
-  margin-top: 8px;
-  max-width: 58ch;
-}
-
-/* ============ FAQ ============
-   Pytanie jest treścią, więc stoi po prawej stronie szyny. Lewa kolumna
-   zostaje pusta: pytania nie da się ocechować źródłem. */
+/* ── 09 · FAQ, zapisy, stopka ───────────────────────────────────────────── */
+.zlanding .faq-block { padding-bottom: clamp(40px, 4vw, 56px); }
+.zlanding .faq-row { border-top: 1px solid var(--hair-2); }
+.zlanding .faq-row:first-of-type { border-top: 0; }
+.zlanding .faq { width: 100%; }
 .zlanding .faq summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  padding: 0;
+  gap: 16px;
+  padding: 18px 0;
   cursor: pointer;
   list-style: none;
-  font-family: var(--display);
-  font-weight: 500;
-  font-size: 18px;
-  letter-spacing: -0.02em;
-}
-.zlanding .faq summary::-webkit-details-marker {
-  display: none;
-}
-.zlanding .faq .pm {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-  color: var(--accent);
-  transition: transform 160ms ease;
-}
-.zlanding .faq[open] .pm {
-  transform: rotate(45deg);
-}
-.zlanding .faq .ans {
   font-size: 16px;
-  line-height: 1.6;
-  color: var(--muted);
-  padding-top: 16px;
-  max-width: 62ch;
+  font-weight: 400;
 }
-.zlanding .faq .ans b {
-  color: var(--ink);
-  font-weight: 500;
-}
+.zlanding .faq summary::-webkit-details-marker { display: none; }
+.zlanding .faq .pm { width: 16px; height: 16px; flex: 0 0 16px; color: var(--ink-3); transition: transform 0.2s ease; }
+.zlanding .faq[open] .pm { transform: rotate(45deg); }
+.zlanding .faq .ans { padding: 0 0 18px; max-width: 648px; font-size: 14px; color: var(--ink-2); line-height: 1.62; }
+.zlanding .faq .ans b { color: var(--ink); font-weight: 500; }
 
-/* ============ LISTA BETA ============ */
 .zlanding .beta-waitlist-form {
-  display: grid;
-  gap: 18px;
-  max-width: 460px;
-  padding-bottom: 8px;
+  margin-top: 28px;
+  padding: 28px;
+  max-width: 452px;
+  border-radius: 4px;
+  background: linear-gradient(158deg, rgba(196, 232, 222, 0.075), rgba(196, 232, 222, 0.028));
+  backdrop-filter: blur(26px) saturate(126%);
+  -webkit-backdrop-filter: blur(26px) saturate(126%);
+  border: 1px solid var(--hair);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 22px 54px rgba(0, 0, 0, 0.5);
 }
-.zlanding .field label {
-  display: block;
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--subtle);
-  margin-bottom: 8px;
-}
-.zlanding .field input,
-.zlanding .field textarea {
+.zlanding .field label { display: block; font-family: var(--text); font-weight: 500; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+.zlanding .field input {
+  font-variant-numeric: tabular-nums;
   width: 100%;
+  min-height: 52px;
+  margin-top: 10px;
+  padding: 0 15px;
+  border-radius: 3px;
+  background: rgba(2, 10, 11, 0.5);
+  border: 1px solid var(--hair);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+  color: var(--ink);
   font-family: var(--text);
-  font-size: 16px;
-  color: var(--ink);
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--ink);
-  padding: 10px 0;
-}
-.zlanding .field input:focus,
-.zlanding .field textarea:focus {
-  outline: none;
-  border-bottom-color: var(--accent);
-}
-.zlanding .field input:disabled {
-  color: var(--subtle);
-  border-bottom-style: dashed;
-}
-.zlanding .hp-field {
-  position: absolute;
-  left: -9999px;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-}
-.zlanding .beta-consent {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
   font-size: 14px;
-  line-height: 1.5;
-  color: var(--muted);
 }
-.zlanding .beta-consent input {
-  margin-top: 3px;
-  accent-color: var(--accent);
-}
-.zlanding .beta-waitlist-form .btn {
-  justify-self: start;
-}
-.zlanding .beta-waitlist-status {
-  font-family: var(--mono);
-  font-size: 11px;
-  line-height: 1.5;
-  color: var(--muted);
-}
-.zlanding .beta-waitlist-status[data-type="error"] {
-  color: var(--down);
-}
-.zlanding .beta-waitlist-status[data-type="success"] {
-  color: var(--up);
-}
+.zlanding .field input::placeholder { color: var(--ink-3); }
+.zlanding .field input:focus-visible { border-color: rgba(240, 164, 60, 0.5); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5), 0 0 0 3px rgba(240, 164, 60, 0.12); outline: none; }
+.zlanding .hp-field { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.zlanding .beta-consent { display: flex; align-items: center; gap: 11px; margin-top: 16px; font-size: 14px; color: var(--ink-2); cursor: pointer; }
+.zlanding .beta-waitlist-form .btn { width: 100%; margin-top: 20px; }
+.zlanding .beta-waitlist-status { margin-top: 14px; font-family: var(--text); font-size: 12px; color: var(--ink-3); line-height: 1.6; }
+.zlanding .beta-waitlist-status[data-state="success"] { color: var(--up); }
+.zlanding .beta-waitlist-status[data-state="error"] { color: var(--down); }
 
-/* ============ STOPKA ============ */
-.zlanding footer {
-  background: var(--ink);
-  color: var(--page);
-  padding: 64px 0 36px;
-}
-.zlanding footer .wrap {
-  position: relative;
-}
-.zlanding .foot-top {
-  display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr;
-  gap: 40px;
-}
-.zlanding .foot-brand .wordmark {
-  color: var(--page);
-}
-.zlanding .foot-brand p {
-  font-size: 15px;
-  line-height: 1.6;
-  color: color-mix(in srgb, var(--page) 62%, transparent);
-  margin-top: 18px;
-  max-width: 34ch;
-}
-.zlanding .foot-col .foot-title {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--page) 62%, transparent);
-  margin-bottom: 16px;
-}
+.zlanding footer { position: relative; z-index: 3; padding: clamp(48px, 5vw, 72px) 0 40px; }
+.zlanding footer::before { content: ""; display: block; height: 1px; margin-bottom: 30px; background: linear-gradient(90deg, transparent, var(--amber-lo) 14%, var(--amber) 50%, var(--amber-lo) 86%, transparent); opacity: 0.55; }
+.zlanding .foot-top { display: flex; justify-content: space-between; gap: 56px; flex-wrap: wrap; }
+.zlanding .foot-brand { max-width: 300px; }
+.zlanding .foot-brand p { font-size: 14px; margin-top: 14px; }
+.zlanding .foot-col { display: flex; flex-direction: column; gap: 11px; }
+.zlanding .foot-title { font-family: var(--text); font-weight: 500; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 4px; }
 .zlanding .foot-col a,
-.zlanding .foot-link-unavailable {
-  display: block;
-  font-size: 15px;
-  color: color-mix(in srgb, var(--page) 82%, transparent);
-  padding: 6px 0;
+.zlanding .foot-link-unavailable { font-size: 14px; font-weight: 400; color: var(--ink-2); }
+.zlanding .foot-col a:hover { color: var(--ink); }
+.zlanding .foot-link-unavailable { color: var(--ink-3); }
+.zlanding .soon { margin-left: 6px; font-size: 12px; color: var(--ink-3); }
+.zlanding .foot-contact { display: flex; gap: 32px; flex-wrap: wrap; margin-top: 40px; padding-top: 26px; border-top: 1px solid var(--hair-2); }
+.zlanding .foot-contact p { font-size: 14px; max-width: 48ch; }
+.zlanding .foot-contact .btn { margin-top: 16px; gap: 9px; }
+.zlanding .foot-mail { display: inline-block; margin-top: 14px; margin-left: 16px; font-family: var(--text); font-size: 12px; color: var(--ink-2); }
+.zlanding .foot-bot { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-top: 32px; padding-top: 18px; border-top: 1px solid var(--hair-2); }
+/* 11px zostaje wyłącznie dla cechy — źródła i podstawy liczenia. Drobny tekst
+   pomocniczy idzie 12px, żeby ten sam stopień nie znaczył dwóch różnych rzeczy. */
+.zlanding .foot-bot span { font-family: var(--text); font-size: 12px; color: var(--ink-3); }
+
+.zlanding .preview .rail-row > .rail-mark { display: none; }
+.zlanding .preview .rail-row { display: block; }
+
+/* Reveal zostaje widoczny bez JS — obserwator tylko dodaje delikatne wejście. */
+.zlanding .reveal { opacity: 1; }
+
+/* ── 06 · Aplikacje ─────────────────────────────────────────────────────── */
+.zlanding .platform-showcase .sec-scrim,
+.zlanding .platform-stage { position: relative; }
+.zlanding .platform-stage { margin-top: 44px; }
+.zlanding .platform-tabs { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--hair); border-radius: 4px; background: rgba(2, 10, 11, 0.5); }
+.zlanding .platform-tabs button {
+  min-height: 38px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  color: var(--ink-3);
+  font-family: var(--text);
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: color 0.16s ease, background 0.16s ease;
 }
-.zlanding .foot-col a:hover {
-  color: var(--page);
-}
-.zlanding .foot-link-unavailable {
-  color: color-mix(in srgb, var(--page) 40%, transparent);
-  cursor: not-allowed;
-}
-.zlanding .foot-col a .soon,
-.zlanding .foot-link-unavailable .soon {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  color: color-mix(in srgb, var(--page) 55%, transparent);
-  margin-left: 6px;
-}
-/* Kontakt jest jedynym wyjściem do nas, więc stoi na szynie jak cecha. */
-.zlanding .foot-contact {
-  margin-top: 52px;
-  padding-top: 28px;
-  border-top: 1px solid color-mix(in srgb, var(--page) 20%, transparent);
-}
-.zlanding .foot-contact .rail-mark {
-  color: var(--page);
-}
-.zlanding .foot-contact .rail-mark em {
-  color: color-mix(in srgb, var(--page) 55%, transparent);
-}
-.zlanding .foot-contact p {
-  font-size: 15px;
-  line-height: 1.6;
-  color: color-mix(in srgb, var(--page) 72%, transparent);
-  max-width: 48ch;
-  margin-bottom: 20px;
-}
-.zlanding .foot-contact .btn-ink {
-  background: var(--page);
+.zlanding .platform-tabs button:hover { color: var(--ink-2); }
+.zlanding .platform-tabs button[aria-selected="true"] {
   color: var(--ink);
+  background: linear-gradient(158deg, rgba(196, 232, 222, 0.09), rgba(196, 232, 222, 0.035));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
-.zlanding .foot-mail {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  margin-left: 20px;
-  border-bottom: 1px solid color-mix(in srgb, var(--page) 40%, transparent);
-  padding-bottom: 2px;
+
+.zlanding .platform-stage-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 40px;
+  align-items: start;
+  margin-top: 26px;
 }
-.zlanding .foot-bot {
-  margin-top: 44px;
-  padding-top: 22px;
-  border-top: 1px solid color-mix(in srgb, var(--page) 20%, transparent);
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  flex-wrap: wrap;
-  font-family: var(--mono);
-  font-size: 11px;
+.zlanding .platform-stage-main figure {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+  padding: 9px;
+  border-radius: 4px;
+  background: linear-gradient(158deg, rgba(196, 232, 222, 0.075), rgba(196, 232, 222, 0.028));
+  border: 1px solid var(--hair);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 22px 54px rgba(0, 0, 0, 0.55);
+}
+.zlanding .platform-stage-main figure[hidden] { display: none; }
+.zlanding .platform-stage-main figure img { display: block; width: 100%; height: auto; border-radius: 2px; }
+.zlanding .platform-stage-main figure[data-device="phone"] { max-width: 300px; margin-inline: auto; }
+
+.zlanding .platform-shot-nav { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 9px; }
+.zlanding .platform-shot-nav button {
+  min-height: 30px;
+  padding: 0 11px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: none;
+  color: var(--ink-3);
+  font-size: 10px;
   letter-spacing: 0.06em;
-  color: color-mix(in srgb, var(--page) 55%, transparent);
+  cursor: pointer;
 }
+.zlanding .platform-shot-nav button[aria-pressed="true"] { color: var(--ink); border-color: var(--hair); background: rgba(198, 232, 222, 0.06); }
 
-/* ============ CIEMNY PAS ============
-   Jedna sekcja na całej stronie jest ciemna: „Zbudowane pod polskie realia".
-   To jedyna przewaga, której zagraniczny konkurent nie skopiuje, więc jej
-   należy się podkreślenie. Pas odwraca tokeny lokalnie — nie ma tu drugiej
-   palety, tylko te same zmienne z wartościami motywu ciemnego. */
-.zlanding .band-dark {
-  --ground: #0B1A14;
-  --surface: #122A20;
-  --surface-2: #1A382A;
-  --line: rgba(159, 191, 174, 0.16);
-  --line-2: rgba(159, 191, 174, 0.08);
-  --ink: #EDF2EE;
-  --ink-muted: #8FAE9C;
-  --ink-faint: #5E7A6B;
-  --accent: #C9765F;
-  --on-accent: #190A05;
-  --rail: rgba(159, 191, 174, 0.16);
-  --up: #35A87A;
-  --down: #D9463A;
-  --asset-equity: #3E7FB8;
-  --asset-bonds: #C9A24F;
-  --asset-deposit: #B0A294;
-  --asset-cash: #8FA6B8;
-  --asset-crypto: #B6A2E4;
+.zlanding .platform-story { grid-column: 2; grid-row: 1; }
+.zlanding .platform-story[hidden] { display: none; }
+.zlanding .platform-story p { font-size: 15px; margin-top: 14px; }
+.zlanding .show-list { list-style: none; margin: 20px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.zlanding .show-list li { display: flex; gap: 11px; font-size: 14px; color: var(--ink-2); }
+.zlanding .show-list li::before { content: ""; width: 4px; height: 4px; border-radius: 50%; background: var(--ink-3); margin-top: 9px; flex: 0 0 4px; }
 
+.zlanding .store-row { margin-top: 40px; padding-top: 26px; border-top: 1px solid var(--hair-2); }
+.zlanding .store-badges { display: flex; flex-wrap: wrap; gap: 12px; }
+.zlanding .store-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 18px;
+  border-radius: 4px;
+  border: 1px solid var(--hair);
+  background: linear-gradient(158deg, rgba(196, 232, 222, 0.05), rgba(196, 232, 222, 0.02));
+  color: var(--ink-2);
+  opacity: 0.72;
+}
+.zlanding .store-badge small { display: block; font-family: var(--text); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+.zlanding .store-badge strong { display: block; font-size: 15px; font-weight: 400; color: var(--ink); }
+.zlanding .store-badge em { font-family: var(--text); font-style: normal; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); }
+
+/* Sierotki po starym układzie na szynie — element bez treści nie może zajmować miejsca. */
+.zlanding .rail-row > .rail-mark:empty { display: none; }
+.zlanding .sec-head > .rail-mark { display: none; }
+.zlanding .foot-contact-head { flex: 0 0 220px; }
+.zlanding .foot-contact-head h3 { margin-top: 12px; font-size: 21px; }
+.zlanding .foot-contact > div:last-child { flex: 1; min-width: 0; }
+
+/* Rytm sekcji: sąsiadujące bloki bez tła nie potrzebują podwójnego oddechu. */
+.zlanding .block + .block { padding-top: clamp(48px, 5vw, 76px); }
+.zlanding .steps { padding-bottom: clamp(40px, 4vw, 60px); }
+
+/* ── 07 · Polskie realia — lista na liniach, nie trzecia siatka kart ─────── */
+.zlanding .investor-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 64px;
+  margin-top: 44px;
+  border-top: 1px solid var(--hair-2);
+}
+.zlanding .investor-row { padding: 22px 0; border-bottom: 1px solid var(--hair-2); }
+.zlanding .investor-row-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.zlanding .investor-row h3 { font-size: 21px; }
+.zlanding .investor-anchor { font-family: var(--text); font-variant-numeric: tabular-nums; font-size: 13px; font-weight: 500; color: var(--ink-2); flex: 0 0 auto; }
+.zlanding .investor-row p { font-size: 14px; margin-top: 9px; max-width: 46ch; }
+.zlanding .investor-row .src { margin-top: 12px; }
+
+/* Pieczęć potrzebuje miejsca — kadr nie może ucinać pierścienia. */
+.zlanding .privacy { padding: clamp(96px, 10vw, 152px) 0; }
+.zlanding .privacy .sec-bg { object-position: 62% 42%; }
+
+/* Zrzut aplikacji nie może być ucięty w połowie rzędu kafli. */
+.zlanding .platform-stage-main figure {
+  -webkit-mask-image: linear-gradient(180deg, #000 78%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 78%, transparent 100%);
+}
+.zlanding .platform-stage-main figure img { object-fit: cover; object-position: top center; max-height: 470px; }
+
+/* 09 · Zapisy i pytania stoją obok siebie — tak jak w projekcie. */
+.zlanding .closing { position: relative; overflow: hidden; }
+
+.zlanding .closing > .wrap { position: relative; z-index: 3; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--col-gap); align-items: start; }
+.zlanding .closing > .wrap > .closing-head { grid-column: span 6; }
+.zlanding .closing .faq-block { padding: 0; }
+.zlanding .closing .beta-waitlist-form { max-width: none; }
+
+.zlanding .preview-head { margin-bottom: 40px; }
+.zlanding .closing-signup .sec-head { max-width: 26ch; }
+.zlanding .closing-faq .sec-head { margin-bottom: 24px; }
+
+.zlanding .closing-signup .sec-desc { max-width: 38ch; }
+
+/* ── 02 · Proweniencja + historia w jednej sekcji ─────────────────────────── */
+.zlanding .register-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--col-gap);
+  align-items: start;
+  margin-top: 44px;
+}
+.zlanding .register-rows { grid-column: span 8; }
+.zlanding .register-visual { grid-column: 9 / span 4; }
+.zlanding .register > .wrap { display: block; }
+.zlanding .register .sec-head { max-width: none; }
+.zlanding .register-visual { display: flex; flex-direction: column; gap: 18px; }
+.zlanding .value-card-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 4px; }
+
+/* ── Funkcje + polskie realia w jednej sekcji ────────────────────────────── */
+.zlanding .scope-local {
   position: relative;
-  background: var(--ground);
+  margin-top: 0;
+  padding: clamp(56px, 6vw, 88px) 0 0;
+}
+.zlanding .scope-local::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 100vw;
+  height: 100%;
+  transform: translateX(-50%);
+  background: #0A1614;
+  border-top: 1px solid var(--hair);
+  border-bottom: 1px solid var(--hair);
+  z-index: -1;
+}
+.zlanding .scope-local-head { display: flex; align-items: baseline; justify-content: space-between; gap: 48px; flex-wrap: wrap; }
+.zlanding .scope-local-head h3 { font-family: var(--display); font-weight: 400; font-size: clamp(32px, 3.4vw, 52px); }
+.zlanding .scope-local-head .sec-desc { max-width: 424px; }
+.zlanding .investor-row h4 { font-family: var(--text); font-weight: 500; font-size: 16px; margin: 0; }
+.zlanding .investor-list { margin-top: 32px; }
+
+/* ── FAQ zwarte, dwie kolumny ────────────────────────────────────────────── */
+.zlanding .faq-inner { display: grid; grid-template-columns: minmax(0, 0.42fr) minmax(0, 1fr); gap: 56px; align-items: start; }
+.zlanding .faq-list { border-top: 1px solid var(--hair-2); }
+.zlanding .faq-list .faq { border-bottom: 1px solid var(--hair-2); }
+
+/* ── Domknięcie: prywatność niesie zaproszenie ───────────────────────────── */
+.zlanding .closing { padding: clamp(96px, 10vw, 152px) 0; }
+/* Blok ma grid-column: span 6, czyli 648px — sztywne 620 przycinało go
+   28px przed własną krawędzią siatki. */
+.zlanding .closing-head { max-width: 648px; }
+.zlanding .closing-actions { display: flex; flex-wrap: wrap; gap: 13px; margin-top: 36px; }
+.zlanding .closing-note { margin-top: 18px; max-width: 46ch; }
+
+.zlanding h1 em, .zlanding h2 em { font-style: italic; color: var(--amber); }
+.zlanding .hero-copy h1, .zlanding .closing-head h2 { color: var(--ink); }
+
+/* Podpisy pod liczbami muszą być czytelne, nie ozdobne. */
+.zlanding .product-change span { font-size: 13px; color: var(--ink-2); }
+
+/* Nagłówek sekcji klas trzyma ten sam odstęp co reszta strony. */
+.zlanding .asset-classes .sec-desc { margin-top: 18px; }
+
+/* ── Kompozycja wyśrodkowana: przerywa szablon nagłówek-lewo / proza-prawo ── */
+.zlanding .steps-head { max-width: 720px; margin-inline: auto; text-align: center; }
+.zlanding .steps-head .sec-desc { margin-top: 18px; }
+.zlanding .steps-seq {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--col-gap);
+  margin: 56px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--hair);
+}
+/* Trzy komórki tej samej rangi mają teraz tę samą miarę. Wcześniej pierwsza
+   miała padding `28px 32px 0 0`, a druga i trzecia `28px 32px 0` plus kreskę —
+   przez co tekst pierwszej mierzył 408px, a pozostałych 375px. Kreska działowa
+   przenosi się w rynnę siatki, więc nie zjada już wnętrza komórki. */
+.zlanding .steps-seq li { grid-column: span 4; padding: 28px 0 0; position: relative; }
+.zlanding .steps-seq li + li::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--col-gap) / -2);
+  width: 1px;
+  background: var(--hair-2);
+}
+.zlanding .steps-num {
+  display: block;
+  font-family: var(--mono); font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  color: var(--ink-3);
+  letter-spacing: 0.08em;
+}
+.zlanding .steps-seq h3 { margin-top: 16px; font-family: var(--text); font-weight: 500; font-size: 17px; line-height: 1.32; }
+.zlanding .steps-seq p { font-size: 14px; margin-top: 10px; }
+.zlanding .steps-seq .src { margin-top: 16px; }
+.zlanding .platform-showcase .platform-stage { margin-top: 48px; }
+
+
+/* ── Przełamanie: jedno zdanie na pełnej szerokości, między siatkami ─────── */
+.zlanding .statement {
+  position: relative;
+  padding: clamp(72px, 8vw, 116px) 0;
+  text-align: center;
+}
+.zlanding .statement p {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(23px, 2.3vw, 32px);
+  line-height: 1.32;
   color: var(--ink);
+  max-width: 40ch;
+  text-wrap: balance;
 }
-.zlanding .band-dark .sec-title,
-.zlanding .band-dark h2,
-.zlanding .band-dark h3 { color: var(--ink); }
-.zlanding .band-dark .sec-desc { color: var(--ink); }
-.zlanding .band-dark p { color: var(--ink-muted); }
+.zlanding .statement .src { margin-top: 24px; }
+.zlanding .scope-local { padding-bottom: clamp(56px, 6vw, 88px); }
+.zlanding .scope-local-head { display: block; }
+.zlanding .scope-local-head .sec-desc { display: none; }
 
-/* ============ ODSŁANIANIE ============
-   Odsłanianie przy przewijaniu jest WZBOGACENIEM, nie warunkiem widoczności.
-   Treść chowamy dopiero wtedy, gdy skrypt potwierdzi, że ją odsłoni — klasa
-   js-reveal jest dodawana tuż przed uruchomieniem obserwatora. Bez tego dowolny
-   błąd w efekcie, wyłączony JavaScript albo wolne łącze dają pustą stronę. */
-.zlanding.js-reveal .reveal {
-  opacity: 0;
-  transform: translateY(14px);
-  transition:
-    opacity 0.6s cubic-bezier(0.2, 0.6, 0.2, 1),
-    transform 0.6s cubic-bezier(0.2, 0.6, 0.2, 1);
-}
-.zlanding.js-reveal .reveal.in {
-  opacity: 1;
-  transform: none;
+.zlanding .store-note { margin-top: 40px; padding-top: 24px; font-size: 14px; max-width: 56ch; position: relative; }
+.zlanding .store-note::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--hair-2); width: 100vw; max-width: none; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   RESPONSYWNOŚĆ
+   Próg nawigacji to 980px — tyle zakłada landing-interactions.tsx (onMenuResize).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 1180px) {
+  .zlanding { --gut: 40px; }
+  .zlanding .card-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .zlanding .register-grid { gap: 44px; }
+  .zlanding .platform-stage-main { grid-template-columns: minmax(0, 1fr); }
+  .zlanding .platform-story { grid-column: 1; grid-row: 2; }
 }
 
-/* ============ RESPONSYWNOŚĆ ============ */
 @media (max-width: 980px) {
-  .zlanding .nav-burger {
-    display: inline-flex;
-  }
+  .zlanding { --gut: 28px; }
+
+  /* Słupek z tytułem FAQ nie mieści się obok pytań — wraca nad listę. */
+  .zlanding .faq-inner { grid-template-columns: minmax(0, 1fr); }
+  .zlanding .faq-inner > .sec-head { margin-bottom: 28px; }
+
+  /* Nawigacja zwija się w panel sterowany klasą .is-open */
+  .zlanding .nav-burger { display: block; }
   .zlanding .nav-links {
     position: absolute;
-    top: calc(100% + 1px);
     left: 0;
     right: 0;
-    margin-left: 0;
+    top: 100%;
     display: none;
     flex-direction: column;
     align-items: stretch;
-    gap: 2px;
-    padding: 12px 20px 18px;
-    background: var(--page);
-    border-bottom: 1px solid var(--ink);
+    gap: 0;
+    padding: 8px 28px 20px;
+    background: #020A0B;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6);
+    border-bottom: 1px solid var(--hair);
   }
-  .zlanding .nav-links.is-open {
-    display: flex;
-  }
+  .zlanding .nav-links.is-open { display: flex; }
   .zlanding .nav-links a.lnk {
-    font-size: 12px;
-    padding: 12px 0;
+    padding: 14px 0;
+    font-size: 16px;
+    border-bottom: 1px solid var(--hair-2);
   }
   .zlanding .nav-links a.lnk[href="/register"] {
-    margin-top: 6px;
     justify-content: center;
-    padding: 12px;
+    margin-top: 14px;
+    min-height: 48px;
+    border-bottom: 1px solid var(--hair);
   }
+
+  /* Układy dwukolumnowe schodzą do jednej kolumny */
+  .zlanding .hero-inner,
+  .zlanding .register-grid,
+  .zlanding .asset-classes-inner,
+  .zlanding .faq-inner,
+  .zlanding .closing > .wrap { grid-template-columns: minmax(0, 1fr); gap: 40px; }
+
+  .zlanding .hero-panel { max-width: 420px; }
+  .zlanding .sec-split { display: block; }
+  .zlanding .sec-split .sec-aside { max-width: 56ch; padding-bottom: 0; margin-top: 20px; }
+  .zlanding .investor-list { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .zlanding .steps-seq { grid-template-columns: minmax(0, 1fr); }
+  .zlanding .steps-seq li { padding: 26px 0; border-top: 1px solid var(--hair-2); }
+  .zlanding .steps-seq li + li::before { display: none; }
+  .zlanding .steps-seq li:first-child { border-top: 0; }
+
+  .zlanding .alloc-ring { align-items: flex-start; }
+  .zlanding .alloc-legend { max-width: none; }
+  .zlanding .closing .sec-bg { object-position: 72% center; }
 }
 
-@media (max-width: 900px) {
-  /* Poniżej szyny nie ma: 190-pikselowa kolumna cech nie mieści się obok
-     treści, więc cecha wraca nad zdanie, którego dotyczy. */
-  .zlanding section.block .wrap::before {
-    display: none;
+@media (max-width: 720px) {
+  .zlanding { --gut: 20px; }
+  .zlanding h1 { font-size: clamp(34px, 10vw, 46px); }
+  .zlanding h2 { font-size: clamp(26px, 7.6vw, 36px); }
+
+  .zlanding .card-grid-4,
+  .zlanding .card-grid-3 { grid-template-columns: minmax(0, 1fr); }
+
+  .zlanding .hero-actions { flex-direction: column; align-items: stretch; }
+  .zlanding .hero-actions .btn { width: 100%; }
+  .zlanding .hero-sources { gap: 12px 20px; }
+  .zlanding .hero-foot { flex-direction: column; gap: 8px; }
+  /* Na wąskim ekranie kadr wchodzi w lewą, czarną stronę zdjęcia — widać sam
+     łuk rantu, a nie całe lico krążka pod tekstem. */
+  .zlanding .hero-bg { object-position: 26% 58%; }
+  /* Poziomy scrim był rysowany pod układ dwukolumnowy: chronił lewą trzecią
+     część kadru. Tekst idzie tu przez całą szerokość, więc zasłona też musi. */
+  .zlanding .hero::before {
+    background: linear-gradient(180deg, rgba(2, 10, 11, 0.9) 0%, rgba(2, 10, 11, 0.76) 44%, var(--vault) 100%);
   }
-  .zlanding .sec-title {
-    max-width: none;
-  }
-  .zlanding .foot-top {
-    grid-template-columns: 1fr 1fr;
-    gap: 32px;
-  }
+
+  /* Wiersz rejestru: etykieta i źródło jedno pod drugim, bez ściskania */
+  .zlanding .register-row { flex-wrap: wrap; gap: 8px 16px; }
+  .zlanding .register-row .rail-mark { order: 0; flex: 1 0 100%; text-align: left; }
+  .zlanding .register-what { flex: 1 0 100%; }
+
+  /* Zakres wykresu wychodził poza kadr — zawija się i kurczy */
+  .zlanding .static-chart-head { gap: 10px; }
+  .zlanding .static-chart-ranges { flex-wrap: wrap; }
+  .zlanding .static-chart-ranges button { min-height: 30px; padding: 0 8px; }
+
+  /* Wiersz portfela: sparkline schodzi, zostaje nazwa i zmiana */
+  .zlanding .portfolio-trend svg { display: none; }
+  .zlanding .portfolio-preview-row { gap: 12px; }
+
+  .zlanding .platform-tabs { display: flex; width: 100%; }
+  .zlanding .platform-tabs button { flex: 1; padding: 0 10px; }
+  .zlanding .closing-actions { flex-direction: column; align-items: stretch; }
+  .zlanding .closing-actions .btn { width: 100%; }
+  .zlanding .foot-top { flex-direction: column; gap: 32px; }
+  .zlanding .foot-bot { flex-direction: column; gap: 8px; }
+  .zlanding .statement p { max-width: none; }
 }
 
-@media (max-width: 680px) {
-  .zlanding .wrap {
-    padding: 0 20px;
-  }
-  .zlanding .nav-in {
-    padding: 11px 20px;
-  }
-  .zlanding section.block {
-    padding: 52px 0;
-  }
-  .zlanding .foot-top {
-    grid-template-columns: 1fr;
-  }
-  .zlanding .foot-mail {
-    display: block;
-    margin: 18px 0 0;
-  }
+/* ── Funkcje jako lista definicyjna ──────────────────────────────────────
+   Osiem identycznych kart z ramką to najbardziej generyczny blok ciemnego
+   SaaS-u. Lista na liniach niesie tę samą treść i należy do tego kierunku. */
+.zlanding .feature-list {
+  margin: 46px 0 0;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 0 var(--col-gap);
+  border-top: 1px solid var(--hair);
+}
+.zlanding .feature-row { grid-column: span 6; }
+.zlanding .feature-row { padding: 22px 0; border-bottom: 1px solid var(--hair-2); }
+.zlanding .feature-row dt { display: flex; align-items: baseline; gap: 14px; }
+.zlanding .feature-num {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--ink-3);
+  flex: 0 0 auto;
+}
+.zlanding .feature-name { font-weight: 500; font-size: 17px; line-height: 1.32; }
+.zlanding .feature-row dd { margin: 8px 0 0 30px; font-size: 14px; color: var(--ink-2); line-height: 1.62; max-width: 46ch; }
+
+@media (max-width: 720px) {
+  .zlanding .feature-list { grid-template-columns: minmax(0, 1fr); gap: 0; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .zlanding.js-reveal .reveal {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-  .zlanding .static-vvd-chart path,
-  .zlanding .static-vvd-chart polyline,
-  .zlanding .allocation-card circle,
-  .zlanding details.faq[open] .ans {
-    animation: none;
-    opacity: 1;
-  }
-  .zlanding .faq .pm {
-    transition: none;
-  }
+.zlanding .scope-local .statement { padding: 0 0 clamp(36px, 4vw, 52px); }
+.zlanding .scope-local .statement h3 { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 3.2vw, 46px); margin-top: 14px; }
+.zlanding .scope-local .statement p { margin-top: 18px; font-family: var(--text); font-size: 16px; color: var(--ink-2); max-width: 54ch; margin-inline: auto; }
+
+/* Wariant wykresu do panelu w hero: niższy, bez legendy, zakresy po prawej. */
+.zlanding .static-vvd-chart.is-compact { margin-top: 16px; }
+.zlanding .static-vvd-chart.is-compact .static-chart-legend { display: none; }
+.zlanding .static-vvd-chart.is-compact .static-chart-head { justify-content: flex-end; }
+.zlanding .static-vvd-chart.is-compact svg { max-height: 132px; }
+/* Opisy osi wartości pokazują się także w panelu hero — to ta sama gramatyka
+   wykresu, tylko mniejszym stopniem. Wcześniej ta reguła gasiła je wszystkie. */
+.zlanding .static-vvd-chart.is-compact text { font-size: 8.5px; }
+.zlanding .static-vvd-chart.is-compact line { opacity: .5; }
+
+/* Pierścień alokacji — stany podświetlenia */
+.zlanding .alloc-center-value {
+  font-family: var(--text);
+  font-variant-numeric: tabular-nums;
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
 }
+.zlanding .alloc-center-label {
+  font-family: var(--text);
+  font-size: 12px;
+  fill: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+.zlanding .alloc-legend li {
+  cursor: pointer;
+  padding: 3px 0;
+  transition: opacity 0.18s ease;
+}
+.zlanding .alloc-legend li.is-dim { opacity: 0.42; }
+.zlanding .alloc-legend li.is-active .alloc-name { color: var(--ink); }
+
+/* ── Znaki sekcji ────────────────────────────────────────────────────────
+   Rysunek danych, nie ikona. Kolor dziedziczony, żeby znak żył razem
+   z wierszem, a nie krzyczał własnym akcentem. */
+.zlanding .glyph-slot { display: inline-flex; color: var(--ink-3); transition: color 0.18s ease; }
+.zlanding .glyph { display: block; }
+
+.zlanding .steps-head-row { display: flex; align-items: center; gap: 12px; }
+.zlanding .steps-seq li:hover .glyph-slot { color: var(--amber); }
+
+.zlanding .feature-row dt { align-items: center; gap: 14px; }
+.zlanding .feature-row dd { margin-left: 42px; }
+.zlanding .feature-row:hover .glyph-slot { color: var(--amber); }
+
+.zlanding .investor-row-head { align-items: center; gap: 12px; }
+.zlanding .investor-row-head h4 { flex: 1; }
+.zlanding .investor-row:hover .glyph-slot { color: var(--amber); }
+.zlanding .asset-rows > div:hover .glyph-slot { color: var(--amber); }
+/* Znak klasy aktywow jest mniejszy niz w listach funkcji: wiersz ma 12px
+   odstepu, wiec pelne 28px rozepchneloby go o polowe. */
+.zlanding .asset-rows .glyph { width: 21px; height: 21px; }
+.zlanding .investor-row p { margin-left: 40px; }
+
+@media (max-width: 720px) {
+  .zlanding .feature-row dd,
+  .zlanding .investor-row p { margin-left: 0; }
+}
+
+
+/* ── Siatka: prawa kolumna zaczyna się w jednym miejscu na całej stronie ─── */
+.zlanding .sec-split { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 56px; align-items: end; }
+.zlanding .sec-split .sec-aside { max-width: none; }
+.zlanding .register-grid,
+.zlanding .asset-classes-inner,
+.zlanding .faq-inner { grid-template-columns: minmax(0, 1fr) 400px; gap: 56px; }
+.zlanding .asset-classes-inner > .alloc-ring { order: 2; }
+
+/* Wiersz meta przyklejony do dołu komórki — kroki mają wspólną linię bazową */
+.zlanding .steps-seq li { display: flex; flex-direction: column; }
+.zlanding .steps-seq p { flex: 1; }
+
+/* Panel hero: statystyki w równych kolumnach, „zł" nie konkuruje z liczbą */
+
+
+/* Wykres nie może kończyć się pionowym cięciem */
+.zlanding .static-vvd-chart svg { overflow: visible; }
+.zlanding .static-vvd-chart.is-compact svg { padding-right: 2px; }
+
+/* Jeden promień w całym systemie */
+.zlanding .glass,
+.zlanding .glass::after,
+.zlanding .value-card,
+.zlanding .portfolios-card,
+.zlanding .platform-stage-main figure,
+.zlanding .platform-stage-main figure img,
+.zlanding .platform-tabs { border-radius: 4px; }
+
+/* Krawędź karty: światło u góry, wygaszenie u dołu — zamiast płaskiej ramki */
+.zlanding .glass,
+.zlanding .value-card,
+.zlanding .portfolios-card {
+  border-top-color: rgba(226, 240, 232, 0.16);
+  border-bottom-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Nawigacyjne CTA musi mieć afordancję przycisku */
+.zlanding .nav-links a.lnk[href="/register"] {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 16px;
+  border-radius: 4px;
+  color: #160C02;
+  background: rgba(240, 164, 60, 0.88);
+  font-weight: 500;
+}
+.zlanding .nav-links a.lnk[href="/register"]:hover { background: rgba(255, 182, 90, 0.96); color: #160C02; }
+
+/* Panel hero mniej przepuszcza blask wstęgi zza szkła */
+.zlanding .hero-panel { background: rgba(6, 14, 13, 0.62); backdrop-filter: blur(30px) saturate(120%); -webkit-backdrop-filter: blur(30px) saturate(120%); }
+
+.zlanding .product-value span.unit { font-size: 0.42em; color: var(--ink-3); font-weight: 400; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Kolapsy responsywne muszą stać PO regułach siatki, bo kaskada rozstrzyga
+   kolejnością przy równej specyficzności.
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 1180px) {
+  .zlanding .sec-split,
+  .zlanding .register-grid,
+  .zlanding .asset-classes-inner,
+  .zlanding .faq-inner { grid-template-columns: minmax(0, 1fr) 340px; gap: 40px; }
+}
+
+@media (max-width: 980px) {
+  .zlanding .sec-split,
+  .zlanding .register-grid,
+  .zlanding .asset-classes-inner,
+  .zlanding .faq-inner,
+  .zlanding .closing > .wrap { grid-template-columns: minmax(0, 1fr); gap: 40px; }
+  .zlanding .sec-split { align-items: start; }
+  .zlanding .asset-classes-inner > .alloc-ring { order: 0; }
+  .zlanding .hero-panel { max-width: 420px; }
+}
+
+@media (max-width: 720px) {
+  .zlanding .hero-panel { max-width: none; }
+  .zlanding .register-visual { min-width: 0; }
+  .zlanding .static-vvd-chart svg { overflow: hidden; }
+}
+
+.zlanding .register { padding-bottom: clamp(40px, 4vw, 56px); }
+.zlanding .asset-classes { padding-bottom: clamp(32px, 3vw, 44px); }
+.zlanding .register-grid,
+.zlanding .asset-classes-inner { align-items: start; }

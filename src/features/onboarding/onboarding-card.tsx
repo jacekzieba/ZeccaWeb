@@ -41,13 +41,13 @@ export function OnboardingCard({
           fontFamily: V2_TYPE.ui, color: V2.ink,
         }}
       >
-        <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".2em", textTransform: "uppercase", color: V2.subtle }}>
+        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".2em", textTransform: "uppercase", color: V2.subtle }}>
           {eyebrow}
         </div>
-        <h2 style={{ fontFamily: V2_TYPE.serif, fontWeight: 400, fontSize: 30, lineHeight: 1.15, letterSpacing: "-.01em", marginTop: 12 }}>
+        <h2 style={{ fontFamily: V2_TYPE.serif, fontWeight: 400, fontSize: 31, lineHeight: 1.15, letterSpacing: "-.01em", marginTop: 12 }}>
           {title}
         </h2>
-        <p style={{ fontSize: 13.5, lineHeight: 1.65, color: V2.muted, marginTop: 12 }}>{body}</p>
+        <p style={{ fontSize: 13, lineHeight: 1.65, color: V2.muted, marginTop: 12 }}>{body}</p>
 
         {visual && <OnboardingVisual visual={visual} />}
 

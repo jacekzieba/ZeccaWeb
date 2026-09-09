@@ -114,8 +114,23 @@ body {
 }
 
 @media (max-width: 720px) {
+  /* Nagłówek nie znika — zwija się do paska z zaznaczaniem wszystkiego i dwoma
+     przyciskami sortowania. Ukrycie go w całości zabierało na telefonie
+     sortowanie rejestru ORAZ zaznaczanie hurtowe, choć pola wyboru w wierszach
+     zostawały: funkcja była oferowana i ułomna. */
   .transactions-table-header {
-    display: none !important;
+    display: flex !important;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 16px !important;
+  }
+
+  .transactions-th:not(.is-sortable) {
+    display: none;
+  }
+
+  .transactions-th.is-sortable {
+    text-align: left !important;
   }
 
   .transactions-table-row {
@@ -153,7 +168,8 @@ body {
   .transaction-modal-panel {
     height: calc(100vh - 16px) !important;
     grid-template-columns: 1fr !important;
-    border-radius: 16px !important;
+    /* Skala promieni ma pięć stopni (2/3/4/8/12) — 16px był poza nią. */
+    border-radius: var(--r-xl) !important;
   }
 
   .transaction-modal-sidebar {
@@ -204,4 +220,298 @@ body {
     min-width: 0 !important;
     padding: 0 12px !important;
   }
+}
+
+/* ── Szyna z podziałką — sygnatura kierunku „Próba" ──────────────────────────
+   Pionowa linia na stałej pozycji: po lewej cechy, po prawej treść. Na szynie
+   stoją wyłącznie rzeczy weryfikowalne — źródło, data, jednostka, liczba
+   obserwacji. Nigdy hasło. Poniżej 900 px szyna znika, a cecha wraca nad
+   zdanie, którego dotyczy.
+   Specyfikacja: docs/superpowers/specs/2026-08-05-design-system-proba-design.md */
+
+.rail {
+  --rail-col: 168px;
+  display: grid;
+  grid-template-columns: var(--rail-col) 1fr;
+  column-gap: 28px;
+  position: relative;
+}
+
+/* Podziałka: kreski co --rail-step wzdłuż linii. */
+.rail::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--rail-col);
+  width: 1px;
+  background: var(--rail);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--rail) 0,
+    var(--rail) 1px,
+    transparent 1px,
+    transparent var(--rail-step)
+  );
+}
+
+.rail-row {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  align-items: baseline;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--line-2);
+}
+.rail-row:last-child { border-bottom: 0; }
+
+/* Cecha stoi po lewej stronie szyny, wyrównana do niej. */
+.rail-mark {
+  grid-column: 1;
+  justify-self: end;
+  text-align: right;
+  padding-right: var(--space-2);
+  font-family: var(--font-code);
+  font-size: 10px;
+  line-height: 1.5;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.rail-mark em {
+  display: block;
+  margin-top: 2px;
+  font-style: normal;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--ink-faint);
+}
+
+.rail-body { grid-column: 2; min-width: 0; }
+
+/* Nagłówki zostawiają lewą kolumnę pustą — zgodnie z regułą, nie wbrew niej. */
+.rail-head { grid-column: 2; min-width: 0; }
+
+@media (max-width: 900px) {
+  .rail { display: block; }
+  .rail::before { display: none; }
+  .rail-row { display: block; padding: var(--space-3) 0; }
+  .rail-mark {
+    justify-self: start;
+    text-align: left;
+    padding-right: 0;
+    margin-bottom: var(--space-1);
+  }
+  .rail-mark em { display: inline; margin-left: var(--space-2); }
+}
+
+/* Rejestr KPI. Korekta 6a specyfikacji: treść leży na panelu, cecha zostaje
+   obok na papierze — dlatego panel malujemy tylko pod prawą kolumną szyny. */
+.kpi-register { position: relative; }
+.kpi-register::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 calc(var(--rail-col) + 28px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  z-index: 0;
+}
+.kpi-register .rail-row { position: relative; z-index: 1; border-bottom-color: var(--line-2); }
+.kpi-register .rail-body { padding: 0 var(--space-4); }
+
+.kpi-register-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: var(--space-4);
+}
+/* Wodzik wiąże nazwę z wartością przez pustkę wiersza. */
+.kpi-register-label {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.kpi-register-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line-2);
+  transform: translateY(-4px);
+}
+.kpi-register-value {
+  font-family: var(--font-code);
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.kpi-register-sub {
+  grid-column: 2;
+  justify-self: end;
+  font-family: var(--font-display);
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+.kpi-register-sub:empty { display: none; }
+
+@media (max-width: 900px) {
+  .kpi-register::after { inset: 0; }
+  .kpi-register .rail-body { padding: 0 var(--space-3); }
+}
+
+/* Odnośnik do wyjaśnienia wskaźnika — ten sam afordans co „?" przy kaflu KPI. */
+.rail-help {
+  flex: 0 0 auto;
+  margin-left: var(--space-2);
+  width: 15px;
+  height: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  font-family: var(--font-text);
+  font-size: 10px;
+  line-height: 1;
+  color: var(--ink-faint);
+  text-decoration: none;
+}
+.rail-help:hover { color: var(--accent); border-color: var(--accent); }
+
+/* Karta wskaźnika, do której trafił odnośnik „?" — przez chwilę widać, która to. */
+.faq-metric:target {
+  border-color: var(--accent);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+/* Wiersz kontynuujący to samo źródło: sam detal, bez powtórzonego nagłówka cechy.
+   Delikatna przerwa w grupie zamiast dziesięciu identycznych wierszy pod rząd. */
+.kpi-register .rail-row.is-continued .rail-mark em { margin-top: 0; }
+.kpi-register .rail-row:not(.is-continued) { border-top: 1px solid var(--line-2); }
+.kpi-register .rail-row:not(.is-continued):first-child { border-top: 0; }
+
+/* Widoczny fokus w całej aplikacji. Pola formularzy miały outline: none bez
+   żadnego zamiennika — WCAG 2.4.7 nie był spełniony nigdzie poza landingiem. */
+:where(input, select, textarea, button, a, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+/* Modal sam w sobie nie potrzebuje obrysu — dostaje fokus tylko programowo. */
+[role="dialog"]:focus-visible { outline: none; }
+
+/* ── Kafelki wskaźników ──────────────────────────────────────────────────────
+   Zastępują rejestr wierszy: przy dziesięciu pozycjach szyna z cechami czytała
+   się jak jedna bryła. Cecha przeniosła się do kafelka i stoi nad nazwą — reguła
+   „każda liczba ma źródło" zostaje, zmienia się nośnik. */
+.metric-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+  gap: var(--space-3);
+}
+
+.metric-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  min-width: 0;
+}
+
+/* Cecha źródła — mono, bo to dane techniczne, nie proza. */
+.metric-tile-mark {
+  font-family: var(--font-code);
+  font-size: 10px;
+  line-height: 1.5;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin-bottom: var(--space-2);
+}
+.metric-tile-mark em {
+  display: block;
+  margin-top: 1px;
+  font-style: normal;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--ink-faint);
+}
+
+.metric-tile-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-text);
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.metric-tile-value {
+  font-family: var(--font-code);
+  font-variant-numeric: tabular-nums;
+  font-size: 21px;
+  letter-spacing: -0.02em;
+  /* Spacja nierozdzielająca z Intl ma w mono pełną szerokość znaku, więc grupy
+     tysięcy rozjeżdżały się dziurą szerszą od cyfry. */
+  word-spacing: -0.26em;
+  line-height: 1.25;
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.metric-tile-sub {
+  font-family: var(--font-text);
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+
+.metric-tile-help {
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  font-family: var(--font-text);
+  font-size: 10px;
+  line-height: 1;
+  color: var(--ink-faint);
+  text-decoration: none;
+}
+.metric-tile-help:hover { color: var(--accent); border-color: var(--accent); }
+
+@media (max-width: 720px) {
+  .metric-tiles { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+}
+
+/* ── Odsyłacz do treści ──────────────────────────────────────────────────────
+   Widoczny wyłącznie po sfokusowaniu, ale zawsze pierwszy w kolejności Tab. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 999;
+}
+.skip-link:focus-visible {
+  left: var(--space-4);
+  top: var(--space-4);
+  padding: 10px 16px;
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: var(--font-text);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
 }

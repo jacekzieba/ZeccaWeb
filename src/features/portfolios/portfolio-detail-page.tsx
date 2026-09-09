@@ -32,6 +32,7 @@ import {
   type SectionPanelTheme,
 } from "@/components/customize/section-customize-panel";
 import { SectionGrid } from "@/components/customize/section-grid";
+import { currencyLabel } from "@/lib/money";
 import {
   BadgeDollarSign,
   BadgePercent,
@@ -198,7 +199,7 @@ function HistoryCard({
   return (
     <div style={{ ...glassCard, padding: "22px 22px 18px", height: "100%" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
-        <div style={{ fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>
           Historia wartości · {period === "MAX" ? "maksimum" : period}
         </div>
         <div style={{ display: "inline-flex", background: "rgba(28,49,68,0.06)", borderRadius: 11, padding: 3 }}>
@@ -212,7 +213,7 @@ function HistoryCard({
                 border: "none",
                 cursor: "pointer",
                 fontFamily: TYPOGRAPHY.system,
-                fontSize: 11.5,
+                fontSize: 11,
                 fontWeight: period === option ? 700 : 500,
                 background: period === option ? token("surface") : "transparent",
                 color: period === option ? INK : MUTED,
@@ -251,7 +252,7 @@ function HoldingsCard({
           borderBottom: `0.5px solid ${LINE_SOFT}`,
         }}
       >
-        <div style={{ fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>
           Pozycje ({groupedCount})
         </div>
       </div>
@@ -331,7 +332,7 @@ function HoldingsCard({
                   alignItems: "center",
                   justifyContent: "center",
                   fontSize: 11,
-                  fontWeight: 800,
+                  fontWeight: 700,
                   color,
                   flexShrink: 0,
                   letterSpacing: "-0.02em",
@@ -366,9 +367,9 @@ function HoldingsCard({
 
             {/* Market value */}
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
                 {fmt(h.marketValue)}{" "}
-                <span style={{ fontSize: 10, opacity: 0.5 }}>{displayCurrency}</span>
+                <span style={{ fontSize: 10, opacity: 0.5 }}>{currencyLabel(displayCurrency)}</span>
               </div>
             </div>
 
@@ -412,7 +413,7 @@ function CashCard({ balances }: { balances: CashBalance[] }) {
           borderBottom: `0.5px solid ${LINE_SOFT}`,
         }}
       >
-        <div style={{ fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>
           Środki pieniężne
         </div>
       </div>
@@ -439,7 +440,7 @@ function CashCard({ balances }: { balances: CashBalance[] }) {
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: 11,
-                fontWeight: 800,
+                fontWeight: 700,
                 color: PROFIT,
               }}
             >
@@ -508,8 +509,8 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <Breadcrumb name="—" />
         <div style={{ ...glassCard, padding: "48px 22px", textAlign: "center" }}>
-          <div style={{ fontSize: 32, opacity: 0.12, marginBottom: 12 }}>◎</div>
-          <div style={{ fontSize: 14, color: SUBTLE }}>
+          <div style={{ fontSize: 31, opacity: 0.12, marginBottom: 12 }}>◎</div>
+          <div style={{ fontSize: 13, color: SUBTLE }}>
             Odblokuj dane w panelu synchronizacji
           </div>
         </div>
@@ -522,7 +523,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <Breadcrumb name="Nieznany portfel" />
         <div style={{ ...glassCard, padding: "48px 22px", textAlign: "center" }}>
-          <div style={{ fontSize: 14, color: SUBTLE }}>Portfel nie istnieje lub nie zawiera danych.</div>
+          <div style={{ fontSize: 13, color: SUBTLE }}>Portfel nie istnieje lub nie zawiera danych.</div>
         </div>
       </div>
     );
@@ -570,8 +571,8 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
   );
 
   const renderSection = (id: string) => {
-    if (id === "kpiValue") return <KpiCard label="Wartość portfela" value={`${fmt(detail.totalValue)} ${displayCurrency}`} />;
-    if (id === "kpiCash") return <KpiCard label="Gotówka" value={`${fmt(detail.cashValue)} ${displayCurrency}`} />;
+    if (id === "kpiValue") return <KpiCard label="Wartość portfela" value={`${fmt(detail.totalValue)} ${currencyLabel(displayCurrency)}`} />;
+    if (id === "kpiCash") return <KpiCard label="Gotówka" value={`${fmt(detail.cashValue)} ${currencyLabel(displayCurrency)}`} />;
     const kpi = kpiById.get(id as KpiTileId);
     if (kpi) return <KpiCard label={kpi.label} value={kpi.value} sub={kpi.sub} color={kpi.color} helpHref={kpi.helpHref} />;
     if (id === "history") return (
@@ -584,7 +585,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
     );
     if (id === "valueVsDeposits") return (
       <div style={{ ...glassCard, padding: "22px 22px 18px", height: "100%" }}>
-        <div style={{ fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 14 }}>Wartość konta na tle wpłat</div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 14 }}>Wartość konta na tle wpłat</div>
         <ValueVsDepositsChart value={detail.valuationSeries} deposits={detail.netInvestedSeries} currency={displayCurrency} height={210} />
       </div>
     );
@@ -616,7 +617,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
             color: showCustomize ? PD_THEME.brand : INK,
             cursor: "pointer",
             fontFamily: TYPOGRAPHY.system,
-            fontSize: 12.5,
+            fontSize: 12,
             fontWeight: 700,
             padding: "8px 13px",
           }}

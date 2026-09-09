@@ -20,7 +20,7 @@ export default function PrivacyPolicyPage() {
             color: COLORS.text,
           }}
         >
-          <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 8, letterSpacing: "-0.01em" }}>
+          <h1 style={{ fontSize: 31, fontWeight: 700, marginBottom: 8, letterSpacing: "-0.01em" }}>
             Polityka prywatności Zecca
           </h1>
 
@@ -37,7 +37,7 @@ export default function PrivacyPolicyPage() {
             </p>
           </div>
 
-          <h2 style={{ fontSize: 22, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
+          <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
             Jakie dane przetwarza Zecca
           </h2>
 
@@ -68,7 +68,7 @@ export default function PrivacyPolicyPage() {
             Do odblokowania zaszyfrowanej kopii klucza synchronizacji na nowym urządzeniu służy <strong>osobna fraza synchronizacji (passphrase)</strong>, którą ustalasz przy włączaniu prywatnej synchronizacji Zecca. Fraza nie jest tożsama z hasłem konta i nie jest przechowywana na serwerze — bez niej zaszyfrowanych danych nie da się odczytać.
           </p>
 
-          <h2 style={{ fontSize: 22, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
+          <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
             Dane lokalne w przeglądarce
           </h2>
 
@@ -80,7 +80,7 @@ export default function PrivacyPolicyPage() {
             Odszyfrowane dane portfela są przetwarzane w pamięci aktywnej karty. Pliki importu są parsowane lokalnie w przeglądarce, a eksporty są generowane lokalnie.
           </p>
 
-          <h2 style={{ fontSize: 22, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
+          <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
             Telemetria produktowa
           </h2>
 
@@ -100,7 +100,7 @@ export default function PrivacyPolicyPage() {
             Do wykrywania i diagnozowania awarii aplikacji webowej korzystamy z Sentry (Functional Software, Inc.), z przechowywaniem danych w regionie UE (Niemcy). Sentry otrzymuje wyłącznie <strong>techniczne informacje o błędzie</strong>: typ błędu i ślad stosu, wersję i numer kompilacji aplikacji oraz typ przeglądarki. Zgłoszenia <strong>nie zawierają</strong> kwot, tickerów, treści portfela, adresów e-mail, tokenów sesji, zawartości formularzy ani parametrów adresu URL — dane te są usuwane przed wysłaniem. Zgłoszenia wysyłane są wyłącznie z produkcyjnej wersji aplikacji.
           </p>
 
-          <h2 style={{ fontSize: 22, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
+          <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
             Cookies i sesja
           </h2>
 
@@ -112,7 +112,7 @@ export default function PrivacyPolicyPage() {
             Dlatego nie wyświetlamy baneru cookies dla TelemetryDeck. Pozostałe lokalne magazyny przeglądarki służą wyłącznie działaniu funkcji wybranych przez użytkownika: ustawieniom interfejsu, kolejce zaszyfrowanej synchronizacji i — gdy to wybierzesz — lokalnie zapamiętanemu kluczowi odszyfrowywania. Nie służą reklamie ani śledzeniu między witrynami. Jeżeli w przyszłości dodamy opcjonalne technologie wymagające zgody, poprosimy o nią przed ich użyciem.
           </p>
 
-          <h2 style={{ fontSize: 22, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
+          <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
             Śledzenie
           </h2>
 
@@ -120,7 +120,7 @@ export default function PrivacyPolicyPage() {
             Zecca <strong>nie używa</strong> zebranych danych do śledzenia Cię w innych aplikacjach ani witrynach.
           </p>
 
-          <h2 style={{ fontSize: 22, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
+          <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
             Twoje prawa
           </h2>
 
@@ -128,7 +128,7 @@ export default function PrivacyPolicyPage() {
             Masz prawo do dostępu do swoich danych, ich poprawienia oraz usunięcia. Konto i powiązane z nim dane synchronizacji możesz usunąć bezpośrednio w aplikacji (Ustawienia → Konto → Usuń konto) lub kontaktując się pod adresem kontakt@jacekzieba.pl.
           </p>
 
-          <h2 style={{ fontSize: 22, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
+          <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
             Kontakt
           </h2>
 

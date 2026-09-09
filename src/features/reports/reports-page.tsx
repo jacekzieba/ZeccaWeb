@@ -13,6 +13,8 @@ import { ValueVsDepositsChart } from "@/components/charts/value-vs-deposits-char
 import { KPI_HELP_HREFS, type KpiTileId } from "@/components/metrics/portfolio-kpi-strip";
 import type { ValuationPoint } from "@/domain/models/investor-data";
 import { V2, V2_TYPE, v2Mix } from "@/lib/v2-design";
+import { assetClassColor } from "@/lib/asset-colors";
+import { currencyLabel } from "@/lib/money";
 
 const INK = V2.ink;
 const MUTED = V2.muted;
@@ -119,7 +121,11 @@ function Kpi({
   return (
     <div style={{ ...card, padding: "18px 20px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
-        <span style={{ fontFamily: UI, fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>{label}</span>
+        {/* Ta sama nazwa co w kafelku wskaźnika: Archivo 12,5px, --ink-muted, bez
+            wersalików. Wcześniej te dwie karty stały na jednym ekranie z kafelkami
+            i różniły się krojem, stopniem, grubością, światłem i kolorem — osiem
+            różnic między dwoma rzędami tego samego obiektu. */}
+        <span style={{ fontFamily: UI, fontSize: 12, fontWeight: 400, color: MUTED }}>{label}</span>
         {helpHref && (
           <a
             href={helpHref}
@@ -142,7 +148,7 @@ function Kpi({
           </a>
         )}
       </div>
-      <div style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 500, color, fontVariantNumeric: "tabular-nums" }}>{value}</div>
+      <div style={{ fontFamily: MONO, fontSize: 21, fontWeight: 500, color, fontVariantNumeric: "tabular-nums", wordSpacing: "-.26em" }}>{value}</div>
       {sub && <div style={{ fontFamily: UI, fontSize: 12, color: MUTED, marginTop: 3 }}>{sub}</div>}
     </div>
   );
@@ -154,7 +160,7 @@ function helpFor(id: KpiTileId) {
 
 function SectionHead({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ fontFamily: UI, fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>{children}</div>
+    <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>{children}</div>
   );
 }
 
@@ -165,7 +171,9 @@ export function ReportsPage() {
   const { displayCurrency } = useProfile();
   // Demo/sample numbers are illustrative PLN, so only label real data in the
   // chosen currency.
-  const ccy = isDemo ? "PLN" : displayCurrency;
+  // Symbol przy kwocie, kod tylko tam, gdzie nazywa walutę. Ten plik omijał
+  // `currencyLabel`, więc raporty pisały „306 424 PLN" obok pulpitu z „306 424 zł".
+  const ccy = currencyLabel(isDemo ? "PLN" : displayCurrency);
   useSampleDataSignal(isDemo);
   const [report, setReport] = useState<ReportId>("performance");
 
@@ -183,8 +191,8 @@ export function ReportsPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: UI, color: INK }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 12, padding: "2px 2px 0" }}>
         <div>
-          <div style={{ fontFamily: UI, fontSize: 10.5, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: SUBTLE }}>Analiza</div>
-          <div style={{ fontFamily: SERIF, fontSize: 31, fontWeight: 500, color: INK, letterSpacing: "-.01em", marginTop: 3 }}>Raporty</div>
+          <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: SUBTLE }}>Analiza</div>
+          <h1 style={{ fontFamily: SERIF, fontSize: 31, fontWeight: 500, color: INK, letterSpacing: "-.01em", margin: "3px 0 0" }}>Raporty</h1>
           <div style={{ fontSize: 13, color: MUTED, marginTop: 4 }}>
             {isDemo ? "Tryb demo · " : ""}Dane na {asOfLabel} · zwroty liczone metodą ważoną czasem (bez wpłat)
           </div>
@@ -201,7 +209,7 @@ export function ReportsPage() {
             onClick={() => setReport(item.id)}
             style={{
               padding: "7px 15px", borderRadius: 8, border: "none", cursor: "pointer",
-              fontFamily: UI, fontSize: 12.5, fontWeight: report === item.id ? 700 : 500,
+              fontFamily: UI, fontSize: 12, fontWeight: report === item.id ? 700 : 500,
               background: report === item.id ? V2.card : "transparent",
               color: report === item.id ? INK : MUTED,
               boxShadow: report === item.id ? `0 1px 4px ${v2Mix(V2.ink, 0.1)}` : "none",
@@ -247,10 +255,10 @@ export function ReportsPage() {
               <Kpi label="Najlepszy miesiąc" value={fmtPct(monthlyStats.best.pct)} sub={monthlyStats.best.label} color={PROFIT} />
               <Kpi label="Najgorszy miesiąc" value={fmtPct(monthlyStats.worst.pct)} sub={monthlyStats.worst.label} color={LOSS} />
               <div style={{ ...card, padding: "18px 20px" }}>
-                <div style={{ fontFamily: UI, fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 8 }}>Miesiące z zyskiem</div>
+                <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 8 }}>Miesiące z zyskiem</div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                  <span style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 500, color: PROFIT }}>{monthlyStats.positive}</span>
-                  <span style={{ fontSize: 14, color: SUBTLE }}>/ {monthlyStats.total}</span>
+                  <span style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 500, color: PROFIT }}>{monthlyStats.positive}</span>
+                  <span style={{ fontSize: 13, color: SUBTLE }}>/ {monthlyStats.total}</span>
                 </div>
                 <div style={{ display: "flex", borderRadius: 4, overflow: "hidden", marginTop: 8, height: 6 }}>
                   <div style={{ flex: monthlyStats.positive, background: PROFIT, minWidth: monthlyStats.positive > 0 ? 4 : 0 }} />
@@ -278,7 +286,7 @@ export function ReportsPage() {
                   <div style={{ height: 8, borderRadius: 4, background: v2Mix(V2.ink, 0.06), position: "relative", overflow: "hidden" }}>
                     <div style={{ width: `${Math.min(Math.abs(yr.returnPct) * 2.5, 100)}%`, height: "100%", borderRadius: 4, background: isPos ? PROFIT : LOSS }} />
                   </div>
-                  <div style={{ textAlign: "right", fontFamily: SERIF, fontSize: 17, fontWeight: 500, color: isPos ? PROFIT : LOSS }}>{fmtPct(yr.returnPct)}</div>
+                  <div style={{ textAlign: "right", fontFamily: SERIF, fontSize: 18, fontWeight: 500, color: isPos ? PROFIT : LOSS }}>{fmtPct(yr.returnPct)}</div>
                 </div>
               );
             })
@@ -299,12 +307,12 @@ export function ReportsPage() {
             {(() => {
               const net = cashflows.dividends + cashflows.interest - cashflows.fees - cashflows.taxes;
               return (
-                <div style={{ fontFamily: SERIF, fontSize: 30, fontWeight: 500, marginTop: 8, color: net >= 0 ? PROFIT : LOSS }}>
+                <div style={{ fontFamily: SERIF, fontSize: 31, fontWeight: 500, marginTop: 8, color: net >= 0 ? PROFIT : LOSS }}>
                   {net >= 0 ? "+" : ""}{fmt(net)} {ccy}
                 </div>
               );
             })()}
-            <div style={{ fontSize: 12.5, color: MUTED, marginTop: 6 }}>
+            <div style={{ fontSize: 12, color: MUTED, marginTop: 6 }}>
               Dywidendy i odsetki pomniejszone o prowizje i podatki. Wpłaty/wypłaty kapitału nie są wliczane do dochodu.
             </div>
           </div>
@@ -321,10 +329,10 @@ export function ReportsPage() {
           </div>
           <div style={{ ...card, padding: "20px 22px" }}>
             <SectionHead>Zarobki i obciążenia</SectionHead>
-            <div style={{ fontFamily: SERIF, fontSize: 30, fontWeight: 500, marginTop: 8, color: personalIncome.netPLN >= 0 ? PROFIT : LOSS }}>
+            <div style={{ fontFamily: SERIF, fontSize: 31, fontWeight: 500, marginTop: 8, color: personalIncome.netPLN >= 0 ? PROFIT : LOSS }}>
               {personalIncome.netPLN >= 0 ? "+" : ""}{fmt(personalIncome.netPLN)} {ccy}
             </div>
-            <div style={{ fontSize: 12.5, color: MUTED, marginTop: 6 }}>
+            <div style={{ fontSize: 12, color: MUTED, marginTop: 6 }}>
               Suma rekordów zarobków i obciążeń zsynchronizowanych z macOS. Nie jest mieszana z gotówką portfela.
             </div>
           </div>
@@ -342,9 +350,8 @@ export function ReportsPage() {
             {snapshot.allocation.length === 0 ? (
               <div style={{ padding: "24px 22px", textAlign: "center", fontSize: 13, color: SUBTLE }}>Brak danych alokacji</div>
             ) : (
-              snapshot.allocation.map((slice, i) => {
-                const COLORS = [V2.equity, V2.bonds, V2.gold, V2.deposit, V2.profit, V2.cash];
-                const color = COLORS[i % COLORS.length];
+              snapshot.allocation.map((slice) => {
+                const color = assetClassColor(slice.label);
                 return (
                   <div key={slice.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 22px", borderTop: `0.5px solid ${LINE_SOFT}`, gap: 12 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -355,7 +362,7 @@ export function ReportsPage() {
                       <div style={{ width: 80, height: 4, borderRadius: 2, background: v2Mix(V2.ink, 0.08) }}>
                         <div style={{ width: `${slice.percent}%`, height: "100%", borderRadius: 2, background: color }} />
                       </div>
-                      <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums", minWidth: 48, textAlign: "right" }}>
+                      <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 500, color: INK, fontVariantNumeric: "tabular-nums", minWidth: 48, textAlign: "right" }}>
                         {slice.percent.toLocaleString("pl-PL", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
                       </span>
                     </div>

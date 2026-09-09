@@ -632,7 +632,7 @@ export function SyncUnlockPanel({
         }}
       >
         <div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: INK }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: INK }}>
             Zaloguj się, żeby pobrać sync
           </div>
           <div style={{ fontSize: 12, color: MUTED, marginTop: 3 }}>
@@ -716,7 +716,7 @@ export function SyncUnlockPanel({
         }}
       >
         <div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: INK }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: INK }}>
             {lastSummary ? (
               <span>
                 <span style={{ color: PROFIT }}>✓</span>{" "}

@@ -99,9 +99,9 @@ function PinPad({ onPin, label, error }: { onPin: (pin: string) => void; label: 
 
   return (
     <div style={{ textAlign: "center" }}>
-      <div style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 500, color: V2.muted, marginBottom: 4 }}>{label}</div>
+      <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 500, color: V2.muted, marginBottom: 4 }}>{label}</div>
       <PinDots filled={input.length} />
-      {error && <div style={{ fontFamily: UI, fontSize: 12.5, color: V2.loss, marginBottom: 8, minHeight: 20 }}>{error}</div>}
+      {error && <div style={{ fontFamily: UI, fontSize: 12, color: V2.loss, marginBottom: 8, minHeight: 20 }}>{error}</div>}
       {!error && <div style={{ minHeight: 28 }} />}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, maxWidth: 240, margin: "0 auto" }}>
         {DIGITS.map((d, i) => (
@@ -133,7 +133,7 @@ function btnStyle(bg: string): React.CSSProperties {
   return {
     height: 56, borderRadius: 12, border: `0.5px solid ${V2.line}`,
     background: bg, color: V2.ink,
-    fontFamily: MONO, fontSize: 20, fontWeight: 500, cursor: "pointer",
+    fontFamily: MONO, fontSize: 21, fontWeight: 500, cursor: "pointer",
     boxShadow: `0 1px 3px ${v2Mix(V2.ink, 0.08)}`,
     transition: "background .1s",
   };
@@ -257,7 +257,7 @@ export function AppLock({ children }: { children: React.ReactNode }) {
           gap: 6,
         }}
       >
-        <div style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 500, color: V2.ink, marginBottom: 8 }}>Zecca</div>
+        <div style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 500, color: V2.ink, marginBottom: 8 }}>Zecca</div>
         <PinPad label="Podaj PIN, aby odblokować" onPin={verify} error={error} />
       </div>
     );
@@ -277,7 +277,7 @@ export function AppLockSettingsRow() {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
       <div>
-        <div style={{ fontFamily: UI, fontSize: 13.5, fontWeight: 600, color: V2.ink }}>Blokada ekranu PIN</div>
+        <div style={{ fontFamily: UI, fontSize: 13, fontWeight: 600, color: V2.ink }}>Blokada ekranu PIN</div>
         <div style={{ fontFamily: UI, fontSize: 12, color: V2.muted, marginTop: 2 }}>
           {enabled
             ? `Karta blokuje widok po ${getIdleMinutes()} min. nieaktywności. To lekka blokada przed podglądem, nie odpowiednik biometrii urządzenia.`
@@ -289,7 +289,7 @@ export function AppLockSettingsRow() {
         style={{
           padding: "8px 14px", borderRadius: 10, border: `0.5px solid ${V2.line}`,
           background: V2.card, color: enabled ? V2.loss : V2.ink,
-          fontFamily: UI, fontSize: 12.5, fontWeight: 600, cursor: "pointer",
+          fontFamily: UI, fontSize: 12, fontWeight: 600, cursor: "pointer",
         }}
       >
         {enabled ? "Usuń PIN" : "Ustaw blokadę"}

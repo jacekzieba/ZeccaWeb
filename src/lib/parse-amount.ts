@@ -39,3 +39,15 @@ export function parsePositiveAmount(value: string | null | undefined): number | 
   const parsed = parseAmount(value);
   return parsed != null && parsed > 0 ? parsed : null;
 }
+
+/** Zapis kwoty do pola formularza — po polsku, czyli z przecinkiem.
+ *
+ * `toFixed` zawsze daje kropkę, więc pole „Kwota (brutto)", które liczy się samo
+ * z ilości i ceny, pokazywało `1234.50` tuż pod własną podpowiedzią każącą pisać
+ * przecinkiem, a podsumowanie trzy wiersze niżej — `1234,50`. Ta sama liczba
+ * w dwóch zapisach, na jednym ekranie. `parseAmount` przyjmuje oba, więc chodzi
+ * wyłącznie o to, co użytkownik widzi.
+ */
+export function formatAmountInput(value: number, decimals = 2): string {
+  return value.toFixed(decimals).replace(".", ",");
+}

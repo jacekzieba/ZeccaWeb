@@ -37,7 +37,7 @@ const numberInputStyle: CSSProperties = {
   background: V2.card,
   color: V2.ink,
   fontFamily: V2_TYPE.mono,
-  fontSize: 12.5,
+  fontSize: 12,
   textAlign: "right",
   outline: "none",
 };
@@ -219,20 +219,20 @@ export function AllocationEditorModal({
         }}
       >
         <div style={{ padding: "18px 22px 14px", borderBottom: `0.5px solid ${V2.line2}` }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: V2.ink }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: V2.ink }}>
             Alokacja docelowa
           </div>
-          <div style={{ fontSize: 12.5, color: V2.muted, marginTop: 2 }}>{draft.name}</div>
+          <div style={{ fontSize: 12, color: V2.muted, marginTop: 2 }}>{draft.name}</div>
         </div>
 
         {locked && (
           <div
             style={{
               padding: "13px 22px",
-              background: `${V2.gold}12`,
+              background: `${V2.bonds}12`,
               borderBottom: `0.5px solid ${V2.line2}`,
               fontSize: 12,
-              color: V2.gold,
+              color: V2.bonds,
               fontWeight: 600,
             }}
           >
@@ -265,7 +265,7 @@ export function AllocationEditorModal({
                 }}
               />
               <span
-                style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: V2.ink }}
+                style={{ flex: 1, fontSize: 13, fontWeight: 600, color: V2.ink }}
               >
                 {label}
               </span>
@@ -304,7 +304,7 @@ export function AllocationEditorModal({
             alignItems: "center",
           }}
         >
-          <span style={{ fontSize: 12.5, fontWeight: 600, color: V2.ink }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: V2.ink }}>
             Suma:{" "}
             <span
               style={{
@@ -325,7 +325,7 @@ export function AllocationEditorModal({
               border: `0.5px solid ${V2.line}`,
               background: V2.card,
               color: V2.muted,
-              fontSize: 12.5,
+              fontSize: 12,
               fontWeight: 600,
               cursor: "pointer",
               fontFamily: "inherit",

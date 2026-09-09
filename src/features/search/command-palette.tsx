@@ -7,6 +7,7 @@ import { buildInstrumentList, buildTransactionList } from "@/sync/records/invest
 import { useSyncStore } from "@/sync/store/sync-store";
 import { TYPOGRAPHY } from "@/lib/design-tokens";
 import { V2, v2Mix } from "@/lib/v2-design";
+import { transactionLabel } from "@/lib/transaction-labels";
 
 const UI = TYPOGRAPHY.system;
 const MONO = TYPOGRAPHY.mono;
@@ -38,12 +39,19 @@ function tagColor(kind: SearchResult["kind"]) {
     case "instrument":
       return V2.equity;
     case "transaction":
-      return V2.gold;
+      return V2.bonds;
     case "portfolio":
       return V2.brand;
     default:
       return V2.subtle;
   }
+}
+
+/** Porównanie bez znaków diakrytycznych i bez wielkości liter.
+ *  Wcześniej wpisanie poprawnego „wpłata" nie znajdowało nic, bo indeks trzymał
+ *  „Wpłata" — a proste `indexOf` po `toLowerCase()` nie składa polskich znaków. */
+function zloz(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ł/gi, "l").toLowerCase();
 }
 
 export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -80,12 +88,18 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
         });
       }
       for (const transaction of buildTransactionList(records).slice(0, 200)) {
-        const label = transaction.instrumentSymbol ?? transaction.instrumentName ?? transaction.transactionType;
+        // Typ wchodzi do indeksu po polsku i jest widoczny w podtytule — inaczej
+        // wpisanie „wpłata" nie znajdowało nic, a wynik nazywał się `cashDeposit`.
+        const rodzaj = transactionLabel(transaction.transactionType);
+        const label = transaction.instrumentSymbol ?? transaction.instrumentName ?? rodzaj;
+        // Gdy transakcja nie ma instrumentu, tytułem JEST jej rodzaj — wtedy nie
+        // powtarzamy go w podtytule.
+        const czolo = label === rodzaj ? "" : `${rodzaj} · `;
         items.push({
           id: `tx-${transaction.id}`,
           kind: "transaction",
           title: `${label}`,
-          subtitle: `${transaction.date.slice(0, 10)} · ${transaction.portfolioName}`,
+          subtitle: `${czolo}${transaction.date.slice(0, 10)} · ${transaction.portfolioName}`,
           href: "/transactions",
           tag: "Transakcja",
         });
@@ -96,11 +110,11 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   }, [records, snapshot]);
 
   const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = zloz(query.trim());
     if (!q) return index.filter((item) => item.kind === "page" || item.kind === "portfolio").slice(0, 8);
     const scored = index
       .map((item) => {
-        const haystack = `${item.title} ${item.subtitle} ${item.tag}`.toLowerCase();
+        const haystack = zloz(`${item.title} ${item.subtitle} ${item.tag}`);
         const idx = haystack.indexOf(q);
         return idx === -1 ? null : { item, score: idx };
       })
@@ -114,12 +128,20 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     setActive(0);
   }, [query]);
 
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
     if (open) {
+      returnFocusRef.current = document.activeElement as HTMLElement | null;
       setQuery("");
       setActive(0);
       const id = window.setTimeout(() => inputRef.current?.focus(), 30);
-      return () => window.clearTimeout(id);
+      // Po zamknięciu ognisko wracało na <body>, więc klawiatura lądowała na
+      // początku dokumentu zamiast tam, skąd paleta została otwarta.
+      return () => {
+        window.clearTimeout(id);
+        returnFocusRef.current?.focus?.();
+      };
     }
   }, [open]);
 
@@ -149,6 +171,9 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     >
       <div
         onMouseDown={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Szukaj w Zecce"
         style={{
           width: "min(560px, 92vw)",
           background: V2.card,
@@ -159,10 +184,16 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderBottom: `0.5px solid ${V2.line}` }}>
-          <span style={{ fontSize: 16, color: V2.subtle }}>⌕</span>
+          <span style={{ fontSize: 15, color: V2.subtle }}>⌕</span>
           <input
             ref={inputRef}
             value={query}
+            aria-label="Szukaj instrumentu, transakcji lub portfela"
+            role="combobox"
+            aria-expanded={results.length > 0}
+            aria-controls="paleta-wyniki"
+            aria-activedescendant={results.length > 0 ? `paleta-wynik-${active}` : undefined}
+            autoComplete="off"
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "ArrowDown") {
@@ -192,7 +223,15 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
           <span style={{ fontFamily: MONO, fontSize: 10, color: V2.subtle, padding: "2px 6px", borderRadius: 4, background: v2Mix(V2.ink, 0.05) }}>ESC</span>
         </div>
 
-        <div style={{ maxHeight: "52vh", overflowY: "auto", padding: 6 }}>
+        {/* Strzałki przesuwały wyłącznie podświetlenie w stanie Reacta — czytnik
+            ekranu nie wiedział, na czym stoi kursor, a Enter przenosił tam, gdzie
+            użytkownik nigdy nie został zaprowadzony. */}
+        <div
+          id="paleta-wyniki"
+          role="listbox"
+          aria-label="Wyniki wyszukiwania"
+          style={{ maxHeight: "52vh", overflowY: "auto", padding: 6 }}
+        >
           {results.length === 0 ? (
             <div style={{ padding: "26px 16px", textAlign: "center", color: V2.subtle, fontFamily: UI, fontSize: 13 }}>
               Brak wyników dla „{query}”.
@@ -201,6 +240,9 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             results.map((item, i) => (
               <button
                 key={item.id}
+                id={`paleta-wynik-${i}`}
+                role="option"
+                aria-selected={i === active}
                 onMouseEnter={() => setActive(i)}
                 onClick={() => go(item)}
                 style={{
@@ -220,7 +262,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                 <span
                   style={{
                     fontFamily: MONO,
-                    fontSize: 9,
+                    fontSize: 10,
                     fontWeight: 700,
                     letterSpacing: ".04em",
                     textTransform: "uppercase",
@@ -236,10 +278,10 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                   {item.tag}
                 </span>
                 <span style={{ minWidth: 0, flex: 1 }}>
-                  <span style={{ display: "block", fontSize: 14, fontWeight: 600, color: V2.ink, fontFamily: SERIF, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: V2.ink, fontFamily: SERIF, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {item.title}
                   </span>
-                  <span style={{ display: "block", fontSize: 11.5, color: V2.subtle, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <span style={{ display: "block", fontSize: 11, color: V2.subtle, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {item.subtitle}
                   </span>
                 </span>

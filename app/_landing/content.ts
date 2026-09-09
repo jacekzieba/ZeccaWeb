@@ -5,7 +5,9 @@
 // copy into the final (trusted, static) HTML string that page.tsx injects.
 // Styles live in landing.css.
 
+import { GLYPHS } from "./glyphs";
 import { landingCopy } from "./copy";
+import { bindOrphans as b } from "./typo";
 
 // ── Static design assets (not copy) ─────────────────────────────────────────
 
@@ -49,7 +51,45 @@ const PLUS_SVG = `<svg class="pm" viewBox="0 0 24 24" fill="none" stroke="curren
 
 // ── Section builders ────────────────────────────────────────────────────────
 
+import { buildLandingDemoSnapshot } from "./landing-demo-data";
+import { formatPercent } from "@/lib/money";
+
 const c = landingCopy;
+const demo = buildLandingDemoSnapshot();
+
+// Kotwica pod opisem karty: jedna konkretna wartość zamiast samej obietnicy.
+// Puste tam, gdzie nie ma liczby, której nie trzeba by zmyślić.
+// Znak przy wierszu — w kolejności copy.ts.
+const STEP_GLYPHS = [GLYPHS.wprowadzasz, GLYPHS.przelicza, GLYPHS.jedno];
+const FEATURE_GLYPHS = [GLYPHS.portfele, GLYPHS.statystyki, GLYPHS.inflacja, GLYPHS.historia,
+  GLYPHS.zarobki, GLYPHS.import, GLYPHS.eksport, GLYPHS.sync];
+const INVESTOR_GLYPHS = [GLYPHS.emerytalne, GLYPHS.obligacje, GLYPHS.nbp, GLYPHS.gus,
+  GLYPHS.lokaty, GLYPHS.waluty];
+
+const FEATURE_ANCHORS: readonly string[] = [
+  "",
+  demo.metrics.xirrPct === null ? "" : `XIRR ${formatPercent(demo.metrics.xirrPct)}`,
+  formatPercent(demo.metrics.realReturnPct),
+  "8 lat wstecz",
+  "",
+  "XTB · PKO",
+  "CSV + JSON",
+  "AES-GCM",
+];
+
+// Kotwice tej sekcji to nazwy i stawki — rzeczy stałe, nie odczyty z portfela.
+// Wcześniej czwarta brała wynik realny z danych demo, przez co ta sama liczba
+// („8,8%") stała raz jako mono w rejestrze, raz jako Didone tutaj: jedna wartość
+// w dwóch krojach. Reguła: mono to zmierzona wielkość z Twoich danych, Didone to
+// figura retoryczna. Wynik realny należy do rejestru i tam zostaje.
+const INVESTOR_ANCHORS: readonly string[] = [
+  "IKE + IKZE",
+  "6 serii",
+  "tabela A",
+  "wskaźnik CPI",
+  "19% podatku",
+  "PLN / EUR / USD",
+];
 const waitlistEnabled = process.env.NEXT_PUBLIC_BETA_WAITLIST_ENABLED === "1";
 const showcasePlatforms = [...c.showcase.desktop, c.showcase.ios];
 
@@ -75,67 +115,84 @@ const how = c.howItWorks;
 const howItWorksHtml = `
 <section class="block steps" id="jak-dziala">
   <div class="wrap">
-    <div class="rail-row sec-head reveal">
-      <span class="rail-mark" aria-hidden="true"></span>
-      <div>
-        <div class="sec-kicker">${how.eyebrow}</div>
-        <h2 class="sec-title">${how.title}</h2>
-        <p class="sec-desc">${how.desc}</p>
-      </div>
+    <div class="steps-head">
+      <span class="sec-kicker">${how.eyebrow}</span>
+      <h2 class="sec-title">${b(how.title)}</h2>
+      <p class="sec-desc">${b(how.desc)}</p>
     </div>
-
-    ${how.steps
-      .map(
-        (step) => `<article class="rail-row step reveal">
-      <span class="rail-mark">${step.label}<em>${step.meta}</em></span>
-      <div>
-        <h3>${step.title}</h3>
-        <p>${step.desc}</p>
-      </div>
-    </article>`,
-      )
-      .join("\n    ")}
+    <ol class="steps-seq">
+      ${how.steps
+        .map(
+          (step, index) => `<li class="reveal">
+        <span class="steps-head-row"><span class="glyph-slot">${STEP_GLYPHS[index] ?? ""}</span><span class="steps-num">${String(index + 1).padStart(2, "0")}</span></span>
+        <h3>${b(step.title)}</h3>
+        <p>${b(step.desc)}</p>
+        <span class="src src-quiet">${step.meta}</span>
+      </li>`,
+        )
+        .join("\n      ")}
+    </ol>
   </div>
 </section>`;
 
 const featuresHtml = `
 <section class="block scope" id="funkcje">
   <div class="wrap">
-    <div class="rail-row sec-head reveal">
-      <span class="rail-mark" aria-hidden="true"></span>
-      <div>
-        <h2 class="sec-title">${c.features.title}</h2>
-        <p class="sec-desc">${c.features.desc}</p>
+    <div class="sec-split">
+      <div class="sec-head">
+        <span class="sec-kicker">${c.features.eyebrow}</span>
+        <h2 class="sec-title">${b(c.features.title)}</h2>
+      </div>
+      <p class="sec-desc sec-aside">${b(c.features.desc)}</p>
+    </div>
+    <dl class="feature-list">
+      ${c.features.items
+        .map(
+          (item, index) => `<div class="feature-row reveal">
+        <dt>
+          <span class="glyph-slot">${FEATURE_GLYPHS[index] ?? ""}</span>
+          <span class="feature-name">${b(item.title)}</span>
+        </dt>
+        <dd>${b(item.desc)}</dd>
+      </div>`,
+        )
+        .join("\n      ")}
+    </dl>
+
+    <div class="scope-local" id="inwestor">
+      <div class="statement reveal">
+        <span class="sec-kicker">${c.investor.eyebrow}</span>
+        <h3>${b(c.investor.title)}</h3>
+        <p>${b(c.investor.desc)}</p>
+      </div>
+      <div class="investor-list">
+        ${c.investor.cells
+          .map(
+            (cell, index) => `<article class="investor-row reveal">
+          <div class="investor-row-head">
+            <span class="glyph-slot">${INVESTOR_GLYPHS[index] ?? ""}</span>
+            <h4>${b(cell.title)}</h4>
+            ${INVESTOR_ANCHORS[index] ? `<span class="investor-anchor">${INVESTOR_ANCHORS[index]}</span>` : ""}
+          </div>
+          <p>${b(cell.desc)}</p>
+        </article>`,
+          )
+          .join("\n        ")}
       </div>
     </div>
-
-    ${c.features.items
-      .map(
-        (item) => `<article class="rail-row scope-item reveal">
-      <span class="rail-mark">${item.tags.map((t) => `<em>${t}</em>`).join("")}</span>
-      <div>
-        <h3>${item.title}</h3>
-        <p>${item.desc}</p>
-      </div>
-    </article>`,
-      )
-      .join("\n    ")}
   </div>
 </section>`;
 
 const showcaseHtml = `
 <section class="block platform-showcase" id="aplikacje">
   <div class="wrap">
-    <div class="rail-row sec-head reveal">
-      <span class="rail-mark" aria-hidden="true"></span>
-      <div>
-        <div class="sec-kicker">${c.showcase.eyebrow}</div>
-        <h2 class="sec-title">${c.showcase.title}</h2>
-        <p class="sec-desc">${c.showcase.desc}</p>
-      </div>
+    <div class="steps-head">
+      <span class="sec-kicker">${c.showcase.eyebrow}</span>
+      <h2 class="sec-title">${b(c.showcase.title)}</h2>
+      <p class="sec-desc">${b(c.showcase.desc)}</p>
     </div>
 
-    <article class="rail-row platform-stage reveal" data-platform-gallery>
+    <article class="platform-stage reveal" data-platform-gallery>
       <div class="platform-tabs" role="tablist" aria-label="Wybierz platformę Zecca">
         ${showcasePlatforms
           .map(
@@ -149,14 +206,7 @@ const showcaseHtml = `
           .map((screen, index) => {
             const media = SHOWCASE_MEDIA[screen.id];
             const firstShot = media.shots[0];
-            const shotNavigation =
-              media.shots.length > 1
-                ? `<div class="platform-shot-nav" role="group" aria-label="Widoki ${screen.tab}">${media.shots
-                    .map(
-                      (shot, shotIndex) => `<button type="button" aria-pressed="${shotIndex === 0 ? "true" : "false"}" data-platform-shot-target data-src="${shot.src}" data-width="${shot.width}" data-height="${shot.height}" data-alt="${shot.alt}">${shot.label}</button>`,
-                    )
-                    .join("")}</div>`
-                : "";
+            const shotNavigation = "";
             return `<figure id="platform-panel-${screen.id}" role="tabpanel" aria-labelledby="platform-tab-${screen.id}" data-platform-panel="${screen.id}" data-device="${media.device}"${index === 0 ? "" : " hidden"}><img data-platform-shot src="${firstShot.src}" width="${firstShot.width}" height="${firstShot.height}" loading="lazy" decoding="async" alt="${firstShot.alt}" />${shotNavigation}</figure>`;
           })
           .join("\n        ")}
@@ -164,10 +214,10 @@ const showcaseHtml = `
         ${showcasePlatforms
           .map(
             (screen, index) => `<div class="platform-story" data-platform-copy="${screen.id}"${index === 0 ? "" : " hidden"}>
-          <h3>${screen.title}</h3>
-          <p>${screen.desc}</p>
+          <h3>${b(screen.title)}</h3>
+          <p>${b(screen.desc)}</p>
           <ul class="show-list">
-            ${screen.points.map((point) => `<li>${point}</li>`).join("\n            ")}
+            ${screen.points.map((point) => `<li>${b(point)}</li>`).join("\n            ")}
           </ul>
         </div>`,
           )
@@ -175,100 +225,48 @@ const showcaseHtml = `
       </div>
     </article>
 
-    <div class="rail-row store-row reveal">
-      <span class="rail-mark">Aplikacje<em>wkrótce</em></span>
-      <div class="store-badges">
-        ${c.hero.storeBadges
-          .map(
-            (badge) => `<span class="store-badge" aria-disabled="true">${APPLE_SVG}<span><small>${badge.top}</small><strong>${badge.main}</strong></span><em>${badge.soon}</em></span>`,
-          )
-          .join("")}
-      </div>
-    </div>
+    <p class="store-note reveal">Aplikacje natywne na macOS i iOS — wkrótce w App Store. Wersja webowa działa już teraz.</p>
   </div>
 </section>`;
-
-const investorHtml = `
-<section class="block band-dark" id="inwestor">
-  <div class="wrap">
-    <div class="rail-row sec-head reveal">
-      <span class="rail-mark" aria-hidden="true"></span>
-      <div>
-        <h2 class="sec-title">${c.investor.title}</h2>
-        <p class="sec-desc">${c.investor.desc}</p>
-      </div>
-    </div>
-
-    ${c.investor.cells
-      .map(
-        (cell) => `<article class="rail-row pl-row reveal">
-      <span class="rail-mark">${cell.badge}</span>
-      <div>
-        <h3>${cell.title}</h3>
-        <p>${cell.desc}</p>
-      </div>
-    </article>`,
-      )
-      .join("\n    ")}
-  </div>
-</section>`;
-
 
 const faqHtml = `
 <section class="block faq-block" id="faq">
-  <div class="wrap">
-    <div class="rail-row sec-head reveal">
-      <span class="rail-mark" aria-hidden="true"></span>
-      <h2 class="sec-title">${c.faq.title}</h2>
+  <div class="wrap faq-inner">
+    <div class="sec-head">
+      <h2 class="sec-title">${b(c.faq.title)}</h2>
     </div>
-    ${c.faq.items
-      .map(
-        (item, index) =>
-          `<div class="rail-row faq-row reveal">
-      <span class="rail-mark" aria-hidden="true"></span>
-      <details class="faq"${"open" in item && item.open ? " open" : ""}>
-        <summary><span data-landing-edit-id="faq.items.${index}.question">${item.q}</span>${PLUS_SVG}</summary>
-        <div class="ans" data-landing-edit-id="faq.items.${index}.answer">${item.a}</div>
-      </details>
-    </div>`,
-      )
-      .join("\n    ")}
+    <div class="faq-list">
+      ${c.faq.items
+        .map(
+          (item, index) => `<details class="faq">
+        <summary><span data-landing-edit-id="faq.items.${index}.question">${b(item.q)}</span>${PLUS_SVG}</summary>
+        <div class="ans" data-landing-edit-id="faq.items.${index}.answer">${b(item.a)}</div>
+      </details>`,
+        )
+        .join("\n      ")}
+    </div>
   </div>
 </section>`;
 
-const beta = c.betaList;
-const betaListHtml = `
-<section class="block beta-list-section" id="lista-beta">
+// ── Domknięcie: prywatność + zaproszenie ─────────────────────────────────
+const closingHtml = `
+<section class="block closing" id="prywatnosc">
+  <img class="sec-bg" src="/landing/depozyt/pieczec.jpg" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+  <span class="sec-scrim" style="background:linear-gradient(90deg,rgba(2,10,11,.94) 0%,rgba(2,10,11,.86) 34%,rgba(2,10,11,.35) 62%,transparent 84%)"></span>
+  <span class="sec-scrim" style="background:linear-gradient(180deg,var(--vault) 0%,transparent 20%,transparent 76%,var(--vault) 100%)"></span>
   <div class="wrap">
-    <div class="rail-row sec-head reveal">
-      <span class="rail-mark" aria-hidden="true"></span>
-      <div>
-        <h2 class="sec-title">${beta.title}</h2>
-        <p class="sec-desc">${beta.desc}</p>
+    <div class="sec-head closing-head">
+      <span class="sec-kicker">${c.privacy.eyebrow}</span>
+      <h2 class="sec-title">${b(c.privacy.title)}</h2>
+      <p class="sec-desc">${b(c.privacy.desc)}</p>
+      <ul class="privacy-marks">
+        ${c.privacy.marks.map((m, i) => `<li class="src">${m}</li>`).join("\n        ")}
+      </ul>
+      <div class="closing-actions">
+        <a class="btn btn-accent" href="${c.closing.ctaPrimaryHref}">${c.closing.ctaPrimary}</a>
+        <a class="btn btn-quiet" href="${c.closing.ctaSecondaryHref}">${c.closing.ctaSecondary}</a>
       </div>
-    </div>
-    <div class="rail-row reveal">
-      <span class="rail-mark">Zapisy<em>${waitlistEnabled ? "otwarte" : "wkrótce"}</em></span>
-      <form class="beta-waitlist-form" id="betaWaitlistForm" data-provider="airtable" data-enabled="${waitlistEnabled ? "true" : "false"}" data-status="${waitlistEnabled ? "ready" : "planned"}" aria-describedby="beta-waitlist-status" novalidate>
-        <div class="field">
-          <label for="beta-email">${beta.form.emailLabel}</label>
-          <input id="beta-email" name="email" type="email" placeholder="${beta.form.emailPlaceholder}" autocomplete="email"${waitlistEnabled ? "" : " disabled"} />
-        </div>
-        <div class="field hp-field" aria-hidden="true">
-          <label for="beta-company">Firma</label>
-          <input id="beta-company" name="company" type="text" tabindex="-1" autocomplete="off" />
-        </div>
-        <label class="beta-consent" for="beta-consent">
-          <input id="beta-consent" name="consent" type="checkbox"${waitlistEnabled ? "" : " disabled"} />
-          <span>${beta.form.consentLabel}</span>
-        </label>
-        <button type="submit" class="btn btn-brand btn-lg"${waitlistEnabled ? "" : " disabled"}>${waitlistEnabled ? beta.form.submit : beta.form.disabledSubmit}</button>
-        <p class="beta-waitlist-status" id="beta-waitlist-status" role="status" aria-live="polite"
-          data-success="${beta.form.success}"
-          data-error="${beta.form.error}"
-          data-invalid-email="${beta.form.invalidEmail}"
-          data-missing-consent="${beta.form.missingConsent}"></p>
-      </form>
+      <p class="micro closing-note">${b(c.closing.note)}</p>
     </div>
   </div>
 </section>`;
@@ -302,14 +300,6 @@ const footerHtml = `
         )
         .join("\n      ")}
     </div>
-    <div class="rail-row foot-contact" id="kontakt">
-      <span class="rail-mark">Kontakt<em>${fb.email}</em></span>
-      <div>
-        <p>${fb.desc}</p>
-        <a class="btn btn-ink" href="${fb.discordHref}" target="_blank" rel="noopener">${DISCORD_SVG}${fb.discordButton}</a>
-        <a class="foot-mail" href="mailto:${fb.email}?subject=${encodeURIComponent(fb.emailSubject)}">${fb.email}</a>
-      </div>
-    </div>
     <div class="foot-bot">
       <span>${c.footer.copyright}</span>
       <span>${c.footer.betaNote}</span>
@@ -323,8 +313,7 @@ export const LANDING_BODY_HTML = `
 ${howItWorksHtml}
 ${featuresHtml}
 ${showcaseHtml}
-${investorHtml}
 ${faqHtml}
-${betaListHtml}
+${closingHtml}
 ${footerHtml}
 `;

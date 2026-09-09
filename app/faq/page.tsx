@@ -193,7 +193,7 @@ export default function FAQPage() {
       />
       <main style={{ flex: 1, maxWidth: "900px", marginInline: "auto", width: "100%", padding: "40px 24px" }}>
         <div style={{ marginBottom: 48 }}>
-          <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 8, letterSpacing: "-0.01em" }}>
+          <h1 style={{ fontSize: 31, fontWeight: 700, marginBottom: 8, letterSpacing: "-0.01em" }}>
             FAQ i metryki
           </h1>
           <p style={{ fontSize: 15, color: COLORS.textMuted }}>
@@ -201,7 +201,7 @@ export default function FAQPage() {
           </p>
           <Link
             href="/dashboard?tour=1"
-            style={{ display: "inline-block", marginTop: 12, fontSize: 13.5, fontWeight: 600, color: COLORS.green, textDecoration: "none" }}
+            style={{ display: "inline-block", marginTop: 12, fontSize: 13, fontWeight: 600, color: COLORS.green, textDecoration: "none" }}
           >
             ▶ Zobacz wprowadzenie do aplikacji (tour)
           </Link>
@@ -222,7 +222,7 @@ export default function FAQPage() {
             >
               Metryki i wykresy
             </div>
-            <h2 style={{ fontSize: 24, fontWeight: 700, color: COLORS.text, marginBottom: 8 }}>
+            <h2 style={{ fontSize: 26, fontWeight: 700, color: COLORS.text, marginBottom: 8 }}>
               Jak czytać wyniki w Zecca?
             </h2>
             <p style={{ fontSize: 15, lineHeight: 1.6, color: COLORS.textMuted }}>
@@ -235,12 +235,15 @@ export default function FAQPage() {
               <article
                 id={metric.id}
                 key={metric.name}
+                className="faq-metric"
                 style={{
                   background: COLORS.surface,
-                  border: `0.5px solid ${COLORS.border}`,
-                  borderRadius: 8,
+                  border: `1px solid ${COLORS.border}`,
+                  borderRadius: "var(--r-md)",
                   padding: 18,
-                  boxShadow: "0 1px 0 rgba(22,29,24,0.03), 0 6px 20px rgba(22,29,24,0.05)",
+                  // Kotwica z „?" lądowała przyklejona do górnej krawędzi, obok
+                  // dwóch innych kart — nie było widać, do której trafiła.
+                  scrollMarginTop: 96,
                 }}
               >
                 <div style={{ marginBottom: 10 }}>
@@ -267,7 +270,7 @@ export default function FAQPage() {
                 <p style={{ fontSize: 15, lineHeight: 1.55, color: COLORS.text, marginBottom: 12 }}>
                   {metric.short}
                 </p>
-                <ul style={{ paddingLeft: 18, margin: "0 0 14px", color: COLORS.textMuted, fontSize: 14, lineHeight: 1.55 }}>
+                <ul style={{ paddingLeft: 18, margin: "0 0 14px", color: COLORS.textMuted, fontSize: 13, lineHeight: 1.55 }}>
                   {metric.details.map((detail) => (
                     <li key={detail} style={{ marginBottom: 6 }}>
                       {detail}
@@ -278,7 +281,7 @@ export default function FAQPage() {
                   style={{
                     borderTop: `0.5px solid ${COLORS.border}`,
                     paddingTop: 12,
-                    fontSize: 13.5,
+                    fontSize: 13,
                     lineHeight: 1.55,
                     color: COLORS.textMuted,
                   }}
@@ -292,7 +295,7 @@ export default function FAQPage() {
         </section>
 
         <section style={{ marginBottom: 56 }}>
-          <h2 style={{ fontSize: 22, fontWeight: 700, color: COLORS.text, marginBottom: 12 }}>
+          <h2 style={{ fontSize: 21, fontWeight: 700, color: COLORS.text, marginBottom: 12 }}>
             Proponowana implementacja wyjaśnień na webie
           </h2>
           <div
@@ -314,7 +317,7 @@ export default function FAQPage() {
         </section>
 
         <section>
-          <h2 style={{ fontSize: 22, fontWeight: 700, color: COLORS.text, marginBottom: 20 }}>
+          <h2 style={{ fontSize: 21, fontWeight: 700, color: COLORS.text, marginBottom: 20 }}>
             Najczęstsze pytania
           </h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>

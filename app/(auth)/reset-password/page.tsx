@@ -37,7 +37,7 @@ export default function ResetPasswordPage() {
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: 15,
-                fontWeight: 800,
+                fontWeight: 700,
                 boxShadow: SHADOWS.button,
               }}
             >
@@ -50,7 +50,7 @@ export default function ResetPasswordPage() {
               />
             </div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text }}>Zecca</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.text }}>Zecca</div>
               <div
                 style={{
                   fontSize: 10,
@@ -63,7 +63,7 @@ export default function ResetPasswordPage() {
               </div>
             </div>
           </div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: COLORS.text, letterSpacing: "-0.01em" }}>
+          <h1 style={{ fontSize: 21, fontWeight: 700, color: COLORS.text, letterSpacing: "-0.01em" }}>
             Nowe hasło
           </h1>
           <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 6, lineHeight: 1.5 }}>

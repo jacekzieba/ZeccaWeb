@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
   type CSSProperties,
   type FormEvent,
@@ -41,7 +42,7 @@ const KIND_OPTIONS = [
 
 const labelStyle: CSSProperties = {
   display: "block",
-  fontSize: 10.5,
+  fontSize: 10,
   fontWeight: 700,
   color: SUBTLE,
   textTransform: "uppercase",
@@ -116,6 +117,7 @@ export function InstrumentEditorModal({
   zIndex?: number;
 }) {
   const userDataKey = useSyncStore((s) => s.userDataKey);
+  const publicDemo = useSyncStore((s) => s.publicDemo);
   const supabase = useSyncStore((s) => s.supabase);
   const records = useSyncStore((s) => s.records);
   const setSync = useSyncStore((s) => s.setSync);
@@ -371,11 +373,12 @@ export function InstrumentEditorModal({
             borderBottom: `0.5px solid ${LINE_SOFT}`,
           }}
         >
-          <div style={{ fontSize: 16, fontWeight: 700, color: INK }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: INK }}>
             {initialValue ? "Edytuj instrument" : "Dodaj instrument"}
           </div>
           <button
             onClick={onClose}
+            aria-label="Zamknij"
             style={{
               width: 28,
               height: 28,
@@ -383,7 +386,7 @@ export function InstrumentEditorModal({
               border: "none",
               background: "rgba(28,49,68,0.07)",
               color: MUTED,
-              fontSize: 16,
+              fontSize: 15,
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -403,7 +406,11 @@ export function InstrumentEditorModal({
             }}
           >
             <div style={{ fontSize: 12, color: AMBER, fontWeight: 600 }}>
-              Odblokuj dane w panelu synchronizacji, żeby zapisywać instrumenty.
+              {/* W trybie demo nie ma panelu synchronizacji, do którego odsyłał
+                  poprzedni komunikat — użytkownik szedł w ślepy zaułek. */}
+              {publicDemo
+                ? "Tryb demo — możesz obejrzeć cały formularz, ale zapis instrumentu jest wyłączony."
+                : "Odblokuj dane w panelu synchronizacji, żeby zapisywać instrumenty."}
             </div>
           </div>
         )}
@@ -493,7 +500,7 @@ export function InstrumentEditorModal({
                     {candidate.name}
                   </span>
                   {(candidate.exchange || candidate.currency) && (
-                    <span style={{ fontSize: 10.5, color: SUBTLE, flexShrink: 0 }}>
+                    <span style={{ fontSize: 10, color: SUBTLE, flexShrink: 0 }}>
                       {[candidate.exchange, candidate.currency]
                         .filter(Boolean)
                         .join(" · ")}
@@ -536,7 +543,7 @@ export function InstrumentEditorModal({
 
           {kind === "treasuryBond" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <div style={{ color: MUTED, fontSize: 11.5, lineHeight: 1.45 }}>
+              <div style={{ color: MUTED, fontSize: 11, lineHeight: 1.45 }}>
                 Parametry emisji (oprocentowanie, marża, daty) pobieramy z listu emisyjnego dla podanej serii — np. EDO0736.
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -550,7 +557,7 @@ export function InstrumentEditorModal({
                     background: PAPER,
                     color: INK,
                     cursor: bondFetch === "loading" || !symbol.trim() ? "default" : "pointer",
-                    fontSize: 12.5,
+                    fontSize: 12,
                     fontWeight: 600,
                     padding: "7px 12px",
                     opacity: bondFetch === "loading" || !symbol.trim() ? 0.6 : 1,
@@ -577,7 +584,7 @@ export function InstrumentEditorModal({
 
           {(kind === "stock" || kind === "etf") && (
             <>
-              <div style={{ color: MUTED, fontSize: 11.5, lineHeight: 1.45 }}>
+              <div style={{ color: MUTED, fontSize: 11, lineHeight: 1.45 }}>
                 Potwierdź tożsamość instrumentu: ticker brokera, walutę rozliczenia i dokładne notowanie Yahoo są zapisywane osobno.
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>

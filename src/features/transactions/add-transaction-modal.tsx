@@ -1,7 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useState, useEffect, useMemo, useRef, useId, type CSSProperties, type FormEvent, type ReactNode } from "react";
+import { useState, useEffect, useMemo, useRef, useId, cloneElement, isValidElement, type CSSProperties, type FormEvent, type ReactElement, type ReactNode } from "react";
 import {
   ArrowLeftRight,
   Banknote,
@@ -36,7 +36,7 @@ import {
 import { buildInvestorDataSnapshot, buildPortfolioDetail } from "@/sync/records/investor-snapshot";
 import { isFakeSyncEnabled } from "@/lib/env";
 import { TYPOGRAPHY } from "@/lib/design-tokens";
-import { parseAmount } from "@/lib/parse-amount";
+import { formatAmountInput, parseAmount } from "@/lib/parse-amount";
 import { V2, v2Mix } from "@/lib/v2-design";
 import {
   InstrumentEditorModal,
@@ -48,6 +48,8 @@ import {
   fxRateToBaseForSave,
 } from "./transaction-rules";
 import { fundingDepositForTrade } from "./funding-deposit";
+import { currencyLabel } from "@/lib/money";
+import { announce } from "@/components/feedback/status-announcer";
 
 // Fetches the NBP Table A mid rate (PLN per 1 unit of `code`) on `date`. The
 // API applies forward-fill server-side (latest published fixing on/before the
@@ -72,7 +74,10 @@ const MUTED = v2Mix(V2.ink, 0.58);
 const SUBTLE = v2Mix(V2.ink, 0.4);
 const LINE_SOFT = V2.line2;
 const LOSS = V2.loss;
-const AMBER = V2.gold;
+// Bursztyn akcentu, nie kolor obligacji. `V2.gold` był drugim aliasem tokenu
+// --asset-bonds, więc wszystko, co ten plik nazywał AMBER, świeciło kolorem
+// klasy aktywu. Nazwa obiecywała jedno, wartość dawała drugie.
+const AMBER = V2.brand;
 const PAPER = V2.card;
 const SERIF = TYPOGRAPHY.serif;
 
@@ -87,7 +92,7 @@ const TX_TYPES = [
   { value: "buy",               label: "Zakup",                group: "instruments", tone: V2.equity,  icon: ShoppingCart,      needsInstrument: true,  needsQty: true,  kinds: ["stock", "etf", "treasuryBond", "listedBond", "crypto"], heldOnly: false },
   { value: "sell",              label: "Sprzedaż",             group: "instruments", tone: V2.loss,    icon: ShoppingCart,      needsInstrument: true,  needsQty: true,  kinds: ["stock", "etf", "treasuryBond", "listedBond", "crypto"], heldOnly: true  },
   { value: "dividend",          label: "Dywidenda",            group: "income",      tone: V2.profit,  icon: CircleDollarSign, needsInstrument: true,  needsQty: false, kinds: ["stock", "etf"], heldOnly: false },
-  { value: "interest",          label: "Odsetki",              group: "income",      tone: V2.gold,    icon: Percent,          needsInstrument: false, needsQty: false, kinds: null, heldOnly: false },
+  { value: "interest",          label: "Odsetki",              group: "income",      tone: V2.bonds,    icon: Percent,          needsInstrument: false, needsQty: false, kinds: null, heldOnly: false },
   { value: "bondCoupon",        label: "Kupon obligacji",      group: "income",      tone: V2.bonds,   icon: ReceiptText,      needsInstrument: true,  needsQty: false, kinds: ["treasuryBond", "listedBond"], heldOnly: true  },
   { value: "bondRedemption",    label: "Wykup obligacji",      group: "income",      tone: V2.bonds,   icon: ReceiptText,      needsInstrument: true,  needsQty: true,  kinds: ["treasuryBond", "listedBond"], heldOnly: true  },
   { value: "depositOpen",       label: "Otwarcie lokaty",      group: "deposits",    tone: V2.deposit, icon: Landmark,         needsInstrument: true,  needsQty: false, kinds: ["deposit"], heldOnly: false },
@@ -115,11 +120,13 @@ const TX_GROUPS: Array<{ key: TxGroup; label: string }> = [
   { key: "other", label: "Pozostałe" },
 ];
 
+// Kafelki klas aktywów niosą tokeny KLAS — i tak ma być, bo tu kolor faktycznie
+// oznacza klasę. Krypto miało zaszyty literał #7A55A4 zamiast --asset-crypto.
 const ASSET_CLASSES = [
   { key: "etf", label: "ETF", kinds: ["etf"], icon: LineChart, tone: V2.equity },
   { key: "stock", label: "Akcje", kinds: ["stock"], icon: LineChart, tone: V2.equity },
   { key: "bond", label: "Obligacje", kinds: ["treasuryBond", "listedBond"], icon: FileText, tone: V2.bonds },
-  { key: "crypto", label: "Kryptowaluta", kinds: ["crypto"], icon: Bitcoin, tone: "#7A55A4" },
+  { key: "crypto", label: "Kryptowaluta", kinds: ["crypto"], icon: Bitcoin, tone: V2.crypto },
   { key: "deposit", label: "Lokata", kinds: ["deposit"], icon: Landmark, tone: V2.deposit },
   { key: "other", label: "Inne aktywa", kinds: ["other"], icon: Building2, tone: V2.cash },
 ] as const;
@@ -134,7 +141,7 @@ function swiftDateToMs(value: number | string | null | undefined): number | null
 // ── Styles ───────────────────────────────────────────────────────
 const labelStyle: CSSProperties = {
   display: "block",
-  fontSize: 10.5,
+  fontSize: 10,
   fontWeight: 700,
   color: SUBTLE,
   textTransform: "uppercase",
@@ -156,7 +163,6 @@ const inputStyle: CSSProperties = {
   fontSize: 13,
   color: INK,
   fontFamily: "inherit",
-  outline: "none",
   boxSizing: "border-box",
   boxShadow: "inset 0 1px 3px rgba(22,29,24,0.05)",
 };
@@ -181,19 +187,30 @@ function Field({
   // label, so those cases use htmlFor instead.
   htmlFor?: string;
 }) {
-  if (htmlFor) {
-    return (
-      <div>
-        <label htmlFor={htmlFor} style={labelStyle}>{label}</label>
-        {children}
-      </div>
-    );
-  }
+  // Etykieta NIGDY nie opakowuje pola. Przy opakowaniu nazwa dostępna kontrolki
+  // sklejała się z treścią jej dzieci: pole waluty nazywało się
+  // „WalutaPLNUSDEURGBPCHFCZK", a pole portfela — „PortfelIKE · długi termin…".
+  // Gdy wywołanie nie poda htmlFor, identyfikator powstaje tutaj i wchodzi
+  // w pojedyncze dziecko.
+  const autoId = useId();
+  const kandydat = isValidElement(children)
+    ? (children as ReactElement<{ id?: string }>)
+    : null;
+  const id = htmlFor ?? kandydat?.props.id ?? (kandydat ? autoId : undefined);
+  const dziecko =
+    !htmlFor && kandydat && !kandydat.props.id
+      ? cloneElement(kandydat, { id })
+      : children;
+
   return (
-    <label style={{ display: "block" }}>
-      <span style={labelStyle}>{label}</span>
-      {children}
-    </label>
+    <div>
+      {id ? (
+        <label htmlFor={id} style={labelStyle}>{label}</label>
+      ) : (
+        <span style={labelStyle}>{label}</span>
+      )}
+      {dziecko}
+    </div>
   );
 }
 
@@ -237,7 +254,7 @@ function DecimalSeparatorHint() {
         borderRadius: 10,
         padding: "9px 12px",
         marginBottom: 12,
-        fontSize: 12.5,
+        fontSize: 12,
         color: MUTED,
         lineHeight: 1.4,
       }}
@@ -255,7 +272,7 @@ function DecimalSeparatorHint() {
           background: "transparent",
           cursor: "pointer",
           color: SUBTLE,
-          fontSize: 16,
+          fontSize: 15,
           lineHeight: 1,
           padding: 0,
         }}
@@ -622,7 +639,7 @@ export function AddTransactionModal({
       const unit = parseAmount(price);
       if (qty != null && unit != null) {
         const computed = qty * unit;
-        if (Number.isFinite(computed)) setGrossAmount(computed.toFixed(2));
+        if (Number.isFinite(computed)) setGrossAmount(formatAmountInput(computed));
       }
     }
   }, [quantity, price, txDef.needsQty]);
@@ -670,7 +687,7 @@ export function AddTransactionModal({
       if (cancelled) return;
       setFxRateLoading(false);
       if (rate != null) {
-        setFxRateToBase(rate.toFixed(4));
+        setFxRateToBase(formatAmountInput(rate, 4));
       } else {
         setFxRateFetchFailed(true);
       }
@@ -834,25 +851,6 @@ export function AddTransactionModal({
       taxAmount = parsedTax;
     }
 
-    // FX settlement. For a foreign buy/sell in PLN mode a positive rate is
-    // required; in foreign mode fxRateToBase is null (cash settles from the FX
-    // pool). Other types keep the optional generic rate field.
-    let fxRateValue: number | null = null;
-    if (showsFX) {
-      const parsedRate = parseAmount(fxRateToBase);
-      if (settleInPLN && (parsedRate == null || !(parsedRate > 0))) {
-        setError(`Podaj kurs ${currency}/PLN dla rozliczenia w PLN.`);
-        return;
-      }
-      fxRateValue = fxRateToBaseForSave({ type: txType, currency, settleInPLN, rate: parsedRate });
-    } else if (fxRateToBase.trim()) {
-      fxRateValue = parseAmount(fxRateToBase);
-      if (fxRateValue == null) {
-        setError("Podaj poprawny kurs wymiany.");
-        return;
-      }
-    }
-
     let quantityValue: number | null = null;
     if (txDef.needsQty && quantity.trim()) {
       quantityValue = parseAmount(quantity);
@@ -889,6 +887,26 @@ export function AddTransactionModal({
         return;
       }
     }
+
+    // Kurs sprawdzamy PO instrumencie, ilości i cenie. Wcześniej stał przed nimi,
+    // więc zakup zagraniczny bez instrumentu skarżył się na brakujący kurs —
+    // czyli na pole, które nie było problemem.
+    let fxRateValue: number | null = null;
+    if (showsFX) {
+      const parsedRate = parseAmount(fxRateToBase);
+      if (settleInPLN && (parsedRate == null || !(parsedRate > 0))) {
+        setError(`Podaj kurs ${currency}/PLN dla rozliczenia w PLN.`);
+        return;
+      }
+      fxRateValue = fxRateToBaseForSave({ type: txType, currency, settleInPLN, rate: parsedRate });
+    } else if (fxRateToBase.trim()) {
+      fxRateValue = parseAmount(fxRateToBase);
+      if (fxRateValue == null) {
+        setError("Podaj poprawny kurs wymiany.");
+        return;
+      }
+    }
+
 
     let targetGrossValue: number | null = null;
     if (txType === "fxConversion") {
@@ -1045,6 +1063,9 @@ export function AddTransactionModal({
         });
       }
 
+      // Okno znika po zapisie, więc bez tego jedynym śladem sukcesu było to, że
+      // formularz przestał istnieć. Błąd miał `role="alert"`, sukces nie miał nic.
+      announce(initialValue ? "Transakcja zaktualizowana." : "Transakcja zapisana.");
       handleClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Nie udało się zapisać transakcji.");
@@ -1130,9 +1151,9 @@ export function AddTransactionModal({
                   >
                     <span style={{ width: 6, height: 6, borderRadius: 99, background: recent.color }} />
                     <span>
-                      <span style={{ display: "block", fontSize: 12.5, fontWeight: 700, lineHeight: 1.2 }}>{recent.label}</span>
+                      <span style={{ display: "block", fontSize: 12, fontWeight: 700, lineHeight: 1.2 }}>{recent.label}</span>
                       <span style={{ display: "block", marginTop: 1, fontSize: 12, color: MUTED }}>
-                        {recent.amount.toLocaleString("pl-PL", { maximumFractionDigits: 2 })} {recent.currency}
+                        {recent.amount.toLocaleString("pl-PL", { maximumFractionDigits: 2 })} {currencyLabel(recent.currency)}
                       </span>
                     </span>
                   </button>
@@ -1183,7 +1204,7 @@ export function AddTransactionModal({
                         />
                       )}
                       <IconBadge icon={Icon} color={type.tone} />
-                      <span style={{ minWidth: 0, fontSize: 14, fontWeight: selected ? 800 : 500, lineHeight: 1.2 }}>
+                      <span style={{ minWidth: 0, fontSize: 13, fontWeight: selected ? 800 : 500, lineHeight: 1.2 }}>
                         {type.label}
                       </span>
                     </button>
@@ -1208,7 +1229,7 @@ export function AddTransactionModal({
             <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
               <IconBadge icon={TxIcon} color={txDef.tone} selected />
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: INK, lineHeight: 1.1 }}>
+                <div style={{ fontSize: 21, fontWeight: 700, color: INK, lineHeight: 1.1 }}>
                   {isEditing ? `Edytuj: ${txDef.label}` : txDef.label}
                 </div>
                 <div style={{ fontSize: 13, color: MUTED, marginTop: 3 }}>
@@ -1268,8 +1289,8 @@ export function AddTransactionModal({
                         color: INK,
                         cursor: "pointer",
                         fontFamily: "inherit",
-                        fontSize: 14,
-                        fontWeight: 800,
+                        fontSize: 13,
+                        fontWeight: 700,
                         textAlign: "left",
                       }}
                     >
@@ -1296,8 +1317,8 @@ export function AddTransactionModal({
                             color: INK,
                             cursor: "pointer",
                             fontFamily: "inherit",
-                            fontSize: 14,
-                            fontWeight: 800,
+                            fontSize: 13,
+                            fontWeight: 700,
                             textAlign: "left",
                           }}
                         >
@@ -1353,7 +1374,7 @@ export function AddTransactionModal({
                       onChange={(e) => setCountAsContribution(e.target.checked)}
                       style={{ marginTop: 2, accentColor: INK }}
                     />
-                    <span style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.35 }}>
+                    <span style={{ fontSize: 12, color: MUTED, lineHeight: 1.35 }}>
                       <span style={{ fontWeight: 700, color: INK }}>Licz jako nową wpłatę</span>
                       <br />
                       Domyślnie transfer między własnymi portfelami jest neutralny dla
@@ -1425,10 +1446,9 @@ export function AddTransactionModal({
                 <div className="transaction-form-grid" style={{ marginTop: 15 }}>
                   <Field label="Kwota docelowa">
                     <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      placeholder="0.00"
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="0,00"
                       value={targetGrossAmount}
                       onChange={(e) => setTargetGrossAmount(e.target.value)}
                       style={inputStyle}
@@ -1445,13 +1465,13 @@ export function AddTransactionModal({
               {txDef.needsQty && (
                 <div className="transaction-numeric-grid" style={{ marginTop: 15 }}>
                   <Field label="Liczba">
-                    <input type="number" step="any" min="0" placeholder="0" value={quantity} onChange={(e) => setQuantity(e.target.value)} style={inputStyle} />
+                    <input type="text" inputMode="decimal" placeholder="0" value={quantity} onChange={(e) => setQuantity(e.target.value)} style={inputStyle} />
                   </Field>
                   <Field label="Kurs / cena">
-                    <input type="number" step="any" min="0" placeholder="0.00" value={price} onChange={(e) => setPrice(e.target.value)} style={inputStyle} />
+                    <input type="text" inputMode="decimal" placeholder="0,00" value={price} onChange={(e) => setPrice(e.target.value)} style={inputStyle} />
                   </Field>
                   <Field label="Kwota (brutto)">
-                    <input type="number" step="any" min="0" placeholder="0.00" value={grossAmount} onChange={(e) => setGrossAmount(e.target.value)} style={inputStyle} required />
+                    <input type="text" inputMode="decimal" placeholder="0,00" value={grossAmount} onChange={(e) => setGrossAmount(e.target.value)} style={inputStyle} required />
                   </Field>
                   <Field label="Waluta">
                     <select value={currency} onChange={(e) => setCurrency(e.target.value)} style={selectStyle}>
@@ -1464,7 +1484,7 @@ export function AddTransactionModal({
               {!txDef.needsQty && (
                 <div className="transaction-form-grid" style={{ marginTop: 15 }}>
                   <Field label={txType === "fxConversion" ? "Kwota źródłowa" : "Kwota (brutto)"}>
-                    <input type="number" step="any" min="0" placeholder="0.00" value={grossAmount} onChange={(e) => setGrossAmount(e.target.value)} style={inputStyle} required />
+                    <input type="text" inputMode="decimal" placeholder="0,00" value={grossAmount} onChange={(e) => setGrossAmount(e.target.value)} style={inputStyle} required />
                   </Field>
                   <Field label="Waluta">
                     <select value={currency} onChange={(e) => setCurrency(e.target.value)} style={selectStyle}>
@@ -1520,10 +1540,9 @@ export function AddTransactionModal({
                     <div style={{ marginTop: 12 }}>
                       <Field label={`Kurs ${currency}/PLN (średni NBP)`}>
                         <input
-                          type="number"
-                          step="any"
-                          min="0"
-                          placeholder="0.0000"
+                          type="text"
+                          inputMode="decimal"
+                          placeholder="0,0000"
                           value={fxRateToBase}
                           onChange={(e) => {
                             setFxRateFetchFailed(false);
@@ -1564,7 +1583,7 @@ export function AddTransactionModal({
                     onChange={(e) => setAddFundingDeposit(e.target.checked)}
                     style={{ marginTop: 2, accentColor: INK }}
                   />
-                  <span style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.35 }}>
+                  <span style={{ fontSize: 12, color: MUTED, lineHeight: 1.35 }}>
                     <span style={{ fontWeight: 700, color: INK }}>
                       Dopisz wpłatę gotówki
                       {fundingPreview && fundingPreview.grossAmount > 0
@@ -1589,18 +1608,18 @@ export function AddTransactionModal({
                 </summary>
                 <div className="transaction-form-grid" style={{ marginTop: 12 }}>
                   <Field label="Prowizja">
-                    <input type="number" step="any" min="0" value={fees} onChange={(e) => setFees(e.target.value)} style={inputStyle} />
+                    <input type="text" inputMode="decimal" value={fees} onChange={(e) => setFees(e.target.value)} style={inputStyle} />
                   </Field>
                   {showsTax && (
                     <Field label="Podatek">
-                      <input type="number" step="any" min="0" value={taxes} onChange={(e) => setTaxes(e.target.value)} style={inputStyle} />
+                      <input type="text" inputMode="decimal" value={taxes} onChange={(e) => setTaxes(e.target.value)} style={inputStyle} />
                     </Field>
                   )}
                   {/* The dedicated FX-settlement block owns fxRateToBase for
                       foreign buy/sell; the generic field stays for other types. */}
                   {!showsFX && (
                     <Field label="Kurs do PLN">
-                      <input type="number" step="any" min="0" placeholder="opcjonalnie" value={fxRateToBase} onChange={(e) => setFxRateToBase(e.target.value)} style={inputStyle} />
+                      <input type="text" inputMode="decimal" placeholder="opcjonalnie" value={fxRateToBase} onChange={(e) => setFxRateToBase(e.target.value)} style={inputStyle} />
                     </Field>
                   )}
                   <Field label="Notatka">
@@ -1615,6 +1634,26 @@ export function AddTransactionModal({
                 </div>
               )}
             </div>
+
+            {/* Powód nieaktywnego zapisu stoi też przy przycisku. Sam baner pod
+                nagłówkiem znika z kadru, gdy przewiniesz formularz — a martwy
+                przycisk widzisz właśnie na dole. */}
+            {!userDataKey && (
+              <div
+                style={{
+                  padding: "9px 28px",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: AMBER,
+                  background: `${AMBER}12`,
+                  borderTop: `0.5px solid ${LINE_SOFT}`,
+                }}
+              >
+                {publicDemo
+                  ? "Tryb demo — zapis transakcji jest wyłączony."
+                  : "Odblokuj dane w panelu synchronizacji, żeby zapisać."}
+              </div>
+            )}
 
             <footer
               className="transaction-modal-footer"
@@ -1631,10 +1670,10 @@ export function AddTransactionModal({
               <div>
                 <div style={labelStyle}>{totalLabel}</div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
-                  <span style={{ fontFamily: SERIF, fontSize: 32, fontWeight: 600, color: INK, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>
+                  <span style={{ fontFamily: SERIF, fontSize: 31, fontWeight: 600, color: INK, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>
                     {totalAmount.toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
-                  <span style={{ fontSize: 17, color: MUTED, fontWeight: 600 }}>{currency}</span>
+                  <span style={{ fontSize: 18, color: MUTED, fontWeight: 600 }}>{currencyLabel(currency)}</span>
                 </div>
               </div>
               <div className="transaction-modal-actions" style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -1649,7 +1688,7 @@ export function AddTransactionModal({
                     border: "none",
                     background: v2Mix(V2.ink, 0.08),
                     color: INK,
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: 700,
                     cursor: "pointer",
                     fontFamily: "inherit",
@@ -1668,8 +1707,8 @@ export function AddTransactionModal({
                     border: "none",
                     background: saving || !userDataKey ? "rgba(22,29,24,0.12)" : txDef.tone,
                     color: saving || !userDataKey ? SUBTLE : "#fff",
-                    fontSize: 14,
-                    fontWeight: 800,
+                    fontSize: 13,
+                    fontWeight: 700,
                     cursor: saving || !userDataKey ? "not-allowed" : "pointer",
                     fontFamily: "inherit",
                     boxShadow: saving || !userDataKey ? "none" : `0 6px 16px ${v2Mix(txDef.tone, 0.22)}`,

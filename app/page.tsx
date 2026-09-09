@@ -1,9 +1,27 @@
 import type { Metadata } from "next";
+import { Archivo, Bodoni_Moda } from "next/font/google";
 import { LANDING_BODY_HTML, LANDING_NAV_HTML } from "./_landing/content";
 import { landingCopy } from "./_landing/copy";
 import { LandingHero } from "./_landing/landing-hero";
 import { LandingInteractions } from "./_landing/landing-interactions";
 import "./_landing/landing.css";
+
+// Kroje landingu ładują się tylko tutaj — aplikacja zostaje przy swoich.
+// Didone niesie nagłówki (rodowód grawerowanego banknotu), grotesk prozę.
+const landingDisplay = Bodoni_Moda({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500"],
+  style: ["normal", "italic"],
+  variable: "--font-landing-display",
+  display: "swap",
+});
+
+const landingText = Archivo({
+  subsets: ["latin", "latin-ext"],
+  weight: ["300", "400", "500"],
+  variable: "--font-landing-text",
+  display: "swap",
+});
 
 const SITE_URL = "https://zecca.pl";
 const LANDING_DESCRIPTION =
@@ -111,7 +129,7 @@ export default function LandingPage() {
           __html: JSON.stringify(landingJsonLd).replace(/</g, "\\u003c"),
         }}
       />
-      <main className="zlanding">
+      <main className={`zlanding ${landingDisplay.variable} ${landingText.variable}`}>
         <div dangerouslySetInnerHTML={{ __html: LANDING_NAV_HTML }} />
         <LandingHero />
         <div dangerouslySetInnerHTML={{ __html: LANDING_BODY_HTML }} />

@@ -254,7 +254,7 @@ export function OnboardingController({
               position: "fixed", right: 16, bottom: 16, zIndex: 902,
               fontFamily: V2_TYPE.ui, fontSize: 11, fontWeight: 700,
               letterSpacing: ".08em", textTransform: "uppercase",
-              color: V2.gold, background: "rgba(255,252,244,.82)",
+              color: V2.brand, background: "rgba(255,252,244,.82)",
               padding: "6px 11px", borderRadius: 99,
               border: "0.5px solid rgba(162,119,46,.35)",
               backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",

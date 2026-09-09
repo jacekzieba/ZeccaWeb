@@ -33,10 +33,10 @@ export default function GlobalError({
         }}
       >
         <div style={{ textAlign: "center", padding: 24, maxWidth: 420 }}>
-          <h1 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>
+          <h1 style={{ fontSize: 21, fontWeight: 700, marginBottom: 8 }}>
             Coś poszło nie tak
           </h1>
-          <p style={{ fontSize: 14, color: COLORS.textMuted, marginBottom: 20 }}>
+          <p style={{ fontSize: 13, color: COLORS.textMuted, marginBottom: 20 }}>
             Wystąpił nieoczekiwany błąd. Zgłosiliśmy go automatycznie.
           </p>
           <button
@@ -48,7 +48,7 @@ export default function GlobalError({
               border: "none",
               background: COLORS.text,
               color: COLORS.white,
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: 600,
               cursor: "pointer",
             }}

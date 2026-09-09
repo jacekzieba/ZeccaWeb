@@ -91,7 +91,7 @@ export function AreaChart({
             />
             <text
               x={pl - 8} y={ty(v) + 4}
-              textAnchor="end" fontSize="10.5"
+              textAnchor="end" fontSize="10"
               fill={COLORS.subtle}
               fontFamily={TYPOGRAPHY.mono}
             >
@@ -127,7 +127,7 @@ export function AreaChart({
                 x={tx(idx)}
                 y={pt + H + 22}
                 textAnchor="middle"
-                fontSize="10.5"
+                fontSize="10"
                 fill={COLORS.subtle}
                 fontFamily={TYPOGRAPHY.system}
               >

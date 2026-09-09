@@ -33,6 +33,26 @@
   --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
   --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px; --space-9: 96px;
 
+  /* Skala stopni pisma. Dziesięć kroków, gęsto na dole, bo tam mieszka narzędzie
+     do liczb: cecha źródła, meta wiersza, etykiety. Wcześniej skali nie było
+     wcale — aplikacja renderowała 26 różnych stopni, z czego DZIEWIĘĆ mieściło
+     się między 9,5 a 13,5px i obejmowało ponad 900 węzłów. Kroki po pół piksela
+     to nie hierarchia, tylko szturchanie.
+
+     Proporcja rośnie ku górze: 1,10 → 1,09 → 1,08 → 1,15 → 1,20 → 1,17 → 1,24
+     → 1,19 → 1,68. Gęsto tam, gdzie trzeba rozróżniać rangę w tabeli; szeroko
+     tam, gdzie chodzi o głos. */
+  --t-1: 10px;   /* cecha źródła, znaczniki osi */
+  --t-2: 11px;   /* meta wiersza, plakietki */
+  --t-3: 12px;   /* tekst pomocniczy */
+  --t-4: 13px;   /* proza, etykiety pól */
+  --t-5: 15px;   /* wyróżnienie w wierszu */
+  --t-6: 18px;   /* tytuł karty */
+  --t-7: 21px;   /* wartość wskaźnika */
+  --t-8: 26px;   /* nagłówek sekcji */
+  --t-9: 31px;   /* tytuł ekranu */
+  --t-10: 52px;  /* liczba wiodąca */
+
   /* Podział ról jest regułą kierunku „Próba", nie preferencją:
      proza szeryfem, etykiety i przyciski groteskiem, każda liczba mono. */
   --font-display: var(--font-display-src), system-ui, sans-serif;

@@ -37,6 +37,8 @@ import { makeSettingsPayload } from "@/sync/records/macos-payloads";
 import { isFakeSyncEnabled } from "@/lib/env";
 import { languageName, setAppLanguage, useAppLanguage, type AppLanguage } from "@/features/i18n/language-store";
 import { useTranslation } from "@/features/i18n/translate";
+import { pluralPl } from "@/lib/plural-pl";
+import { announce } from "@/components/feedback/status-announcer";
 
 const plnFormatter = new Intl.NumberFormat("pl-PL", {
   style: "currency",
@@ -100,15 +102,19 @@ function Segmented({
   options,
   value,
   onChange,
+  label,
 }: {
   options: { value: string; label: string }[];
   value: string;
   onChange: (value: string) => void;
+  /** Nazwa grupy. Jeden komponent z jedną stałą etykietą sprawiał, że wybór waluty
+   *  i wybór języka ogłaszały się identycznie: „Wybór ustawienia". */
+  label?: string;
 }) {
   return (
     <div
       role="radiogroup"
-      aria-label="Wybór ustawienia"
+      aria-label={label ?? "Wybór ustawienia"}
       style={{ display: "inline-flex", background: v2Mix(V2.ink, 0.06), borderRadius: 9, padding: 3 }}
     >
       {options.map((option) => (
@@ -150,10 +156,10 @@ function Section({
   return (
     <V2Card pad={0}>
       <div style={{ padding: "17px 24px 13px", borderBottom: `0.5px solid ${V2.line}` }}>
-        <div style={{ fontFamily: V2_TYPE.ui, fontSize: 10.5, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: V2.subtle }}>
+        <div style={{ fontFamily: V2_TYPE.ui, fontSize: 10, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: V2.subtle }}>
           {eyebrow}
         </div>
-        <div style={{ fontFamily: V2_TYPE.serif, fontSize: 19, fontWeight: 500, color: V2.ink, marginTop: 2 }}>{title}</div>
+        <h2 style={{ fontFamily: V2_TYPE.serif, fontSize: 18, fontWeight: 500, color: V2.ink, margin: "2px 0 0" }}>{title}</h2>
       </div>
       {children}
     </V2Card>
@@ -174,12 +180,21 @@ function Row({
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 18, padding: "15px 24px", borderTop: last ? "none" : `0.5px solid ${V2.line2}` }}>
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontFamily: V2_TYPE.ui, fontSize: 13.5, fontWeight: 600, color: V2.ink }}>{label}</div>
+        <div style={{ fontFamily: V2_TYPE.ui, fontSize: 13, fontWeight: 600, color: V2.ink }}>{label}</div>
         {desc && <div style={{ fontFamily: V2_TYPE.ui, fontSize: 12, color: V2.muted, marginTop: 2, maxWidth: 440 }}>{desc}</div>}
       </div>
       <div style={{ flexShrink: 0 }}>{control}</div>
     </div>
   );
+}
+
+/** Zapis ustawienia plus potwierdzenie. Przełącznik zmieniał stan i milczał —
+ *  nie dało się odróżnić „zapisano" od „kliknięcie nie doszło". */
+function zapiszProfil(patch: Parameters<typeof updateProfile>[0], opis?: string) {
+  updateProfile(patch);
+  // Żywy region ustawiony na ten sam napis bywa przez NVDA i JAWS pomijany, więc
+  // komunikat mówi, CO się zmieniło — a nie tylko, że cokolwiek zapisano.
+  announce(opis ? `Zapisano: ${opis}.` : "Ustawienie zapisane.");
 }
 
 export function SettingsPage() {
@@ -244,13 +259,13 @@ export function SettingsPage() {
       <ProfileCard profile={profile} portfolioCount={accounts.length} />
 
       <Section eyebrow="Regionalne" title="Waluta i format">
-        <Row label="Waluta bazowa" desc="Przeliczenia portfela i raportów wg kursów NBP z danego dnia" control={<Segmented options={[{ value: "PLN", label: "PLN" }, { value: "EUR", label: "EUR" }, { value: "USD", label: "USD" }]} value={profile.displayCurrency} onChange={(v) => updateProfile({ displayCurrency: v as Profile["displayCurrency"] })} />} />
-        <Row label={t("Język interfejsu")} desc={t("Zmiana jest stosowana od razu i synchronizowana z aplikacjami Zecca.")} control={<Segmented options={[{ value: "pl", label: languageName("pl") }, { value: "en", label: languageName("en") }]} value={language} onChange={(value) => changeLanguage(value as AppLanguage)} />} last />
+        <Row label="Waluta bazowa" desc="Przeliczenia portfela i raportów wg kursów NBP z danego dnia" control={<Segmented label="Waluta bazowa" options={[{ value: "PLN", label: "PLN" }, { value: "EUR", label: "EUR" }, { value: "USD", label: "USD" }]} value={profile.displayCurrency} onChange={(v) => zapiszProfil({ displayCurrency: v as Profile["displayCurrency"] }, `waluta bazowa ${v}`)} />} />
+        <Row label={t("Język interfejsu")} desc={t("Na razie po angielsku jest menu boczne — reszta aplikacji pozostaje po polsku. Ustawienie synchronizuje się z aplikacjami Zecca.")} control={<Segmented label="Język interfejsu" options={[{ value: "pl", label: languageName("pl") }, { value: "en", label: languageName("en") }]} value={language} onChange={(value) => changeLanguage(value as AppLanguage)} />} last />
       </Section>
 
       <Section eyebrow="Podatki" title="Rozliczenia podatkowe">
-        <Row label="Rezydencja podatkowa · Polska" desc="Podatek Belki 19% od zysków kapitałowych" control={<Switch on={profile.taxResidencePL} onChange={(v) => updateProfile({ taxResidencePL: v })} label="Rezydencja podatkowa Polska" />} />
-        <Row label="Automatyczne naliczanie podatku" desc="Szacuj należny podatek przy każdej sprzedaży" control={<Switch on={profile.autoTax} onChange={(v) => updateProfile({ autoTax: v })} label="Automatyczne naliczanie podatku" />} />
+        <Row label="Rezydencja podatkowa · Polska" desc="Podatek Belki 19% od zysków kapitałowych" control={<Switch on={profile.taxResidencePL} onChange={(v) => zapiszProfil({ taxResidencePL: v }, `rezydencja podatkowa Polska ${v ? "włączona" : "wyłączona"}`)} label="Rezydencja podatkowa Polska" />} />
+        <Row label="Automatyczne naliczanie podatku" desc="Szacuj należny podatek przy każdej sprzedaży" control={<Switch on={profile.autoTax} onChange={(v) => zapiszProfil({ autoTax: v }, `automatyczne naliczanie podatku ${v ? "włączone" : "wyłączone"}`)} label="Automatyczne naliczanie podatku" />} />
         {ikeIkzeUsage.length > 0 ? (
           ikeIkzeUsage.map((usage, index) => (
             <Row
@@ -298,7 +313,7 @@ export function SettingsPage() {
             <Link
               href="/dashboard?tour=1"
               style={{
-                fontFamily: V2_TYPE.ui, fontSize: 12.5, fontWeight: 600,
+                fontFamily: V2_TYPE.ui, fontSize: 12, fontWeight: 600,
                 color: V2.brand, textDecoration: "none",
                 border: `1px solid ${V2.line}`, borderRadius: 9, padding: "8px 14px",
               }}
@@ -315,7 +330,7 @@ export function SettingsPage() {
               href="https://discord.gg/wrKjxVyFQ"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ fontFamily: V2_TYPE.ui, fontSize: 12.5, fontWeight: 600, color: V2.brand, textDecoration: "none" }}
+              style={{ fontFamily: V2_TYPE.ui, fontSize: 12, fontWeight: 600, color: V2.brand, textDecoration: "none" }}
             >
               Dołącz →
             </a>
@@ -328,7 +343,7 @@ export function SettingsPage() {
           control={
             <a
               href="mailto:zecca.barista363@passmail.net"
-              style={{ fontFamily: V2_TYPE.ui, fontSize: 12.5, fontWeight: 600, color: V2.brand, textDecoration: "none" }}
+              style={{ fontFamily: V2_TYPE.ui, fontSize: 12, fontWeight: 600, color: V2.brand, textDecoration: "none" }}
             >
               Napisz →
             </a>
@@ -477,7 +492,7 @@ function DangerZone() {
     padding: "9px 15px",
     borderRadius: 10,
     fontFamily: V2_TYPE.ui,
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: 600,
     cursor: deleting ? "not-allowed" : "pointer",
   };
@@ -486,7 +501,7 @@ function DangerZone() {
     <V2Card style={{ borderColor: v2Mix(V2.loss, 0.3) }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
         <div style={{ minWidth: 0, maxWidth: 520 }}>
-          <div style={{ fontFamily: V2_TYPE.ui, fontSize: 13.5, fontWeight: 600, color: V2.ink }}>Eksport i usunięcie danych</div>
+          <div style={{ fontFamily: V2_TYPE.ui, fontSize: 13, fontWeight: 600, color: V2.ink }}>Eksport i usunięcie danych</div>
           <div style={{ fontFamily: V2_TYPE.ui, fontSize: 12, color: V2.muted, marginTop: 2 }}>
             {confirming
               ? "Konto oraz wszystkie zaszyfrowane dane w chmurze zostaną trwale usunięte. Dane zapisane lokalnie w aplikacjach na innych urządzeniach pozostaną. Tej operacji nie można cofnąć."
@@ -552,19 +567,19 @@ function ProfileCard({
   function handleFile(file: File | undefined) {
     if (!file) return;
     if (file.size > 2_000_000) {
-      window.alert("Zdjęcie jest za duże (maks. 2 MB).");
+      announce("Zdjęcie jest za duże — maksimum to 2 MB.");
       return;
     }
     const reader = new FileReader();
     reader.onload = () => {
-      if (typeof reader.result === "string") updateProfile({ avatar: reader.result });
+      if (typeof reader.result === "string") zapiszProfil({ avatar: reader.result }, "zdjęcie profilu");
     };
     reader.readAsDataURL(file);
   }
 
   function commitName() {
     const trimmed = name.trim();
-    updateProfile({ name: trimmed.length ? trimmed : "Inwestor" });
+    zapiszProfil({ name: trimmed.length ? trimmed : "Inwestor" }, "nazwa profilu");
     setEditing(false);
   }
 
@@ -591,7 +606,7 @@ function ProfileCard({
           <span
             style={{
               position: "absolute", bottom: 0, left: 0, right: 0,
-              fontFamily: V2_TYPE.ui, fontSize: 8.5, fontWeight: 700, letterSpacing: ".04em",
+              fontFamily: V2_TYPE.ui, fontSize: 10, fontWeight: 700, letterSpacing: ".04em",
               color: "#fff", background: v2Mix(V2.ink, 0.55), padding: "2px 0",
               textTransform: "uppercase",
             }}
@@ -619,7 +634,7 @@ function ProfileCard({
                 if (e.key === "Escape") { setName(profile.name); setEditing(false); }
               }}
               style={{
-                fontFamily: V2_TYPE.serif, fontSize: 23, fontWeight: 500, color: V2.ink,
+                fontFamily: V2_TYPE.serif, fontSize: 21, fontWeight: 500, color: V2.ink,
                 border: "none", borderBottom: `1px solid ${V2.line}`, outline: "none",
                 background: "transparent", padding: "0 0 2px", width: "100%", maxWidth: 280,
               }}
@@ -629,7 +644,7 @@ function ProfileCard({
               onClick={() => setEditing(true)}
               style={{ display: "flex", alignItems: "center", gap: 8, border: "none", background: "transparent", cursor: "pointer", padding: 0 }}
             >
-              <span style={{ fontFamily: V2_TYPE.serif, fontSize: 23, fontWeight: 500, color: V2.ink }}>{profile.name}</span>
+              <span style={{ fontFamily: V2_TYPE.serif, fontSize: 21, fontWeight: 500, color: V2.ink }}>{profile.name}</span>
               <span style={{ fontSize: 13, color: V2.subtle }}>✎</span>
             </button>
           )}
@@ -638,7 +653,7 @@ function ProfileCard({
             <V2Badge label={portfolioCountLabel(portfolioCount)} color={V2.equity} />
           </div>
         </div>
-        <Link href="/import" style={{ padding: "9px 16px", borderRadius: 10, border: `0.5px solid ${V2.line}`, background: V2.card, color: V2.ink, fontFamily: V2_TYPE.ui, fontSize: 12.5, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>Import / Eksport</Link>
+        <Link href="/import" style={{ padding: "9px 16px", borderRadius: 10, border: `0.5px solid ${V2.line}`, background: V2.card, color: V2.ink, fontFamily: V2_TYPE.ui, fontSize: 12, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>Import / Eksport</Link>
       </div>
     </V2Card>
   );
@@ -691,7 +706,7 @@ function AccountsSection({ accounts }: { accounts: PortfolioSummary[] }) {
               <Row
                 key={account.id}
                 label={account.name}
-                desc={`${account.positions} ${account.positions === 1 ? "pozycja" : "pozycji"} · ${account.baseCurrency}`}
+                desc={`${account.positions} ${pluralPl(account.positions, "pozycja", "pozycje", "pozycji")} · ${account.baseCurrency}`}
                 last={index === accounts.length - 1}
                 control={(
                   <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -748,7 +763,7 @@ function NotificationSection({ prefs }: { prefs: NotificationPrefs }) {
   }, []);
 
   function setPref(key: keyof NotificationPrefs, value: boolean) {
-    updateProfile({ notifications: { ...prefs, [key]: value } });
+    zapiszProfil({ notifications: { ...prefs, [key]: value } }, `powiadomienie „${key}" ${value ? "włączone" : "wyłączone"}`);
   }
 
   async function requestPermission() {
@@ -768,9 +783,9 @@ function NotificationSection({ prefs }: { prefs: NotificationPrefs }) {
 
   return (
     <Section eyebrow="Powiadomienia" title="Alerty i podsumowania">
-      <div style={{ padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, flexWrap: "wrap", background: v2Mix(V2.gold, 0.06) }}>
+      <div style={{ padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, flexWrap: "wrap", background: v2Mix(V2.bonds, 0.06) }}>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontFamily: V2_TYPE.ui, fontSize: 12.5, color: V2.ink }}>
+          <div style={{ fontFamily: V2_TYPE.ui, fontSize: 12, color: V2.ink }}>
             Alerty są dostarczane jako powiadomienia przeglądarki, gdy aplikacja jest otwarta.
             Podsumowania e-mail i push wymagają backendu i nie są jeszcze aktywne.
           </div>
@@ -780,16 +795,23 @@ function NotificationSection({ prefs }: { prefs: NotificationPrefs }) {
         </div>
         <button
           onClick={requestPermission}
-          disabled={permission === "granted" || permission === "unsupported"}
+          disabled={permission === "granted" || permission === "unsupported" || permission === "denied"}
           style={{
             padding: "9px 15px", borderRadius: 10, border: "none", whiteSpace: "nowrap",
-            background: permission === "granted" || permission === "unsupported" ? v2Mix(V2.ink, 0.1) : V2.ink,
-            color: permission === "granted" || permission === "unsupported" ? V2.subtle : V2.card,
-            fontFamily: V2_TYPE.ui, fontSize: 12.5, fontWeight: 600,
-            cursor: permission === "granted" || permission === "unsupported" ? "default" : "pointer",
+            background: permission === "granted" || permission === "unsupported" || permission === "denied" ? v2Mix(V2.ink, 0.1) : V2.ink,
+            color: permission === "granted" || permission === "unsupported" || permission === "denied" ? V2.subtle : V2.card,
+            fontFamily: V2_TYPE.ui, fontSize: 12, fontWeight: 600,
+            cursor: permission === "granted" || permission === "unsupported" || permission === "denied" ? "default" : "pointer",
           }}
         >
-          {permission === "granted" ? "Włączone" : "Włącz powiadomienia"}
+          {/* Przy „denied" przeglądarka nie pokazuje już pytania — `requestPermission()`
+              rozwiązuje się natychmiast i nic się nie dzieje. Przycisk był aktywny,
+              więc klik był bez reakcji; teraz mówi, gdzie to odblokować. */}
+          {permission === "granted"
+            ? "Włączone"
+            : permission === "denied"
+              ? "Odblokuj w ustawieniach przeglądarki"
+              : "Włącz powiadomienia"}
         </button>
       </div>
       <Row label="Alerty cenowe" desc="Powiadom o zmianie kursu instrumentu > 5%" control={<Switch on={prefs.price} onChange={(v) => setPref("price", v)} label="Alerty cenowe" />} />

@@ -31,7 +31,7 @@ const CURRENCIES = ["PLN", "USD", "EUR", "GBP", "CHF", "CZK"];
 
 const labelStyle: CSSProperties = {
   display: "block",
-  fontSize: 10.5,
+  fontSize: 10,
   fontWeight: 700,
   color: SUBTLE,
   textTransform: "uppercase",
@@ -206,7 +206,7 @@ export function PortfolioEditorModal({
             borderBottom: `0.5px solid ${LINE_SOFT}`,
           }}
         >
-          <div style={{ fontSize: 16, fontWeight: 700, color: INK }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: INK }}>
             {initialValue ? "Edytuj portfel" : "Dodaj portfel"}
           </div>
           <button
@@ -218,7 +218,7 @@ export function PortfolioEditorModal({
               border: "none",
               background: "rgba(28,49,68,0.07)",
               color: MUTED,
-              fontSize: 16,
+              fontSize: 15,
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
