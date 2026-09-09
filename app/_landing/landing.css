@@ -18,8 +18,11 @@
   --hair: rgba(198, 232, 222, 0.11);
   --hair-2: rgba(198, 232, 222, 0.06);
 
-  --display: var(--font-landing-display), Didot, "Bodoni MT", Georgia, serif;
-  --text: var(--font-landing-text), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  /* Landing bierze kroje z tokenów produktu, nie z własnych zmiennych lokalnych.
+     Nazwa trzyma ROLĘ: display to Didone, text grotesk, mono każda liczba. */
+  --display: var(--font-display);
+  --text: var(--font-text);
+  --mono: var(--font-code);
 
   --shell: 1320px;
   --gut: 60px;
@@ -308,17 +311,17 @@
 }
 .zlanding .brand { display: inline-flex; align-items: center; gap: 11px; color: var(--ink); }
 .zlanding .brand:hover { color: var(--ink); }
+/* Znak stoi wprost na tle, bez kafelka. Zielony kafelek z gradientem był
+   ostatnią zieloną powierzchnią na stronie — i akurat znakiem marki, więc
+   sprzeczność z bursztynową paletą była najgłośniejsza właśnie tam. Zniknęły
+   z nim dwa cienie wewnętrzne, których w tym kierunku nie ma. */
 .zlanding .mark {
-  width: 28px;
-  height: 28px;
-  border-radius: 3px;
-  overflow: hidden;
+  width: 26px;
+  height: 26px;
   display: grid;
   place-items: center;
-  background: linear-gradient(152deg, #1E7A55, #0B2E20);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -1px 0 rgba(0, 0, 0, 0.45);
 }
-.zlanding .mark img { width: 20px; height: 20px; object-fit: contain; }
+.zlanding .mark img { width: 24px; height: 24px; object-fit: contain; }
 .zlanding .wordmark { font-family: var(--display); font-size: 20px; font-weight: 400; }
 /* 10px, nie 9 — drabina mikrotypografii ma pięć stopni (10 · 11 · 12 · 13 · 14)
    i nie potrzebuje szóstego dla jednej plakietki. */

@@ -3,20 +3,25 @@ import "@/design/tokens.css";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { Space_Grotesk, Newsreader, IBM_Plex_Mono } from "next/font/google";
+import { Bodoni_Moda, Archivo, IBM_Plex_Mono } from "next/font/google";
 
-// Grotesk niesie nagłówki i etykiety, szeryf prozę, mono każdą liczbę.
-// Rozdział ról jest regułą kierunku „Próba" — patrz src/design/tokens.css.
-const display = Space_Grotesk({
+// Didone niesie nagłówki (rodowód grawerowanego banknotu), grotesk prozę
+// i etykiety, mono każdą liczbę. Rozdział ról — patrz src/design/tokens.css.
+// Te same kroje co landing: produkt i strona mają jedną typografię.
+const display = Bodoni_Moda({
   subsets: ["latin", "latin-ext"],
-  weight: ["500", "700"],
+  weight: ["400", "500"],
+  style: ["normal", "italic"],
   variable: "--font-display-src",
   display: "swap",
 });
 
-const text = Newsreader({
+// Archivo idzie w pięciu wagach, bo w tylu jest rysowany. Wcześniej krój wczytywał
+// się w 300/400/500, a kod prosił 264 razy o 600/700/800 — przeglądarka robiła
+// wtedy pogrubienie sztuczne, czyli rozlewała laski i zalewała światła wewnętrzne.
+const text = Archivo({
   subsets: ["latin", "latin-ext"],
-  weight: ["400", "500"],
+  weight: ["300", "400", "500", "600", "700"],
   variable: "--font-text-src",
   display: "swap",
 });

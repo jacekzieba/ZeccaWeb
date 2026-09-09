@@ -4,19 +4,36 @@ import { useState } from "react";
 
 type Slice = { label: string; percent: number };
 
+// Ciepła podziałka od bursztynu do miedzi, zamknięta chłodnym tonem szyny.
+// Sama tonalna szyna była zbyt monochromatyczna — pierścień przestawał być
+// wykresem, a stawał się szarą obwódką. Trzy pełne barwy (bursztyn, zieleń,
+// łupek) z kolei dokładały do palety trzy wartości chromatyczne i kłóciły się
+// znaczeniem z zielenią wzrostu. To jest środek: dwie barwy, trzy wyraźnie
+// rozsunięte jasności, zero zieleni w roli kategorii.
 const COLORS = [
   { fill: "#F0A43C", text: "#F0A43C" },
-  { fill: "#6E9C92", text: "#8FC0B6" },
-  { fill: "#2A3D4E", text: "#8FA6BA" },
+  { fill: "#B9723A", text: "#D08F58" },
+  { fill: "rgba(198, 232, 222, 0.46)", text: "var(--ink-2)" },
 ];
 
 const R = 112;
-const SW = 26;
-const GAP = 5;
+const SW = 34;
+/* Przerwa między wycinkami mierzona po obwodzie. Przy 5 jednostkach na obwodzie
+   ~704 wychodziło 2,5 stopnia — kreska cieńsza niż grubość samego pierścienia,
+   więc segmenty czytały się jak jeden łuk w trzech kolorach. */
+const GAP = 20;
 const C = 2 * Math.PI * R;
 
 /** Pierścień alokacji. Najechanie na segment albo wiersz legendy podświetla
     jedno i to samo — środek pokazuje wtedy, na co patrzysz. */
+/* Polska liczba mnoga: 1 klasa, 2–4 klasy, 5+ oraz 12–14 klas. */
+function klasy(n: number) {
+  const ostatnia = n % 10;
+  const dwieOstatnie = n % 100;
+  if (n === 1) return "klasa aktywów";
+  if (ostatnia >= 2 && ostatnia <= 4 && (dwieOstatnie < 12 || dwieOstatnie > 14)) return "klasy aktywów";
+  return "klas aktywów";
+}
 export function AllocationRing({ slices }: { slices: Slice[] }) {
   const [active, setActive] = useState<number | null>(null);
 
@@ -76,7 +93,13 @@ export function AllocationRing({ slices }: { slices: Slice[] }) {
               <text y="20" textAnchor="middle" className="alloc-center-label">{shown.label}</text>
             </>
           ) : (
-            <text y="6" textAnchor="middle" className="alloc-center-label">portfel demo</text>
+            <>
+              {/* Środek pierścienia mówi o pierścieniu, nie o portfelu. Wcześniej
+                  stała tu wartość portfela — ta sama liczba, co w hero, w rejestrze
+                  i w karcie portfeli, czyli czwarty jej wydruk na jednej stronie. */}
+              <text y="-1" textAnchor="middle" className="alloc-center-value">{slices.length}</text>
+              <text y="24" textAnchor="middle" className="alloc-center-label">{klasy(slices.length)}</text>
+            </>
           )}
         </g>
       </svg>

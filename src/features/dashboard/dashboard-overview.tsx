@@ -980,9 +980,10 @@ export function DashboardOverview() {
     <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: UI, color: PALETTE.ink }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 10, padding: DASHBOARD_HEAD_PADDING }}>
         <div>
-          <div style={{ fontFamily: SERIF, fontSize: isMobile ? 26 : 31, fontWeight: 500, color: PALETTE.ink, letterSpacing: "-.01em" }}>
+          {/* Tytuł ekranu to h1 — bez nagłówków czytnik nie ma czym nawigować. */}
+          <h1 style={{ fontFamily: SERIF, fontSize: isMobile ? 26 : 31, fontWeight: 500, color: PALETTE.ink, letterSpacing: "-.01em", margin: 0 }}>
             Dzień dobry, <span style={{ fontStyle: "italic", color: PALETTE.brand }}>{firstName(profile.name)}</span>
-          </div>
+          </h1>
           <div style={{ fontFamily: UI, fontSize: 13, color: PALETTE.muted, marginTop: 3 }}>
             {dateText} · {syncSummary ? "wszystkie dane zsynchronizowane" : "dane z lokalnego snapshotu"}.
           </div>
