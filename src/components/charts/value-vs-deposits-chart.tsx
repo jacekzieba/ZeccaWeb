@@ -44,7 +44,6 @@ export function ValueVsDepositsChart({
   currency = "PLN",
   showPeriodControl = true,
   periodLabels,
-  animateOnView = false,
 }: {
   value: ValuationPoint[];
   deposits: ValuationPoint[];
@@ -52,8 +51,6 @@ export function ValueVsDepositsChart({
   currency?: string;
   showPeriodControl?: boolean;
   periodLabels?: Partial<Record<Period, string>>;
-  /** Draws the value line left-to-right once on mount (landing hero only). */
-  animateOnView?: boolean;
 }) {
   const [period, setPeriod] = useState<Period>("MAX");
   const { value, deposits } = cropByPeriod(valueProp, depositsProp, period);
@@ -61,10 +58,6 @@ export function ValueVsDepositsChart({
   const wrapRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(MIN_CHART_WIDTH);
   const [hover, setHover] = useState<number | null>(null);
-
-  const valueLineRef = useRef<SVGPolylineElement>(null);
-  const fadeRef = useRef<SVGGElement>(null);
-  const drawnRef = useRef(false);
 
   useEffect(() => {
     if (!wrapRef.current) return;
@@ -74,43 +67,6 @@ export function ValueVsDepositsChart({
     ro.observe(wrapRef.current);
     return () => ro.disconnect();
   }, []);
-
-  // Once, after the layout settles, trace the value line and fade the rest in.
-  useEffect(() => {
-    if (!animateOnView || drawnRef.current) return;
-    if (typeof window === "undefined") return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    const id = window.setTimeout(() => {
-      const line = valueLineRef.current;
-      if (!line || drawnRef.current) return;
-      let len = 0;
-      try {
-        len = line.getTotalLength();
-      } catch {
-        return;
-      }
-      if (!len) return;
-      drawnRef.current = true;
-
-      line.style.strokeDasharray = String(len);
-      line.style.strokeDashoffset = String(len);
-      const draw = line.animate(
-        [{ strokeDashoffset: len }, { strokeDashoffset: 0 }],
-        { duration: 1150, easing: "cubic-bezier(0.33, 1, 0.68, 1)" },
-      );
-      // Clear the inline dash once drawn so later resizes don't clip the line.
-      draw.onfinish = () => {
-        line.style.strokeDasharray = "";
-        line.style.strokeDashoffset = "";
-      };
-      fadeRef.current?.animate(
-        [{ opacity: 0 }, { opacity: 1 }],
-        { duration: 750, delay: 220, easing: "ease-out", fill: "backwards" },
-      );
-    }, 90);
-    return () => window.clearTimeout(id);
-  }, [animateOnView]);
 
   const n = Math.min(value.length, deposits.length);
   if (n < 2) return null;
@@ -215,7 +171,7 @@ export function ValueVsDepositsChart({
           </g>
         ))}
 
-        <g ref={fadeRef}>
+        <g>
           {/* Value area */}
           <path d={`M${pl},${pt + H} L${valuePts} L${pl + W},${pt + H} Z`} fill={`url(#${fillId})`} />
 
@@ -244,8 +200,8 @@ export function ValueVsDepositsChart({
             })}
         </g>
 
-        {/* Value line — drawn last so it traces on top of the area + deposits */}
-        <polyline ref={valueLineRef} points={valuePts} fill="none" stroke={VALUE_COLOR} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        {/* Value line — drawn last so it sits on top of the area + deposits */}
+        <polyline points={valuePts} fill="none" stroke={VALUE_COLOR} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
 
         {hover != null && (
           <g>

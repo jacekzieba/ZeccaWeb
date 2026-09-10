@@ -303,7 +303,10 @@ function MonthlyChart({
               </div>
               <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 4, minWidth: 0 }}>
                 <div style={{ height: 5, borderRadius: 4, background: v2Mix(V2.ink, 0.06), overflow: "hidden" }}>
-                  <div title={`Przed obciążeniami: ${fmt(item.sourcePLN)} ${currencyLabel("PLN")}`} style={{ width: `${sourceWidth}%`, height: "100%", borderRadius: 4, background: v2Mix(V2.equity, 0.32) }} />
+                  {/* Bursztyn ma zamkniętą listę zadań, zieleń tylko kierunek — a to
+                      pole nie jest ani jednym, ani drugim, ani klasą aktywu. Neutralny
+                      atrament, tak jak w legendzie i nagłówku niżej. */}
+                  <div title={`Przed obciążeniami: ${fmt(item.sourcePLN)} ${currencyLabel("PLN")}`} style={{ width: `${sourceWidth}%`, height: "100%", borderRadius: 4, background: v2Mix(V2.ink, 0.28) }} />
                 </div>
                 <div style={{ height: 7, borderRadius: 4, background: v2Mix(V2.ink, 0.06), overflow: "hidden" }}>
                   <div title={`Po obciążeniach: ${fmt(item.totalPLN)} ${currencyLabel("PLN")}`} style={{ width: `${totalWidth}%`, height: "100%", borderRadius: 4, background: item.totalPLN >= 0 ? V2.profit : V2.loss }} />
@@ -401,6 +404,9 @@ function YearlyAverageChart({
 
         {items.map((item, index) => {
           const incomplete = item.months < 12;
+          // Wykres pokazuje wynik ze znakiem, więc słupek go niesie; linia łącząca
+          // lata zostaje neutralna, bo opisuje trend, a nie plus/minus.
+          const barColor = item.avgResult >= 0 ? V2.profit : V2.loss;
           const top = item.avgResult >= 0 ? y(item.avgResult) : zeroY;
           const columnHeight = Math.max(2, Math.abs(y(item.avgResult) - zeroY));
           return (
@@ -427,8 +433,8 @@ function YearlyAverageChart({
                 width={barWidth}
                 height={columnHeight}
                 rx={Math.min(6, barWidth / 5)}
-                fill={incomplete ? v2Mix(V2.equity, 0.1) : v2Mix(V2.equity, 0.32)}
-                stroke={incomplete ? v2Mix(V2.equity, 0.58) : "none"}
+                fill={incomplete ? v2Mix(barColor, 0.1) : v2Mix(barColor, 0.32)}
+                stroke={incomplete ? v2Mix(barColor, 0.58) : "none"}
                 strokeDasharray={incomplete ? "4 3" : undefined}
               />
               <text
@@ -468,11 +474,11 @@ function YearlyAverageChart({
               y1={y(item.avgResult)}
               x2={x(index + 1)}
               y2={y(next.avgResult)}
-              stroke={V2.equity}
+              stroke={V2.muted}
               strokeWidth="2"
               strokeLinecap="round"
               strokeDasharray={incompleteSegment ? "5 5" : undefined}
-              opacity={incompleteSegment ? 0.58 : 0.92}
+              opacity={incompleteSegment ? 0.42 : 0.7}
               pointerEvents="none"
             />
           );
@@ -484,8 +490,8 @@ function YearlyAverageChart({
             cx={x(index)}
             cy={y(item.avgResult)}
             r={hoveredIndex === index ? 5 : 3.5}
-            fill={item.months < 12 ? V2.card : V2.equity}
-            stroke={V2.equity}
+            fill={item.months < 12 ? V2.card : (item.avgResult >= 0 ? V2.profit : V2.loss)}
+            stroke={item.avgResult >= 0 ? V2.profit : V2.loss}
             strokeWidth="2"
             pointerEvents="none"
           />
@@ -954,7 +960,7 @@ export function EarningsPage() {
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 18, marginTop: 24 }}>
               <V2Kpi label="Średnia / m-c" value={`${fmt(summariesForSelection.totals.averagePLN)} zł`} sub="po obciążeniach" />
               <V2Kpi label="Śr. przed obc." value={`${fmt(summariesForSelection.totals.averageBeforeBurdensPLN)} zł`} sub="dochód + przychód" />
-              <V2Kpi label="Najwyższy miesiąc" value={`${fmt(summariesForSelection.totals.highestMonthPLN)} zł`} accent={V2.equity} />
+              <V2Kpi label="Najwyższy miesiąc" value={`${fmt(summariesForSelection.totals.highestMonthPLN)} zł`} accent={V2.profit} />
               <V2Kpi label="Rekordy" value={`${incomeLists.earnings.length + incomeLists.burdens.length}`} sub={`${incomeLists.earnings.length} ${pluralPl(incomeLists.earnings.length, "zarobek", "zarobki", "zarobków")} / ${incomeLists.burdens.length} ${pluralPl(incomeLists.burdens.length, "obciążenie", "obciążenia", "obciążeń")}`} />
             </div>
           </div>
@@ -962,7 +968,7 @@ export function EarningsPage() {
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginBottom: 4 }}>
               <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: V2.subtle }}>Wynik miesięczny</div>
               <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 11, color: V2.muted }}>
-                <span><span style={{ display: "inline-block", width: 9, height: 9, borderRadius: 2, background: v2Mix(V2.equity, 0.32), marginRight: 6 }} />Przed obc.</span>
+                <span><span style={{ display: "inline-block", width: 9, height: 9, borderRadius: 2, background: v2Mix(V2.ink, 0.28), marginRight: 6 }} />Przed obc.</span>
                 <span><span style={{ display: "inline-block", width: 9, height: 9, borderRadius: 2, background: V2.profit, marginRight: 6 }} />Po obc.</span>
               </div>
             </div>
@@ -1005,8 +1011,8 @@ export function EarningsPage() {
           )}
         </div>
         <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 12, color: V2.subtle, fontSize: 10 }}>
-            <span><span style={{ display: "inline-block", width: 16, borderTop: `2px solid ${V2.equity}`, marginRight: 6, verticalAlign: "middle" }} />pełny rok</span>
-            <span><span style={{ display: "inline-block", width: 16, borderTop: `2px dashed ${v2Mix(V2.equity, 0.65)}`, marginRight: 6, verticalAlign: "middle" }} />niepełny rok</span>
+            <span><span style={{ display: "inline-block", width: 16, borderTop: `2px solid ${V2.muted}`, marginRight: 6, verticalAlign: "middle" }} />pełny rok</span>
+            <span><span style={{ display: "inline-block", width: 16, borderTop: `2px dashed ${v2Mix(V2.muted, 0.65)}`, marginRight: 6, verticalAlign: "middle" }} />niepełny rok</span>
         </div>
         <YearlyAverageChart data={incomeLists.yearlyAverages} />
       </V2Card>
