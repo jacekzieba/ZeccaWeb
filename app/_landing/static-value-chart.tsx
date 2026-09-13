@@ -20,12 +20,19 @@ const RANGE_DAYS: Partial<Record<(typeof PERIOD_OPTIONS)[number], number>> = {
 const VALUE_COLOR = "#F0A43C";      // bursztyn landingu
 const DEPOSIT_COLOR = "#7F948C";    // stalowa zieleń — wpłaty schodzą w tło
 
-function compactAxis(value: number) {
+function compactAxis(value: number, tight = false) {
   if (Math.abs(value) >= 1_000_000) {
-    return `${(value / 1_000_000).toLocaleString("pl-PL", { maximumFractionDigits: 1 })} mln`;
+    return tight
+      ? `${(value / 1_000_000).toLocaleString("pl-PL", { maximumFractionDigits: 1 })}mln`
+      : `${(value / 1_000_000).toLocaleString("pl-PL", { maximumFractionDigits: 1 })} mln`;
   }
   if (Math.abs(value) >= 1_000) {
-    return `${Math.round(value / 1_000).toLocaleString("pl-PL")} tys.`;
+    // Wariant hero: "300 tys." nie mieściło się bez windowania lewego marginesu
+    // (pl) do szerokości, przy której wykres wygląda węziej niż karta wokół
+    // niego. "300k" zajmuje o połowę mniej miejsca.
+    return tight
+      ? `${Math.round(value / 1_000).toLocaleString("pl-PL")}k`
+      : `${Math.round(value / 1_000).toLocaleString("pl-PL")} tys.`;
   }
   return value.toLocaleString("pl-PL", { maximumFractionDigits: 0 });
 }
@@ -78,7 +85,10 @@ export function StaticValueChart({
   // w dół razem z opisami osi i 10 px zamienia się w 5 px.
   const chartWidth = 352;
   const chartHeight = 184;
-  const pl = 46;
+  // Wariant compact (hero) używa krótszych etykiet osi ("300k"), więc lewy
+  // margines na nie może być węższy — inaczej wykres wyglądał węziej niż
+  // karta wokół niego: liczba i przycisk MAX sięgały krawędzi, linia nie.
+  const pl = compact ? 30 : 46;
   const pr = 10;
   const pt = 14;
   const pb = 26;
@@ -180,7 +190,7 @@ export function StaticValueChart({
         {yTicks.map((tick) => (
           <g key={tick}>
             <line x1={pl} x2={pl + innerWidth} y1={y(tick)} y2={y(tick)} />
-            <text x={pl - 9} y={y(tick) + 3.5} textAnchor="end">{compactAxis(tick)}</text>
+            <text x={pl - 9} y={y(tick) + 3.5} textAnchor="end">{compactAxis(tick, compact)}</text>
           </g>
         ))}
         <path className="value-area" fill="url(#landing-vvd-fill)" d={`M${pl},${pt + innerHeight} L${valuePoints} L${pl + innerWidth},${pt + innerHeight} Z`} />

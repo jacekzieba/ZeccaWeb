@@ -18,10 +18,10 @@ const COLORS = [
 
 const R = 112;
 const SW = 34;
-/* Przerwa między wycinkami mierzona po obwodzie. Przy 5 jednostkach na obwodzie
-   ~704 wychodziło 2,5 stopnia — kreska cieńsza niż grubość samego pierścienia,
-   więc segmenty czytały się jak jeden łuk w trzech kolorach. */
-const GAP = 20;
+/* Przerwa między wycinkami mierzona po obwodzie. Przy trzech wycinkach 20
+   jednostek na obwodzie ~704 dawało już 10° na segment — gruba czarna wyrwa
+   zamiast cienkiej kreski rozdzielającej barwy. 6 jednostek to ~3°. */
+const GAP = 6;
 const C = 2 * Math.PI * R;
 
 /** Pierścień alokacji. Najechanie na segment albo wiersz legendy podświetla
@@ -97,7 +97,7 @@ export function AllocationRing({ slices }: { slices: Slice[] }) {
               {/* Środek pierścienia mówi o pierścieniu, nie o portfelu. Wcześniej
                   stała tu wartość portfela — ta sama liczba, co w hero, w rejestrze
                   i w karcie portfeli, czyli czwarty jej wydruk na jednej stronie. */}
-              <text y="-1" textAnchor="middle" className="alloc-center-value">{slices.length}</text>
+              <text y="-1" textAnchor="middle" className="alloc-center-value" fill="var(--ink)">{slices.length}</text>
               <text y="24" textAnchor="middle" className="alloc-center-label">{klasy(slices.length)}</text>
             </>
           )}

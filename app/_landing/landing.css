@@ -897,8 +897,12 @@
 .zlanding .investor-row h4 { font-family: var(--text); font-weight: 500; font-size: 16px; margin: 0; }
 .zlanding .investor-list { margin-top: 32px; }
 
-/* ── FAQ zwarte, dwie kolumny ────────────────────────────────────────────── */
-.zlanding .faq-inner { display: grid; grid-template-columns: minmax(0, 0.42fr) minmax(0, 1fr); gap: 56px; align-items: start; }
+/* ── FAQ: pytania pod nagłówkiem, nie obok niego ─────────────────────────────
+   Rejestr i alokacja mają naturalny podział etykieta/treść, więc dzielą jedną
+   szerokość prawej kolumny (patrz „Siatka: prawa kolumna..." niżej) — FAQ do
+   tej grupy nie należy i nie jest w niej wymieniony. Lista pytań jest pełną
+   szerokością tekstu, więc stoi pod tytułem, na całej szerokości sekcji. */
+.zlanding .faq-inner { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
 .zlanding .faq-list { border-top: 1px solid var(--hair-2); }
 .zlanding .faq-list .faq { border-bottom: 1px solid var(--hair-2); }
 
@@ -1190,8 +1194,7 @@
 .zlanding .sec-split { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 56px; align-items: end; }
 .zlanding .sec-split .sec-aside { max-width: none; }
 .zlanding .register-grid,
-.zlanding .asset-classes-inner,
-.zlanding .faq-inner { grid-template-columns: minmax(0, 1fr) 400px; gap: 56px; }
+.zlanding .asset-classes-inner { grid-template-columns: minmax(0, 1fr) 400px; gap: 56px; }
 .zlanding .asset-classes-inner > .alloc-ring { order: 2; }
 
 /* Wiersz meta przyklejony do dołu komórki — kroki mają wspólną linię bazową */
@@ -1247,8 +1250,7 @@
 @media (max-width: 1180px) {
   .zlanding .sec-split,
   .zlanding .register-grid,
-  .zlanding .asset-classes-inner,
-  .zlanding .faq-inner { grid-template-columns: minmax(0, 1fr) 340px; gap: 40px; }
+  .zlanding .asset-classes-inner { grid-template-columns: minmax(0, 1fr) 340px; gap: 40px; }
 }
 
 @media (max-width: 980px) {
