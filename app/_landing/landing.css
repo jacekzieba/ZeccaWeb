@@ -86,7 +86,6 @@
 .zlanding h2 { font-size: clamp(32px, 3.4vw, 52px); }
 .zlanding h3 { font-size: clamp(19px, 1.6vw, 23px); }
 .zlanding .card h3,
-.zlanding .investor-row h3,
 .zlanding .platform-story h3 {
   font-family: var(--text);
   font-weight: 500;
@@ -722,6 +721,38 @@
 /* Reveal zostaje widoczny bez JS — obserwator tylko dodaje delikatne wejście. */
 .zlanding .reveal { opacity: 1; }
 
+/* Trzy warianty wejścia, jeden na sekcję z trzech odróżnianych — kroki
+   wchodzą z dołu jeden po drugim, karty funkcji wsuwają się z boku
+   naprzemiennie, karty karuzeli wyskakują ze skalowania. Wszystkie trzy
+   respektują prefers-reduced-motion, bo cała reguła stoi tylko pod
+   `no-preference` — bez niej elementy zostają przy zwykłym opacity:1
+   z reguły wyżej. */
+@media (prefers-reduced-motion: no-preference) {
+  .zlanding.js-reveal .reveal-fade-up {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+    transition-delay: calc(var(--i, 0) * 110ms);
+  }
+  .zlanding.js-reveal .reveal-fade-up.in { opacity: 1; transform: none; }
+
+  .zlanding.js-reveal .reveal-slide {
+    opacity: 0;
+    transform: translateX(var(--slide-x, 20px));
+    transition: opacity 0.55s ease, transform 0.55s ease;
+    transition-delay: calc(var(--i, 0) * 70ms);
+  }
+  .zlanding.js-reveal .reveal-slide.in { opacity: 1; transform: none; }
+
+  .zlanding.js-reveal .reveal-scale {
+    opacity: 0;
+    transform: scale(0.92);
+    transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.2, 0.8, 0.3, 1.2);
+    transition-delay: calc(var(--i, 0) * 90ms);
+  }
+  .zlanding.js-reveal .reveal-scale.in { opacity: 1; transform: none; }
+}
+
 /* ── 06 · Aplikacje ─────────────────────────────────────────────────────── */
 .zlanding .platform-showcase .sec-scrim,
 .zlanding .platform-stage { position: relative; }
@@ -817,20 +848,120 @@
 .zlanding .block + .block { padding-top: clamp(48px, 5vw, 76px); }
 .zlanding .steps { padding-bottom: clamp(40px, 4vw, 60px); }
 
-/* ── 07 · Polskie realia — lista na liniach, nie trzecia siatka kart ─────── */
-.zlanding .investor-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 64px;
-  margin-top: 44px;
-  border-top: 1px solid var(--hair-2);
+/* ── Dla polskiego inwestora — zdjęcie na całą sekcję + karuzela pozioma ─────
+   Nagłówek obok siatki kart Funkcji (.sec-split: kicker+tytuł w lewej
+   kolumnie, opis w prawej) czytał się jak ten sam szablon — zgłoszone
+   niezależnie cztery razy w recenzji, mimo różnych kart pod spodem. Ten
+   nagłówek nie dzieli się w ogóle: jedna wąska kolumna tekstu na pełnym
+   zdjęciu, dokładnie jak w sekcji Prywatność niżej na stronie — INNY istniejący
+   wzorzec strony, nie trzeci wymyślony od zera. Fotografia (druk.jpg) jest
+   jedyną na stronie użytą jako plan sekcji, nie ikoną ani numerem — to ona,
+   nie kolejny duży numerał, niesie odrębność tej sekcji. */
+.zlanding .investor-block { position: relative; overflow: hidden; }
+.zlanding .investor-block .sec-bg { object-position: 30% 55%; opacity: 0.85; }
+.zlanding .investor-lead { max-width: 780px; margin-top: 8px; }
+/* Jedna wypowiedź Didone zamiast etykieta→nagłówek→akapit groteskiem —
+   dokładnie ten trzypoziomowy szablon niesie sekcja Funkcje. Tytuł wchodzi
+   pogrubiony w to samo zdanie co opis, więc głos jest ciągły, nie podzielony
+   na nagłówek i osobny, drugorzędny akapit. */
+.zlanding .investor-statement {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(22px, 2.6vw, 34px);
+  line-height: 1.4;
+  color: var(--ink-2);
+  margin-top: 14px;
 }
-.zlanding .investor-row { padding: 22px 0; border-bottom: 1px solid var(--hair-2); }
-.zlanding .investor-row-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
-.zlanding .investor-row h3 { font-size: 21px; }
-.zlanding .investor-anchor { font-family: var(--text); font-variant-numeric: tabular-nums; font-size: 13px; font-weight: 500; color: var(--ink-2); flex: 0 0 auto; }
-.zlanding .investor-row p { font-size: 14px; margin-top: 9px; max-width: 46ch; }
-.zlanding .investor-row .src { margin-top: 12px; }
+.zlanding .investor-statement strong { font-weight: 500; color: var(--ink); }
+.zlanding .investor-statement-count {
+  display: block;
+  margin-top: 10px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 0.06em;
+  color: var(--amber);
+}
+
+.zlanding .investor-carousel-wrap { position: relative; margin-top: 40px; }
+/* Maska na prawej krawędzi — sygnał "przewiń dalej", nie ucięta karta.
+   Powtórzona jako tekst dla czytnika ekranu i dla kogoś, kto nie zobaczy
+   gradientu (np. bez wsparcia mask-image). */
+/* Maska na samej treści (mask-image), nie kolorowa nakładka nad nią —
+   nakładka tylko przyciemniała ucięte słowo, nie usuwała go z widoku.
+   Prawdziwe zanikanie alfa gasi literki, zanim dojdą do twardej krawędzi
+   przewijania, więc nic nie kończy się w połowie wyrazu. */
+.zlanding .investor-carousel {
+  -webkit-mask-image: linear-gradient(90deg, #000 82%, transparent 98%);
+  mask-image: linear-gradient(90deg, #000 82%, transparent 98%);
+}
+.zlanding .investor-scroll-hint {
+  position: absolute;
+  top: -30px;
+  right: 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.zlanding .investor-carousel {
+  list-style: none;
+  display: flex;
+  gap: 16px;
+  margin: 0;
+  padding: 4px var(--gut) 12px 0;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scroll-padding-left: var(--gut);
+}
+/* Karta certyfikatu, nie karta funkcji: bez ikony linowej (ten język znaków
+   należy do sekcji Funkcje), plakietka jest teraz odznaką z obrysem zamiast
+   mono podpisu z kropką, a tytuł bierze Didone zamiast grotesku — inna
+   anatomia, nie ta sama karta w innej liczbie kolumn. */
+/* Bez ramki i bez zaokrąglenia — Funkcje mają już bordered box. Karty stoją
+   luźno na zdjęciu, rozdzielone włosową kreską pionową jak kolumny w
+   arkuszu, nie jak osobne kafle. Tło jest tylko na tyle nieprzezroczyste,
+   żeby tekst został czytelny na fakturze druku pod spodem. */
+.zlanding .investor-card {
+  scroll-snap-align: start;
+  flex: 0 0 clamp(220px, 25vw, 264px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 20px 4px 20px;
+  border-left: 1px solid var(--hair-2);
+}
+.zlanding .investor-card:first-child { border-left: none; padding-left: 0; }
+/* Halo pod tekstem zamiast tła karty — litery zostają czytelne na fakturze
+   druku pod spodem, bez odtwarzania bordered boxa z Funkcji. */
+.zlanding .investor-card-badge,
+.zlanding .investor-card h3,
+.zlanding .investor-card p,
+.zlanding .investor-card-spec { text-shadow: 0 2px 10px rgba(2, 10, 11, 0.92), 0 0 22px rgba(2, 10, 11, 0.7); }
+/* Bez plakietki z obrysem — to jest kształt tagów w Funkcjach. Sam mono
+   napis, bursztynem, bez ramki. */
+.zlanding .investor-card-badge {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.zlanding .investor-card h3 { font-family: var(--display); font-weight: 400; font-size: 20px; line-height: 1.24; margin: 2px 0 0; }
+.zlanding .investor-card p { font-size: 13.5px; color: var(--ink-2); line-height: 1.6; flex: 1; margin: 0; }
+/* Duża liczba mono zamiast plakietek tagów — Funkcje mają już plakietki na
+   dole karty, więc karta karuzeli kończy się inaczej: jedną konkretną
+   wartością, nie zestawem etykiet. */
+.zlanding .investor-card-spec {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--amber);
+  margin-top: 2px;
+}
 
 /* Pieczęć potrzebuje miejsca — kadr nie może ucinać pierścienia. */
 .zlanding .privacy { padding: clamp(96px, 10vw, 152px) 0; }
@@ -872,31 +1003,6 @@
 .zlanding .register-visual { display: flex; flex-direction: column; gap: 18px; }
 .zlanding .value-card-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 4px; }
 
-/* ── Funkcje + polskie realia w jednej sekcji ────────────────────────────── */
-.zlanding .scope-local {
-  position: relative;
-  margin-top: 0;
-  padding: clamp(56px, 6vw, 88px) 0 0;
-}
-.zlanding .scope-local::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 0;
-  width: 100vw;
-  height: 100%;
-  transform: translateX(-50%);
-  background: #0A1614;
-  border-top: 1px solid var(--hair);
-  border-bottom: 1px solid var(--hair);
-  z-index: -1;
-}
-.zlanding .scope-local-head { display: flex; align-items: baseline; justify-content: space-between; gap: 48px; flex-wrap: wrap; }
-.zlanding .scope-local-head h3 { font-family: var(--display); font-weight: 400; font-size: clamp(32px, 3.4vw, 52px); }
-.zlanding .scope-local-head .sec-desc { max-width: 424px; }
-.zlanding .investor-row h4 { font-family: var(--text); font-weight: 500; font-size: 16px; margin: 0; }
-.zlanding .investor-list { margin-top: 32px; }
-
 /* ── FAQ: pytania pod nagłówkiem, nie obok niego ─────────────────────────────
    Rejestr i alokacja mają naturalny podział etykieta/treść, więc dzielą jedną
    szerokość prawej kolumny (patrz „Siatka: prawa kolumna..." niżej) — FAQ do
@@ -926,61 +1032,104 @@
 /* ── Kompozycja wyśrodkowana: przerywa szablon nagłówek-lewo / proza-prawo ── */
 .zlanding .steps-head { max-width: 720px; margin-inline: auto; text-align: center; }
 .zlanding .steps-head .sec-desc { margin-top: 18px; }
+
+/* Trzy kroki naprzemiennie lewo/prawo: tekst i duża figura z numerem
+   zamieniają się stronami co wiersz (nth-child(even) + odwrócenie kierunku).
+   Wcześniej trzy komórki tej samej rangi w jednym rzędzie — teraz trzy pełne
+   wiersze, każdy inaczej zwrócony, żeby nie czytać się jak siatka kart obok. */
 .zlanding .steps-seq {
   list-style: none;
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  column-gap: var(--col-gap);
-  margin: 56px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(32px, 4vw, 56px);
+  margin: 64px 0 0;
   padding: 0;
-  border-top: 1px solid var(--hair);
 }
-/* Trzy komórki tej samej rangi mają teraz tę samą miarę. Wcześniej pierwsza
-   miała padding `28px 32px 0 0`, a druga i trzecia `28px 32px 0` plus kreskę —
-   przez co tekst pierwszej mierzył 408px, a pozostałych 375px. Kreska działowa
-   przenosi się w rynnę siatki, więc nie zjada już wnętrza komórki. */
-.zlanding .steps-seq li { grid-column: span 4; padding: 28px 0 0; position: relative; }
-.zlanding .steps-seq li + li::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: calc(var(--col-gap) / -2);
-  width: 1px;
-  background: var(--hair-2);
+.zlanding .steps-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(32px, 5vw, 64px);
+  align-items: center;
 }
-.zlanding .steps-num {
+.zlanding .steps-row:nth-child(even) { direction: rtl; }
+.zlanding .steps-row:nth-child(even) > * { direction: ltr; }
+.zlanding .steps-row-copy { max-width: 46ch; }
+.zlanding .steps-label {
   display: block;
-  font-family: var(--mono); font-variant-numeric: tabular-nums;
-  font-size: 13px;
-  color: var(--ink-3);
-  letter-spacing: 0.08em;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--amber);
 }
-.zlanding .steps-seq h3 { margin-top: 16px; font-family: var(--text); font-weight: 500; font-size: 17px; line-height: 1.32; }
-.zlanding .steps-seq p { font-size: 14px; margin-top: 10px; }
-.zlanding .steps-seq .src { margin-top: 16px; }
-.zlanding .platform-showcase .platform-stage { margin-top: 48px; }
+.zlanding .steps-row h3 { margin-top: 14px; font-family: var(--text); font-weight: 500; font-size: clamp(20px, 2vw, 26px); line-height: 1.3; }
+.zlanding .steps-row p { font-size: 15px; margin-top: 12px; color: var(--ink-2); line-height: 1.62; }
+.zlanding .steps-row .src { margin-top: 18px; }
 
-
-/* ── Przełamanie: jedno zdanie na pełnej szerokości, między siatkami ─────── */
-.zlanding .statement {
+/* Figura: numer widmowy (obrys, bez wypełnienia) plus mały glif — jedyny
+   akcent graficzny w tej sekcji jest typograficzny, nie fotografia ani
+   rysunek. Zaokrąglony kwadrat w rogu to pojedyncza kropka akcentu. */
+.zlanding .steps-row-figure {
   position: relative;
-  padding: clamp(72px, 8vw, 116px) 0;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Przy 4:3 panel wyglądał na w większości pusty — cyfra i iskierka nie
+     potrzebują tyle wysokości. 16:10 to ten sam pomysł w krótszym kadrze. */
+  aspect-ratio: 16 / 10;
+  border-radius: 4px;
+  /* Bez ramki — karty funkcji i karuzeli mają ramkę 1px, ta figura nie. Jedna
+     z trzech sekcji bez obudowy karty, żeby "wszystko jest tą samą kartą"
+     nie było prawdą o całej stronie. Krawędź niesie samo wypełnienie
+     (odrobinę jaśniejsze niż tło strony) plus poświata, nie obrys.
+     Kąt poświaty rośnie z numerem kroku — 160°/200°/240° — żeby trzy panele
+     nie były tą samą kartą pokazaną trzy razy, tylko trzema wariantami
+     jednego motywu. */
+  background-color: var(--vault-2);
+  background-image: linear-gradient(calc(160deg + var(--i, 0) * 40deg), rgba(240, 164, 60, 0.1), transparent 65%);
+  overflow: hidden;
 }
-.zlanding .statement p {
+.zlanding .steps-figure-num {
   font-family: var(--display);
   font-weight: 400;
-  font-size: clamp(23px, 2.3vw, 32px);
-  line-height: 1.32;
-  color: var(--ink);
-  max-width: 40ch;
-  text-wrap: balance;
+  font-size: clamp(88px, 11vw, 160px);
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(240, 164, 60, 0.34);
 }
-.zlanding .statement .src { margin-top: 24px; }
-.zlanding .scope-local { padding-bottom: clamp(56px, 6vw, 88px); }
-.zlanding .scope-local-head { display: block; }
-.zlanding .scope-local-head .sec-desc { display: none; }
+.zlanding .steps-glyph { position: absolute; left: 20px; bottom: 20px; width: 30px; height: 30px; color: var(--amber); }
+.zlanding .steps-glyph svg { width: 100%; height: 100%; }
+/* Ślad wykresu pod cyfrą — nie ikona, tylko włosowa linia, żeby duży pusty
+   panel niósł więcej niż sam numer widmowy, bez zapożyczania stylu ilustracji
+   z sekcji Funkcje (tam są prawdziwe ikony) ani Dla polskiego inwestora
+   (tam jest fotografia). */
+.zlanding .steps-figure-spark {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 30%;
+}
+/* Trzy typy śladu — kropki, słupki, linia — nie trzy warianty tej samej
+   kreski. Linia bierze obrys (ruch), kropki i słupki wypełnienie (zdarzenia
+   dyskretne), wszystkie tym samym, bardzo cichym bursztynem. */
+.zlanding .steps-figure-line { fill: none; stroke: rgba(240, 164, 60, 0.22); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.zlanding .steps-figure-dots circle,
+.zlanding .steps-figure-bars rect { fill: rgba(240, 164, 60, 0.28); }
+.zlanding .steps-row-figure::after {
+  content: "";
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--amber);
+}
+.zlanding .platform-showcase .platform-stage { margin-top: 48px; }
+
 
 .zlanding .store-note { margin-top: 40px; padding-top: 24px; font-size: 14px; max-width: 56ch; position: relative; }
 .zlanding .store-note::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--hair-2); width: 100vw; max-width: none; }
@@ -1044,11 +1193,11 @@
   .zlanding .hero-panel { max-width: 420px; }
   .zlanding .sec-split { display: block; }
   .zlanding .sec-split .sec-aside { max-width: 56ch; padding-bottom: 0; margin-top: 20px; }
-  .zlanding .investor-list { grid-template-columns: minmax(0, 1fr); gap: 0; }
-  .zlanding .steps-seq { grid-template-columns: minmax(0, 1fr); }
-  .zlanding .steps-seq li { padding: 26px 0; border-top: 1px solid var(--hair-2); }
-  .zlanding .steps-seq li + li::before { display: none; }
-  .zlanding .steps-seq li:first-child { border-top: 0; }
+  /* Naprzemienność lewo/prawo potrzebuje szerokości — poniżej wraca zwykły
+     porządek: figura zawsze pod tekstem, ten sam kierunek w każdym wierszu. */
+  .zlanding .steps-row { grid-template-columns: minmax(0, 1fr); direction: ltr; }
+  .zlanding .steps-row:nth-child(even) { direction: ltr; }
+  .zlanding .steps-row-figure { aspect-ratio: 16 / 9; }
 
   .zlanding .alloc-ring { align-items: flex-start; }
   .zlanding .alloc-legend { max-width: none; }
@@ -1096,39 +1245,76 @@
   .zlanding .closing-actions .btn { width: 100%; }
   .zlanding .foot-top { flex-direction: column; gap: 32px; }
   .zlanding .foot-bot { flex-direction: column; gap: 8px; }
-  .zlanding .statement p { max-width: none; }
 }
 
-/* ── Funkcje jako lista definicyjna ──────────────────────────────────────
-   Osiem identycznych kart z ramką to najbardziej generyczny blok ciemnego
-   SaaS-u. Lista na liniach niesie tę samą treść i należy do tego kierunku. */
-.zlanding .feature-list {
+/* ── Funkcje jako siatka kart ─────────────────────────────────────────────
+   Lista na liniach była tu świadomym wyborem przeciwko „najbardziej
+   generycznemu blokowi ciemnego SaaS-u" — ale zaczęła znaczyć to samo, co
+   naprzemienne kroki i karuzela realiów: trzecia lista na liniach z rzędu.
+   Siatka jest teraz jedynym miejscem na stronie z kartami — wyróżnia się
+   właśnie przez to, że nie jest jeszcze jedną listą. */
+/* 4 kolumny, nie 3: osiem kart dzieli się równo (4×2), zero pustej komórki
+   w ostatnim rzędzie — przy 3 kolumnach siatka zostawiała szarą, pustą
+   ćwiartkę tam, gdzie nie było dziewiątej karty do pokazania. */
+.zlanding .feature-grid {
   margin: 46px 0 0;
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 0 var(--col-gap);
-  border-top: 1px solid var(--hair);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--hair-2);
+  border: 1px solid var(--hair-2);
+  border-radius: 4px;
+  overflow: hidden;
 }
-.zlanding .feature-row { grid-column: span 6; }
-.zlanding .feature-row { padding: 22px 0; border-bottom: 1px solid var(--hair-2); }
-.zlanding .feature-row dt { display: flex; align-items: baseline; gap: 14px; }
-.zlanding .feature-num {
+.zlanding .feature-card {
+  background: var(--vault);
+  padding: 26px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.zlanding .feature-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+/* Romb za glifem — jedyny akcent kształtu w tej sekcji. */
+.zlanding .feature-card-glyph { position: relative; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; color: var(--ink-3); }
+.zlanding .feature-card-glyph::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  background: rgba(240, 164, 60, 0.07);
+  border-radius: 3px;
+  transform: rotate(45deg);
+  z-index: -1;
+}
+.zlanding .feature-card-anchor {
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
-  font-size: 12px;
+  font-size: 10px;
+  letter-spacing: 0.04em;
   color: var(--ink-3);
-  flex: 0 0 auto;
+  white-space: nowrap;
 }
-.zlanding .feature-name { font-weight: 500; font-size: 17px; line-height: 1.32; }
-.zlanding .feature-row dd { margin: 8px 0 0 30px; font-size: 14px; color: var(--ink-2); line-height: 1.62; max-width: 46ch; }
+.zlanding .feature-card-title { font-family: var(--text); font-weight: 500; font-size: 17px; line-height: 1.32; }
+/* Kursywa pierwszego słowa — akcent typograficzny tej sekcji, ten sam
+   bursztyn co reszta strony, bez dokładania nowej barwy. */
+.zlanding .feature-card-title em { font-style: italic; color: var(--amber); font-weight: 500; }
+.zlanding .feature-card p { font-size: 13.5px; color: var(--ink-2); line-height: 1.6; flex: 1; margin: 0; }
+.zlanding .feature-tags { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 2px 0 0; }
+.zlanding .feature-tags li {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  padding: 3px 9px;
+  border: 1px solid var(--hair);
+  border-radius: 99px;
+  color: var(--ink-3);
+}
 
+@media (max-width: 1180px) {
+  .zlanding .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @media (max-width: 720px) {
-  .zlanding .feature-list { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .zlanding .feature-grid { grid-template-columns: minmax(0, 1fr); }
 }
-
-.zlanding .scope-local .statement { padding: 0 0 clamp(36px, 4vw, 52px); }
-.zlanding .scope-local .statement h3 { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 3.2vw, 46px); margin-top: 14px; }
-.zlanding .scope-local .statement p { margin-top: 18px; font-family: var(--text); font-size: 16px; color: var(--ink-2); max-width: 54ch; margin-inline: auto; }
 
 /* Wariant wykresu do panelu w hero: niższy, bez legendy, zakresy po prawej. */
 .zlanding .static-vvd-chart.is-compact { margin-top: 16px; }
@@ -1176,26 +1362,12 @@
 .zlanding .glyph-slot { display: inline-flex; color: var(--ink-3); transition: color 0.18s ease; }
 .zlanding .glyph { display: block; }
 
-.zlanding .steps-head-row { display: flex; align-items: center; gap: 12px; }
-.zlanding .steps-seq li:hover .glyph-slot { color: var(--amber); }
-
-.zlanding .feature-row dt { align-items: center; gap: 14px; }
-.zlanding .feature-row dd { margin-left: 42px; }
-.zlanding .feature-row:hover .glyph-slot { color: var(--amber); }
-
-.zlanding .investor-row-head { align-items: center; gap: 12px; }
-.zlanding .investor-row-head h4 { flex: 1; }
-.zlanding .investor-row:hover .glyph-slot { color: var(--amber); }
+.zlanding .steps-row:hover .glyph-slot,
+.zlanding .feature-card:hover .glyph-slot { color: var(--amber); }
 .zlanding .asset-rows > div:hover .glyph-slot { color: var(--amber); }
 /* Znak klasy aktywow jest mniejszy niz w listach funkcji: wiersz ma 12px
    odstepu, wiec pelne 28px rozepchneloby go o polowe. */
 .zlanding .asset-rows .glyph { width: 21px; height: 21px; }
-.zlanding .investor-row p { margin-left: 40px; }
-
-@media (max-width: 720px) {
-  .zlanding .feature-row dd,
-  .zlanding .investor-row p { margin-left: 0; }
-}
 
 
 /* ── Siatka: prawa kolumna zaczyna się w jednym miejscu na całej stronie ─── */
@@ -1204,10 +1376,6 @@
 .zlanding .register-grid,
 .zlanding .asset-classes-inner { grid-template-columns: minmax(0, 1fr) 400px; gap: 56px; }
 .zlanding .asset-classes-inner > .alloc-ring { order: 2; }
-
-/* Wiersz meta przyklejony do dołu komórki — kroki mają wspólną linię bazową */
-.zlanding .steps-seq li { display: flex; flex-direction: column; }
-.zlanding .steps-seq p { flex: 1; }
 
 /* Panel hero: statystyki w równych kolumnach, „zł" nie konkuruje z liczbą */
 

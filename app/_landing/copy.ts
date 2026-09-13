@@ -114,22 +114,22 @@ export const landingCopy = {
       {
         title: "Wynik realny po inflacji",
         desc: "Dane CPI z GUS pokazują, ile naprawdę zarobiłeś: nominalnie i po inflacji, rok po roku.",
-        tags: ["GUS / CPI", "CPI"],
+        tags: ["GUS", "CPI"],
       },
       {
         title: "Historia od pierwszej transakcji",
         desc: "Dodaj transakcje dowolnie wstecz, np. zakup ROD z 2019 r. Zecca odtworzy całą historię wartości portfela.",
-        tags: ["FIFO", "FIFO"],
+        tags: ["FIFO"],
       },
       {
         title: "Moduł Zarobki",
         desc: "Osobny widok dochodów i obciążeń: wynagrodzenia, UoP/B2B, podsumowania miesięczne, średnie i najlepszy miesiąc. Inwestycje obok prywatnego cashflow.",
-        tags: ["CASHFLOW", "cashflow", "UoP / B2B"],
+        tags: ["CASHFLOW", "UoP / B2B"],
       },
       {
         title: "Import od brokerów",
         desc: "Wczytaj historię z plików XLS/XLSX. Gotowe importery dla XTB i PKO Obligacje. Podgląd przed zatwierdzeniem, wykrywanie duplikatów i parowanie instrumentów.",
-        tags: ["XLSX", "PKO Obligacje", "XLSX"],
+        tags: ["XLSX", "PKO Obligacje"],
       },
       {
         title: "Eksport i kopie",

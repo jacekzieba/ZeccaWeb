@@ -9,6 +9,41 @@ import { GLYPHS } from "./glyphs";
 import { landingCopy } from "./copy";
 import { bindOrphans as b } from "./typo";
 
+/* ── Szkielet trzech sekcji („Obraz Twojego majątku", „Funkcje",
+   „Dla polskiego inwestora") ─────────────────────────────────────────────
+
+   Wcześniej wszystkie trzy używały tego samego szablonu: nagłówek + lista
+   wierszy z glifem, tą samą paletą i tym samym rytmem — trzy kopie jednego
+   projektu. Klej, który ma je trzymać jako jedną stronę mimo różnych
+   układów, jest dokładnie tym, co reszta landingu już ma i czego tu nie
+   ruszam: --vault/--surface/--ink/--amber, Bodoni Moda + Archivo + IBM Plex
+   Mono, skala odstępów 12-kolumnowej siatki (--col-gap, --gut), promień 4px
+   (--r-md odpowiednik na landingu). Różnicuję układ i akcenty, nie system.
+
+   Każda sekcja miała punktem wyjścia osobny losowy string (nigdzie w UI —
+   tylko tu, jako źródło inspiracji, nie treść):
+     obraz-majatku   6T4pMP7uFmKN0RPi → układ: naprzemiennie lewo/prawo;
+                     forma: sekwencja numerowana; akcent: wersaliki
+                     z szerokim tropieniem; kształt: zaokrąglony kwadrat;
+                     jedna kropka akcentu; wejście: fade-up ze zwłoką.
+     funkcje         lUr5LInmkQucCLYj → układ: siatka kart; forma: karty
+                     z plakietkami; akcent: kursywa pierwszego słowa;
+                     kształt: romb za glifem; włosowe obramowanie;
+                     wejście: wsunięcie z boku, naprzemiennie.
+     polski-inwestor b4CN5IU5ED71ab6v → układ: karuzela pozioma pod dużą
+                     liczbą; forma: card-carousel; akcent: duża figura
+                     otwierająca sekcję; kształt: włosowa linia w karcie;
+                     zdjęcie (druk.jpg) jako jedyna sekcja z fotografią;
+                     wejście: scale-in.
+   Trzy różne układy, trzy różne formy prezentacji, trzy różne style
+   ilustracji (czysto typograficzny / rysunek liniowy / fotografia) —
+   każda para różni się więc co najmniej dwoma wymiarami. */
+
+function emFirstWord(text: string): string {
+  const i = text.indexOf(" ");
+  return i === -1 ? `<em>${text}</em>` : `<em>${text.slice(0, i)}</em>${text.slice(i)}`;
+}
+
 // ── Static design assets (not copy) ─────────────────────────────────────────
 
 
@@ -61,17 +96,34 @@ const demo = buildLandingDemoSnapshot();
 // Puste tam, gdzie nie ma liczby, której nie trzeba by zmyślić.
 // Znak przy wierszu — w kolejności copy.ts.
 const STEP_GLYPHS = [GLYPHS.wprowadzasz, GLYPHS.przelicza, GLYPHS.jedno];
+// Ślad danych pod cyfrą figury — nie ikona, tylko odrobina grafiki, żeby duży
+// pusty panel niósł więcej niż sam numer widmowy. Trzy różne TYPY wykresu, nie
+// trzy warianty tej samej kreski: rozrzucone punkty (wprowadzasz dane pojedynczo),
+// słupki (Zecca liczy), jedna gładka linia (wszystko złożone w jedno).
+const STEP_MARKS = [
+  '<g class="steps-figure-mark steps-figure-dots">' +
+    [40, 95, 150, 205, 260].map((x, i) => `<circle cx="${x}" cy="${58 - i * 9 - (i % 2) * 6}" r="4" />`).join("") +
+    "</g>",
+  '<g class="steps-figure-mark steps-figure-bars">' +
+    [
+      [30, 22], [78, 34], [126, 18], [174, 44], [222, 30], [270, 52],
+    ].map(([x, h]) => `<rect x="${x}" y="${72 - h}" width="20" height="${h}" rx="1.5" />`).join("") +
+    "</g>",
+  '<polyline class="steps-figure-mark steps-figure-line" points="0,42 60,40 120,37 180,34 240,20 300,8" />',
+];
 const FEATURE_GLYPHS = [GLYPHS.portfele, GLYPHS.statystyki, GLYPHS.inflacja, GLYPHS.historia,
   GLYPHS.zarobki, GLYPHS.import, GLYPHS.eksport, GLYPHS.sync];
-const INVESTOR_GLYPHS = [GLYPHS.emerytalne, GLYPHS.obligacje, GLYPHS.nbp, GLYPHS.gus,
-  GLYPHS.lokaty, GLYPHS.waluty];
+// Karty karuzeli nie mają już ikon linowych — ten język znaków należy teraz
+// wyłącznie do Funkcji. Dla polskiego inwestora różni się anatomią karty, nie
+// tylko układem, więc GLYPHS.emerytalne/obligacje/nbp/gus/lokaty/waluty
+// zostają w bibliotece nieużywane, na wypadek gdyby wróciły gdzie indziej.
 
 const FEATURE_ANCHORS: readonly string[] = [
-  "",
+  "IKE + IKZE",
   demo.metrics.xirrPct === null ? "" : `XIRR ${formatPercent(demo.metrics.xirrPct)}`,
   formatPercent(demo.metrics.realReturnPct),
   "8 lat wstecz",
-  "",
+  "UoP + B2B",
   "XTB · PKO",
   "CSV + JSON",
   "AES-GCM",
@@ -123,11 +175,18 @@ const howItWorksHtml = `
     <ol class="steps-seq">
       ${how.steps
         .map(
-          (step, index) => `<li class="reveal">
-        <span class="steps-head-row"><span class="glyph-slot">${STEP_GLYPHS[index] ?? ""}</span><span class="steps-num">${String(index + 1).padStart(2, "0")}</span></span>
-        <h3>${b(step.title)}</h3>
-        <p>${b(step.desc)}</p>
-        <span class="src src-quiet">${step.meta}</span>
+          (step, index) => `<li class="steps-row reveal reveal-fade-up" style="--i:${index}">
+        <div class="steps-row-copy">
+          <span class="steps-label">Krok ${String(index + 1).padStart(2, "0")}</span>
+          <h3>${b(step.title)}</h3>
+          <p>${b(step.desc)}</p>
+          <span class="src src-quiet">${step.meta}</span>
+        </div>
+        <div class="steps-row-figure" aria-hidden="true">
+          <span class="steps-figure-num">${String(index + 1).padStart(2, "0")}</span>
+          <span class="glyph-slot steps-glyph">${STEP_GLYPHS[index] ?? ""}</span>
+          <svg class="steps-figure-spark" viewBox="0 0 300 80" preserveAspectRatio="none">${STEP_MARKS[index] ?? STEP_MARKS[0]}</svg>
+        </div>
       </li>`,
         )
         .join("\n      ")}
@@ -145,40 +204,57 @@ const featuresHtml = `
       </div>
       <p class="sec-desc sec-aside">${b(c.features.desc)}</p>
     </div>
-    <dl class="feature-list">
+    <div class="feature-grid">
       ${c.features.items
-        .map(
-          (item, index) => `<div class="feature-row reveal">
-        <dt>
-          <span class="glyph-slot">${FEATURE_GLYPHS[index] ?? ""}</span>
-          <span class="feature-name">${b(item.title)}</span>
-        </dt>
-        <dd>${b(item.desc)}</dd>
-      </div>`,
-        )
+        .map((item, index) => {
+          const slideX = index % 2 === 0 ? "-16px" : "16px";
+          return `<article class="feature-card reveal reveal-slide" style="--i:${index};--slide-x:${slideX}">
+        <div class="feature-card-head">
+          <span class="glyph-slot feature-card-glyph">${FEATURE_GLYPHS[index] ?? ""}</span>
+          ${FEATURE_ANCHORS[index] ? `<span class="feature-card-anchor">${FEATURE_ANCHORS[index]}</span>` : ""}
+        </div>
+        <h3 class="feature-card-title">${b(emFirstWord(item.title))}</h3>
+        <p>${b(item.desc)}</p>
+        <ul class="feature-tags">${item.tags.map((tag) => `<li>${tag}</li>`).join("")}</ul>
+      </article>`;
+        })
         .join("\n      ")}
-    </dl>
+    </div>
+  </div>
+</section>`;
 
-    <div class="scope-local" id="inwestor">
-      <div class="statement reveal">
-        <span class="sec-kicker">${c.investor.eyebrow}</span>
-        <h3>${b(c.investor.title)}</h3>
-        <p>${b(c.investor.desc)}</p>
-      </div>
-      <div class="investor-list">
+const investorHtml = `
+<section class="block investor-block" id="inwestor">
+  <img class="sec-bg" src="/landing/depozyt/druk.jpg" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+  <span class="sec-scrim" style="background:linear-gradient(100deg,var(--vault) 0%,rgba(2,10,11,.88) 40%,rgba(2,10,11,.6) 70%,rgba(2,10,11,.88) 100%)"></span>
+  <span class="sec-scrim" style="background:linear-gradient(180deg,var(--vault) 0%,transparent 22%,transparent 80%,var(--vault) 100%)"></span>
+  <div class="wrap">
+    <div class="investor-lead">
+      <span class="sec-kicker">${c.investor.eyebrow}</span>
+      <!-- Jedna wypowiedź, nie etykieta+nagłówek+akapit — Funkcje mają dokładnie
+           ten trzypoziomowy szablon, więc tytuł i opis tutaj płyną jednym,
+           serifowym ciągiem zamiast rozjeżdżać się na nagłówek + szary akapit
+           groteskiem. Liczba obszarów wchodzi w zdanie, nie stoi obok niego. -->
+      <p class="investor-statement">
+        <strong>${b(c.investor.title)}</strong>
+        ${b(c.investor.desc)}
+        <span class="investor-statement-count">${c.investor.cells.length} obszarów niżej.</span>
+      </p>
+    </div>
+    <div class="investor-carousel-wrap">
+      <span class="investor-scroll-hint">przewiń <span aria-hidden="true">→</span></span>
+      <ul class="investor-carousel">
         ${c.investor.cells
           .map(
-            (cell, index) => `<article class="investor-row reveal">
-          <div class="investor-row-head">
-            <span class="glyph-slot">${INVESTOR_GLYPHS[index] ?? ""}</span>
-            <h4>${b(cell.title)}</h4>
-            ${INVESTOR_ANCHORS[index] ? `<span class="investor-anchor">${INVESTOR_ANCHORS[index]}</span>` : ""}
-          </div>
+            (cell, index) => `<li class="investor-card reveal reveal-scale" style="--i:${index}">
+          <span class="investor-card-badge">${cell.badge}</span>
+          <h3>${b(cell.title)}</h3>
           <p>${b(cell.desc)}</p>
-        </article>`,
+          ${INVESTOR_ANCHORS[index] ? `<span class="investor-card-spec">${INVESTOR_ANCHORS[index]}</span>` : ""}
+        </li>`,
           )
           .join("\n        ")}
-      </div>
+      </ul>
     </div>
   </div>
 </section>`;
@@ -312,6 +388,7 @@ export const LANDING_NAV_HTML = navHtml;
 export const LANDING_BODY_HTML = `
 ${howItWorksHtml}
 ${featuresHtml}
+${investorHtml}
 ${showcaseHtml}
 ${faqHtml}
 ${closingHtml}
