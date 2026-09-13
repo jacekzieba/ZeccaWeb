@@ -23,12 +23,11 @@ import {
   treasuryBondFamilyLabel,
   type GroupedTreasuryBondFamily,
 } from "@/domain/bonds/bond-series-groups";
+import { MetricTiles } from "@/components/layout/metric-tiles";
 import {
   V2,
   V2Badge,
   V2Button,
-  V2Card,
-  V2Kpi,
   V2ScreenHead,
   V2_TYPE,
   v2InputStyle,
@@ -540,12 +539,37 @@ export function InstrumentsPage() {
       />
 
       {records && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14 }}>
-          <V2Card pad={20}><V2Kpi label="Wartość rynkowa" value={`${fmt(totalValue)} ${currencyLabel(displayCurrency)}`} sub={`${groupedHeldCount} aktywnych pozycji`} /></V2Card>
-          {/* Symbol instrumentu to nazwa, nie kierunek — zieleń tu nic nie znaczyła. */}
-          <V2Card pad={20}><V2Kpi label="Największa pozycja" value={best?.symbol ?? "—"} sub={best ? `${fmt(best.marketValue)} ${currencyLabel(displayCurrency)}` : "Brak aktywów"} /></V2Card>
-          <V2Card pad={20}><V2Kpi label="Wyceny" value={`${pricedCount}/${allInstruments.length}`} accent={V2.bonds} sub="instrumenty z ceną" /></V2Card>
-        </div>
+        <MetricTiles
+          rows={[
+            {
+              key: "wartoscRynkowa",
+              source: "Wycena",
+              detail: "ostatnia cena × ilość",
+              label: "Wartość rynkowa",
+              value: `${fmt(totalValue)} ${currencyLabel(displayCurrency)}`,
+              sub: `${groupedHeldCount} aktywnych pozycji`,
+            },
+            {
+              // Symbol instrumentu to nazwa, nie kierunek — zieleń tu nic nie znaczyła.
+              key: "najwiekszaPozycja",
+              source: "Wycena",
+              detail: "wg wartości rynkowej",
+              label: "Największa pozycja",
+              value: best?.symbol ?? "—",
+              sub: best ? `${fmt(best.marketValue)} ${currencyLabel(displayCurrency)}` : "Brak aktywów",
+            },
+            {
+              // Bez accent={V2.bonds}: stosunek wycenionych instrumentów nie jest
+              // klasą aktywu ani kierunkiem, więc żadna barwa systemu tu nie pasuje.
+              key: "wyceny",
+              source: "Instrumenty",
+              detail: "stan cen",
+              label: "Wyceny",
+              value: `${pricedCount}/${allInstruments.length}`,
+              sub: "instrumenty z ceną",
+            },
+          ]}
+        />
       )}
 
       {/* Summary chips */}

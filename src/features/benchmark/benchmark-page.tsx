@@ -281,7 +281,7 @@ function Card({
       style={{
         background: C.card,
         border: `0.5px solid ${C.line}`,
-        borderRadius: 16,
+        borderRadius: "var(--r-md)",
         padding: pad,
         ...style,
       }}
@@ -615,6 +615,7 @@ export function BenchmarkPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: isTablet ? "1fr" : "1fr 1.1fr", gap: 14 }}>
         <Card>
+          <div className="metric-tile-mark">Model referencyjny<em>ścieżka znormalizowana</em></div>
           <Eyebrow>Werdykt</Eyebrow>
           <div style={{ fontFamily: MONO, fontSize: isMobile ? 22 : 26, fontWeight: 500, color: diff >= 0 ? C.profit : C.loss, marginTop: 6, lineHeight: 1.15 }}>
             {diff >= 0 ? "Wyprzedzasz" : "Pozostajesz za"} {selected.name}
@@ -639,6 +640,9 @@ export function BenchmarkPage() {
         </Card>
 
         <Card pad={0}>
+          <div style={{ padding: "12px 22px 0" }}>
+            <div className="metric-tile-mark">Model referencyjny<em>siedem miar, ta sama ścieżka</em></div>
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "1.35fr 1fr 1fr", padding: "15px 22px", borderBottom: `0.5px solid ${C.line}`, background: v2Mix(C.ink, 0.022) }}>
             {["Miara", "Twój portfel", selected.name].map((label, index) => (
               <span

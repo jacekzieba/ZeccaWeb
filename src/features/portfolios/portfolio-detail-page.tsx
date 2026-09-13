@@ -16,10 +16,11 @@ import {
 } from "@/domain/bonds/bond-series-groups";
 import {
   getKpiTiles,
+  KPI_MARKS,
   KPI_TILE_META,
-  KpiCard,
   type KpiTileId,
 } from "@/components/metrics/portfolio-kpi-strip";
+import { MetricTiles } from "@/components/layout/metric-tiles";
 import { ValueVsDepositsChart } from "@/components/charts/value-vs-deposits-chart";
 import {
   useSectionCustomization,
@@ -571,10 +572,46 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
   );
 
   const renderSection = (id: string) => {
-    if (id === "kpiValue") return <KpiCard label="Wartość portfela" value={`${fmt(detail.totalValue)} ${currencyLabel(displayCurrency)}`} />;
-    if (id === "kpiCash") return <KpiCard label="Gotówka" value={`${fmt(detail.cashValue)} ${currencyLabel(displayCurrency)}`} />;
+    if (id === "kpiValue")
+      return (
+        <MetricTiles
+          rows={[{
+            key: id,
+            source: "Wycena",
+            detail: "ostatnia cena × ilość",
+            label: "Wartość portfela",
+            value: `${fmt(detail.totalValue)} ${currencyLabel(displayCurrency)}`,
+          }]}
+        />
+      );
+    if (id === "kpiCash")
+      return (
+        <MetricTiles
+          rows={[{
+            key: id,
+            source: "Portfel",
+            detail: "salda gotówkowe",
+            label: "Gotówka",
+            value: `${fmt(detail.cashValue)} ${currencyLabel(displayCurrency)}`,
+          }]}
+        />
+      );
     const kpi = kpiById.get(id as KpiTileId);
-    if (kpi) return <KpiCard label={kpi.label} value={kpi.value} sub={kpi.sub} color={kpi.color} helpHref={kpi.helpHref} />;
+    if (kpi)
+      return (
+        <MetricTiles
+          rows={[{
+            key: id,
+            source: KPI_MARKS[id as KpiTileId].source,
+            detail: KPI_MARKS[id as KpiTileId].detail,
+            label: kpi.label,
+            value: kpi.value,
+            sub: kpi.sub,
+            color: kpi.color,
+            helpHref: kpi.helpHref,
+          }]}
+        />
+      );
     if (id === "history") return (
       <HistoryCard
         detail={detail}

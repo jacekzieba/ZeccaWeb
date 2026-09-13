@@ -20,12 +20,11 @@ import { TRANSACTION_LABELS } from "@/lib/transaction-labels";
 import { useProfile } from "@/features/profile/profile-store";
 import { currencyLabel } from "@/lib/money";
 import { announce } from "@/components/feedback/status-announcer";
+import { MetricTiles } from "@/components/layout/metric-tiles";
 import {
   V2,
   V2Badge,
   V2Button,
-  V2Card,
-  V2Kpi,
   V2ScreenHead,
   V2_TYPE,
   v2InputStyle,
@@ -526,15 +525,43 @@ export function TransactionsPage() {
       />
 
       {records && (
-        <V2Card pad={20}>
-          <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
-            <V2Kpi label="Wpłaty" value={`+${fmt(deposits)} zł`} />
-            <div style={{ width: "0.5px", background: V2.line, alignSelf: "stretch" }} />
-            <V2Kpi label="Dywidendy" value={`+${fmt(dividends)} zł`} accent={V2.profit} />
-            <V2Kpi label="Odsetki" value={`+${fmt(interest)} zł`} accent={V2.profit} />
-            <V2Kpi label="Prowizje" value={`−${fmt(fees)} zł`} accent={V2.loss} />
-          </div>
-        </V2Card>
+        <MetricTiles
+          rows={[
+            {
+              key: "wplaty",
+              source: "Transakcje",
+              detail: cechaZakresu,
+              label: "Wpłaty",
+              // Był tu sztywny "zł" niezależnie od displayCurrency — poprawne
+              // dla większości kont, milczące kłamstwo dla reszty.
+              value: `+${fmt(deposits)} ${currencyLabel(displayCurrency)}`,
+            },
+            {
+              key: "dywidendy",
+              source: "Transakcje",
+              detail: cechaZakresu,
+              label: "Dywidendy",
+              value: `+${fmt(dividends)} ${currencyLabel(displayCurrency)}`,
+              color: V2.profit,
+            },
+            {
+              key: "odsetki",
+              source: "Transakcje",
+              detail: cechaZakresu,
+              label: "Odsetki",
+              value: `+${fmt(interest)} ${currencyLabel(displayCurrency)}`,
+              color: V2.profit,
+            },
+            {
+              key: "prowizje",
+              source: "Transakcje",
+              detail: cechaZakresu,
+              label: "Prowizje",
+              value: `−${fmt(fees)} ${currencyLabel(displayCurrency)}`,
+              color: V2.loss,
+            },
+          ]}
+        />
       )}
 
       {/* Filters */}

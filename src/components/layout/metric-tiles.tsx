@@ -35,7 +35,11 @@ export function MetricTiles({ rows }: { rows: MetricRow[] }) {
         const sub =
           row.sub && row.sub.toLowerCase() !== row.detail.toLowerCase() ? row.sub : "";
         return (
-          <article className="metric-tile" key={row.key}>
+          // Wysokość jawnie "auto": kafelek bywa jedynym wskaźnikiem w komórce
+          // siatki obok wyższej sekcji (np. wykresu) — SectionGrid rozciąga
+          // komórkę do wspólnej wysokości wiersza, a bez tej deklaracji kafelek
+          // rozciągnąłby się razem z nią zamiast zostać przy naturalnej treści.
+          <article className="metric-tile" style={{ height: "auto" }} key={row.key}>
             <span className="metric-tile-mark">
               {row.source}
               <em>{row.detail}</em>

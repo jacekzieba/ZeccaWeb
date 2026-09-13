@@ -4,19 +4,23 @@
    Zakres: wyłącznie landing. Tokeny aplikacji (src/design/tokens.css) nietknięte. */
 
 .zlanding {
-  --vault: #020A0B;
-  --vault-2: #06110F;
-  --vault-3: #0B1917;
-  --ink: #ECEFEC;
-  --ink-2: #9FB0AA;
-  --ink-3:#80958E;
-  --amber: #F0A43C;
+  /* Barwy aliasują tokeny produktu — nazwa zostaje landingowa (--vault, --amber,
+     --hair), wartość idzie z jednego źródła. Wcześniej to były osobne literały,
+     bajtowo zgodne z tokenami produktu tylko dlatego, że ktoś je ręcznie
+     przepisał — druga kopia palety gwarantuje, że kiedyś przestaną się zgadzać,
+     tak jak stało się to wcześniej z krojami i akcentem. --amber-hi/-lo nie mają
+     odpowiednika w tokenach (to tylko landingowe podświetlenie akcentu), więc
+     zostają lokalne. */
+  --vault: var(--ground);
+  --vault-2: var(--surface);
+  --vault-3: var(--surface-2);
+  --ink-2: var(--ink-muted);
+  --ink-3: var(--ink-faint);
+  --amber: var(--accent);
   --amber-hi: #FFCE8A;
   --amber-lo: #8A5A16;
-  --up: #4FC79A;
-  --down: #E2685A;
-  --hair: rgba(198, 232, 222, 0.11);
-  --hair-2: rgba(198, 232, 222, 0.06);
+  --hair: var(--line);
+  --hair-2: var(--line-2);
 
   /* Landing bierze kroje z tokenów produktu, nie z własnych zmiennych lokalnych.
      Nazwa trzyma ROLĘ: display to Didone, text grotesk, mono każda liczba. */

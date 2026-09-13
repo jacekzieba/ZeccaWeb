@@ -41,6 +41,7 @@ import {
 import { isFakeSyncEnabled } from "@/lib/env";
 import { parsePositiveAmount } from "@/lib/parse-amount";
 import { V2, V2Badge, V2Button, V2Card, V2Kpi, V2ScreenHead, V2_TYPE, v2InputStyle, v2Mix, v2SelectStyle } from "@/lib/v2-design";
+import { MetricTiles } from "@/components/layout/metric-tiles";
 import { buildIncomeLists, buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import { deleteRecord, refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
 import {
@@ -957,11 +958,27 @@ export function EarningsPage() {
               {fmt(summariesForSelection.totals.totalPLN)}
               <span style={{ fontSize: 21, fontStyle: "italic", color: V2.subtle, marginLeft: 8 }}>{currencyLabel("PLN")}</span>
             </div>
+            {/* Karta z wielkim wynikiem jest już cechą dla całej sekcji (nagłówek
+                „Łącznie w PLN"), ale te cztery liczby liczą się osobno — dostają
+                własną, lżejszą cechę zamiast pełnego kafelka, żeby zmieścić się
+                w wąskiej szynie bocznej bez podwójnych ramek. */}
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 18, marginTop: 24 }}>
-              <V2Kpi label="Średnia / m-c" value={`${fmt(summariesForSelection.totals.averagePLN)} zł`} sub="po obciążeniach" />
-              <V2Kpi label="Śr. przed obc." value={`${fmt(summariesForSelection.totals.averageBeforeBurdensPLN)} zł`} sub="dochód + przychód" />
-              <V2Kpi label="Najwyższy miesiąc" value={`${fmt(summariesForSelection.totals.highestMonthPLN)} zł`} accent={V2.profit} />
-              <V2Kpi label="Rekordy" value={`${incomeLists.earnings.length + incomeLists.burdens.length}`} sub={`${incomeLists.earnings.length} ${pluralPl(incomeLists.earnings.length, "zarobek", "zarobki", "zarobków")} / ${incomeLists.burdens.length} ${pluralPl(incomeLists.burdens.length, "obciążenie", "obciążenia", "obciążeń")}`} />
+              <div>
+                <div className="metric-tile-mark">Wpisy<em>średnia w oknie</em></div>
+                <V2Kpi label="Średnia / m-c" value={`${fmt(summariesForSelection.totals.averagePLN)} ${currencyLabel("PLN")}`} sub="po obciążeniach" />
+              </div>
+              <div>
+                <div className="metric-tile-mark">Wpisy<em>średnia w oknie</em></div>
+                <V2Kpi label="Śr. przed obc." value={`${fmt(summariesForSelection.totals.averageBeforeBurdensPLN)} ${currencyLabel("PLN")}`} sub="dochód + przychód" />
+              </div>
+              <div>
+                <div className="metric-tile-mark">Wpisy<em>maksimum w oknie</em></div>
+                <V2Kpi label="Najwyższy miesiąc" value={`${fmt(summariesForSelection.totals.highestMonthPLN)} ${currencyLabel("PLN")}`} accent={V2.profit} />
+              </div>
+              <div>
+                <div className="metric-tile-mark">Wpisy<em>liczba zapisów</em></div>
+                <V2Kpi label="Rekordy" value={`${incomeLists.earnings.length + incomeLists.burdens.length}`} sub={`${incomeLists.earnings.length} ${pluralPl(incomeLists.earnings.length, "zarobek", "zarobki", "zarobków")} / ${incomeLists.burdens.length} ${pluralPl(incomeLists.burdens.length, "obciążenie", "obciążenia", "obciążeń")}`} />
+              </div>
             </div>
           </div>
           <div style={{ padding: isMobile ? 18 : 24, background: v2Mix(V2.card2, 0.42), minWidth: 0 }}>
@@ -980,17 +997,34 @@ export function EarningsPage() {
 
       <div>
         <div style={{ fontFamily: V2_TYPE.serif, fontSize: 18, fontWeight: 500, margin: "2px 2px 10px" }}>Struktura bieżącego wyboru</div>
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 14 }}>
-          <V2Card style={{ minWidth: 0 }}>
-            <V2Kpi label="Zatrudnienie" value={`${fmt(summariesForSelection.summaries.reduce((sum, item) => sum + item.employmentPLN, 0))} zł`} accent={V2.profit} />
-          </V2Card>
-          <V2Card style={{ minWidth: 0 }}>
-            <V2Kpi label="B2B" value={`${fmt(summariesForSelection.summaries.reduce((sum, item) => sum + item.businessRevenuePLN, 0))} zł`} accent={V2.profit} />
-          </V2Card>
-          <V2Card style={{ minWidth: 0 }}>
-            <V2Kpi label="Obciążenia" value={`${fmt(summariesForSelection.summaries.reduce((sum, item) => sum + item.burdenPLN, 0))} zł`} accent={V2.loss} />
-          </V2Card>
-        </div>
+        <MetricTiles
+          rows={[
+            {
+              key: "zatrudnienie",
+              source: "Wpisy",
+              detail: "suma w oknie",
+              label: "Zatrudnienie",
+              value: `${fmt(summariesForSelection.summaries.reduce((sum, item) => sum + item.employmentPLN, 0))} ${currencyLabel("PLN")}`,
+              color: V2.profit,
+            },
+            {
+              key: "b2b",
+              source: "Wpisy",
+              detail: "suma w oknie",
+              label: "B2B",
+              value: `${fmt(summariesForSelection.summaries.reduce((sum, item) => sum + item.businessRevenuePLN, 0))} ${currencyLabel("PLN")}`,
+              color: V2.profit,
+            },
+            {
+              key: "obciazenia",
+              source: "Wpisy",
+              detail: "suma w oknie",
+              label: "Obciążenia",
+              value: `${fmt(summariesForSelection.summaries.reduce((sum, item) => sum + item.burdenPLN, 0))} ${currencyLabel("PLN")}`,
+              color: V2.loss,
+            },
+          ]}
+        />
       </div>
 
       <V2Card style={{ overflow: "hidden" }}>

@@ -1,21 +1,10 @@
 "use client";
 
-import type { CSSProperties } from "react";
-import { CircleHelp } from "lucide-react";
 import type { SectionSize } from "@/components/customize/section-customization";
 import type { CashflowSummary, PortfolioMetrics } from "@/domain/models/investor-data";
-import { V2, V2_TYPE, v2Mix } from "@/lib/v2-design";
+import { V2 } from "@/lib/v2-design";
 import { currencyLabel } from "@/lib/money";
 import { MetricTiles } from "@/components/layout/metric-tiles";
-
-const cardStyle: CSSProperties = {
-  background: V2.card,
-  borderRadius: 14,
-  border: `0.5px solid ${V2.line}`,
-  boxShadow: `0 1px 0 ${v2Mix(V2.ink, 0.03)}, 0 6px 20px ${v2Mix(V2.ink, 0.05)}`,
-  padding: "15px 17px",
-  height: "auto",
-};
 
 function fmt(n: number, d = 0) {
   return n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -25,86 +14,6 @@ function fmtSigned(n: number, d = 0) {
 }
 function fmtPct(n: number, d = 2) {
   return `${n >= 0 ? "+" : ""}${n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d })}%`;
-}
-
-/** A single KPI tile. Shared so Dashboard, Portfel and Raporty render identical
- * cards (parity with the macOS/iOS KPI tiles). */
-export function KpiCard({
-  label,
-  value,
-  sub,
-  color = V2.ink,
-  helpHref,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  color?: string;
-  helpHref?: string;
-}) {
-  return (
-    <div style={cardStyle}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 8,
-          marginBottom: 6,
-        }}
-      >
-        <span
-          style={{
-          fontFamily: V2_TYPE.ui,
-          fontSize: 10,
-          fontWeight: 700,
-          color: V2.subtle,
-          textTransform: "uppercase",
-          letterSpacing: ".10em",
-          }}
-        >
-          {label}
-        </span>
-        {helpHref && (
-          <a
-            href={helpHref}
-            aria-label={`Wyjaśnienie metryki: ${label}`}
-            title={`Wyjaśnienie metryki: ${label}`}
-            style={{
-              width: 20,
-              height: 20,
-              borderRadius: 6,
-              color: V2.subtle,
-              background: v2Mix(V2.ink, 0.05),
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-              textDecoration: "none",
-            }}
-          >
-            <CircleHelp size={13} strokeWidth={1.9} aria-hidden="true" />
-          </a>
-        )}
-      </div>
-      <div
-        style={{
-          fontFamily: V2_TYPE.serif,
-          fontSize: 21,
-          fontWeight: 500,
-          color,
-          fontVariantNumeric: "tabular-nums",
-        }}
-      >
-        {value}
-      </div>
-      {sub && (
-        <div style={{ fontFamily: V2_TYPE.ui, fontSize: 11, color: V2.muted, marginTop: 3 }}>
-          {sub}
-        </div>
-      )}
-    </div>
-  );
 }
 
 export type KpiTileId =

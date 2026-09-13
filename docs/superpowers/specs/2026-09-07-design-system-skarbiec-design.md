@@ -63,8 +63,33 @@ Nazwa trzyma rolę, nie krój — `--font-display` to nagłówkowy Didone na obu
 `--font-text` to grotesk na obu. Ten invariant był złamany i jest warunkiem, żeby dowolny komponent
 dało się przenieść między landingiem a aplikacją bez podmiany krojów.
 
-Kroje ładuje `app/layout.tsx` dla całego produktu. `app/page.tsx` ładuje te same rodziny lokalnie
-dla landingu — to redundancja do posprzątania, nie druga decyzja.
+Kroje ładuje wyłącznie `app/layout.tsx`, dla całego produktu naraz. `app/page.tsx` ładował te same
+rodziny drugi raz pod osobną nazwą zmiennej (`--font-landing-display`/`-text`), której landing.css
+nigdy nie czytał — czysty koszt sieci bez żadnego efektu. Usunięte.
+
+### 4a. Skala stopni pisma
+
+Dziesięć kroków, gęsto na dole, bo tam mieszka narzędzie do liczb: cecha źródła, meta wiersza,
+etykiety. Wcześniej skali nie było wcale — aplikacja renderowała 26 różnych stopni, z czego
+dziewięć mieściło się między 9,5 a 13,5px na ponad 900 węzłach. Kroki po pół piksela to nie
+hierarchia, tylko szturchanie.
+
+| token | px | rola |
+|---|---|---|
+| `--t-1` | 10 | cecha źródła, znaczniki osi |
+| `--t-2` | 11 | meta wiersza, plakietki |
+| `--t-3` | 12 | tekst pomocniczy |
+| `--t-4` | 13 | proza, etykiety pól |
+| `--t-5` | 15 | wyróżnienie w wierszu |
+| `--t-6` | 18 | tytuł karty |
+| `--t-7` | 21 | wartość wskaźnika |
+| `--t-8` | 26 | nagłówek sekcji |
+| `--t-9` | 31 | tytuł ekranu |
+| `--t-10` | 52 | liczba wiodąca |
+
+Proporcja rośnie ku górze (1,10 → 1,09 → 1,08 → 1,15 → 1,20 → 1,17 → 1,24 → 1,19 → 1,68): gęsto
+tam, gdzie trzeba rozróżniać rangę w tabeli, szeroko tam, gdzie chodzi o głos. Źródło:
+`src/design/tokens.css`, zwierciadło w TypeScripcie `TYPE_SCALE` w `src/lib/design-tokens.ts`.
 
 ## 5. Promienie
 
@@ -85,16 +110,20 @@ plus `--r-pill`. Przyciski `--r-sm`, panele `--r-md`, karty podglądu `--r-lg`.
 
 | powierzchnia | stan |
 |---|---|
-| landing | wdrożony |
+| landing | wdrożony, kroje bez podwójnego ładowania, paleta aliasuje tokeny |
 | powłoka aplikacji (tokeny, kroje, motyw domyślny) | wdrożone |
 | Pulpit — rejestr KPI na szynie | wdrożony |
-| Pozycje, Transakcje, Instrumenty, Zarobki, Raporty, Portfele, Import, Ustawienia, Porównanie | **czekają** — układ nadal kaflowy |
+| Pozycje, Transakcje, Instrumenty, Zarobki, Raporty, Porównanie, Portfel | wdrożone — kafelki z cechą źródła (`MetricTiles`), `KpiCard` usunięty |
+| Import, Ustawienia | bez kafelków KPI z natury rzeczy — to formularze i listy, nie ma tu liczb do zebrania w rejestr |
 
 ## 8. Rzeczy otwarte
 
-- **Dziewięć widoków aplikacji** nie ma jeszcze szyny ani cech przy liczbach.
-- **`KpiCard` ma `boxShadow`** — łamie regułę „cienie nie istnieją". Używają go Portfel i Raporty.
-- **Zrzuty ekranu na landingu** pokazują aplikację sprzed przejścia na skarbiec. Do wymiany, kiedy
-  widoki wejdą na nowy układ — dopiero wtedy landing i produkt zaczną się zgadzać.
-- **Landing ma własne nazwy lokalne** (`--vault`, `--amber`, `--hair`) zamiast aliasować tokeny.
-  Do scalenia, żeby paleta miała jedno źródło.
+- **Zrzuty ekranu na landingu** pokazują aplikację sprzed przejścia na skarbiec (kremowy interfejs,
+  „230 000 PLN"). Do wymiany teraz, kiedy wszystkie widoki mają już nowy układ — świadomie
+  zostawione na osobny przebieg, żeby nie renderować ich dwa razy.
+- **Kafelek jako jedyny nośnik cechy w komórce siatki** (`MetricTiles`) rozciągałby się do wysokości
+  sąsiedniej, wyższej sekcji bez jawnego `height: "auto"` — `SectionGrid` stretchuje wiersz. Dodane
+  i pilnowane testem (`tests/unit/dashboard-kpi-layout.test.tsx`), ale każdy nowy nośnik cechy poza
+  `MetricTiles` (np. lekki `.metric-tile-mark` bez pełnej karty, użyty w wąskich układach: hero
+  Zarobków, pasek Pozycji, karty Raportów i Porównania) tego zabezpieczenia nie potrzebuje, bo nie
+  jest samodzielną sekcją siatki — jest wewnątrz karty, która już ma własną wysokość.

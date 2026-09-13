@@ -355,13 +355,17 @@ export function PositionsPage() {
       ) : (
         <div data-tour="positions-table">
         <V2Card pad={0} style={{ overflow: "hidden" }}>
-          {/* Stats header */}
+          {/* Pasek statystyk stoi wewnątrz karty z tabelą, nie osobno — pełny
+              kafelek z ramką dublowałby ramkę karty. Cecha zostaje lżejsza:
+              sam mono nagłówek nad wartością, ten sam co w kafelkach niżej. */}
           <div style={{ padding: "16px 22px", borderBottom: `0.5px solid ${V2.line}`, display: "flex", alignItems: "center", gap: 22, flexWrap: "wrap" }}>
             <div>
+              <div className="metric-tile-mark">Pozycje<em>po filtrze</em></div>
               <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: V2.subtle }}>Pozycji</div>
               <div style={{ fontFamily: MONO, fontSize: 26, fontWeight: 500, color: V2.ink }}>{filtered.length}</div>
             </div>
             <div>
+              <div className="metric-tile-mark">Wycena<em>ostatnia cena × ilość</em></div>
               <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: V2.subtle }}>Wartość (przefiltrowana)</div>
               <div style={{ fontFamily: MONO, fontSize: 26, fontWeight: 500, color: V2.ink }}>{fmt(totalValue)} <span style={{ fontSize: 12, color: V2.subtle, fontStyle: "italic" }}>{currencyLabel(displayCurrency)}</span></div>
             </div>

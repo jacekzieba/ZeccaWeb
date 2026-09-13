@@ -55,7 +55,7 @@ import {
   treasuryBondFamilyLabel,
   type GroupedTreasuryBondFamily,
 } from "@/domain/bonds/bond-series-groups";
-import { KpiCard, KpiRegister, KPI_TILE_META, getKpiTiles } from "@/components/metrics/portfolio-kpi-strip";
+import { KpiRegister, KPI_TILE_META, getKpiTiles } from "@/components/metrics/portfolio-kpi-strip";
 import { ValueVsDepositsChart } from "@/components/charts/value-vs-deposits-chart";
 import { assetClassColor, portfolioDotColor } from "@/lib/asset-colors";
 
@@ -971,11 +971,9 @@ export function DashboardOverview() {
         .filter((tile): tile is NonNullable<typeof tile> => Boolean(tile));
       return <KpiRegister tiles={tiles} />;
     }
-    if (KPI_SECTION_IDS.has(section)) {
-      const tile = kpiTileById.get(section);
-      if (!tile) return null;
-      return <KpiCard label={tile.label} value={tile.value} sub={tile.sub} color={tile.color} helpHref={tile.helpHref} />;
-    }
+    // Nie ma już gałęzi renderującej pojedyncze KPI_SECTION_IDS osobno: powyższy
+    // flatMap w orderedVisibleSections zwija je wszystkie w KPI_REGISTER_ID,
+    // zanim renderSection w ogóle je zobaczy — ta gałąź była martwa.
     if (section === "valueVsDeposits") {
       return (
         <ValueVsDepositsCard

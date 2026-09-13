@@ -10,7 +10,7 @@ import { sampleSnapshot } from "@/features/dashboard/sample-data";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
 import { AreaChart } from "@/components/charts/area-chart";
 import { ValueVsDepositsChart } from "@/components/charts/value-vs-deposits-chart";
-import { KPI_HELP_HREFS, type KpiTileId } from "@/components/metrics/portfolio-kpi-strip";
+import { KPI_HELP_HREFS, KPI_MARKS, type KpiTileId } from "@/components/metrics/portfolio-kpi-strip";
 import type { ValuationPoint } from "@/domain/models/investor-data";
 import { V2, V2_TYPE, v2Mix } from "@/lib/v2-design";
 import { assetClassColor } from "@/lib/asset-colors";
@@ -29,9 +29,10 @@ const MONO = V2_TYPE.mono;
 
 const card: CSSProperties = {
   background: V2.card,
-  borderRadius: 16,
+  // 16px był poza skalą promieni (2/3/4/8/12) — wartość z epoki sprzed
+  // Skarbca. Panel bierze --r-md, tak jak V2Card na każdym innym ekranie.
+  borderRadius: "var(--r-md)",
   border: `0.5px solid ${LINE}`,
-  boxShadow: `0 1px 0 ${v2Mix(V2.ink, 0.03)}, 0 6px 20px ${v2Mix(V2.ink, 0.05)}`,
 };
 
 function fmt(n: number, d = 0) {
@@ -111,15 +112,21 @@ function Kpi({
   sub,
   color = INK,
   helpHref,
+  mark,
 }: {
   label: string;
   value: string;
   sub?: string;
   color?: string;
   helpHref?: string;
+  /** Cecha źródła — jak w kafelkach wskaźnika, tylko na karcie Raportów, która
+      ma własny promień i padding. Ten sam mono nagłówek, żeby liczba i tu miała
+      źródło i podstawę liczenia, bez podmiany całej karty na MetricTiles. */
+  mark?: { source: string; detail: string };
 }) {
   return (
     <div style={{ ...card, padding: "18px 20px" }}>
+      {mark && <div className="metric-tile-mark">{mark.source}<em>{mark.detail}</em></div>}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
         {/* Ta sama nazwa co w kafelku wskaźnika: Archivo 12,5px, --ink-muted, bez
             wersalików. Wcześniej te dwie karty stały na jednym ekranie z kafelkami
@@ -202,17 +209,16 @@ export function ReportsPage() {
       <DataQualityBanner diagnostics={snapshot.diagnostics ?? []} />
 
       {/* Report-type selector */}
-      <div style={{ display: "inline-flex", flexWrap: "wrap", gap: 6, background: v2Mix(V2.ink, 0.05), borderRadius: 11, padding: 4, alignSelf: "flex-start" }}>
+      <div style={{ display: "inline-flex", flexWrap: "wrap", gap: 6, background: v2Mix(V2.ink, 0.05), borderRadius: "var(--r-lg)", padding: 4, alignSelf: "flex-start" }}>
         {REPORTS.map((item) => (
           <button
             key={item.id}
             onClick={() => setReport(item.id)}
             style={{
-              padding: "7px 15px", borderRadius: 8, border: "none", cursor: "pointer",
+              padding: "7px 15px", borderRadius: "var(--r-sm)", border: "none", cursor: "pointer",
               fontFamily: UI, fontSize: 12, fontWeight: report === item.id ? 700 : 500,
               background: report === item.id ? V2.card : "transparent",
               color: report === item.id ? INK : MUTED,
-              boxShadow: report === item.id ? `0 1px 4px ${v2Mix(V2.ink, 0.1)}` : "none",
             }}
           >
             {item.label}
@@ -223,12 +229,12 @@ export function ReportsPage() {
       {report === "performance" && (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
-            <Kpi label="Łączny zwrot (TWR)" value={fmtPct(metrics.totalReturnPct)} sub={`${absGain >= 0 ? "+" : ""}${fmt(absGain)} ${ccy} ponad wpłaty`} color={metrics.totalReturnPct >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiTwr")} />
-            <Kpi label="CAGR" value={fmtPct(metrics.cagrPct)} sub="rocznie, ważony czasem" color={metrics.cagrPct >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiCagr")} />
-            <Kpi label="MWR · XIRR" value={metrics.xirrPct == null ? "—" : fmtPct(metrics.xirrPct)} sub="rocznie, ważony kapitałem" color={(metrics.xirrPct ?? 0) >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiXirr")} />
-            <Kpi label="Maks. obsunięcie" value={`${fmt(metrics.maxDrawdownPct, 2)}%`} sub="od szczytu" color={LOSS} helpHref={helpFor("kpiMaxDd")} />
-            <Kpi label="Zysk zrealizowany" value={`${metrics.realizedPnl >= 0 ? "+" : ""}${fmt(metrics.realizedPnl)} ${ccy}`} sub="zamknięte pozycje" color={metrics.realizedPnl >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiRealized")} />
-            <Kpi label="Wartość portfela" value={fmt(snapshot.totalValue)} sub={ccy} />
+            <Kpi label="Łączny zwrot (TWR)" value={fmtPct(metrics.totalReturnPct)} sub={`${absGain >= 0 ? "+" : ""}${fmt(absGain)} ${ccy} ponad wpłaty`} color={metrics.totalReturnPct >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiTwr")} mark={KPI_MARKS.kpiTwr} />
+            <Kpi label="CAGR" value={fmtPct(metrics.cagrPct)} sub="rocznie, ważony czasem" color={metrics.cagrPct >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiCagr")} mark={KPI_MARKS.kpiCagr} />
+            <Kpi label="MWR · XIRR" value={metrics.xirrPct == null ? "—" : fmtPct(metrics.xirrPct)} sub="rocznie, ważony kapitałem" color={(metrics.xirrPct ?? 0) >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiXirr")} mark={KPI_MARKS.kpiXirr} />
+            <Kpi label="Maks. obsunięcie" value={`${fmt(metrics.maxDrawdownPct, 2)}%`} sub="od szczytu" color={LOSS} helpHref={helpFor("kpiMaxDd")} mark={KPI_MARKS.kpiMaxDd} />
+            <Kpi label="Zysk zrealizowany" value={`${metrics.realizedPnl >= 0 ? "+" : ""}${fmt(metrics.realizedPnl)} ${ccy}`} sub="zamknięte pozycje" color={metrics.realizedPnl >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiRealized")} mark={KPI_MARKS.kpiRealized} />
+            <Kpi label="Wartość portfela" value={fmt(snapshot.totalValue)} sub={ccy} mark={{ source: "Wycena", detail: "ostatnia cena × ilość" }} />
           </div>
 
           <div style={{ ...card, padding: "22px 22px 18px" }}>
@@ -252,9 +258,10 @@ export function ReportsPage() {
 
           {monthlyStats.best && monthlyStats.worst && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-              <Kpi label="Najlepszy miesiąc" value={fmtPct(monthlyStats.best.pct)} sub={monthlyStats.best.label} color={PROFIT} />
-              <Kpi label="Najgorszy miesiąc" value={fmtPct(monthlyStats.worst.pct)} sub={monthlyStats.worst.label} color={LOSS} />
+              <Kpi label="Najlepszy miesiąc" value={fmtPct(monthlyStats.best.pct)} sub={monthlyStats.best.label} color={PROFIT} mark={{ source: "Seria wycen", detail: "zwrot miesięczny" }} />
+              <Kpi label="Najgorszy miesiąc" value={fmtPct(monthlyStats.worst.pct)} sub={monthlyStats.worst.label} color={LOSS} mark={{ source: "Seria wycen", detail: "zwrot miesięczny" }} />
               <div style={{ ...card, padding: "18px 20px" }}>
+                <div className="metric-tile-mark">Seria wycen<em>miesiące dodatnie</em></div>
                 <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 8 }}>Miesiące z zyskiem</div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                   <span style={{ fontFamily: MONO, fontSize: 26, fontWeight: 500, color: PROFIT }}>{monthlyStats.positive}</span>
@@ -273,6 +280,9 @@ export function ReportsPage() {
       {report === "yearly" && (
         <div style={{ ...card, padding: 0 }}>
           <div style={{ padding: "16px 22px 12px", borderBottom: `0.5px solid ${LINE_SOFT}` }}>
+            {/* Jedna cecha dla całej listy, nie po jednej na wiersz — przy kilku
+                latach powtórzenie tego samego źródła dwanaście razy byłoby szumem. */}
+            <div className="metric-tile-mark">Seria wycen<em>zwrot roczny, ważony czasem</em></div>
             <SectionHead>Zwrot rok do roku (ważony czasem)</SectionHead>
           </div>
           {yearlyReturns.length === 0 ? (
@@ -297,10 +307,10 @@ export function ReportsPage() {
       {report === "income" && (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
-            <Kpi label="Dywidendy" value={`+${fmt(cashflows.dividends)} ${ccy}`} color={PROFIT} />
-            <Kpi label="Odsetki / kupony" value={`+${fmt(cashflows.interest)} ${ccy}`} color={V2.bonds} />
-            <Kpi label="Prowizje" value={`-${fmt(cashflows.fees)} ${ccy}`} color={LOSS} />
-            <Kpi label="Podatki" value={`-${fmt(cashflows.taxes)} ${ccy}`} color={LOSS} />
+            <Kpi label="Dywidendy" value={`+${fmt(cashflows.dividends)} ${ccy}`} color={PROFIT} mark={KPI_MARKS.kpiDividends} />
+            <Kpi label="Odsetki / kupony" value={`+${fmt(cashflows.interest)} ${ccy}`} color={PROFIT} mark={{ source: "Transakcje", detail: "kupony i odsetki" }} />
+            <Kpi label="Prowizje" value={`-${fmt(cashflows.fees)} ${ccy}`} color={LOSS} mark={{ source: "Transakcje", detail: "opłaty transakcyjne" }} />
+            <Kpi label="Podatki" value={`-${fmt(cashflows.taxes)} ${ccy}`} color={LOSS} mark={{ source: "Transakcje", detail: "zapłacone podatki" }} />
           </div>
           <div style={{ ...card, padding: "20px 22px" }}>
             <SectionHead>Dochód pasywny netto</SectionHead>
@@ -322,10 +332,10 @@ export function ReportsPage() {
       {report === "personalIncome" && (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
-            <Kpi label="Zarobki" value={`+${fmt(personalIncome.earningsPLN)} ${ccy}`} sub={`${personalIncome.earningCount} rekordów`} color={PROFIT} />
-            <Kpi label="Obciążenia" value={`-${fmt(personalIncome.burdensPLN)} ${ccy}`} sub={`${personalIncome.burdenCount} rekordów`} color={LOSS} />
-            <Kpi label="Netto" value={`${personalIncome.netPLN >= 0 ? "+" : ""}${fmt(personalIncome.netPLN)} ${ccy}`} color={personalIncome.netPLN >= 0 ? PROFIT : LOSS} />
-            <Kpi label="Razem wpisów" value={fmt(personalIncome.earningCount + personalIncome.burdenCount)} sub="zsynchronizowane wpisy przychodów" />
+            <Kpi label="Zarobki" value={`+${fmt(personalIncome.earningsPLN)} ${ccy}`} sub={`${personalIncome.earningCount} rekordów`} color={PROFIT} mark={{ source: "Wpisy", detail: "suma zarobków" }} />
+            <Kpi label="Obciążenia" value={`-${fmt(personalIncome.burdensPLN)} ${ccy}`} sub={`${personalIncome.burdenCount} rekordów`} color={LOSS} mark={{ source: "Wpisy", detail: "suma obciążeń" }} />
+            <Kpi label="Netto" value={`${personalIncome.netPLN >= 0 ? "+" : ""}${fmt(personalIncome.netPLN)} ${ccy}`} color={personalIncome.netPLN >= 0 ? PROFIT : LOSS} mark={{ source: "Wpisy", detail: "zarobki − obciążenia" }} />
+            <Kpi label="Razem wpisów" value={fmt(personalIncome.earningCount + personalIncome.burdenCount)} sub="zsynchronizowane wpisy przychodów" mark={{ source: "Wpisy", detail: "liczba rekordów" }} />
           </div>
           <div style={{ ...card, padding: "20px 22px" }}>
             <SectionHead>Zarobki i obciążenia</SectionHead>
