@@ -85,11 +85,13 @@ export function StaticValueChart({
   // w dół razem z opisami osi i 10 px zamienia się w 5 px.
   const chartWidth = 352;
   const chartHeight = 184;
-  // Wariant compact (hero) używa krótszych etykiet osi ("300k"), więc lewy
-  // margines na nie może być węższy — inaczej wykres wyglądał węziej niż
-  // karta wokół niego: liczba i przycisk MAX sięgały krawędzi, linia nie.
-  const pl = compact ? 30 : 46;
-  const pr = 10;
+  // Wariant compact (hero) nie rezerwuje osobnej kolumny na etykiety osi —
+  // stoją nad siatką, wewnątrz wykresu (patrz yTicks niżej) — więc margines
+  // to już tylko oddech przy krawędzi, taki sam po obu stronach. Bez tego
+  // wykres wyglądał węziej niż karta wokół niego: liczba i przycisk MAX
+  // sięgały krawędzi, linia zostawała w środku z pustym pasem po bokach.
+  const pl = compact ? 6 : 46;
+  const pr = compact ? 6 : 10;
   const pt = 14;
   const pb = 26;
   const innerWidth = chartWidth - pl - pr;
@@ -190,7 +192,13 @@ export function StaticValueChart({
         {yTicks.map((tick) => (
           <g key={tick}>
             <line x1={pl} x2={pl + innerWidth} y1={y(tick)} y2={y(tick)} />
-            <text x={pl - 9} y={y(tick) + 3.5} textAnchor="end">{compactAxis(tick, compact)}</text>
+            {compact ? (
+              // Bez osobnej kolumny na etykiety: stoją nad własną siatką,
+              // wewnątrz wykresu, przy jego lewej krawędzi.
+              <text x={pl + 3} y={y(tick) - 5} textAnchor="start" className="y-axis-inline">{compactAxis(tick, compact)}</text>
+            ) : (
+              <text x={pl - 9} y={y(tick) + 3.5} textAnchor="end">{compactAxis(tick, compact)}</text>
+            )}
           </g>
         ))}
         <path className="value-area" fill="url(#landing-vvd-fill)" d={`M${pl},${pt + innerHeight} L${valuePoints} L${pl + innerWidth},${pt + innerHeight} Z`} />

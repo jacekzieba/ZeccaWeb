@@ -18,10 +18,11 @@ const COLORS = [
 
 const R = 112;
 const SW = 34;
-/* Przerwa między wycinkami mierzona po obwodzie. Przy trzech wycinkach 20
-   jednostek na obwodzie ~704 dawało już 10° na segment — gruba czarna wyrwa
-   zamiast cienkiej kreski rozdzielającej barwy. 6 jednostek to ~3°. */
-const GAP = 6;
+/* Przerwa między wycinkami mierzona po obwodzie. 20 jednostek na obwodzie
+   ~704 dawało 10° na segment (gruba wyrwa), 6 dawało ~3° (nadal widoczne
+   jako wyrwa przy grubym pierścieniu SW=34). 3 jednostki to ~1,5° — cienka
+   kreska rozdzielająca barwy, nie dziura między nimi. */
+const GAP = 3;
 const C = 2 * Math.PI * R;
 
 /** Pierścień alokacji. Najechanie na segment albo wiersz legendy podświetla
