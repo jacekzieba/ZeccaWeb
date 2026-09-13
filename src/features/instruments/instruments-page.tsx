@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Check, RefreshCw, X } from "lucide-react";
 import { InstrumentEditorModal } from "@/features/instruments/instrument-editor-modal";
 import { deleteRecord,
-  restoreRecord, refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
+  removePendingSyncOperation, restoreRecord, refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
 import { makeManualValuationPayload } from "@/sync/records/macos-payloads";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { buildInstrumentList } from "@/sync/records/investor-snapshot";
@@ -311,9 +311,13 @@ export function InstrumentsPage() {
 
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; opis: string } | null>(null);
 
-  async function przywrocInstrument(id: string, baseUpdatedAt: string) {
+  async function przywrocInstrument(id: string, baseUpdatedAt: string, operationId?: string) {
     if (!userDataKey || !supabase) return;
     try {
+      // Odłożone usunięcie (offline/nieudany zapis) nigdy nie dotarło na
+      // serwer — bez skasowania wpisu z kolejki wykonałoby się później, mimo
+      // że właśnie je cofnięto.
+      if (operationId) removePendingSyncOperation(operationId);
       await restoreRecord(supabase, "asset", id, { baseUpdatedAt });
       const { records: nextRecords, snapshot: nextSnapshot } = await refreshSyncStore(supabase, userDataKey);
       setSync(nextRecords, nextSnapshot);
@@ -376,9 +380,10 @@ export function InstrumentsPage() {
       }
       // Usunięcie jest miękkie, więc cofnięcie czyści tylko znacznik.
       const usunieteO = result.updatedAt;
+      const operationId = result.operationId;
       announce(
         "Instrument usunięty.",
-        usunieteO ? { label: "Cofnij", run: () => void przywrocInstrument(id, usunieteO) } : undefined,
+        usunieteO ? { label: "Cofnij", run: () => void przywrocInstrument(id, usunieteO, operationId) } : undefined,
       );
     } finally {
       setDeletingId(null);

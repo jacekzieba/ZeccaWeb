@@ -68,9 +68,16 @@ type SaveRecordOptions = {
 
 export type WriteRecordResult = {
   queued: boolean;
-  /** Znacznik czasu zapisany przez tę operację. Cofnięcie usunięcia musi podać
-   *  właśnie ten, inaczej strażnik konfliktów odrzuci je jako zmianę wstecz. */
+  /** Znacznik czasu, który cofnięcie usunięcia musi podać jako `baseUpdatedAt`,
+   *  inaczej strażnik konfliktów je odrzuci. Gdy zapis poszedł na serwer, to
+   *  świeży znacznik z tej operacji. Gdy `queued`, serwer w ogóle nie widział
+   *  usunięcia — to wciąż stary znacznik sprzed próby, bo to on nadal stoi
+   *  na wierszu zdalnym. */
   updatedAt?: string;
+  /** Ustawione tylko gdy `queued`: identyfikator wpisu w lokalnej kolejce,
+   *  do skasowania przy cofnięciu — inaczej odłożone usunięcie i tak
+   *  wykona się później, gdy połączenie wróci. */
+  operationId?: string;
 };
 
 type SyncMutationDetail = {
@@ -324,8 +331,9 @@ export async function deleteRecord(
       throw error;
     }
 
+    const operationId = crypto.randomUUID();
     enqueuePendingOperation({
-      operationId: crypto.randomUUID(),
+      operationId,
       operation: "delete",
       recordType,
       id,
@@ -341,7 +349,12 @@ export async function deleteRecord(
       id,
       queued: true,
     });
-    return { queued: true, updatedAt };
+    // Ten znacznik nigdy nie dotarł na serwer — wiersz zdalny wciąż ma stary,
+    // sprzed próby usunięcia. Zwrócenie świeżego `updatedAt` jako podstawy
+    // cofnięcia gwarantowało konflikt: restoreRecord porównałby go z realnym,
+    // niezmienionym znacznikiem zdalnym i odrzucił jako "zmienione gdzie
+    // indziej", mimo że nic się nie zmieniło.
+    return { queued: true, updatedAt: options.baseUpdatedAt ?? undefined, operationId };
   }
 
   dispatchSyncMutation({

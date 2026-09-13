@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useMemo, useState, type CSSProperties } from "react";
 import { PortfolioEditorModal } from "@/features/portfolios/portfolio-editor-modal";
 import { deleteRecord,
-  restoreRecord, refreshSyncStore } from "@/sync/records/record-writer";
+  removePendingSyncOperation, restoreRecord, refreshSyncStore } from "@/sync/records/record-writer";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import { isFakeSyncEnabled } from "@/lib/env";
 import { useSyncStore } from "@/sync/store/sync-store";
@@ -91,9 +91,13 @@ export function PortfolioListPage() {
 
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; opis: string } | null>(null);
 
-  async function przywrocPortfel(id: string, baseUpdatedAt: string) {
+  async function przywrocPortfel(id: string, baseUpdatedAt: string, operationId?: string) {
     if (!userDataKey || !supabase) return;
     try {
+      // Odłożone usunięcie (offline/nieudany zapis) nigdy nie dotarło na
+      // serwer — bez skasowania wpisu z kolejki wykonałoby się później, mimo
+      // że właśnie je cofnięto.
+      if (operationId) removePendingSyncOperation(operationId);
       await restoreRecord(supabase, "account", id, { baseUpdatedAt });
       const { records: nextRecords, snapshot: nextSnapshot } = await refreshSyncStore(supabase, userDataKey);
       setSync(nextRecords, nextSnapshot);
@@ -146,9 +150,10 @@ export function PortfolioListPage() {
         setSync(nextRecords, nextSnapshot);
       }
       const usunietyO = result.updatedAt;
+      const operationId = result.operationId;
       announce(
         "Portfel usunięty.",
-        usunietyO ? { label: "Cofnij", run: () => void przywrocPortfel(id, usunietyO) } : undefined,
+        usunietyO ? { label: "Cofnij", run: () => void przywrocPortfel(id, usunietyO, operationId) } : undefined,
       );
     } finally {
       setDeletingId(null);

@@ -10,6 +10,7 @@ import {
 import {
   deleteRecord,
   refreshSyncStore,
+  removePendingSyncOperation,
   restoreRecord,
   SyncConflictError,
 } from "@/sync/records/record-writer";
@@ -343,12 +344,14 @@ export function TransactionsPage() {
         return next;
       });
       // Usunięcie jest miękkie — szyfrogram został w wierszu, zmienił się tylko
-      // znacznik. Cofnięcie czyści go, podając znacznik z chwili usunięcia.
+      // znacznik. Cofnięcie czyści go, podając właściwą podstawę: świeży
+      // znacznik gdy zapis doszedł na serwer, stary sprzed próby gdy nie.
       const usunieteO = result.updatedAt;
+      const operationId = result.operationId;
       announce(
         "Transakcja usunięta.",
         usunieteO
-          ? { label: "Cofnij", run: () => void przywrocTransakcje(id, usunieteO) }
+          ? { label: "Cofnij", run: () => void przywrocTransakcje(id, usunieteO, operationId) }
           : undefined,
       );
     } catch (error) {
@@ -358,9 +361,13 @@ export function TransactionsPage() {
     }
   }
 
-  async function przywrocTransakcje(id: string, baseUpdatedAt: string) {
+  async function przywrocTransakcje(id: string, baseUpdatedAt: string, operationId?: string) {
     if (!userDataKey || !supabase) return;
     try {
+      // Odłożone usunięcie (offline/nieudany zapis) nigdy nie dotarło na
+      // serwer — bez skasowania wpisu z kolejki wykonałoby się później, mimo
+      // że właśnie je cofnięto.
+      if (operationId) removePendingSyncOperation(operationId);
       await restoreRecord(supabase, "transaction", id, { baseUpdatedAt });
       const { records: nextRecords, snapshot: nextSnapshot } = await refreshSyncStore(
         supabase,
@@ -373,14 +380,16 @@ export function TransactionsPage() {
     }
   }
 
-  /** Cofnięcie hurtowe. Każdy rekord ma własny znacznik z chwili usunięcia,
-   *  więc strażnik konfliktów sprawdza każdy z osobna — jeśli któryś zmienił
-   *  się w międzyczasie na innym urządzeniu, tylko on zostaje usunięty. */
-  async function przywrocWiele(pary: Array<[string, string]>) {
+  /** Cofnięcie hurtowe. Każdy rekord ma własny znacznik i osobno — jeśli był
+   *  odłożony offline, osobny identyfikator kolejki do skasowania — więc
+   *  strażnik konfliktów sprawdza każdy z osobna: jeśli któryś zmienił się
+   *  w międzyczasie na innym urządzeniu, tylko on zostaje usunięty. */
+  async function przywrocWiele(pary: Array<[string, string, string | undefined]>) {
     if (!userDataKey || !supabase) return;
     let bledy = 0;
-    for (const [id, baseUpdatedAt] of pary) {
+    for (const [id, baseUpdatedAt, operationId] of pary) {
       try {
+        if (operationId) removePendingSyncOperation(operationId);
         await restoreRecord(supabase, "transaction", id, { baseUpdatedAt });
       } catch {
         bledy += 1;
@@ -431,7 +440,7 @@ export function TransactionsPage() {
     setDeleteError(null);
     const queuedIds: string[] = [];
     const deletedIds: string[] = [];
-    const doCofniecia: Array<[string, string]> = [];
+    const doCofniecia: Array<[string, string, string | undefined]> = [];
     let failure: unknown = null;
 
     try {
@@ -447,7 +456,7 @@ export function TransactionsPage() {
             baseUpdatedAt: sourceRecord?.updatedAt ?? null,
           });
           deletedIds.push(id);
-          if (result.updatedAt) doCofniecia.push([id, result.updatedAt]);
+          if (result.updatedAt) doCofniecia.push([id, result.updatedAt, result.operationId]);
           if (result.queued) {
             queuedIds.push(id);
           }

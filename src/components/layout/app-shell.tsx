@@ -502,6 +502,7 @@ export function AppShell({
           {/* Mobile: hamburger */}
           {!isDesktop && (
             <button
+              ref={drawerTriggerRef}
               onClick={() => setDrawerOpen(true)}
               aria-label="Menu"
               style={{
@@ -678,6 +679,8 @@ export function AppShell({
               }}
             />
             <aside
+              ref={drawerRef}
+              tabIndex={-1}
               style={{
                 position: "fixed", left: 10, top: 10, bottom: 10,
                 width: 268, zIndex: 90,
@@ -706,8 +709,10 @@ export function AppShell({
           </>
         )}
 
-        {/* Main content — capped on very wide screens (topbar + sidebar stay full-bleed) */}
-        <main style={{ flex: 1, minWidth: 0, maxWidth: 1240, marginInline: "auto", width: "100%", paddingBottom: 4 }}>
+        {/* Main content — capped on very wide screens (topbar + sidebar stay full-bleed).
+            id/tabIndex są celem odsyłacza pomijającego wyżej — bez id link nie miał
+            dokąd skoczyć, bez tabIndex=-1 skok przesuwał widok, ale nie ognisko. */}
+        <main id="tresc" tabIndex={-1} style={{ flex: 1, minWidth: 0, maxWidth: 1240, marginInline: "auto", width: "100%", paddingBottom: 4 }}>
           {children}
         </main>
       </div>
