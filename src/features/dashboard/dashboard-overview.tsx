@@ -1000,23 +1000,8 @@ export function DashboardOverview() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: UI, color: PALETTE.ink }}>
-      <div style={{ position: "relative", overflow: "hidden", display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 10, padding: DASHBOARD_HEAD_PADDING }}>
-        {/* Rondel — ten sam przedmiot co w hero landingu, tu w płytszym kadrze.
-            Maska wypuszcza go dopiero za powitaniem, żeby nie wchodził pod tekst. */}
-        <div
-          aria-hidden
-          style={{
-            position: "absolute", inset: 0, zIndex: 0,
-            backgroundImage: "url(/app/rondel-pas.webp)",
-            backgroundSize: "cover",
-            backgroundPosition: "center 62%",
-            opacity: 0.55,
-            maskImage: "linear-gradient(90deg, transparent 0%, #000 34%, #000 100%)",
-            WebkitMaskImage: "linear-gradient(90deg, transparent 0%, #000 34%, #000 100%)",
-            pointerEvents: "none",
-          }}
-        />
-        <div style={{ position: "relative", zIndex: 1 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 10, padding: DASHBOARD_HEAD_PADDING }}>
+        <div>
           {/* Tytuł ekranu to h1 — bez nagłówków czytnik nie ma czym nawigować. */}
           <h1 style={{ fontFamily: SERIF, fontSize: isMobile ? 26 : 31, fontWeight: 500, color: PALETTE.ink, letterSpacing: "-.01em", margin: 0 }}>
             Dzień dobry, <span style={{ fontStyle: "italic", color: PALETTE.brand }}>{firstName(profile.name)}</span>
