@@ -177,7 +177,7 @@ export function PendingSyncStatus() {
               style={{
                 alignSelf: "flex-start",
                 padding: "6px 10px",
-                borderRadius: 8,
+                borderRadius: "var(--r-lg)",
                 border: "none",
                 background: COLORS.text,
                 color: COLORS.white,
@@ -197,7 +197,7 @@ export function PendingSyncStatus() {
               style={{
                 marginTop: 10,
                 padding: "8px 10px",
-                borderRadius: 8,
+                borderRadius: "var(--r-lg)",
                 background: COLORS.surfaceAlt,
                 color: COLORS.textMuted,
                 fontSize: 11,

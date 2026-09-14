@@ -176,7 +176,7 @@ function ImportIdentityReview({
                 value={payloadText(payload, field)}
                 placeholder={placeholder}
                 onChange={(event) => onEdit(field, event.target.value)}
-                style={{ width: "100%", boxSizing: "border-box", borderRadius: 8, border: `1px solid ${invalid ? V2.loss : V2.line}`, background: V2.card, color: V2.ink, fontFamily: MONO, fontSize: 12, padding: "7px 8px" }}
+                style={{ width: "100%", boxSizing: "border-box", borderRadius: "var(--r-lg)", border: `1px solid ${invalid ? V2.loss : V2.line}`, background: V2.card, color: V2.ink, fontFamily: MONO, fontSize: 12, padding: "7px 8px" }}
               />
             </label>
           );
@@ -665,7 +665,7 @@ export function ImportPage() {
             key={id}
             onClick={() => setTab(id)}
             style={{
-              padding: "7px 18px", borderRadius: 8, border: "none", cursor: "pointer",
+              padding: "7px 18px", borderRadius: "var(--r-lg)", border: "none", cursor: "pointer",
               fontFamily: UI, fontSize: 12, fontWeight: tab === id ? 700 : 500,
               background: tab === id ? V2.card : "transparent", color: tab === id ? V2.ink : V2.muted,
               boxShadow: tab === id ? `0 1px 4px ${v2Mix(V2.ink, 0.1)}` : "none",
@@ -724,7 +724,7 @@ export function ImportPage() {
                   }}
                   style={{
                     border: `1.5px solid ${importFormat === id ? V2.brand : V2.line}`,
-                    borderRadius: 12, padding: "10px 16px", textAlign: "left",
+                    borderRadius: "var(--r-xl)", padding: "10px 16px", textAlign: "left",
                     background: importFormat === id ? v2Mix(V2.brand, 0.07) : V2.card,
                     cursor: progress ? "wait" : "pointer", minWidth: 200,
                     opacity: progress ? 0.65 : 1,
@@ -744,7 +744,7 @@ export function ImportPage() {
                   disabled={progress !== null}
                   onChange={(e) => setSelectedPortfolioId(e.target.value)}
                   style={{
-                    fontFamily: UI, fontSize: 13, padding: "8px 12px", borderRadius: 8,
+                    fontFamily: UI, fontSize: 13, padding: "8px 12px", borderRadius: "var(--r-lg)",
                     border: `0.5px solid ${V2.line}`, background: V2.card, color: V2.ink, cursor: "pointer",
                   }}
                 >

@@ -411,7 +411,7 @@ function PeriodBar({ value, onChange }: { value: Period; onChange: (period: Peri
           aria-checked={value === option}
           style={{
             padding: "5px 12px",
-            borderRadius: 8,
+            borderRadius: "var(--r-lg)",
             border: "none",
             cursor: "pointer",
             fontFamily: UI,
@@ -836,8 +836,8 @@ function DashboardLoading({
         <div style={{ padding: "30px", minHeight: 260, display: "flex", flexDirection: "column", justifyContent: "center", gap: 16 }}>
           <Eyebrow>Wartość portfela</Eyebrow>
           <div style={{ fontFamily: SERIF, fontSize: 52, color: PALETTE.subtle }}>Ładowanie danych</div>
-          <div style={{ width: "min(520px, 100%)", height: 10, borderRadius: 99, background: v2Mix(PALETTE.ink, 0.07), overflow: "hidden" }}>
-            <div style={{ width: "42%", height: "100%", borderRadius: 99, background: v2Mix(PALETTE.brand, 0.25) }} />
+          <div style={{ width: "min(520px, 100%)", height: 10, borderRadius: "var(--r-pill)", background: v2Mix(PALETTE.ink, 0.07), overflow: "hidden" }}>
+            <div style={{ width: "42%", height: "100%", borderRadius: "var(--r-pill)", background: v2Mix(PALETTE.brand, 0.25) }} />
           </div>
           <div style={{ fontSize: 13, color: PALETTE.muted }}>
             Czekam na odszyfrowany snapshot. Nie pokazuję danych przykładowych.
@@ -1156,7 +1156,7 @@ function SummaryCard({
                 color: PALETTE.muted,
                 background: v2Mix(PALETTE.ink, 0.05),
                 padding: "5px 10px",
-                borderRadius: 99,
+                borderRadius: "var(--r-pill)",
                 whiteSpace: "nowrap",
               }}
             >
@@ -1437,7 +1437,7 @@ function AllocationCard({ allocation }: { allocation: { id: string; label: strin
       <div style={{ display: "flex", flexDirection: "column", gap: 11, marginTop: 16 }}>
         {allocation.map((item) => (
           <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ width: 10, height: 10, borderRadius: 3, background: item.color }} />
+            <span style={{ width: 10, height: 10, borderRadius: "var(--r-sm)", background: item.color }} />
             <span style={{ flex: 1, fontFamily: UI, fontSize: 12, color: PALETTE.ink }}>{item.label}</span>
             <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 500, color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>
               {formatShare(item.value)}
@@ -1460,11 +1460,11 @@ function MonthlyCard({ valuationSeries }: { valuationSeries: ValuationPoint[] })
         </div>
         <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
           <span style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: UI, fontSize: 11, color: PALETTE.muted }}>
-            <span style={{ width: 10, height: 10, borderRadius: 2, background: PALETTE.profit }} />
+            <span style={{ width: 10, height: 10, borderRadius: "var(--r-xs)", background: PALETTE.profit }} />
             Zysk
           </span>
           <span style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: UI, fontSize: 11, color: PALETTE.muted }}>
-            <span style={{ width: 10, height: 10, borderRadius: 2, background: PALETTE.ink, opacity: 0.5 }} />
+            <span style={{ width: 10, height: 10, borderRadius: "var(--r-xs)", background: PALETTE.ink, opacity: 0.5 }} />
             Strata
           </span>
         </div>
@@ -1578,7 +1578,7 @@ function PortfoliosCard({
           const trend = change30d >= 0 ? PALETTE.profit : PALETTE.loss;
 
           return (
-            <div key={portfolio.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", borderRadius: 12, background: v2Mix(PALETTE.ink, 0.025), border: `0.5px solid ${PALETTE.line2}` }}>
+            <div key={portfolio.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", borderRadius: "var(--r-xl)", background: v2Mix(PALETTE.ink, 0.025), border: `0.5px solid ${PALETTE.line2}` }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />

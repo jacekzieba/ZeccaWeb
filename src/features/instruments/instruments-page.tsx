@@ -590,7 +590,7 @@ export function InstrumentsPage() {
               onClick={() => setHeldFilter(value)}
               style={{
                 padding: "7px 14px",
-                borderRadius: 99,
+                borderRadius: "var(--r-pill)",
                 border: `0.5px solid ${heldFilter === value ? "transparent" : V2.line}`,
                 background: heldFilter === value ? V2.brand : V2.card,
                 color: heldFilter === value ? V2.onBrand : V2.muted,
@@ -643,7 +643,7 @@ export function InstrumentsPage() {
           </div>
           <div
             style={{
-              borderRadius: 99,
+              borderRadius: "var(--r-pill)",
               // Cecha źródła należy do bursztynu — to jedno z jego czterech zadań.
               // Wcześniej świeciła zielenią wzrostu, czyli kolorem kierunku.
               background: v2Mix(V2.brand, 0.12),
@@ -933,7 +933,7 @@ export function InstrumentsPage() {
                       type="button"
                       onClick={() => toggleFamily(family!)}
                       aria-expanded={expandedFamilies.has(family!)}
-                      style={{ padding: "6px 10px", borderRadius: 8, border: `0.5px solid ${V2.line}`, background: v2Mix(V2.card, 0.72), color: V2.muted, fontSize: 12, cursor: "pointer", fontFamily: V2_TYPE.ui }}
+                      style={{ padding: "6px 10px", borderRadius: "var(--r-lg)", border: `0.5px solid ${V2.line}`, background: v2Mix(V2.card, 0.72), color: V2.muted, fontSize: 12, cursor: "pointer", fontFamily: V2_TYPE.ui }}
                     >
                       {expandedFamilies.has(family!) ? "Zwiń serie" : "Pokaż serie"}
                     </button>
@@ -945,7 +945,7 @@ export function InstrumentsPage() {
                     title="Pobierz cenę Yahoo Finance"
                     style={{
                       padding: "6px 9px",
-                      borderRadius: 8,
+                      borderRadius: "var(--r-lg)",
                       border: `0.5px solid ${v2Mix(V2.profit, 0.2)}`,
                       background: isLoadingQuote ? v2Mix(V2.profit, 0.08) : v2Mix(V2.card, 0.72),
                       color: userDataKey ? PROFIT : SUBTLE,
@@ -967,7 +967,7 @@ export function InstrumentsPage() {
                     }}
                     style={{
                       padding: "6px 10px",
-                      borderRadius: 8,
+                      borderRadius: "var(--r-lg)",
                       border: `0.5px solid ${V2.line}`,
                       background: v2Mix(V2.card, 0.72),
                       color: V2.muted,
@@ -985,7 +985,7 @@ export function InstrumentsPage() {
                     disabled={!userDataKey || deletingId === inst.id}
                     style={{
                       padding: "6px 10px",
-                      borderRadius: 8,
+                      borderRadius: "var(--r-lg)",
                       border: `0.5px solid ${v2Mix(V2.loss, 0.18)}`,
                       background: deletingId === inst.id ? v2Mix(V2.loss, 0.08) : "transparent",
                       color: deletingId === inst.id ? V2.loss : V2.subtle,
@@ -1028,7 +1028,7 @@ export function InstrumentsPage() {
                       disabled={isSavingQuote}
                       style={{
                         padding: "7px 11px",
-                        borderRadius: 8,
+                        borderRadius: "var(--r-lg)",
                         border: "none",
                         background: PROFIT,
                         color: "#fff",
@@ -1052,7 +1052,7 @@ export function InstrumentsPage() {
                       style={{
                         width: 30,
                         height: 30,
-                        borderRadius: 8,
+                        borderRadius: "var(--r-lg)",
                         border: `0.5px solid ${V2.line}`,
                         background: v2Mix(V2.card, 0.7),
                         color: MUTED,

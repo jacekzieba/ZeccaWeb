@@ -220,7 +220,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
               color: V2.ink,
             }}
           />
-          <span style={{ fontFamily: MONO, fontSize: 10, color: V2.subtle, padding: "2px 6px", borderRadius: 4, background: v2Mix(V2.ink, 0.05) }}>ESC</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: V2.subtle, padding: "2px 6px", borderRadius: "var(--r-md)", background: v2Mix(V2.ink, 0.05) }}>ESC</span>
         </div>
 
         {/* Strzałki przesuwały wyłącznie podświetlenie w stanie Reacta — czytnik

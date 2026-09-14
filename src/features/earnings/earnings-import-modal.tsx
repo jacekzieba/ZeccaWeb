@@ -153,7 +153,7 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
             <div style={{ color: V2.muted, fontSize: 13, lineHeight: 1.5 }}>
               Jeden wiersz oznacza jeden zarobek albo jedno obciążenie. Najpewniejszy rezultat daje wzór CSV i instrukcja przekazana AI razem z wyciągiem bankowym.
             </div>
-            <code style={{ display: "block", overflowX: "auto", padding: "9px 10px", borderRadius: 8, background: V2.card2, color: V2.muted, fontFamily: V2_TYPE.mono, fontSize: 11 }}>
+            <code style={{ display: "block", overflowX: "auto", padding: "9px 10px", borderRadius: "var(--r-lg)", background: V2.card2, color: V2.muted, fontFamily: V2_TYPE.mono, fontSize: 11 }}>
               {EARNINGS_IMPORT_COLUMNS.join(", ")}
             </code>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -284,7 +284,7 @@ const iconButtonStyle = {
   height: 32,
   display: "grid",
   placeItems: "center",
-  borderRadius: 8,
+  borderRadius: "var(--r-lg)",
   border: `0.5px solid ${V2.line}`,
   background: V2.card,
   color: V2.muted,

@@ -536,7 +536,7 @@ export function AppShell({
               <span
                 style={{
                   fontSize: 10, color: COLORS.subtle,
-                  padding: "2px 6px", borderRadius: 4,
+                  padding: "2px 6px", borderRadius: "var(--r-md)",
                   background: COLORS.surfaceAlt,
                   textTransform: "uppercase", letterSpacing: ".08em",
                 }}
@@ -566,7 +566,7 @@ export function AppShell({
               <span
                 style={{
                   marginLeft: "auto", fontSize: 10, color: COLORS.muted,
-                  padding: "2px 6px", borderRadius: 4,
+                  padding: "2px 6px", borderRadius: "var(--r-md)",
                   background: v2Mix(V2.ink, 0.07),
                   fontFamily: TYPOGRAPHY.mono,
                 }}

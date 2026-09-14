@@ -744,7 +744,7 @@ export function SyncUnlockPanel({
           onClick={handleSignOut}
           style={{
             padding: "6px 12px",
-            borderRadius: 8,
+            borderRadius: "var(--r-lg)",
             border: `0.5px solid ${token("line")}`,
             background: v2Mix(INK, 0.04),
             color: MUTED,

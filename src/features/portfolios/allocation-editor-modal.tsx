@@ -32,7 +32,7 @@ const PAPER = token("ground");
 const numberInputStyle: CSSProperties = {
   width: 56,
   padding: "6px 8px",
-  borderRadius: 8,
+  borderRadius: "var(--r-lg)",
   border: `0.5px solid ${V2.line}`,
   background: V2.card,
   color: V2.ink,
@@ -259,7 +259,7 @@ export function AllocationEditorModal({
                 style={{
                   width: 11,
                   height: 11,
-                  borderRadius: 3,
+                  borderRadius: "var(--r-sm)",
                   background: color,
                   flexShrink: 0,
                 }}
@@ -342,7 +342,7 @@ export function AllocationEditorModal({
               fontSize: 12,
               color: V2.loss,
               padding: "8px 12px",
-              borderRadius: 8,
+              borderRadius: "var(--r-lg)",
               background: `${V2.loss}10`,
             }}
           >

@@ -52,7 +52,7 @@ body {
 }
 ::-webkit-scrollbar-thumb {
   background: rgba(106, 117, 133, 0.26);
-  border-radius: 99px;
+  border-radius: var(--r-pill);
 }
 ::-webkit-scrollbar-track {
   background: transparent;

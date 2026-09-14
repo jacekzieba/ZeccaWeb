@@ -89,7 +89,7 @@ export function ResetPasswordForm() {
 
   const panelStyle: React.CSSProperties = {
     padding: "14px 16px",
-    borderRadius: 12,
+    borderRadius: "var(--r-xl)",
     background: COLORS.surfaceAlt,
     border: `0.5px solid ${COLORS.border}`,
   };

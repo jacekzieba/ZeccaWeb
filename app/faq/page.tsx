@@ -302,7 +302,7 @@ export default function FAQPage() {
             style={{
               background: COLORS.surfaceAlt,
               border: `0.5px solid ${COLORS.border}`,
-              borderRadius: 8,
+              borderRadius: "var(--r-lg)",
               padding: 18,
             }}
           >

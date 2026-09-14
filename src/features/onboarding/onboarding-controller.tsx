@@ -255,7 +255,7 @@ export function OnboardingController({
               fontFamily: V2_TYPE.ui, fontSize: 11, fontWeight: 700,
               letterSpacing: ".08em", textTransform: "uppercase",
               color: V2.brand, background: "rgba(255,252,244,.82)",
-              padding: "6px 11px", borderRadius: 99,
+              padding: "6px 11px", borderRadius: "var(--r-pill)",
               border: "0.5px solid rgba(162,119,46,.35)",
               backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
               boxShadow: "0 4px 16px rgba(22,29,24,.14)",

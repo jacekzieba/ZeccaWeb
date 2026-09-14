@@ -175,7 +175,7 @@ export function AreaChart({
             background: COLORS.surface,
             color: COLORS.text,
             padding: "6px 10px",
-            borderRadius: 8,
+            borderRadius: "var(--r-lg)",
             fontSize: 11,
             pointerEvents: "none",
             border: `0.5px solid ${COLORS.border}`,

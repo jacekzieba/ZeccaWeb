@@ -303,7 +303,7 @@ export function PortfolioEditorModal({
                 fontSize: 12,
                 color: LOSS,
                 padding: "8px 12px",
-                borderRadius: 8,
+                borderRadius: "var(--r-lg)",
                 background: `${LOSS}10`,
               }}
             >

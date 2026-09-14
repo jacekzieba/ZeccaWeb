@@ -678,7 +678,7 @@ export function TransactionsPage() {
               disabled={bulkDeleting}
               style={{
                 padding: "7px 10px",
-                borderRadius: 8,
+                borderRadius: "var(--r-lg)",
                 border: `0.5px solid ${V2.line}`,
                 background: "transparent",
                 color: V2.muted,
@@ -698,7 +698,7 @@ export function TransactionsPage() {
               disabled={!userDataKey || bulkDeleting}
               style={{
                 padding: "7px 10px",
-                borderRadius: 8,
+                borderRadius: "var(--r-lg)",
                 border: `0.5px solid ${v2Mix(V2.loss, 0.2)}`,
                 background: bulkDeleting ? v2Mix(V2.loss, 0.08) : "transparent",
                 color: V2.loss,
@@ -734,7 +734,7 @@ export function TransactionsPage() {
             onClick={() => setDeleteError(null)}
             style={{
               padding: "5px 9px",
-              borderRadius: 8,
+              borderRadius: "var(--r-lg)",
               border: `0.5px solid ${v2Mix(V2.loss, 0.2)}`,
               background: "transparent",
               color: V2.loss,
@@ -959,7 +959,7 @@ export function TransactionsPage() {
                   disabled={!userDataKey}
                   style={{
                     padding: "6px 10px",
-                    borderRadius: 8,
+                    borderRadius: "var(--r-lg)",
                     border: `0.5px solid ${V2.line}`,
                     background: v2Mix(V2.card, 0.72),
                     color: userDataKey ? V2.muted : V2.subtle,
@@ -983,7 +983,7 @@ export function TransactionsPage() {
                   disabled={!userDataKey || deletingId === tx.id}
                   style={{
                     padding: "6px 10px",
-                    borderRadius: 8,
+                    borderRadius: "var(--r-lg)",
                     border: `0.5px solid ${v2Mix(V2.loss, 0.18)}`,
                     background: deletingId === tx.id ? v2Mix(V2.loss, 0.08) : "transparent",
                     color: deletingId === tx.id ? LOSS : MUTED,

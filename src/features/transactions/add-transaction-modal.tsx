@@ -1142,14 +1142,14 @@ export function AddTransactionModal({
                       gap: 8,
                       alignItems: "center",
                       padding: "5px 8px",
-                      borderRadius: 8,
+                      borderRadius: "var(--r-lg)",
                       color: INK,
                       cursor: recent.type ? "pointer" : "default",
                       fontFamily: "inherit",
                       textAlign: "left",
                     }}
                   >
-                    <span style={{ width: 6, height: 6, borderRadius: 99, background: recent.color }} />
+                    <span style={{ width: 6, height: 6, borderRadius: "var(--r-pill)", background: recent.color }} />
                     <span>
                       <span style={{ display: "block", fontSize: 12, fontWeight: 700, lineHeight: 1.2 }}>{recent.label}</span>
                       <span style={{ display: "block", marginTop: 1, fontSize: 12, color: MUTED }}>
@@ -1198,7 +1198,7 @@ export function AddTransactionModal({
                             top: 10,
                             bottom: 10,
                             width: 3,
-                            borderRadius: 99,
+                            borderRadius: "var(--r-pill)",
                             background: type.tone,
                           }}
                         />
@@ -1279,7 +1279,7 @@ export function AddTransactionModal({
                       onClick={() => setAssetClass("all")}
                       style={{
                         minHeight: 62,
-                        borderRadius: 12,
+                        borderRadius: "var(--r-xl)",
                         border: `0.5px solid ${assetClass === "all" ? v2Mix(txDef.tone, 0.35) : LINE_SOFT}`,
                         background: assetClass === "all" ? v2Mix(txDef.tone, 0.08) : v2Mix(V2.card, 0.68),
                         display: "flex",
@@ -1307,7 +1307,7 @@ export function AddTransactionModal({
                           onClick={() => setAssetClass(asset.key)}
                           style={{
                             minHeight: 62,
-                            borderRadius: 12,
+                            borderRadius: "var(--r-xl)",
                             border: `0.5px solid ${selected ? v2Mix(asset.tone, 0.35) : LINE_SOFT}`,
                             background: selected ? v2Mix(asset.tone, 0.08) : v2Mix(V2.card, 0.68),
                             display: "flex",
@@ -1519,7 +1519,7 @@ export function AddTransactionModal({
                           onClick={() => setSettleInPLN(option.value)}
                           style={{
                             border: "none",
-                            borderRadius: 8,
+                            borderRadius: "var(--r-lg)",
                             padding: "6px 16px",
                             fontSize: 13,
                             fontWeight: 700,
@@ -1684,7 +1684,7 @@ export function AddTransactionModal({
                   style={{
                     height: 39,
                     padding: "0 18px",
-                    borderRadius: 999,
+                    borderRadius: "var(--r-pill)",
                     border: "none",
                     background: v2Mix(V2.ink, 0.08),
                     color: INK,
@@ -1703,7 +1703,7 @@ export function AddTransactionModal({
                   style={{
                     height: 39,
                     padding: "0 21px",
-                    borderRadius: 999,
+                    borderRadius: "var(--r-pill)",
                     border: "none",
                     background: saving || !userDataKey ? "rgba(22,29,24,0.12)" : txDef.tone,
                     color: saving || !userDataKey ? SUBTLE : "#fff",

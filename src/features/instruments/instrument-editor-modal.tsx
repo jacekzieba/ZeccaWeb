@@ -554,7 +554,7 @@ export function InstrumentEditorModal({
                   disabled={bondFetch === "loading" || !symbol.trim()}
                   style={{
                     border: `0.5px solid ${token("line")}`,
-                    borderRadius: 8,
+                    borderRadius: "var(--r-lg)",
                     background: PAPER,
                     color: INK,
                     cursor: bondFetch === "loading" || !symbol.trim() ? "default" : "pointer",
@@ -637,7 +637,7 @@ export function InstrumentEditorModal({
                 fontSize: 12,
                 color: LOSS,
                 padding: "8px 12px",
-                borderRadius: 8,
+                borderRadius: "var(--r-lg)",
                 background: `${LOSS}10`,
               }}
             >

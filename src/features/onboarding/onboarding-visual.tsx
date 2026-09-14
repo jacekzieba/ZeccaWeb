@@ -26,7 +26,7 @@ function PortfolioVisual() {
             <div style={{ fontSize: 10, fontWeight: 700, color: V2.subtle, letterSpacing: ".11em", textTransform: "uppercase" }}>Twój portfel</div>
             <div style={{ fontSize: 18, fontWeight: 650, letterSpacing: "-.04em", marginTop: 4 }}>248 920 zł</div>
           </div>
-          <div style={{ color: V2.profit, background: "rgba(35,129,79,.12)", borderRadius: 99, padding: "5px 8px", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap" }}>
+          <div style={{ color: V2.profit, background: "rgba(35,129,79,.12)", borderRadius: "var(--r-pill)", padding: "5px 8px", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap" }}>
             +12,4%
           </div>
         </div>
@@ -92,7 +92,7 @@ function PrivacyVisual() {
 
 export function OnboardingVisual({ visual }: { visual: IntroVisual }) {
   return (
-    <div className="onboarding-visual" style={{ marginTop: 18, overflow: "hidden", borderRadius: 12, border: `1px solid ${V2.line}`, background: V2.card2, fontFamily: V2_TYPE.ui, color: V2.ink }}>
+    <div className="onboarding-visual" style={{ marginTop: 18, overflow: "hidden", borderRadius: "var(--r-xl)", border: `1px solid ${V2.line}`, background: V2.card2, fontFamily: V2_TYPE.ui, color: V2.ink }}>
       <style>{visualStyles}</style>
       {visual === "portfolio" ? <PortfolioVisual /> : <PrivacyVisual />}
     </div>

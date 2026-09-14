@@ -48,7 +48,7 @@ export function ImportProgressIndicator({
         style={{
           height: 6,
           overflow: "hidden",
-          borderRadius: 999,
+          borderRadius: "var(--r-pill)",
           background: v2Mix(V2.brand, 0.14),
         }}
       >

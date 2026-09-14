@@ -144,7 +144,7 @@ export function AllocationDonut({ slices }: { slices: Slice[] }) {
                 style={{
                   width: 9,
                   height: 9,
-                  borderRadius: 2,
+                  borderRadius: "var(--r-xs)",
                   background: color,
                   flexShrink: 0,
                 }}

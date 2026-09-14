@@ -312,7 +312,7 @@ export function PortfolioListPage() {
                   style={{
                     width: 28,
                     height: 28,
-                    borderRadius: 8,
+                    borderRadius: "var(--r-lg)",
                     background: `${color}18`,
                     border: `1.5px solid ${color}40`,
                     display: "flex",
@@ -367,7 +367,7 @@ export function PortfolioListPage() {
                     style={{
                       width: 60,
                       height: 3,
-                      borderRadius: 2,
+                      borderRadius: "var(--r-xs)",
                       background: v2Mix(INK, 0.08),
                       marginTop: 4,
                     }}
@@ -376,7 +376,7 @@ export function PortfolioListPage() {
                       style={{
                         width: `${Math.min(pct, 100)}%`,
                         height: "100%",
-                        borderRadius: 2,
+                        borderRadius: "var(--r-xs)",
                         background: color,
                       }}
                     />
@@ -397,7 +397,7 @@ export function PortfolioListPage() {
                   }}
                   style={{
                     padding: "6px 10px",
-                    borderRadius: 8,
+                    borderRadius: "var(--r-lg)",
                     border: `0.5px solid ${token("line")}`,
                     background: v2Mix(PAPER, 0.7),
                     color: MUTED,
@@ -413,7 +413,7 @@ export function PortfolioListPage() {
                   disabled={!userDataKey || deletingId === pf.id}
                   style={{
                     padding: "6px 10px",
-                    borderRadius: 8,
+                    borderRadius: "var(--r-lg)",
                     border: "0.5px solid rgba(184,80,66,0.18)",
                     background: deletingId === pf.id ? "rgba(184,80,66,0.08)" : "transparent",
                     color: deletingId === pf.id ? LOSS : AMBER,

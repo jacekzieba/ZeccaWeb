@@ -239,7 +239,7 @@ function IconButton({
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        borderRadius: 8,
+        borderRadius: "var(--r-lg)",
         border: `0.5px solid ${danger ? v2Mix(V2.loss, 0.28) : V2.line}`,
         background: danger ? v2Mix(V2.loss, 0.06) : v2Mix(V2.card, 0.74),
         color: danger ? V2.loss : V2.muted,
@@ -303,14 +303,14 @@ function MonthlyChart({
                 <div style={{ fontFamily: V2_TYPE.mono, fontSize: 10, color: V2.subtle }}>{item.year}</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 4, minWidth: 0 }}>
-                <div style={{ height: 5, borderRadius: 4, background: v2Mix(V2.ink, 0.06), overflow: "hidden" }}>
+                <div style={{ height: 5, borderRadius: "var(--r-md)", background: v2Mix(V2.ink, 0.06), overflow: "hidden" }}>
                   {/* Bursztyn ma zamkniętą listę zadań, zieleń tylko kierunek — a to
                       pole nie jest ani jednym, ani drugim, ani klasą aktywu. Neutralny
                       atrament, tak jak w legendzie i nagłówku niżej. */}
-                  <div title={`Przed obciążeniami: ${fmt(item.sourcePLN)} ${currencyLabel("PLN")}`} style={{ width: `${sourceWidth}%`, height: "100%", borderRadius: 4, background: v2Mix(V2.ink, 0.28) }} />
+                  <div title={`Przed obciążeniami: ${fmt(item.sourcePLN)} ${currencyLabel("PLN")}`} style={{ width: `${sourceWidth}%`, height: "100%", borderRadius: "var(--r-md)", background: v2Mix(V2.ink, 0.28) }} />
                 </div>
-                <div style={{ height: 7, borderRadius: 4, background: v2Mix(V2.ink, 0.06), overflow: "hidden" }}>
-                  <div title={`Po obciążeniach: ${fmt(item.totalPLN)} ${currencyLabel("PLN")}`} style={{ width: `${totalWidth}%`, height: "100%", borderRadius: 4, background: item.totalPLN >= 0 ? V2.profit : V2.loss }} />
+                <div style={{ height: 7, borderRadius: "var(--r-md)", background: v2Mix(V2.ink, 0.06), overflow: "hidden" }}>
+                  <div title={`Po obciążeniach: ${fmt(item.totalPLN)} ${currencyLabel("PLN")}`} style={{ width: `${totalWidth}%`, height: "100%", borderRadius: "var(--r-md)", background: item.totalPLN >= 0 ? V2.profit : V2.loss }} />
                 </div>
               </div>
               <div style={{ minWidth: 0, textAlign: "right" }}>
@@ -985,8 +985,8 @@ export function EarningsPage() {
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginBottom: 4 }}>
               <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: V2.subtle }}>Wynik miesięczny</div>
               <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 11, color: V2.muted }}>
-                <span><span style={{ display: "inline-block", width: 9, height: 9, borderRadius: 2, background: v2Mix(V2.ink, 0.28), marginRight: 6 }} />Przed obc.</span>
-                <span><span style={{ display: "inline-block", width: 9, height: 9, borderRadius: 2, background: V2.profit, marginRight: 6 }} />Po obc.</span>
+                <span><span style={{ display: "inline-block", width: 9, height: 9, borderRadius: "var(--r-xs)", background: v2Mix(V2.ink, 0.28), marginRight: 6 }} />Przed obc.</span>
+                <span><span style={{ display: "inline-block", width: 9, height: 9, borderRadius: "var(--r-xs)", background: V2.profit, marginRight: 6 }} />Po obc.</span>
               </div>
             </div>
             <MonthlyChart key={selectedYear} summaries={summariesForSelection.summaries} isMobile={isMobile} />
@@ -1108,7 +1108,7 @@ export function EarningsPage() {
               const color = V2.muted;
               return (
                 <div key={`${row.kind}-${row.id}`} style={{ display: "grid", gridTemplateColumns: isMobile ? "34px minmax(0, 1fr) auto" : "38px minmax(0, 1fr) minmax(180px, auto) auto", alignItems: "center", gap: 12, padding: "13px 16px", borderTop: index ? `0.5px solid ${V2.line2}` : "none" }}>
-                  <div style={{ width: 32, height: 32, display: "grid", placeItems: "center", borderRadius: 8, background: v2Mix(color, 0.12), color }}>
+                  <div style={{ width: 32, height: 32, display: "grid", placeItems: "center", borderRadius: "var(--r-lg)", background: v2Mix(color, 0.12), color }}>
                     {isEarning ? (row.employmentType === "employment" ? <UserRound size={16} /> : <Building2 size={16} />) : <Banknote size={16} />}
                   </div>
                   <div style={{ minWidth: 0 }}>

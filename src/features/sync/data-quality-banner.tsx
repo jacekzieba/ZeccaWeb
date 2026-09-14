@@ -42,7 +42,7 @@ export function DataQualityBanner({
         gap: 4,
         border: `0.5px solid ${v2Mix(COLORS.brand, 0.4)}`,
         background: v2Mix(COLORS.brand, 0.08),
-        borderRadius: 12,
+        borderRadius: "var(--r-xl)",
         padding: "10px 14px",
         fontFamily: TYPOGRAPHY.system,
         fontSize: 12,

@@ -405,7 +405,7 @@ function MultiLineChart({
           <div style={{ opacity: 0.6, fontSize: 10, fontFamily: MONO, marginBottom: 4 }}>{labels[hover]}</div>
           {series.map((item) => (
             <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 3 }}>
-              <span style={{ width: 8, height: 8, borderRadius: 2, background: item.color }} />
+              <span style={{ width: 8, height: 8, borderRadius: "var(--r-xs)", background: item.color }} />
               <span style={{ fontSize: 11, opacity: 0.8, flex: 1 }}>{item.label}</span>
               <span style={{ fontFamily: MONO, fontSize: 13, fontVariantNumeric: "tabular-nums" }}>{fmt(item.data[hover], 1)}</span>
             </div>
@@ -534,7 +534,7 @@ export function BenchmarkPage() {
                 aria-pressed={active}
                 style={{
                   padding: "6px 13px",
-                  borderRadius: 8,
+                  borderRadius: "var(--r-lg)",
                   border: "none",
                   cursor: "pointer",
                   fontFamily: UI,
@@ -571,7 +571,7 @@ export function BenchmarkPage() {
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                <span style={{ width: 10, height: 10, borderRadius: 3, background: item.color, flexShrink: 0 }} />
+                <span style={{ width: 10, height: 10, borderRadius: "var(--r-sm)", background: item.color, flexShrink: 0 }} />
                 <span style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 500, color: C.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {item.name}
                 </span>
@@ -592,7 +592,7 @@ export function BenchmarkPage() {
           </div>
           <div style={{ display: "flex", gap: 18, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, color: C.muted }}>
-              <span style={{ width: 14, height: 3, borderRadius: 2, background: C.brand }} />
+              <span style={{ width: 14, height: 3, borderRadius: "var(--r-xs)", background: C.brand }} />
               Twój portfel
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, color: C.muted }}>
@@ -630,7 +630,7 @@ export function BenchmarkPage() {
             <div style={{ flex: 1, minWidth: 160, display: "flex", flexDirection: "column", gap: 9 }}>
               {selected.alloc.map((item) => (
                 <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                  <span style={{ width: 9, height: 9, borderRadius: 2, background: allocColor(item.key) }} />
+                  <span style={{ width: 9, height: 9, borderRadius: "var(--r-xs)", background: allocColor(item.key) }} />
                   <span style={{ fontSize: 12, color: C.muted, flex: 1 }}>{item.label}</span>
                   <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 500, color: C.ink }}>{item.value}%</span>
                 </div>

@@ -221,7 +221,7 @@ export function ValueVsDepositsChart({
             background: COLORS.surface,
             color: COLORS.text,
             padding: "7px 11px",
-            borderRadius: 8,
+            borderRadius: "var(--r-lg)",
             fontSize: 11,
             pointerEvents: "none",
             border: `0.5px solid ${COLORS.border}`,
@@ -263,7 +263,7 @@ function Row({ color, label, value }: { color: string; label: string; value: str
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
       <span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: COLORS.textMuted }}>
-        <span style={{ width: 8, height: 8, borderRadius: 2, background: color }} />
+        <span style={{ width: 8, height: 8, borderRadius: "var(--r-xs)", background: color }} />
         {label}
       </span>
       <span style={{ fontFamily: TYPOGRAPHY.mono, fontWeight: 500 }}>{value}</span>

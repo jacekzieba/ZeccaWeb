@@ -208,7 +208,7 @@ function HistoryCard({
               onClick={() => onPeriodChange(option)}
               style={{
                 padding: "5px 12px",
-                borderRadius: 8,
+                borderRadius: "var(--r-lg)",
                 border: "none",
                 cursor: "pointer",
                 fontFamily: TYPOGRAPHY.system,
@@ -324,7 +324,7 @@ function HoldingsCard({
                 style={{
                   width: 32,
                   height: 32,
-                  borderRadius: 8,
+                  borderRadius: "var(--r-lg)",
                   background: `${color}14`,
                   border: `1.5px solid ${color}30`,
                   display: "flex",
@@ -381,7 +381,7 @@ function HoldingsCard({
                 style={{
                   width: "100%",
                   height: 3,
-                  borderRadius: 2,
+                  borderRadius: "var(--r-xs)",
                   background: v2Mix(INK, 0.08),
                   marginTop: 4,
                 }}
@@ -390,7 +390,7 @@ function HoldingsCard({
                   style={{
                     width: `${Math.min(h.portfolioPercent, 100)}%`,
                     height: "100%",
-                    borderRadius: 2,
+                    borderRadius: "var(--r-xs)",
                     background: color,
                   }}
                 />
@@ -432,7 +432,7 @@ function CashCard({ balances }: { balances: CashBalance[] }) {
               style={{
                 width: 32,
                 height: 32,
-                borderRadius: 8,
+                borderRadius: "var(--r-lg)",
                 background: `${PROFIT}14`,
                 border: `1.5px solid ${PROFIT}30`,
                 display: "flex",

@@ -267,7 +267,7 @@ export function ReportsPage() {
                   <span style={{ fontFamily: MONO, fontSize: 26, fontWeight: 500, color: PROFIT }}>{monthlyStats.positive}</span>
                   <span style={{ fontSize: 13, color: SUBTLE }}>/ {monthlyStats.total}</span>
                 </div>
-                <div style={{ display: "flex", borderRadius: 4, overflow: "hidden", marginTop: 8, height: 6 }}>
+                <div style={{ display: "flex", borderRadius: "var(--r-md)", overflow: "hidden", marginTop: 8, height: 6 }}>
                   <div style={{ flex: monthlyStats.positive, background: PROFIT, minWidth: monthlyStats.positive > 0 ? 4 : 0 }} />
                   <div style={{ flex: monthlyStats.negative, background: LOSS, minWidth: monthlyStats.negative > 0 ? 4 : 0 }} />
                 </div>
@@ -293,8 +293,8 @@ export function ReportsPage() {
               return (
                 <div key={yr.year} style={{ display: "grid", gridTemplateColumns: "90px 1fr 110px", padding: "14px 22px", borderTop: i === 0 ? "none" : `0.5px solid ${LINE_SOFT}`, alignItems: "center", gap: 12 }}>
                   <div style={{ fontFamily: MONO, fontSize: 18, fontWeight: 500, color: INK }}>{yr.year}</div>
-                  <div style={{ height: 8, borderRadius: 4, background: v2Mix(V2.ink, 0.06), position: "relative", overflow: "hidden" }}>
-                    <div style={{ width: `${Math.min(Math.abs(yr.returnPct) * 2.5, 100)}%`, height: "100%", borderRadius: 4, background: isPos ? PROFIT : LOSS }} />
+                  <div style={{ height: 8, borderRadius: "var(--r-md)", background: v2Mix(V2.ink, 0.06), position: "relative", overflow: "hidden" }}>
+                    <div style={{ width: `${Math.min(Math.abs(yr.returnPct) * 2.5, 100)}%`, height: "100%", borderRadius: "var(--r-md)", background: isPos ? PROFIT : LOSS }} />
                   </div>
                   <div style={{ textAlign: "right", fontFamily: MONO, fontSize: 18, fontWeight: 500, color: isPos ? PROFIT : LOSS }}>{fmtPct(yr.returnPct)}</div>
                 </div>
@@ -365,12 +365,12 @@ export function ReportsPage() {
                 return (
                   <div key={slice.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 22px", borderTop: `0.5px solid ${LINE_SOFT}`, gap: 12 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ width: 10, height: 10, borderRadius: 3, background: color, flexShrink: 0, display: "block" }} />
+                      <span style={{ width: 10, height: 10, borderRadius: "var(--r-sm)", background: color, flexShrink: 0, display: "block" }} />
                       <span style={{ fontSize: 13, color: INK, fontWeight: 500 }}>{slice.label}</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                      <div style={{ width: 80, height: 4, borderRadius: 2, background: v2Mix(V2.ink, 0.08) }}>
-                        <div style={{ width: `${slice.percent}%`, height: "100%", borderRadius: 2, background: color }} />
+                      <div style={{ width: 80, height: 4, borderRadius: "var(--r-xs)", background: v2Mix(V2.ink, 0.08) }}>
+                        <div style={{ width: `${slice.percent}%`, height: "100%", borderRadius: "var(--r-xs)", background: color }} />
                       </div>
                       <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 500, color: INK, fontVariantNumeric: "tabular-nums", minWidth: 48, textAlign: "right" }}>
                         {slice.percent.toLocaleString("pl-PL", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%

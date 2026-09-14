@@ -274,8 +274,8 @@ export function SettingsPage() {
               desc={`Wykorzystano ${formatPln(usage.contributed)} z ${formatPln(usage.limit)}`}
               control={(
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 120, height: 7, borderRadius: 4, background: v2Mix(V2.ink, 0.08), overflow: "hidden" }}>
-                    <div style={{ width: `${Math.round(usage.ratio * 100)}%`, height: "100%", background: V2.brand, borderRadius: 4 }} />
+                  <div style={{ width: 120, height: 7, borderRadius: "var(--r-md)", background: v2Mix(V2.ink, 0.08), overflow: "hidden" }}>
+                    <div style={{ width: `${Math.round(usage.ratio * 100)}%`, height: "100%", background: V2.brand, borderRadius: "var(--r-md)" }} />
                   </div>
                   <span style={{ fontFamily: V2_TYPE.mono, fontSize: 12, color: V2.ink }}>{Math.round(usage.ratio * 100)}%</span>
                 </div>
