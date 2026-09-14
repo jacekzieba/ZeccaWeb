@@ -1328,7 +1328,10 @@
 .zlanding .static-vvd-chart.is-compact { margin-top: 16px; }
 .zlanding .static-vvd-chart.is-compact .static-chart-legend { display: none; }
 .zlanding .static-vvd-chart.is-compact .static-chart-head { justify-content: flex-end; }
-.zlanding .static-vvd-chart.is-compact svg { max-height: 132px; }
+/* Bez max-height: wysokość ma teraz sam viewBox (chartHeight w komponencie),
+   więc szerokość 100% wypełnia kartę bez pustych pasów po bokach (patrz
+   static-value-chart.tsx). CSS max-height liczyłby "meet" od 184, nie 132,
+   i wracałby do tego samego problemu. */
 /* Opisy osi wartości pokazują się także w panelu hero — to ta sama gramatyka
    wykresu, tylko mniejszym stopniem. Wcześniej ta reguła gasiła je wszystkie. */
 .zlanding .static-vvd-chart.is-compact text { font-size: 8.5px; }

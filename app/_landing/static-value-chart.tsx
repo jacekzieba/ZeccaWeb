@@ -84,7 +84,11 @@ export function StaticValueChart({
   // viewBox trzyma się szerokości renderu (~345 px), inaczej SVG skaluje się
   // w dół razem z opisami osi i 10 px zamienia się w 5 px.
   const chartWidth = 352;
-  const chartHeight = 184;
+  // Compact ma własną (niższą) wysokość viewBox, nie tylko CSS max-height na
+  // wspólnym 184 — inaczej domyślne preserveAspectRatio="meet" skaluje CAŁY
+  // rysunek (obie osie równo) w dół do niższego pudełka i centruje go w
+  // poziomie, zostawiając puste pasy po bokach zamiast wypełniać kartę.
+  const chartHeight = compact ? 132 : 184;
   // Wariant compact (hero) nie rezerwuje osobnej kolumny na etykiety osi —
   // stoją nad siatką, wewnątrz wykresu (patrz yTicks niżej) — więc margines
   // to już tylko oddech przy krawędzi, taki sam po obu stronach. Bez tego
