@@ -1109,8 +1109,8 @@ export function AddTransactionModal({
           overflow: "hidden",
           background: PAPER,
           borderRadius: 22,
-          boxShadow: "0 24px 64px rgba(22,29,24,0.22), inset 0 0.5px 0 rgba(255,255,255,0.8)",
-          border: "0.5px solid rgba(255,255,255,0.7)",
+          boxShadow: `0 24px 64px ${v2Mix(INK, 0.22)}, inset 0 0.5px 0 ${v2Mix(INK, 0.08)}`,
+          border: `0.5px solid ${V2.line}`,
           display: "grid",
           gridTemplateColumns: "248px minmax(0, 1fr)",
         }}

@@ -1,6 +1,7 @@
 "use client";
 
 import { token } from "@/design/tokens";
+import { v2Mix } from "@/lib/v2-design";
 import { createPortal } from "react-dom";
 import {
   useCallback,
@@ -54,14 +55,14 @@ const inputStyle: CSSProperties = {
   width: "100%",
   padding: "9px 12px",
   borderRadius: 9,
-  border: "0.5px solid rgba(28,49,68,0.14)",
+  border: `0.5px solid ${token("line")}`,
   background: PAPER,
   fontSize: 13,
   color: INK,
   fontFamily: "inherit",
   outline: "none",
   boxSizing: "border-box",
-  boxShadow: "inset 0 1px 3px rgba(28,49,68,0.05)",
+  boxShadow: `inset 0 1px 3px ${v2Mix(INK, 0.05)}`,
 };
 
 type InstrumentDraft = {
@@ -347,7 +348,7 @@ export function InstrumentEditorModal({
         style={{
           position: "absolute",
           inset: 0,
-          background: "rgba(28,49,68,0.45)",
+          background: v2Mix(PAPER, 0.45),
           backdropFilter: "blur(8px)",
           WebkitBackdropFilter: "blur(8px)",
         }}
@@ -360,8 +361,8 @@ export function InstrumentEditorModal({
           maxWidth: 520,
           background: PAPER,
           borderRadius: 18,
-          boxShadow: "0 24px 64px rgba(28,49,68,0.22), inset 0 0.5px 0 rgba(255,255,255,0.8)",
-          border: "0.5px solid rgba(255,255,255,0.7)",
+          boxShadow: `0 24px 64px ${v2Mix(INK, 0.22)}, inset 0 0.5px 0 ${v2Mix(INK, 0.08)}`,
+          border: `0.5px solid ${token("line")}`,
         }}
       >
         <div
@@ -384,7 +385,7 @@ export function InstrumentEditorModal({
               height: 28,
               borderRadius: "50%",
               border: "none",
-              background: "rgba(28,49,68,0.07)",
+              background: v2Mix(INK, 0.07),
               color: MUTED,
               fontSize: 15,
               cursor: "pointer",
@@ -552,7 +553,7 @@ export function InstrumentEditorModal({
                   onClick={handleFetchBondParams}
                   disabled={bondFetch === "loading" || !symbol.trim()}
                   style={{
-                    border: "0.5px solid rgba(28,49,68,0.14)",
+                    border: `0.5px solid ${token("line")}`,
                     borderRadius: 8,
                     background: PAPER,
                     color: INK,
@@ -651,7 +652,7 @@ export function InstrumentEditorModal({
               style={{
                 padding: "9px 18px",
                 borderRadius: 9,
-                border: "0.5px solid rgba(28,49,68,0.14)",
+                border: `0.5px solid ${token("line")}`,
                 background: "transparent",
                 color: MUTED,
                 fontSize: 13,
@@ -669,7 +670,7 @@ export function InstrumentEditorModal({
                 padding: "9px 20px",
                 borderRadius: 9,
                 border: "none",
-                background: saving || !userDataKey ? "rgba(28,49,68,0.12)" : INK,
+                background: saving || !userDataKey ? v2Mix(INK, 0.12) : INK,
                 color: saving || !userDataKey ? SUBTLE : PAPER,
                 fontSize: 13,
                 fontWeight: 700,

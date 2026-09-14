@@ -1,6 +1,8 @@
 "use client";
 
 import { token } from "@/design/tokens";
+import { SURFACES } from "@/lib/design-tokens";
+import { v2Mix } from "@/lib/v2-design";
 import Link from "next/link";
 import { useMemo, useState, type CSSProperties } from "react";
 import { PortfolioEditorModal } from "@/features/portfolios/portfolio-editor-modal";
@@ -24,15 +26,11 @@ const PROFIT = token("up");
 const LOSS = token("down");
 const AMBER = token("accent");
 const PAPER = token("ground");
-const glassCard: CSSProperties = {
-  background: "rgba(255,253,249,0.82)",
-  backdropFilter: "blur(30px) saturate(160%)",
-  WebkitBackdropFilter: "blur(30px) saturate(160%)",
-  borderRadius: 16,
-  border: "0.5px solid rgba(255,255,255,0.7)",
-  boxShadow:
-    "inset 0 1px 0 rgba(255,255,255,0.9), 0 1px 0 rgba(28,49,68,0.04), 0 4px 16px rgba(28,49,68,0.05)",
-};
+// Była kartą "ze szkła" na kremowo-białym tle (rgba(255,253,249,...)) —
+// zupełnie inny, jasny język wizualny niż reszta produktu. Nowy system (patrz
+// SURFACES w design-tokens.ts) elewację buduje samą powierzchnią i włosem,
+// nigdy rozmyciem ani cieniem — to ten sam przepis, którego już używa AppShell.
+const glassCard: CSSProperties = SURFACES.glassCard;
 
 function fmt(n: number) {
   return n.toLocaleString("pl-PL", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -192,7 +190,7 @@ export function PortfolioListPage() {
             padding: "8px 14px",
             borderRadius: 9,
             border: "none",
-            background: userDataKey ? INK : "rgba(28,49,68,0.12)",
+            background: userDataKey ? INK : v2Mix(INK, 0.12),
             color: userDataKey ? PAPER : SUBTLE,
             fontSize: 13,
             fontWeight: 700,
@@ -250,7 +248,7 @@ export function PortfolioListPage() {
             display: "grid",
             gridTemplateColumns: "minmax(0,2fr) minmax(0,0.7fr) minmax(0,0.5fr) minmax(0,1.2fr) minmax(0,1fr) 130px",
             padding: "12px 22px",
-            background: "rgba(28,49,68,0.025)",
+            background: v2Mix(INK, 0.025),
             borderBottom: `0.5px solid ${LINE_SOFT}`,
             borderRadius: "16px 16px 0 0",
           }}
@@ -305,7 +303,7 @@ export function PortfolioListPage() {
                 alignItems: "center",
                 transition: "background .12s",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(28,49,68,0.025)")}
+              onMouseEnter={(e) => (e.currentTarget.style.background = v2Mix(INK, 0.025))}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
               {/* Name */}
@@ -370,7 +368,7 @@ export function PortfolioListPage() {
                       width: 60,
                       height: 3,
                       borderRadius: 2,
-                      background: "rgba(28,49,68,0.08)",
+                      background: v2Mix(INK, 0.08),
                       marginTop: 4,
                     }}
                   >
@@ -400,8 +398,8 @@ export function PortfolioListPage() {
                   style={{
                     padding: "6px 10px",
                     borderRadius: 8,
-                    border: "0.5px solid rgba(28,49,68,0.12)",
-                    background: "rgba(255,255,255,0.7)",
+                    border: `0.5px solid ${token("line")}`,
+                    background: v2Mix(PAPER, 0.7),
                     color: MUTED,
                     fontSize: 12,
                     cursor: "pointer",

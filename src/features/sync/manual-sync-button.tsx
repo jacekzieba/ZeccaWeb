@@ -3,7 +3,7 @@
 import { token } from "@/design/tokens";
 import { useEffect, useState, type CSSProperties } from "react";
 import { RefreshCw } from "lucide-react";
-import { COLORS, SHADOWS } from "@/lib/design-tokens";
+import { COLORS } from "@/lib/design-tokens";
 import { isFakeSyncEnabled } from "@/lib/env";
 import { V2, v2Mix } from "@/lib/v2-design";
 import { runSyncCycle } from "@/sync/records/sync-cycle";
@@ -24,8 +24,8 @@ const feedbackStyle: CSSProperties = {
   padding: "8px 11px",
   borderRadius: 9,
   border: `0.5px solid ${COLORS.border}`,
-  background: "rgba(255,253,249,0.98)",
-  boxShadow: SHADOWS.cardStrong,
+  background: COLORS.surface,
+  boxShadow: `0 14px 36px ${v2Mix(V2.ink, 0.2)}`,
   fontSize: 11,
   lineHeight: 1.4,
 };

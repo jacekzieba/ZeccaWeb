@@ -116,7 +116,6 @@ export function ConfirmDialog({
           background: token("surface"),
           border: `1px solid ${token("line")}`,
           borderRadius: "var(--r-md)",
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
         }}
       >
         <div style={{ fontFamily: TYPOGRAPHY.serif, fontSize: 18, fontWeight: 500, color: token("ink") }}>

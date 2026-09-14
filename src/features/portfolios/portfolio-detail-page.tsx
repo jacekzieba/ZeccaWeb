@@ -1,6 +1,8 @@
 "use client";
 
 import { token } from "@/design/tokens";
+import { SURFACES } from "@/lib/design-tokens";
+import { v2Mix } from "@/lib/v2-design";
 import Link from "next/link";
 import { use, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useSyncStore } from "@/sync/store/sync-store";
@@ -83,15 +85,11 @@ const SUBTLE = token("inkFaint");
 const LINE_SOFT = token("line2");
 const PROFIT = token("up");
 
-const glassCard: CSSProperties = {
-  background: "rgba(255,253,249,0.82)",
-  backdropFilter: "blur(30px) saturate(160%)",
-  WebkitBackdropFilter: "blur(30px) saturate(160%)",
-  borderRadius: 16,
-  border: "0.5px solid rgba(255,255,255,0.7)",
-  boxShadow:
-    "inset 0 1px 0 rgba(255,255,255,0.9), 0 1px 0 rgba(28,49,68,0.04), 0 4px 16px rgba(28,49,68,0.05)",
-};
+// Była kartą "ze szkła" na kremowo-białym tle (rgba(255,253,249,...)) —
+// zupełnie inny, jasny język wizualny niż reszta produktu. Nowy system (patrz
+// SURFACES w design-tokens.ts) elewację buduje samą powierzchnią i włosem,
+// nigdy rozmyciem ani cieniem — to ten sam przepis, którego już używa AppShell.
+const glassCard: CSSProperties = SURFACES.glassCard;
 
 function fmt(n: number, d = 0) {
   return n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -203,7 +201,7 @@ function HistoryCard({
         <div style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>
           Historia wartości · {period === "MAX" ? "maksimum" : period}
         </div>
-        <div style={{ display: "inline-flex", background: "rgba(28,49,68,0.06)", borderRadius: 11, padding: 3 }}>
+        <div style={{ display: "inline-flex", background: v2Mix(INK, 0.06), borderRadius: 11, padding: 3 }}>
           {PERIOD_OPTIONS.map((option) => (
             <button
               key={option}
@@ -218,7 +216,7 @@ function HistoryCard({
                 fontWeight: period === option ? 700 : 500,
                 background: period === option ? token("surface") : "transparent",
                 color: period === option ? INK : MUTED,
-                boxShadow: period === option ? "0 1px 4px rgba(28,49,68,0.12)" : "none",
+                boxShadow: period === option ? `0 1px 4px ${v2Mix(INK, 0.12)}` : "none",
                 transition: "all .15s",
               }}
             >
@@ -264,7 +262,7 @@ function HoldingsCard({
           display: "grid",
           gridTemplateColumns: "minmax(0,2.5fr) minmax(0,0.8fr) minmax(0,1fr) minmax(0,1.2fr) minmax(0,0.8fr)",
           padding: "10px 22px",
-          background: "rgba(28,49,68,0.025)",
+          background: v2Mix(INK, 0.025),
         }}
       >
         {["Instrument", "Ilość", "Cena", "Wartość", "Udział"].map((h, i) => (
@@ -317,7 +315,7 @@ function HoldingsCard({
               transition: "background .12s",
               cursor: isGroup ? "pointer" : "default",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(28,49,68,0.025)")}
+            onMouseEnter={(e) => (e.currentTarget.style.background = v2Mix(INK, 0.025))}
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
           >
             {/* Instrument */}
@@ -384,7 +382,7 @@ function HoldingsCard({
                   width: "100%",
                   height: 3,
                   borderRadius: 2,
-                  background: "rgba(28,49,68,0.08)",
+                  background: v2Mix(INK, 0.08),
                   marginTop: 4,
                 }}
               >

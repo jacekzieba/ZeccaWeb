@@ -298,7 +298,7 @@ function SidebarContent({ onNav, publicDemo = false }: { onNav?: () => void; pub
                       style={{
                         fontFamily: TYPOGRAPHY.mono,
                         fontSize: 10,
-                        color: active ? "rgba(255,255,255,0.8)" : COLORS.subtle,
+                        color: active ? COLORS.text : COLORS.subtle,
                         flexShrink: 0,
                       }}
                     >

@@ -1,6 +1,7 @@
 "use client";
 
 import { token } from "@/design/tokens";
+import { v2Mix } from "@/lib/v2-design";
 import type { Session } from "@supabase/supabase-js";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
@@ -651,7 +652,7 @@ export function SyncUnlockPanel({
                 gap: 6,
                 padding: "8px 14px",
                 borderRadius: 9,
-                border: "0.5px solid rgba(28,49,68,0.14)",
+                border: `0.5px solid ${token("line")}`,
                 background: PAPER,
                 color: INK,
                 fontSize: 13,
@@ -676,7 +677,7 @@ export function SyncUnlockPanel({
               fontSize: 13,
               fontWeight: 600,
               textDecoration: "none",
-              boxShadow: "0 3px 10px rgba(28,49,68,0.22), inset 0 0.5px 0 rgba(255,255,255,0.18)",
+              boxShadow: `0 3px 10px ${v2Mix(INK, 0.22)}, inset 0 0.5px 0 ${v2Mix(INK, 0.1)}`,
               whiteSpace: "nowrap",
             }}
           >
@@ -744,8 +745,8 @@ export function SyncUnlockPanel({
           style={{
             padding: "6px 12px",
             borderRadius: 8,
-            border: "0.5px solid rgba(28,49,68,0.12)",
-            background: "rgba(28,49,68,0.04)",
+            border: `0.5px solid ${token("line")}`,
+            background: v2Mix(INK, 0.04),
             color: MUTED,
             fontSize: 12,
             fontWeight: 500,
@@ -805,12 +806,12 @@ export function SyncUnlockPanel({
                 width: "100%",
                 padding: "9px 12px",
                 borderRadius: 9,
-                border: "0.5px solid rgba(28,49,68,0.15)",
+                border: `0.5px solid ${token("line")}`,
                 background: PAPER,
                 fontSize: 13,
                 color: INK,
                 outline: "none",
-                boxShadow: "inset 0 1px 3px rgba(28,49,68,0.06)",
+                boxShadow: `inset 0 1px 3px ${v2Mix(INK, 0.06)}`,
               }}
             />
             <input
@@ -824,12 +825,12 @@ export function SyncUnlockPanel({
                 width: "100%",
                 padding: "9px 12px",
                 borderRadius: 9,
-                border: "0.5px solid rgba(28,49,68,0.15)",
+                border: `0.5px solid ${token("line")}`,
                 background: PAPER,
                 fontSize: 13,
                 color: INK,
                 outline: "none",
-                boxShadow: "inset 0 1px 3px rgba(28,49,68,0.06)",
+                boxShadow: `inset 0 1px 3px ${v2Mix(INK, 0.06)}`,
               }}
             />
             <button
@@ -840,7 +841,7 @@ export function SyncUnlockPanel({
                 padding: "9px 16px",
                 borderRadius: 9,
                 border: "none",
-                background: createStatus === "creating" ? "rgba(28,49,68,0.12)" : INK,
+                background: createStatus === "creating" ? v2Mix(INK, 0.12) : INK,
                 color: createStatus === "creating" ? SUBTLE : PAPER,
                 fontSize: 13,
                 fontWeight: 600,
@@ -913,12 +914,12 @@ export function SyncUnlockPanel({
                 width: "100%",
                 padding: "9px 12px",
                 borderRadius: 9,
-                border: "0.5px solid rgba(28,49,68,0.15)",
+                border: `0.5px solid ${token("line")}`,
                 background: PAPER,
                 fontSize: 13,
                 color: INK,
                 outline: "none",
-                boxShadow: "inset 0 1px 3px rgba(28,49,68,0.06)",
+                boxShadow: `inset 0 1px 3px ${v2Mix(INK, 0.06)}`,
               }}
             />
           </div>
@@ -929,7 +930,7 @@ export function SyncUnlockPanel({
               padding: "9px 16px",
               borderRadius: 9,
               border: "none",
-              background: isBusy || passphrase.length === 0 ? "rgba(28,49,68,0.12)" : INK,
+              background: isBusy || passphrase.length === 0 ? v2Mix(INK, 0.12) : INK,
               color: isBusy || passphrase.length === 0 ? SUBTLE : PAPER,
               fontSize: 13,
               fontWeight: 600,
@@ -941,7 +942,7 @@ export function SyncUnlockPanel({
               boxShadow:
                 isBusy || passphrase.length === 0
                   ? "none"
-                  : "0 3px 10px rgba(28,49,68,0.18), inset 0 0.5px 0 rgba(255,255,255,0.18)",
+                  : `0 3px 10px ${v2Mix(INK, 0.18)}, inset 0 0.5px 0 ${v2Mix(INK, 0.1)}`,
               transition: "background .15s",
             }}
           >

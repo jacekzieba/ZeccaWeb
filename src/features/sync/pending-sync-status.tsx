@@ -2,7 +2,8 @@
 
 import { token } from "@/design/tokens";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import { COLORS, SHADOWS } from "@/lib/design-tokens";
+import { COLORS } from "@/lib/design-tokens";
+import { V2, v2Mix } from "@/lib/v2-design";
 import {
   forcePendingSyncOperation,
   getPendingSyncOperations,
@@ -22,9 +23,9 @@ const panelStyle: CSSProperties = {
   width: 380,
   maxWidth: "calc(100vw - 24px)",
   borderRadius: 14,
-  background: "rgba(255,253,249,0.98)",
+  background: COLORS.surface,
   border: `0.5px solid ${COLORS.border}`,
-  boxShadow: SHADOWS.cardStrong,
+  boxShadow: `0 14px 36px ${v2Mix(V2.ink, 0.2)}`,
   padding: 12,
   zIndex: 120,
 };

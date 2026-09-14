@@ -213,8 +213,8 @@ export function AllocationEditorModal({
           background: PAPER,
           borderRadius: 18,
           boxShadow:
-            "0 24px 64px rgba(22,29,24,0.22), inset 0 0.5px 0 rgba(255,255,255,0.8)",
-          border: "0.5px solid rgba(255,255,255,0.7)",
+            `0 24px 64px ${v2Mix(V2.ink, 0.22)}, inset 0 0.5px 0 ${v2Mix(V2.ink, 0.08)}`,
+          border: `0.5px solid ${V2.line}`,
           fontFamily: V2_TYPE.ui,
         }}
       >
