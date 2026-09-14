@@ -218,7 +218,7 @@ export function FaqContent() {
           <h2 style={{ fontSize: 26, fontWeight: 700, color: COLORS.text, marginBottom: 8 }}>
             Jak czytać wyniki w Zecca?
           </h2>
-          <p style={{ fontSize: 15, lineHeight: 1.6, color: COLORS.textMuted }}>
+          <p style={{ fontSize: 15, lineHeight: 1.6, color: COLORS.text }}>
             Same złotówki nie wystarczą do oceny portfela. Zecca rozdziela przepływy gotówki, wynik inwestycyjny, inflację i ryzyko, żeby duża dopłata nie wyglądała jak zysk, a nominalny wzrost nie ukrywał utraty siły nabywczej.
           </p>
         </div>
@@ -332,7 +332,10 @@ export function FaqContent() {
             >
               {faq.question}
             </h3>
-            <div style={{ fontSize: 15, lineHeight: 1.6, color: COLORS.textMuted }}>
+            {/* To jest treść do przeczytania od początku do końca, nie metadana —
+                textMuted (choć przechodzi kontrast) czytał się jak drugorzędny
+                komentarz, nie jak odpowiedź. */}
+            <div style={{ fontSize: 15, lineHeight: 1.6, color: COLORS.text }}>
               {Array.isArray(faq.answer) ? (
                 <ul style={{ paddingLeft: 20 }}>
                   {faq.answer.map((line, i) => (
