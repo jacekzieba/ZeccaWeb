@@ -89,12 +89,13 @@ export function StaticValueChart({
   // rysunek (obie osie równo) w dół do niższego pudełka i centruje go w
   // poziomie, zostawiając puste pasy po bokach zamiast wypełniać kartę.
   const chartHeight = compact ? 132 : 184;
-  // Wariant compact (hero) nie rezerwuje osobnej kolumny na etykiety osi —
-  // stoją nad siatką, wewnątrz wykresu (patrz yTicks niżej) — więc margines
-  // to już tylko oddech przy krawędzi, taki sam po obu stronach. Bez tego
-  // wykres wyglądał węziej niż karta wokół niego: liczba i przycisk MAX
-  // sięgały krawędzi, linia zostawała w środku z pustym pasem po bokach.
-  const pl = compact ? 6 : 46;
+  // Compact dostaje węższą, ale realną kolumnę na etykiety osi Y (34px, nie
+  // 46 jak pełny wariant — mniejszy font na to pozwala) zamiast stawiać je
+  // na samej linii: przy inline etykiety leżały dokładnie tam, gdzie
+  // zaczynała się linia wartości, więc nachodziła na nie niezależnie od
+  // podkładu. pr zostaje minimalne, żeby prawa krawędź nadal kończyła się
+  // przy "MAX" — asymetria jest tu celowa, nie błędem sprzed naprawy.
+  const pl = compact ? 34 : 46;
   const pr = compact ? 6 : 10;
   const pt = 14;
   const pb = 26;
@@ -205,25 +206,14 @@ export function StaticValueChart({
           </text>
         ))}
         {yTicks.map((tick) => (
-          <line key={`grid-${tick}`} x1={pl} x2={pl + innerWidth} y1={y(tick)} y2={y(tick)} />
+          <g key={tick}>
+            <line x1={pl} x2={pl + innerWidth} y1={y(tick)} y2={y(tick)} />
+            <text x={pl - (compact ? 6 : 9)} y={y(tick) + 3.5} textAnchor="end">{compactAxis(tick, compact)}</text>
+          </g>
         ))}
         <path className="value-area" fill="url(#landing-vvd-fill)" d={`M${pl},${pt + innerHeight} L${valuePoints} L${pl + innerWidth},${pt + innerHeight} Z`} />
         <polyline className="deposit-line" pathLength="1" points={depositPoints} />
         <polyline className="value-line" pathLength="1" points={valuePoints} />
-        {/* Etykiety osi Y rysowane NA KOŃCU, po liniach danych — inaczej linia
-            wartości (rysowana wcześniej w dokumencie) przykrywała compactowe
-            etykiety wewnątrz wykresu, mimo że miały własny podkład. */}
-        {yTicks.map((tick) => {
-          const label = compactAxis(tick, compact);
-          return compact ? (
-            <g key={`label-${tick}`}>
-              <rect x={pl} y={y(tick) - 13} width={label.length * 5 + 6} height={11} rx={2} className="y-axis-inline-bg" />
-              <text x={pl + 3} y={y(tick) - 5} textAnchor="start" className="y-axis-inline">{label}</text>
-            </g>
-          ) : (
-            <text key={`label-${tick}`} x={pl - 9} y={y(tick) + 3.5} textAnchor="end">{label}</text>
-          );
-        })}
       </svg>
     </div>
   );
