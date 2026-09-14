@@ -648,7 +648,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
           style={{
             border: `0.5px solid ${PD_THEME.line}`,
             borderRadius: "var(--r-xl)",
-            background: showCustomize ? "rgba(52,105,154,0.10)" : token("surface"),
+            background: showCustomize ? v2Mix(PD_THEME.brand, 0.10) : token("surface"),
             color: showCustomize ? PD_THEME.brand : INK,
             cursor: "pointer",
             fontFamily: TYPOGRAPHY.system,

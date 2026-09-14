@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { COLORS, SHADOWS, TYPOGRAPHY } from "@/lib/design-tokens";
+import { COLORS, TYPOGRAPHY } from "@/lib/design-tokens";
+import { v2Mix } from "@/lib/v2-design";
 import { formatAxisValue } from "@/lib/money";
 
 type Point = { label: string; value: number };
@@ -179,7 +180,7 @@ export function AreaChart({
             fontSize: 11,
             pointerEvents: "none",
             border: `0.5px solid ${COLORS.border}`,
-            boxShadow: SHADOWS.tooltip,
+            boxShadow: `0 8px 22px ${v2Mix(COLORS.text, 0.22)}`,
             minWidth: 110,
           }}
         >

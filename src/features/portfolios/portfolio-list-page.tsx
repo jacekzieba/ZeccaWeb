@@ -414,8 +414,8 @@ export function PortfolioListPage() {
                   style={{
                     padding: "6px 10px",
                     borderRadius: "var(--r-lg)",
-                    border: "0.5px solid rgba(184,80,66,0.18)",
-                    background: deletingId === pf.id ? "rgba(184,80,66,0.08)" : "transparent",
+                    border: `0.5px solid ${v2Mix(LOSS, 0.18)}`,
+                    background: deletingId === pf.id ? v2Mix(LOSS, 0.08) : "transparent",
                     color: deletingId === pf.id ? LOSS : AMBER,
                     fontSize: 12,
                     cursor: !userDataKey || deletingId === pf.id ? "not-allowed" : "pointer",

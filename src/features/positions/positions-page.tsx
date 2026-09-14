@@ -118,7 +118,7 @@ function TransactionSheet({
     <div
       style={{
         position: "fixed", inset: 0, zIndex: 600,
-        background: "rgba(22,29,24,0.44)", display: "flex", alignItems: "flex-end", justifyContent: "center",
+        background: v2Mix(V2.page, 0.44), display: "flex", alignItems: "flex-end", justifyContent: "center",
       }}
       onClick={onClose}
     >
@@ -130,7 +130,7 @@ function TransactionSheet({
         style={{
           background: V2.card, borderRadius: "var(--r-xl) var(--r-xl) 0 0", width: "100%", maxWidth: 720,
           maxHeight: "80vh", overflow: "auto",
-          boxShadow: "0 -8px 48px rgba(22,29,24,0.18)",
+          boxShadow: `0 -8px 48px ${v2Mix(V2.ink, 0.18)}`,
         }}
         onClick={(e) => e.stopPropagation()}
       >

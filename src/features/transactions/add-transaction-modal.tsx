@@ -158,13 +158,13 @@ const inputStyle: CSSProperties = {
   paddingBottom: 9,
   paddingLeft: 12,
   borderRadius: "var(--r-lg)",
-  border: "0.5px solid rgba(22,29,24,0.14)",
+  border: `0.5px solid ${V2.line}`,
   background: PAPER,
   fontSize: 13,
   color: INK,
   fontFamily: "inherit",
   boxSizing: "border-box",
-  boxShadow: "inset 0 1px 3px rgba(22,29,24,0.05)",
+  boxShadow: `inset 0 1px 3px ${v2Mix(INK, 0.05)}`,
 };
 
 const selectStyle: CSSProperties = {
@@ -1093,7 +1093,7 @@ export function AddTransactionModal({
         style={{
           position: "absolute",
           inset: 0,
-          background: "rgba(22,29,24,0.45)",
+          background: v2Mix(PAPER, 0.45),
           backdropFilter: "blur(8px)",
           WebkitBackdropFilter: "blur(8px)",
         }}
@@ -1245,7 +1245,7 @@ export function AddTransactionModal({
                 height: 30,
                 borderRadius: "50%",
                 border: "none",
-                background: "rgba(22,29,24,0.10)",
+                background: v2Mix(INK, 0.10),
                 color: MUTED,
                 cursor: "pointer",
                 display: "flex",
@@ -1527,7 +1527,7 @@ export function AddTransactionModal({
                             cursor: "pointer",
                             color: selected ? INK : MUTED,
                             background: selected ? PAPER : "transparent",
-                            boxShadow: selected ? "0 1px 3px rgba(22,29,24,0.12)" : "none",
+                            boxShadow: selected ? `0 1px 3px ${v2Mix(INK, 0.12)}` : "none",
                           }}
                         >
                           {option.label}
@@ -1705,7 +1705,7 @@ export function AddTransactionModal({
                     padding: "0 21px",
                     borderRadius: "var(--r-pill)",
                     border: "none",
-                    background: saving || !userDataKey ? "rgba(22,29,24,0.12)" : txDef.tone,
+                    background: saving || !userDataKey ? v2Mix(INK, 0.12) : txDef.tone,
                     color: saving || !userDataKey ? SUBTLE : "#fff",
                     fontSize: 13,
                     fontWeight: 700,

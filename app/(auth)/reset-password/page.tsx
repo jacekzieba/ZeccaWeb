@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { ResetPasswordForm } from "@/features/auth/reset-password-form";
-import { COLORS, SHADOWS, SURFACES } from "@/lib/design-tokens";
+import { COLORS, SURFACES } from "@/lib/design-tokens";
 
 export default function ResetPasswordPage() {
   return (
@@ -19,7 +19,6 @@ export default function ResetPasswordPage() {
           maxWidth: 420,
           ...SURFACES.glassPanel,
           borderRadius: "var(--r-xl)",
-          boxShadow: SHADOWS.cardStrong,
           padding: "36px 32px",
         }}
       >
@@ -38,7 +37,6 @@ export default function ResetPasswordPage() {
                 justifyContent: "center",
                 fontSize: 15,
                 fontWeight: 700,
-                boxShadow: SHADOWS.button,
               }}
             >
               <Image

@@ -1011,7 +1011,7 @@ export function InstrumentsPage() {
                     flexWrap: "wrap",
                     padding: "12px 22px 14px 66px",
                     borderTop: `0.5px solid ${LINE_SOFT}`,
-                    background: "rgba(45,156,107,0.045)",
+                    background: v2Mix(PROFIT, 0.045),
                   }}
                 >
                   <div>

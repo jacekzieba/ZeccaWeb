@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { COLORS, SHADOWS, TYPOGRAPHY } from "@/lib/design-tokens";
+import { COLORS, TYPOGRAPHY } from "@/lib/design-tokens";
+import { v2Mix } from "@/lib/v2-design";
 import { formatAxisValue, currencyLabel } from "@/lib/money";
 import type { ValuationPoint } from "@/domain/models/investor-data";
 
@@ -113,7 +114,7 @@ export function ValueVsDepositsChart({
           <Legend color={DEPOSIT_COLOR} label="Wpłaty (skumulowane)" dashed />
         </div>
         {showPeriodControl && (
-          <div role="radiogroup" aria-label="Zakres wykresu wartość vs wpłaty" style={{ display: "inline-flex", background: "rgba(22,29,24,0.06)", borderRadius: "var(--r-xl)", padding: 3 }}>
+          <div role="radiogroup" aria-label="Zakres wykresu wartość vs wpłaty" style={{ display: "inline-flex", background: v2Mix(COLORS.text, 0.06), borderRadius: "var(--r-xl)", padding: 3 }}>
             {PERIOD_OPTIONS.map((option) => (
               <button
                 key={option}
@@ -225,7 +226,7 @@ export function ValueVsDepositsChart({
             fontSize: 11,
             pointerEvents: "none",
             border: `0.5px solid ${COLORS.border}`,
-            boxShadow: SHADOWS.tooltip,
+            boxShadow: `0 8px 22px ${v2Mix(COLORS.text, 0.22)}`,
             minWidth: 138,
           }}
         >

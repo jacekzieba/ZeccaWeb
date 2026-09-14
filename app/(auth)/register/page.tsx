@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { SignupForm } from "@/features/auth/signup-form";
-import { COLORS, SHADOWS, SURFACES } from "@/lib/design-tokens";
+import { COLORS, SURFACES } from "@/lib/design-tokens";
 
 export default function RegisterPage() {
   return (
@@ -20,7 +20,6 @@ export default function RegisterPage() {
           maxWidth: 420,
           ...SURFACES.glassPanel,
           borderRadius: "var(--r-xl)",
-          boxShadow: SHADOWS.cardStrong,
           padding: "36px 32px",
         }}
       >
@@ -39,7 +38,6 @@ export default function RegisterPage() {
                 justifyContent: "center",
                 fontSize: 15,
                 fontWeight: 700,
-                boxShadow: SHADOWS.button,
               }}
             >
               <Image

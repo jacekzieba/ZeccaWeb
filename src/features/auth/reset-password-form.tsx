@@ -2,7 +2,8 @@
 
 import { useEffect, useId, useState } from "react";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
-import { COLORS, SHADOWS } from "@/lib/design-tokens";
+import { COLORS } from "@/lib/design-tokens";
+import { v2Mix } from "@/lib/v2-design";
 
 type Status = "checking" | "idle" | "loading" | "error" | "no-session" | "done";
 
@@ -73,7 +74,7 @@ export function ResetPasswordForm() {
     fontSize: 13,
     color: COLORS.text,
     outline: "none",
-    boxShadow: "inset 0 1px 2px rgba(28,49,68,0.04)",
+    boxShadow: `inset 0 1px 2px ${v2Mix(COLORS.text, 0.04)}`,
     fontFamily: "inherit",
   };
 
@@ -201,7 +202,7 @@ export function ResetPasswordForm() {
           fontSize: 13,
           fontWeight: 600,
           cursor: isLoading ? "not-allowed" : "pointer",
-          boxShadow: isLoading ? "none" : SHADOWS.button,
+          boxShadow: isLoading ? "none" : `0 3px 10px ${v2Mix(COLORS.text, 0.22)}, inset 0 0.5px 0 ${v2Mix(COLORS.text, 0.1)}`,
           transition: "background .15s",
           fontFamily: "inherit",
         }}

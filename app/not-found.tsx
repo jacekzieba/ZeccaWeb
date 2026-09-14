@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { COLORS, SHADOWS, SURFACES } from "@/lib/design-tokens";
+import { COLORS, SURFACES } from "@/lib/design-tokens";
+import { v2Mix } from "@/lib/v2-design";
 
 export default function NotFound() {
   return (
@@ -18,7 +19,6 @@ export default function NotFound() {
           maxWidth: 420,
           ...SURFACES.glassPanel,
           borderRadius: "var(--r-xl)",
-          boxShadow: SHADOWS.cardStrong,
           padding: "36px 32px",
           textAlign: "center",
         }}
@@ -53,7 +53,7 @@ export default function NotFound() {
             fontSize: 13,
             fontWeight: 600,
             textDecoration: "none",
-            boxShadow: SHADOWS.button,
+            boxShadow: `0 3px 10px ${v2Mix(COLORS.text, 0.22)}, inset 0 0.5px 0 ${v2Mix(COLORS.text, 0.1)}`,
           }}
         >
           Wróć na stronę główną

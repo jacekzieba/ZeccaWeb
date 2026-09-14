@@ -1,5 +1,5 @@
 import { Laptop, LockKeyhole, Smartphone, Tablet } from "lucide-react";
-import { V2, V2_TYPE } from "@/lib/v2-design";
+import { V2, V2_TYPE, v2Mix } from "@/lib/v2-design";
 
 type IntroVisual = "portfolio" | "privacy";
 
@@ -26,7 +26,7 @@ function PortfolioVisual() {
             <div style={{ fontSize: 10, fontWeight: 700, color: V2.subtle, letterSpacing: ".11em", textTransform: "uppercase" }}>Twój portfel</div>
             <div style={{ fontSize: 18, fontWeight: 650, letterSpacing: "-.04em", marginTop: 4 }}>248 920 zł</div>
           </div>
-          <div style={{ color: V2.profit, background: "rgba(35,129,79,.12)", borderRadius: "var(--r-pill)", padding: "5px 8px", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap" }}>
+          <div style={{ color: V2.profit, background: v2Mix(V2.profit, 0.12), borderRadius: "var(--r-pill)", padding: "5px 8px", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap" }}>
             +12,4%
           </div>
         </div>

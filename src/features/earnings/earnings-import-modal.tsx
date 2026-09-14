@@ -118,7 +118,7 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
         type="button"
         aria-label="Zamknij import zarobków"
         onClick={onClose}
-        style={{ position: "absolute", inset: 0, border: "none", background: "rgba(12,16,13,0.36)" }}
+        style={{ position: "absolute", inset: 0, border: "none", background: v2Mix(V2.page, 0.36) }}
       />
       <div
         role="dialog"

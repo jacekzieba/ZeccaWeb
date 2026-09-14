@@ -1,4 +1,4 @@
-import { V2, V2_TYPE } from "@/lib/v2-design";
+import { V2, V2_TYPE, v2Mix } from "@/lib/v2-design";
 import { OnboardingVisual } from "./onboarding-visual";
 
 /** Full-screen dimmed modal card used by the onboarding intro and finale. */
@@ -26,7 +26,7 @@ export function OnboardingCard({
       aria-label={title}
       style={{
         position: "fixed", inset: 0, zIndex: 900,
-        background: "rgba(20,26,21,.52)",
+        background: v2Mix(V2.page, 0.52),
         display: "flex", alignItems: "center", justifyContent: "center",
         padding: 16,
       }}
@@ -36,7 +36,7 @@ export function OnboardingCard({
           width: "min(620px, 100%)", maxHeight: "92vh", overflowY: "auto",
           background: V2.card, borderRadius: "var(--r-xl)",
           border: `0.5px solid ${V2.line}`,
-          boxShadow: "0 18px 60px rgba(20,26,21,.35)",
+          boxShadow: `0 18px 60px ${v2Mix(V2.ink, 0.35)}`,
           padding: "34px 38px", textAlign: "center",
           fontFamily: V2_TYPE.ui, color: V2.ink,
         }}

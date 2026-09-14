@@ -551,7 +551,7 @@ function V2Area({ data, height = 240 }: { data: ValuationPoint[]; height?: numbe
             padding: "7px 11px",
             borderRadius: "var(--r-lg)",
             pointerEvents: "none",
-            boxShadow: "0 8px 22px rgba(0,0,0,.22)",
+            boxShadow: `0 8px 22px ${v2Mix(PALETTE.ink, 0.22)}`,
             minWidth: 116,
           }}
         >

@@ -607,7 +607,7 @@ function ProfileCard({
             style={{
               position: "absolute", bottom: 0, left: 0, right: 0,
               fontFamily: V2_TYPE.ui, fontSize: 10, fontWeight: 700, letterSpacing: ".04em",
-              color: "#fff", background: v2Mix(V2.ink, 0.55), padding: "2px 0",
+              color: "#fff", background: v2Mix(V2.page, 0.55), padding: "2px 0",
               textTransform: "uppercase",
             }}
           >

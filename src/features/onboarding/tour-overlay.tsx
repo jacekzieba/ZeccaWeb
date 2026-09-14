@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { V2, V2_TYPE } from "@/lib/v2-design";
+import { V2, V2_TYPE, v2Mix } from "@/lib/v2-design";
 import { nextPresentStep, type TourStep } from "./steps";
 
-const DIM = "rgba(20,26,21,.52)";
+const DIM = v2Mix(V2.page, 0.52);
 const ANCHOR_TIMEOUT_MS = 2000;
 const ANCHOR_POLL_MS = 50;
 const SPOT_PAD = 6;
@@ -307,7 +307,7 @@ export function TourOverlay({
           background: V2.card,
           borderRadius: "var(--r-xl)",
           border: `0.5px solid ${V2.line}`,
-          boxShadow: "0 12px 40px rgba(30,26,22,.28)",
+          boxShadow: `0 12px 40px ${v2Mix(V2.ink, 0.28)}`,
           padding: "18px 20px",
           fontFamily: V2_TYPE.ui,
           color: V2.ink,

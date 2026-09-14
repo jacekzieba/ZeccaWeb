@@ -199,7 +199,7 @@ export function AllocationEditorModal({
         style={{
           position: "absolute",
           inset: 0,
-          background: "rgba(22,29,24,0.45)",
+          background: v2Mix(PAPER, 0.45),
           backdropFilter: "blur(8px)",
           WebkitBackdropFilter: "blur(8px)",
         }}
