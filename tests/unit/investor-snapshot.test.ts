@@ -760,6 +760,76 @@ describe("InvestorDataSnapshot mapper", () => {
     expect(snapshot.metrics.maxDrawdownPct).toBeCloseTo(-10, 5);
   });
 
+  it("samples a trailing XIRR history ending at today's xirrPct", () => {
+    const records = [
+      record("account", accountID, {
+        recordType: "account",
+        id: accountID,
+        name: "Core",
+        baseCurrency: "PLN",
+      }),
+      record("asset", instrumentID, {
+        recordType: "asset",
+        id: instrumentID,
+        kind: "etf",
+        symbol: "ETF",
+        name: "ETF",
+        currency: "PLN",
+      }),
+      record("transaction", "33333333-3333-4333-8333-333333333333", {
+        recordType: "transaction",
+        id: "33333333-3333-4333-8333-333333333333",
+        date: "2026-01-01T10:00:00.000Z",
+        portfolioID: accountID,
+        transactionType: "cashDeposit",
+        grossAmount: 10_000,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+      record("transaction", "44444444-4444-4444-8444-444444444444", {
+        recordType: "transaction",
+        id: "44444444-4444-4444-8444-444444444444",
+        date: "2026-01-01T10:00:00.000Z",
+        portfolioID: accountID,
+        instrumentID,
+        transactionType: "buy",
+        quantity: 100,
+        price: 100,
+        grossAmount: 10_000,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      }),
+      record("manualValuation", "55555555-5555-4555-8555-555555555555", {
+        recordType: "manualValuation",
+        id: "55555555-5555-4555-8555-555555555555",
+        instrumentID,
+        date: "2026-06-15T10:00:00.000Z",
+        value: 130,
+        currency: "PLN",
+      }),
+    ];
+
+    const snapshot = buildInvestorDataSnapshot(records, {
+      asOf: new Date("2026-07-01T10:00:00.000Z"),
+      historyGranularity: "daily",
+    });
+
+    // Same definition as xirrPct, resampled across the available history — the
+    // most recent sample must land on the same value as the headline metric,
+    // otherwise the sparkline would visibly disagree with the number above it.
+    expect(snapshot.metrics.xirrHistory.length).toBeGreaterThan(1);
+    expect(snapshot.metrics.xirrHistory.length).toBeLessThanOrEqual(12);
+    for (const point of snapshot.metrics.xirrHistory) {
+      expect(Number.isFinite(point)).toBe(true);
+    }
+    expect(snapshot.metrics.xirrHistory.at(-1)).toBeCloseTo(
+      snapshot.metrics.xirrPct!,
+      5,
+    );
+  });
+
   it("treats an inter-account cash transfer as a flow, not performance", () => {
     const records = [
       record("account", accountID, {

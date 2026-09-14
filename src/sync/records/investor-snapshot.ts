@@ -400,6 +400,7 @@ export function buildInvestorDataSnapshot(
     asOf,
     totalValue,
     performanceSeries,
+    valuationSeries,
     baseToPln,
     openPositionStats,
   );
@@ -814,26 +815,23 @@ function buildNetInvestedSeries(
   });
 }
 
-function buildMetrics(
-  accounts: AccountPayload[],
+/** External-flow cashflows for XIRR, as of an arbitrary date — shared by the
+ * point-in-time xirrPct and the resampled xirrHistory below, so the two
+ * can never drift apart on what counts as a flow. */
+function buildXirrCashflows(
+  accountIds: Set<string>,
   dataset: ParsedDataset,
   asOf: Date,
-  totalValue: number,
-  performanceSeries: InvestorDataSnapshot["performanceSeries"],
+  terminalValue: number,
   baseToPln: BaseToPln,
-  openPositionStats: { unrealizedPnl: number; unrealizedPnlPct: number },
-): PortfolioMetrics {
-  const accountIds = new Set(accounts.map((account) => account.id));
+): CashflowPoint[] {
   const cashflows: CashflowPoint[] = [];
-  let netInvested = 0;
-
   for (const transaction of dataset.transactions) {
     if (!accountIds.has(transaction.portfolioID)) continue;
     if (toDate(transaction.date).getTime() > asOf.getTime()) continue;
     const date = toDate(transaction.date);
-    // Convert each flow at its own date so XIRR and net-invested are stated in
-    // the display currency consistently with the (already converted) terminal
-    // value below.
+    // Convert each flow at its own date so XIRR is stated in the display
+    // currency consistently with the (already converted) terminal value.
     const rate = baseToPln(date);
     // XIRR must neutralise every external flow, including internal account
     // transfers, so it uses the broad external-flow definition.
@@ -841,6 +839,66 @@ function buildMetrics(
     if (external != null) {
       cashflows.push({ date, amount: external / rate });
     }
+  }
+  if (terminalValue > EPSILON) {
+    cashflows.push({ date: asOf, amount: terminalValue });
+  }
+  return cashflows;
+}
+
+/** Trailing xirrPct, resampled at up to `points` dates spread across the
+ * available valuation history (most recent last). Recomputes XIRR at each
+ * sampled date using only the flows that had happened by then — same
+ * definition as xirrPct, just sampled monthly-ish instead of once. Feeds the
+ * KPI sparkline only; not a metric shown on its own.
+ *
+ * Takes valuationSeries (real money), NOT performanceSeries — the latter is
+ * a time-weighted return INDEX (growth of 100), and feeding an index value
+ * into XIRR as if it were a terminal portfolio value produces nonsense. */
+function buildXirrHistory(
+  accountIds: Set<string>,
+  dataset: ParsedDataset,
+  valuationSeries: InvestorDataSnapshot["valuationSeries"],
+  baseToPln: BaseToPln,
+  points = 12,
+): number[] {
+  if (valuationSeries.length < 2) return [];
+
+  const step = Math.max(1, Math.floor((valuationSeries.length - 1) / (points - 1)));
+  const indexes: number[] = [];
+  for (let i = valuationSeries.length - 1; i >= 0 && indexes.length < points; i -= step) {
+    indexes.push(i);
+  }
+  const sampled = indexes.sort((a, b) => a - b).map((i) => valuationSeries[i]);
+
+  return sampled
+    .map((point) => {
+      const asOf = toDate(point.date);
+      const cashflows = buildXirrCashflows(accountIds, dataset, asOf, point.value, baseToPln);
+      return computeXirr(cashflows);
+    })
+    .filter((rate): rate is number => rate != null)
+    .map((rate) => rate * 100);
+}
+
+function buildMetrics(
+  accounts: AccountPayload[],
+  dataset: ParsedDataset,
+  asOf: Date,
+  totalValue: number,
+  performanceSeries: InvestorDataSnapshot["performanceSeries"],
+  valuationSeries: InvestorDataSnapshot["valuationSeries"],
+  baseToPln: BaseToPln,
+  openPositionStats: { unrealizedPnl: number; unrealizedPnlPct: number },
+): PortfolioMetrics {
+  const accountIds = new Set(accounts.map((account) => account.id));
+  let netInvested = 0;
+
+  for (const transaction of dataset.transactions) {
+    if (!accountIds.has(transaction.portfolioID)) continue;
+    if (toDate(transaction.date).getTime() > asOf.getTime()) continue;
+    const date = toDate(transaction.date);
+    const rate = baseToPln(date);
     // Net-invested counts only genuine contributions: an unflagged account
     // transfer is an internal move, not fresh capital (parity with native).
     const contribution = contributionBaseAmount(transaction);
@@ -849,11 +907,19 @@ function buildMetrics(
     }
   }
 
-  if (totalValue > EPSILON) {
-    cashflows.push({ date: asOf, amount: totalValue });
-  }
-
+  const cashflows = buildXirrCashflows(accountIds, dataset, asOf, totalValue, baseToPln);
   const xirr = computeXirr(cashflows);
+  // The sampled series' own last point lands near `asOf` but not exactly on
+  // it (valuationSeries's last entry vs. the precise totalValue/asOf pair
+  // above can differ by a rounding tick), so it drifts a hair from `xirr`.
+  // The sparkline's endpoint must read as the *same* number as the headline
+  // above it, not an approximation of it — overwrite the last sample with
+  // the authoritative value instead of trusting the resample to land on it.
+  const xirrHistorySamples = buildXirrHistory(accountIds, dataset, valuationSeries, baseToPln);
+  const xirrHistory =
+    xirr != null && xirrHistorySamples.length > 0
+      ? [...xirrHistorySamples.slice(0, -1), xirr * 100]
+      : xirrHistorySamples;
   const inflationPct = getInflationPct(dataset, asOf);
   const totalReturnPct = computePerformanceReturnPct(performanceSeries);
   const cagrPct = computeCagrPct(performanceSeries);
@@ -876,6 +942,7 @@ function buildMetrics(
     cagrPct,
     realReturnPct,
     xirrPct: xirr == null ? null : xirr * 100,
+    xirrHistory,
     maxDrawdownPct,
     realizedPnl,
     inflationPct,
@@ -2175,6 +2242,7 @@ export function buildPortfolioDetail(
     asOf,
     totalValue,
     performanceSeries,
+    valuationSeries,
     baseToPln,
     buildOpenPositionStats([account], dataset, asOf, baseToPln, precomputed),
   );

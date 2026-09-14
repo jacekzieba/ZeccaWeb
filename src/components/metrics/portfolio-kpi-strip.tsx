@@ -63,6 +63,8 @@ export type KpiTile = {
   helpHref?: string;
   /** Jeden wyróżniony wskaźnik na rejestr — patrz komentarz w getKpiTiles. */
   featured?: boolean;
+  /** Ślad wartości w czasie, tylko dla kafelka featured — patrz getKpiTiles. */
+  sparkline?: number[];
 };
 
 export type PortfolioKpiInput = {
@@ -86,9 +88,13 @@ export function getKpiTiles(input: PortfolioKpiInput): KpiTile[] {
   // i wyróżniony (featured); reszta przechodzi na neutralny ink, znak +/-
   // w tekście nadal mówi, w którą stronę. Obsunięcie zostaje czerwone celowo:
   // to sygnał ryzyka, nie rutynowy wynik, warto żeby się wybijał.
+  //
+  // Wyróżnienie samo nie jest ramką ani nowym kolorem (to była droga
+  // najmniejszego oporu) — większa liczba (co jest ważne) plus ślad XIRR
+  // z ostatnich 12 próbek w tle (dlaczego) niosą hierarchię razem.
   const tiles: KpiTile[] = [
     { id: "kpiUnrealized", label: "Zysk niezrealizowany", value: `${fmtSigned(metrics.unrealizedPnl)} ${currencyLabel(currency)}`, sub: `${fmtPct(metrics.unrealizedPnlPct)} od zakupu`, color: V2.ink },
-    { id: "kpiXirr", label: "MWR · XIRR", value: xirr == null ? "—" : fmtPct(xirr), sub: "rocznie", color: (xirr ?? 0) >= 0 ? V2.profit : V2.loss, featured: true },
+    { id: "kpiXirr", label: "MWR · XIRR", value: xirr == null ? "—" : fmtPct(xirr), sub: "rocznie", color: (xirr ?? 0) >= 0 ? V2.profit : V2.loss, featured: true, sparkline: metrics.xirrHistory },
     { id: "kpiTwr", label: "Zwrot (TWR)", value: fmtPct(metrics.totalReturnPct), sub: "bez wpłat", color: V2.ink },
     { id: "kpiCagr", label: "CAGR", value: fmtPct(metrics.cagrPct), sub: "rocznie, TWR", color: V2.ink },
     { id: "kpiRealReturn", label: "Wynik realny", value: fmtPct(metrics.realReturnPct), sub: "rocznie, po inflacji", color: V2.ink },
@@ -141,6 +147,7 @@ export function KpiRegister({ tiles }: { tiles: KpiTile[] }) {
         sub: tile.sub,
         helpHref: tile.helpHref,
         featured: tile.featured,
+        sparkline: tile.sparkline,
       }))}
     />
   );

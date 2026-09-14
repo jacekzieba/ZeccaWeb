@@ -25,10 +25,51 @@ export type MetricRow = {
   /** Odnośnik do wyjaśnienia wskaźnika. */
   helpHref?: string;
   trailing?: ReactNode;
-  /** Jeden wyróżniony kafelek w rejestrze — większa wartość, akcentowana
-   * obwódka. Reszta neutralnieje, żeby było wiadomo, na co patrzeć najpierw. */
+  /** Jeden wyróżniony kafelek w rejestrze — większa wartość plus ślad w tle
+   * (patrz sparkline). Reszta neutralnieje, żeby było wiadomo, na co patrzeć
+   * najpierw — nie przez nową ramkę czy kolor, tylko przez rozmiar i treść. */
   featured?: boolean;
+  /** Ślad wartości w czasie pod liczbą kafelka featured — najstarsza wartość
+   * pierwsza. Ignorowany bez `featured` i przy mniej niż dwóch punktach. */
+  sparkline?: number[];
 };
+
+/** Punkty i obszar pod krzywą dla mini-wykresu w tle kafelka — ten sam
+ * viewBox 200×40 niezależnie od liczby próbek, żeby zawsze wypełniał
+ * dostępną szerokość (preserveAspectRatio="none" na <svg>). */
+function buildSparkline(values: number[]) {
+  const width = 200;
+  const height = 40;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const points = values.map((value, index) => ({
+    x: (index / (values.length - 1)) * width,
+    y: height - ((value - min) / range) * height,
+  }));
+  const line = points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+  const last = points[points.length - 1]!;
+  const area = `M${points[0]!.x.toFixed(1)},${height} L${line} L${last.x.toFixed(1)},${height} Z`;
+  return { line, area, last };
+}
+
+function MetricSparkline({ rowKey, values, color }: { rowKey: string; values: number[]; color: string }) {
+  const spark = buildSparkline(values);
+  const gradientId = `metric-spark-${rowKey}`;
+  return (
+    <svg className="metric-tile-spark" viewBox="0 0 200 40" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.32" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={spark.area} fill={`url(#${gradientId})`} />
+      <polyline points={spark.line} fill="none" stroke={color} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+      <circle cx={spark.last.x} cy={spark.last.y} r="2.5" fill={color} />
+    </svg>
+  );
+}
 
 export function MetricTiles({ rows }: { rows: MetricRow[] }) {
   if (!rows.length) return null;
@@ -69,6 +110,9 @@ export function MetricTiles({ rows }: { rows: MetricRow[] }) {
             >
               {row.value}
             </span>
+            {row.featured && row.sparkline && row.sparkline.length > 1 && (
+              <MetricSparkline rowKey={row.key} values={row.sparkline} color={row.color ?? "currentColor"} />
+            )}
             {sub ? <span className="metric-tile-sub">{sub}</span> : null}
           </article>
         );
