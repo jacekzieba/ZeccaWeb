@@ -70,8 +70,12 @@ async function fetchNbpRateForDate(code: string, date: string): Promise<number |
 }
 
 const INK = V2.ink;
-const MUTED = v2Mix(V2.ink, 0.58);
-const SUBTLE = v2Mix(V2.ink, 0.4);
+// Wcześniej v2Mix(V2.ink, 0.58/0.4) — własny, słabszy odpowiednik tokenów,
+// których używają siostrzane pliki (portfolio-editor-modal, sync-unlock-panel):
+// 3,4:1 zamiast 6+:1 kontrastu na etykietach pól. V2.muted/V2.subtle to
+// dokładnie token("inkMuted")/token("inkFaint"), już skalibrowane.
+const MUTED = V2.muted;
+const SUBTLE = V2.subtle;
 const LINE_SOFT = V2.line2;
 const LOSS = V2.loss;
 // Bursztyn akcentu, nie kolor obligacji. `V2.gold` był drugim aliasem tokenu
@@ -194,21 +198,30 @@ function Field({
   // w pojedyncze dziecko.
   const autoId = useId();
   const kandydat = isValidElement(children)
-    ? (children as ReactElement<{ id?: string }>)
+    ? (children as ReactElement<{ id?: string; required?: boolean }>)
     : null;
   const id = htmlFor ?? kandydat?.props.id ?? (kandydat ? autoId : undefined);
   const dziecko =
     !htmlFor && kandydat && !kandydat.props.id
       ? cloneElement(kandydat, { id })
       : children;
+  // Gwiazdka tylko gdy dziecko faktycznie ma required — pole samo mówi, czy
+  // jest wymagane, więc etykieta nigdy się z tym nie rozjedzie. Gwiazdka jest
+  // SIOSTRĄ etykiety, nie jej dzieckiem: w środku <label> zmieniałaby dostępną
+  // nazwę pola na "Portfel *" (getByLabelText("Portfel") przestawał trafiać),
+  // mimo aria-hidden — accname z tekstu etykiety liczy się z jej zawartości.
+  const required = kandydat?.props.required === true;
 
   return (
     <div>
-      {id ? (
-        <label htmlFor={id} style={labelStyle}>{label}</label>
-      ) : (
-        <span style={labelStyle}>{label}</span>
-      )}
+      <div style={{ display: "flex", alignItems: "baseline", gap: 3, marginBottom: 5 }}>
+        {id ? (
+          <label htmlFor={id} style={{ ...labelStyle, marginBottom: 0 }}>{label}</label>
+        ) : (
+          <span style={{ ...labelStyle, marginBottom: 0 }}>{label}</span>
+        )}
+        {required && <span aria-hidden="true" style={{ color: AMBER, fontSize: 10 }}>*</span>}
+      </div>
       {dziecko}
     </div>
   );
@@ -1706,7 +1719,10 @@ export function AddTransactionModal({
                     borderRadius: "var(--r-pill)",
                     border: "none",
                     background: saving || !userDataKey ? v2Mix(INK, 0.12) : txDef.tone,
-                    color: saving || !userDataKey ? SUBTLE : "#fff",
+                    // txDef.tone to paleta akcentów o średniej jasności (asset-*/up/down),
+                    // dobrana jako kolor ikon na ciemnym tle — na białym tekście dawała
+                    // 2,1–4,3:1 kontrastu (poniżej wymaganych 4,5:1), na ciemnym daje 4,9–10:1.
+                    color: saving || !userDataKey ? SUBTLE : PAPER,
                     fontSize: 13,
                     fontWeight: 700,
                     cursor: saving || !userDataKey ? "not-allowed" : "pointer",

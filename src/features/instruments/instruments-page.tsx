@@ -1031,7 +1031,7 @@ export function InstrumentsPage() {
                         borderRadius: "var(--r-lg)",
                         border: "none",
                         background: PROFIT,
-                        color: "#fff",
+                        color: V2.page,
                         fontSize: 12,
                         fontWeight: 700,
                         cursor: isSavingQuote ? "not-allowed" : "pointer",

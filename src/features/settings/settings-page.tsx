@@ -524,7 +524,7 @@ function DangerZone() {
               <button
                 onClick={() => void deleteAccount()}
                 disabled={deleting}
-                style={{ ...buttonBase, border: "none", background: V2.loss, color: "#fff", opacity: deleting ? 0.6 : 1 }}
+                style={{ ...buttonBase, border: "none", background: V2.loss, color: V2.page, opacity: deleting ? 0.6 : 1 }}
               >
                 {deleting ? "Usuwanie…" : "Usuń trwale"}
               </button>
