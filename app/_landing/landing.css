@@ -1067,9 +1067,10 @@
 .zlanding .steps-row p { font-size: 15px; margin-top: 12px; color: var(--ink-2); line-height: 1.62; }
 .zlanding .steps-row .src { margin-top: 18px; }
 
-/* Figura: numer widmowy (obrys, bez wypełnienia) plus mały glif — jedyny
-   akcent graficzny w tej sekcji jest typograficzny, nie fotografia ani
-   rysunek. Zaokrąglony kwadrat w rogu to pojedyncza kropka akcentu. */
+/* Figura: okno aplikacji jako placeholder na przyszły zrzut ekranu (patrz
+   TODO w content.ts) — jedyna sekcja z podglądem "produktu w oknie", nie
+   fotografią (Dla inwestora) ani ikoną (Funkcje). Zaokrąglony kwadrat
+   w rogu to pojedyncza kropka akcentu. */
 .zlanding .steps-row-figure {
   position: relative;
   display: flex;
@@ -1090,34 +1091,41 @@
   background-image: linear-gradient(calc(160deg + var(--i, 0) * 40deg), rgba(240, 164, 60, 0.1), transparent 65%);
   overflow: hidden;
 }
-.zlanding .steps-figure-num {
-  font-family: var(--display);
-  font-weight: 400;
-  font-size: clamp(88px, 11vw, 160px);
-  line-height: 1;
-  color: transparent;
-  -webkit-text-stroke: 1px rgba(240, 164, 60, 0.34);
-}
-.zlanding .steps-glyph { position: absolute; left: 20px; bottom: 20px; width: 30px; height: 30px; color: var(--amber); }
-.zlanding .steps-glyph svg { width: 100%; height: 100%; }
-/* Ślad wykresu pod cyfrą — nie ikona, tylko włosowa linia, żeby duży pusty
-   panel niósł więcej niż sam numer widmowy, bez zapożyczania stylu ilustracji
-   z sekcji Funkcje (tam są prawdziwe ikony) ani Dla polskiego inwestora
-   (tam jest fotografia). */
-.zlanding .steps-figure-spark {
+/* Okno-placeholder: pasek tytułowy z trzema kropkami + ciało z wykresem-
+   śladem. Ciało dostaje jaśniejszy odcień (--vault-3) niż poświata panelu
+   pod spodem (--vault-2), żeby "okno" wizualnie leżało na kolorowym tle,
+   nie zlewało się z nim. */
+.zlanding .steps-shot {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  height: 30%;
+  inset: 14px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 6px;
+  border: 1px solid var(--hair);
+  background: var(--vault-3);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
 }
+.zlanding .steps-shot-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 10px;
+  background: var(--vault-2);
+  border-bottom: 1px solid var(--hair);
+}
+.zlanding .steps-shot-bar span { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); opacity: 0.5; }
+.zlanding .steps-shot-body { position: relative; flex: 1; }
+.zlanding .steps-figure-spark { position: absolute; inset: 0; width: 100%; height: 100%; }
 /* Trzy typy śladu — kropki, słupki, linia — nie trzy warianty tej samej
    kreski. Linia bierze obrys (ruch), kropki i słupki wypełnienie (zdarzenia
-   dyskretne), wszystkie tym samym, bardzo cichym bursztynem. */
-.zlanding .steps-figure-line { fill: none; stroke: rgba(240, 164, 60, 0.22); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+   dyskretne), wszystkie tym samym bursztynem — mocniejszym niż wcześniej,
+   bo to teraz treść "ekranu", nie cichy akcent w tle numeru. */
+.zlanding .steps-figure-line { fill: none; stroke: rgba(240, 164, 60, 0.55); stroke-width: 2; vector-effect: non-scaling-stroke; }
 .zlanding .steps-figure-dots circle,
-.zlanding .steps-figure-bars rect { fill: rgba(240, 164, 60, 0.28); }
+.zlanding .steps-figure-bars rect { fill: rgba(240, 164, 60, 0.6); }
 .zlanding .steps-row-figure::after {
   content: "";
   position: absolute;
@@ -1362,7 +1370,6 @@
 .zlanding .glyph-slot { display: inline-flex; color: var(--ink-3); transition: color 0.18s ease; }
 .zlanding .glyph { display: block; }
 
-.zlanding .steps-row:hover .glyph-slot,
 .zlanding .feature-card:hover .glyph-slot { color: var(--amber); }
 .zlanding .asset-rows > div:hover .glyph-slot { color: var(--amber); }
 /* Znak klasy aktywow jest mniejszy niz w listach funkcji: wiersz ma 12px

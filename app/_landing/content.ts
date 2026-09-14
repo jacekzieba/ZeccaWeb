@@ -36,8 +36,13 @@ import { bindOrphans as b } from "./typo";
                      zdjęcie (druk.jpg) jako jedyna sekcja z fotografią;
                      wejście: scale-in.
    Trzy różne układy, trzy różne formy prezentacji, trzy różne style
-   ilustracji (czysto typograficzny / rysunek liniowy / fotografia) —
-   każda para różni się więc co najmniej dwoma wymiarami. */
+   ilustracji (podgląd aplikacji w oknie / ikona liniowa / fotografia) —
+   każda para różni się więc co najmniej dwoma wymiarami.
+
+   Figury w „Obraz Twojego majątku" to na razie placeholdery: ramka okna
+   aplikacji z tym samym wykresem-śladem co wcześniej w środku, zamiast
+   pustego widma. Docelowo `.steps-shot-body` przyjmie prawdziwy zrzut
+   ekranu (<img>) na miejsce SVG — patrz TODO przy STEP_MARKS. */
 
 function emFirstWord(text: string): string {
   const i = text.indexOf(" ");
@@ -95,21 +100,22 @@ const demo = buildLandingDemoSnapshot();
 // Kotwica pod opisem karty: jedna konkretna wartość zamiast samej obietnicy.
 // Puste tam, gdzie nie ma liczby, której nie trzeba by zmyślić.
 // Znak przy wierszu — w kolejności copy.ts.
-const STEP_GLYPHS = [GLYPHS.wprowadzasz, GLYPHS.przelicza, GLYPHS.jedno];
-// Ślad danych pod cyfrą figury — nie ikona, tylko odrobina grafiki, żeby duży
-// pusty panel niósł więcej niż sam numer widmowy. Trzy różne TYPY wykresu, nie
-// trzy warianty tej samej kreski: rozrzucone punkty (wprowadzasz dane pojedynczo),
-// słupki (Zecca liczy), jedna gładka linia (wszystko złożone w jedno).
+// Zawartość okna-placeholdera: trzy różne TYPY wykresu, nie trzy warianty tej
+// samej kreski — rozrzucone punkty (wprowadzasz dane pojedynczo), słupki
+// (Zecca liczy), jedna gładka linia (wszystko złożone w jedno). Rysowane w
+// viewBox 300×140 — wysokość ciała okna po odjęciu paska tytułowego.
+// TODO(zrzuty ekranu): zamienić `.steps-figure-spark` na <img> z prawdziwym
+// zrzutem produktu, gdy powstaną — patrz notatka na górze pliku.
 const STEP_MARKS = [
   '<g class="steps-figure-mark steps-figure-dots">' +
-    [40, 95, 150, 205, 260].map((x, i) => `<circle cx="${x}" cy="${58 - i * 9 - (i % 2) * 6}" r="4" />`).join("") +
+    [40, 95, 150, 205, 260].map((x, i) => `<circle cx="${x}" cy="${((58 - i * 9 - (i % 2) * 6) * 1.75).toFixed(1)}" r="6" />`).join("") +
     "</g>",
   '<g class="steps-figure-mark steps-figure-bars">' +
     [
       [30, 22], [78, 34], [126, 18], [174, 44], [222, 30], [270, 52],
-    ].map(([x, h]) => `<rect x="${x}" y="${72 - h}" width="20" height="${h}" rx="1.5" />`).join("") +
+    ].map(([x, h]) => `<rect x="${x}" y="${(140 - h * 1.75).toFixed(1)}" width="20" height="${(h * 1.75).toFixed(1)}" rx="1.5" />`).join("") +
     "</g>",
-  '<polyline class="steps-figure-mark steps-figure-line" points="0,42 60,40 120,37 180,34 240,20 300,8" />',
+  '<polyline class="steps-figure-mark steps-figure-line" points="0,73.5 60,70 120,64.8 180,59.5 240,35 300,14" />',
 ];
 const FEATURE_GLYPHS = [GLYPHS.portfele, GLYPHS.statystyki, GLYPHS.inflacja, GLYPHS.historia,
   GLYPHS.zarobki, GLYPHS.import, GLYPHS.eksport, GLYPHS.sync];
@@ -183,9 +189,12 @@ const howItWorksHtml = `
           <span class="src src-quiet">${step.meta}</span>
         </div>
         <div class="steps-row-figure" aria-hidden="true">
-          <span class="steps-figure-num">${String(index + 1).padStart(2, "0")}</span>
-          <span class="glyph-slot steps-glyph">${STEP_GLYPHS[index] ?? ""}</span>
-          <svg class="steps-figure-spark" viewBox="0 0 300 80" preserveAspectRatio="none">${STEP_MARKS[index] ?? STEP_MARKS[0]}</svg>
+          <div class="steps-shot">
+            <div class="steps-shot-bar"><span></span><span></span><span></span></div>
+            <div class="steps-shot-body">
+              <svg class="steps-figure-spark" viewBox="0 0 300 140" preserveAspectRatio="none">${STEP_MARKS[index] ?? STEP_MARKS[0]}</svg>
+            </div>
+          </div>
         </div>
       </li>`,
         )
