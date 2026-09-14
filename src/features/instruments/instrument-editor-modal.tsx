@@ -21,9 +21,9 @@ import type { InstrumentCandidate } from "@/market-data/types";
 const SEARCH_DEBOUNCE_MS = 350;
 
 const INK = token("ink");
-const MUTED = "rgba(28,49,68,0.58)";
-const SUBTLE = "rgba(28,49,68,0.38)";
-const LINE_SOFT = "rgba(28,49,68,0.06)";
+const MUTED = token("inkMuted");
+const SUBTLE = token("inkFaint");
+const LINE_SOFT = token("line2");
 const LOSS = token("down");
 const AMBER = token("accent");
 const PAPER = token("ground");
@@ -670,7 +670,7 @@ export function InstrumentEditorModal({
                 borderRadius: 9,
                 border: "none",
                 background: saving || !userDataKey ? "rgba(28,49,68,0.12)" : INK,
-                color: saving || !userDataKey ? SUBTLE : "#fff",
+                color: saving || !userDataKey ? SUBTLE : PAPER,
                 fontSize: 13,
                 fontWeight: 700,
                 cursor: saving || !userDataKey ? "not-allowed" : "pointer",

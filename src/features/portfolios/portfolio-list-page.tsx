@@ -17,12 +17,13 @@ import { announce } from "@/components/feedback/status-announcer";
 import { pluralPl } from "@/lib/plural-pl";
 
 const INK = token("ink");
-const MUTED = "rgba(28,49,68,0.58)";
-const SUBTLE = "rgba(28,49,68,0.38)";
-const LINE_SOFT = "rgba(28,49,68,0.06)";
+const MUTED = token("inkMuted");
+const SUBTLE = token("inkFaint");
+const LINE_SOFT = token("line2");
 const PROFIT = token("up");
 const LOSS = token("down");
 const AMBER = token("accent");
+const PAPER = token("ground");
 const glassCard: CSSProperties = {
   background: "rgba(255,253,249,0.82)",
   backdropFilter: "blur(30px) saturate(160%)",
@@ -192,7 +193,7 @@ export function PortfolioListPage() {
             borderRadius: 9,
             border: "none",
             background: userDataKey ? INK : "rgba(28,49,68,0.12)",
-            color: userDataKey ? "#fff" : SUBTLE,
+            color: userDataKey ? PAPER : SUBTLE,
             fontSize: 13,
             fontWeight: 700,
             cursor: userDataKey ? "pointer" : "not-allowed",

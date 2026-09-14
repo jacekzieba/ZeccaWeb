@@ -384,7 +384,7 @@ export function AllocationEditorModal({
               borderRadius: 9,
               border: "none",
               background: saving || locked ? v2Mix(V2.ink, 0.12) : V2.ink,
-              color: saving || locked ? V2.subtle : "#fff",
+              color: saving || locked ? V2.subtle : PAPER,
               fontSize: 13,
               fontWeight: 700,
               cursor: saving || locked ? "not-allowed" : "pointer",

@@ -49,8 +49,8 @@ declare global {
 
 // ── Design tokens ────────────────────────────────────────────────
 const INK = token("ink");
-const MUTED = "rgba(28,49,68,0.58)";
-const SUBTLE = "rgba(28,49,68,0.38)";
+const MUTED = token("inkMuted");
+const SUBTLE = token("inkFaint");
 const PROFIT = token("up");
 const LOSS = token("down");
 const AMBER = token("accent");
@@ -672,7 +672,7 @@ export function SyncUnlockPanel({
               padding: "8px 16px",
               borderRadius: 9,
               background: INK,
-              color: "#fff",
+              color: PAPER,
               fontSize: 13,
               fontWeight: 600,
               textDecoration: "none",
@@ -841,7 +841,7 @@ export function SyncUnlockPanel({
                 borderRadius: 9,
                 border: "none",
                 background: createStatus === "creating" ? "rgba(28,49,68,0.12)" : INK,
-                color: createStatus === "creating" ? SUBTLE : "#fff",
+                color: createStatus === "creating" ? SUBTLE : PAPER,
                 fontSize: 13,
                 fontWeight: 600,
                 cursor: createStatus === "creating" ? "not-allowed" : "pointer",
@@ -930,7 +930,7 @@ export function SyncUnlockPanel({
               borderRadius: 9,
               border: "none",
               background: isBusy || passphrase.length === 0 ? "rgba(28,49,68,0.12)" : INK,
-              color: isBusy || passphrase.length === 0 ? SUBTLE : "#fff",
+              color: isBusy || passphrase.length === 0 ? SUBTLE : PAPER,
               fontSize: 13,
               fontWeight: 600,
               cursor: isBusy || passphrase.length === 0 ? "not-allowed" : "pointer",

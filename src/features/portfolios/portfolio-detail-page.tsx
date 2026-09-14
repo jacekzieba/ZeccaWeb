@@ -78,9 +78,9 @@ function useMedia(query: string) {
 }
 
 const INK = token("ink");
-const MUTED = "rgba(28,49,68,0.58)";
-const SUBTLE = "rgba(28,49,68,0.38)";
-const LINE_SOFT = "rgba(28,49,68,0.06)";
+const MUTED = token("inkMuted");
+const SUBTLE = token("inkFaint");
+const LINE_SOFT = token("line2");
 const PROFIT = token("up");
 
 const glassCard: CSSProperties = {
@@ -126,7 +126,7 @@ const KIND_COLORS: Record<string, string> = {
   etf: token("up"),
   treasuryBond: token("assetBonds"),
   listedBond: token("up"),
-  crypto: "#9B6BC4",
+  crypto: token("assetCrypto"),
   deposit: token("accent"),
   cash: token("inkMuted"),
 };
@@ -175,9 +175,9 @@ const PD_THEME: SectionPanelTheme = {
   card: token("surface"),
   ink: token("ink"),
   brand: token("assetEquity"),
-  muted: "rgba(28,49,68,0.58)",
-  subtle: "rgba(28,49,68,0.38)",
-  line: "rgba(28,49,68,0.10)",
+  muted: token("inkMuted"),
+  subtle: token("inkFaint"),
+  line: token("line"),
   fontUi: TYPOGRAPHY.system,
   fontSerif: TYPOGRAPHY.serif,
   fontMono: TYPOGRAPHY.mono,
