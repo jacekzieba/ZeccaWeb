@@ -427,11 +427,9 @@ body {
 
 /* Jeden kafelek na rejestr wyróżniony — reszta jest neutralna (ink zamiast
    profit/loss), więc bez tego wszystkie osiem kart miałoby identyczną wagę
-   i nic nie mówiło, którą liczbę sprawdzić najpierw. */
-.metric-tile--featured {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
-}
+   i nic nie mówiło, którą liczbę sprawdzić najpierw. Kolorowa ramka/tło to
+   była droga najmniejszego oporu (odrzucona) — wyróżnienie niesie wyłącznie
+   większa liczba (co jest ważne) i ślad XIRR w tle (dlaczego). */
 .metric-tile--featured .metric-tile-value { font-size: 32px; margin-top: 6px; }
 .metric-tile--featured .metric-tile-sub { margin-top: 6px; }
 
