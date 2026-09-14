@@ -61,6 +61,8 @@ export type KpiTile = {
   sub?: string;
   color: string;
   helpHref?: string;
+  /** Jeden wyróżniony wskaźnik na rejestr — patrz komentarz w getKpiTiles. */
+  featured?: boolean;
 };
 
 export type PortfolioKpiInput = {
@@ -76,16 +78,24 @@ export type PortfolioKpiInput = {
 export function getKpiTiles(input: PortfolioKpiInput): KpiTile[] {
   const { metrics, cashflows, openPositions, currency } = input;
   const xirr = metrics.xirrPct;
+  // Wcześniej każda liczba ≥0 była na zielono — osiem kafelków tym samym
+  // odcieniem obok siebie nie różniło się niczym poza treścią etykiety, a sam
+  // kolor przestawał cokolwiek wyróżniać (zob. dashboard: sync-status dot był
+  // tym samym zielonym tokenem z zupełnie innego powodu). Jeden wskaźnik —
+  // MWR/XIRR, "jak faktycznie pracowały Twoje pieniądze" — zostaje kolorowy
+  // i wyróżniony (featured); reszta przechodzi na neutralny ink, znak +/-
+  // w tekście nadal mówi, w którą stronę. Obsunięcie zostaje czerwone celowo:
+  // to sygnał ryzyka, nie rutynowy wynik, warto żeby się wybijał.
   const tiles: KpiTile[] = [
-    { id: "kpiUnrealized", label: "Zysk niezrealizowany", value: `${fmtSigned(metrics.unrealizedPnl)} ${currencyLabel(currency)}`, sub: `${fmtPct(metrics.unrealizedPnlPct)} od zakupu`, color: metrics.unrealizedPnl >= 0 ? V2.profit : V2.loss },
-    { id: "kpiXirr", label: "MWR · XIRR", value: xirr == null ? "—" : fmtPct(xirr), sub: "rocznie", color: (xirr ?? 0) >= 0 ? V2.profit : V2.loss },
-    { id: "kpiTwr", label: "Zwrot (TWR)", value: fmtPct(metrics.totalReturnPct), sub: "bez wpłat", color: metrics.totalReturnPct >= 0 ? V2.profit : V2.loss },
-    { id: "kpiCagr", label: "CAGR", value: fmtPct(metrics.cagrPct), sub: "rocznie, TWR", color: metrics.cagrPct >= 0 ? V2.profit : V2.loss },
-    { id: "kpiRealReturn", label: "Wynik realny", value: fmtPct(metrics.realReturnPct), sub: "rocznie, po inflacji", color: metrics.realReturnPct >= 0 ? V2.profit : V2.loss },
+    { id: "kpiUnrealized", label: "Zysk niezrealizowany", value: `${fmtSigned(metrics.unrealizedPnl)} ${currencyLabel(currency)}`, sub: `${fmtPct(metrics.unrealizedPnlPct)} od zakupu`, color: V2.ink },
+    { id: "kpiXirr", label: "MWR · XIRR", value: xirr == null ? "—" : fmtPct(xirr), sub: "rocznie", color: (xirr ?? 0) >= 0 ? V2.profit : V2.loss, featured: true },
+    { id: "kpiTwr", label: "Zwrot (TWR)", value: fmtPct(metrics.totalReturnPct), sub: "bez wpłat", color: V2.ink },
+    { id: "kpiCagr", label: "CAGR", value: fmtPct(metrics.cagrPct), sub: "rocznie, TWR", color: V2.ink },
+    { id: "kpiRealReturn", label: "Wynik realny", value: fmtPct(metrics.realReturnPct), sub: "rocznie, po inflacji", color: V2.ink },
     { id: "kpiMaxDd", label: "Maks. obsunięcie", value: `${fmt(metrics.maxDrawdownPct, 2)}%`, sub: "od szczytu", color: V2.loss },
-    { id: "kpiRealized", label: "Zysk zrealizowany", value: `${fmtSigned(metrics.realizedPnl)} ${currencyLabel(currency)}`, sub: "zamknięte pozycje", color: metrics.realizedPnl >= 0 ? V2.profit : V2.loss },
+    { id: "kpiRealized", label: "Zysk zrealizowany", value: `${fmtSigned(metrics.realizedPnl)} ${currencyLabel(currency)}`, sub: "zamknięte pozycje", color: V2.ink },
     { id: "kpiInvested", label: "Zainwestowany kapitał", value: `${fmt(metrics.netInvested)} ${currencyLabel(currency)}`, color: V2.ink },
-    { id: "kpiDividends", label: "Dywidendy", value: `+${fmt(cashflows.dividends)} ${currencyLabel(currency)}`, color: V2.profit },
+    { id: "kpiDividends", label: "Dywidendy", value: `+${fmt(cashflows.dividends)} ${currencyLabel(currency)}`, color: V2.ink },
     { id: "kpiOpenPositions", label: "Otwarte pozycje", value: String(openPositions), color: V2.ink },
   ];
 
@@ -130,6 +140,7 @@ export function KpiRegister({ tiles }: { tiles: KpiTile[] }) {
         color: tile.color,
         sub: tile.sub,
         helpHref: tile.helpHref,
+        featured: tile.featured,
       }))}
     />
   );

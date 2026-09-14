@@ -25,6 +25,9 @@ export type MetricRow = {
   /** Odnośnik do wyjaśnienia wskaźnika. */
   helpHref?: string;
   trailing?: ReactNode;
+  /** Jeden wyróżniony kafelek w rejestrze — większa wartość, akcentowana
+   * obwódka. Reszta neutralnieje, żeby było wiadomo, na co patrzeć najpierw. */
+  featured?: boolean;
 };
 
 export function MetricTiles({ rows }: { rows: MetricRow[] }) {
@@ -39,7 +42,11 @@ export function MetricTiles({ rows }: { rows: MetricRow[] }) {
           // siatki obok wyższej sekcji (np. wykresu) — SectionGrid rozciąga
           // komórkę do wspólnej wysokości wiersza, a bez tej deklaracji kafelek
           // rozciągnąłby się razem z nią zamiast zostać przy naturalnej treści.
-          <article className="metric-tile" style={{ height: "auto" }} key={row.key}>
+          <article
+            className={row.featured ? "metric-tile metric-tile--featured" : "metric-tile"}
+            style={{ height: "auto" }}
+            key={row.key}
+          >
             <span className="metric-tile-mark">
               {row.source}
               <em>{row.detail}</em>

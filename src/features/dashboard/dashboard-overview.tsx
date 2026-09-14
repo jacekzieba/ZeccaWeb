@@ -1145,9 +1145,12 @@ function SummaryCard({
                 whiteSpace: "nowrap",
               }}
             >
+              {/* Zawsze neutralny — PALETTE.profit tutaj znaczyłoby "zsynchronizowano",
+                  nie "zysk", a to ten sam zielony token co w kafelkach wyniku. Jeden
+                  kolor, dwa niepowiązane znaczenia na tym samym ekranie. */}
               <span
                 data-testid="sync-status-dot"
-                style={{ width: 6, height: 6, flex: "0 0 6px", borderRadius: "50%", background: lastSyncedAt ? PALETTE.profit : PALETTE.subtle }}
+                style={{ width: 6, height: 6, flex: "0 0 6px", borderRadius: "50%", background: PALETTE.subtle }}
               />
               {lastSyncLabel}
             </span>
