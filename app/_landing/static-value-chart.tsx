@@ -190,24 +190,40 @@ export function StaticValueChart({
             <stop offset="100%" stopColor={VALUE_COLOR} stopOpacity="0" />
           </linearGradient>
         </defs>
-        {xTicks.map((tick) => (
-          <text key={`x-${tick.x}`} x={tick.x} y={pt + innerHeight + 17} textAnchor="middle" className="x-axis">{tick.label}</text>
+        {xTicks.map((tick, index) => (
+          // Skrajne etykiety wyśrodkowane na granicy roku wychodziłyby połową
+          // znaków poza wykres (np. "2024" ucięte po lewej) — pierwsza i
+          // ostatnia kotwiczą więc do wewnątrz, środkowe zostają wyśrodkowane.
+          <text
+            key={`x-${tick.x}`}
+            x={tick.x}
+            y={pt + innerHeight + 17}
+            textAnchor={index === 0 ? "start" : index === xTicks.length - 1 ? "end" : "middle"}
+            className="x-axis"
+          >
+            {tick.label}
+          </text>
         ))}
         {yTicks.map((tick) => (
-          <g key={tick}>
-            <line x1={pl} x2={pl + innerWidth} y1={y(tick)} y2={y(tick)} />
-            {compact ? (
-              // Bez osobnej kolumny na etykiety: stoją nad własną siatką,
-              // wewnątrz wykresu, przy jego lewej krawędzi.
-              <text x={pl + 3} y={y(tick) - 5} textAnchor="start" className="y-axis-inline">{compactAxis(tick, compact)}</text>
-            ) : (
-              <text x={pl - 9} y={y(tick) + 3.5} textAnchor="end">{compactAxis(tick, compact)}</text>
-            )}
-          </g>
+          <line key={`grid-${tick}`} x1={pl} x2={pl + innerWidth} y1={y(tick)} y2={y(tick)} />
         ))}
         <path className="value-area" fill="url(#landing-vvd-fill)" d={`M${pl},${pt + innerHeight} L${valuePoints} L${pl + innerWidth},${pt + innerHeight} Z`} />
         <polyline className="deposit-line" pathLength="1" points={depositPoints} />
         <polyline className="value-line" pathLength="1" points={valuePoints} />
+        {/* Etykiety osi Y rysowane NA KOŃCU, po liniach danych — inaczej linia
+            wartości (rysowana wcześniej w dokumencie) przykrywała compactowe
+            etykiety wewnątrz wykresu, mimo że miały własny podkład. */}
+        {yTicks.map((tick) => {
+          const label = compactAxis(tick, compact);
+          return compact ? (
+            <g key={`label-${tick}`}>
+              <rect x={pl} y={y(tick) - 13} width={label.length * 5 + 6} height={11} rx={2} className="y-axis-inline-bg" />
+              <text x={pl + 3} y={y(tick) - 5} textAnchor="start" className="y-axis-inline">{label}</text>
+            </g>
+          ) : (
+            <text key={`label-${tick}`} x={pl - 9} y={y(tick) + 3.5} textAnchor="end">{label}</text>
+          );
+        })}
       </svg>
     </div>
   );

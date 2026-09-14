@@ -1336,14 +1336,11 @@
    wykresu, tylko mniejszym stopniem. Wcześniej ta reguła gasiła je wszystkie. */
 .zlanding .static-vvd-chart.is-compact text { font-size: 8.5px; }
 .zlanding .static-vvd-chart.is-compact line { opacity: .5; }
-/* Etykieta stoi nad siatką wewnątrz wykresu, nie w osobnej kolumnie — bez
-   halo zlewałaby się z gradientem wypełnienia i własną linią wartości. */
-.zlanding .static-vvd-chart .y-axis-inline {
-  paint-order: stroke;
-  stroke: var(--vault-2);
-  stroke-width: 3px;
-  stroke-linejoin: round;
-}
+/* Etykieta stoi nad siatką wewnątrz wykresu, nie w osobnej kolumnie —
+   .y-axis-inline-bg to pełny podkład pod nią (patrz static-value-chart.tsx),
+   bo cienki halo na obrysie liter prześwitywał tam, gdzie przechodziła
+   gruba linia wartości. */
+.zlanding .static-vvd-chart .y-axis-inline-bg { fill: var(--vault-2); }
 
 /* Pierścień alokacji — stany podświetlenia */
 .zlanding .alloc-center-value {
