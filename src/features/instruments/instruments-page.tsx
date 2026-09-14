@@ -46,7 +46,7 @@ const glassCard: CSSProperties = {
   background: V2.card,
   backdropFilter: "blur(30px) saturate(160%)",
   WebkitBackdropFilter: "blur(30px) saturate(160%)",
-  borderRadius: 16,
+  borderRadius: "var(--r-xl)",
   border: `0.5px solid ${V2.line}`,
   boxShadow: `0 1px 0 ${v2Mix(V2.ink, 0.03)}, 0 6px 20px ${v2Mix(V2.ink, 0.05)}`,
 };
@@ -612,7 +612,7 @@ export function InstrumentsPage() {
           style={{
             padding: "13px 16px",
             background: V2.card,
-            borderRadius: 16,
+            borderRadius: "var(--r-xl)",
             border: `0.5px solid ${
               marketDataStatus?.providers.yahoo.configured === false
                 ? v2Mix(V2.bonds, 0.28)
@@ -711,7 +711,7 @@ export function InstrumentsPage() {
               onClick={() => { setSearch(""); setKindFilter(KIND_ALL); }}
               style={{
                 padding: "7px 12px",
-                borderRadius: 9,
+                borderRadius: "var(--r-lg)",
                 border: `0.5px solid ${V2.line}`,
                 background: "transparent",
                 color: V2.muted,
@@ -738,7 +738,7 @@ export function InstrumentsPage() {
           style={{
             padding: "10px 14px",
             background: V2.card,
-            borderRadius: 14,
+            borderRadius: "var(--r-xl)",
             border: `0.5px solid ${quoteError ? v2Mix(V2.loss, 0.18) : v2Mix(V2.brand, 0.18)}`,
             color: quoteError ? LOSS : V2.brand,
             fontSize: 12,
@@ -829,7 +829,7 @@ export function InstrumentsPage() {
                     style={{
                       width: 34,
                       height: 34,
-                      borderRadius: 9,
+                      borderRadius: "var(--r-lg)",
                       background: `${color}14`,
                       border: `1.5px solid ${color}${isHeld ? "40" : "20"}`,
                       display: "flex",
@@ -911,7 +911,7 @@ export function InstrumentsPage() {
                           style={{
                             fontSize: 10,
                             padding: "2px 7px",
-                            borderRadius: 5,
+                            borderRadius: "var(--r-md)",
                             background: v2Mix(V2.profit, 0.12),
                             color: PROFIT,
                             fontWeight: 600,

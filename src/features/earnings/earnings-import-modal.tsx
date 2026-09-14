@@ -129,7 +129,7 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
           width: "min(820px, 100%)",
           maxHeight: "calc(100vh - 32px)",
           overflow: "auto",
-          borderRadius: 14,
+          borderRadius: "var(--r-xl)",
           background: V2.card,
           border: `0.5px solid ${V2.line}`,
           boxShadow: `0 24px 70px ${v2Mix(V2.ink, 0.28)}`,
@@ -180,7 +180,7 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
           {progress && <ImportProgressIndicator {...progress} />}
 
           {error && (
-            <div role="alert" style={{ padding: "10px 12px", borderRadius: 9, border: `0.5px solid ${v2Mix(V2.loss, 0.25)}`, background: v2Mix(V2.loss, 0.07), color: V2.loss, fontSize: 13 }}>
+            <div role="alert" style={{ padding: "10px 12px", borderRadius: "var(--r-lg)", border: `0.5px solid ${v2Mix(V2.loss, 0.25)}`, background: v2Mix(V2.loss, 0.07), color: V2.loss, fontSize: 13 }}>
               {error}
             </div>
           )}
@@ -211,7 +211,7 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
               )}
 
               {displayItems.length > 0 && (
-                <div style={{ border: `0.5px solid ${V2.line}`, borderRadius: 10, overflow: "hidden" }}>
+                <div style={{ border: `0.5px solid ${V2.line}`, borderRadius: "var(--r-xl)", overflow: "hidden" }}>
                   {displayItems.map((item, index) => (
                     <ImportRow key={`${item.payload.id}-${index}`} item={item} />
                   ))}
@@ -224,7 +224,7 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
               )}
             </section>
           ) : !error && (
-            <div style={{ minHeight: 120, display: "grid", placeItems: "center", border: `0.5px dashed ${V2.line}`, borderRadius: 10, color: V2.subtle, fontSize: 13, textAlign: "center" }}>
+            <div style={{ minHeight: 120, display: "grid", placeItems: "center", border: `0.5px dashed ${V2.line}`, borderRadius: "var(--r-xl)", color: V2.subtle, fontSize: 13, textAlign: "center" }}>
               <div><FileSpreadsheet size={24} style={{ marginBottom: 7 }} /><br />Wybierz plik, aby zobaczyć podgląd.</div>
             </div>
           )}
@@ -245,7 +245,7 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
 
 function Summary({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <div aria-label={`${label}: ${value}`} style={{ padding: "10px 11px", borderRadius: 9, background: V2.card2 }}>
+    <div aria-label={`${label}: ${value}`} style={{ padding: "10px 11px", borderRadius: "var(--r-lg)", background: V2.card2 }}>
       <div style={sectionLabelStyle}>{label}</div>
       <div style={{ marginTop: 3, color, fontFamily: V2_TYPE.mono, fontSize: 21, fontWeight: 500 }}>{value}</div>
     </div>

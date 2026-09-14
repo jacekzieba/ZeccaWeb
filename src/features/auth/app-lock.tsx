@@ -120,7 +120,7 @@ function PinPad({ onPin, label, error }: { onPin: (pin: string) => void; label: 
       {input.length >= 4 && input.length < maxLen && (
         <button
           onClick={submit}
-          style={{ marginTop: 14, padding: "10px 28px", borderRadius: 10, border: "none", background: V2.brand, color: V2.card, fontFamily: UI, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+          style={{ marginTop: 14, padding: "10px 28px", borderRadius: "var(--r-xl)", border: "none", background: V2.brand, color: V2.card, fontFamily: UI, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
         >
           Odblokuj
         </button>
@@ -287,7 +287,7 @@ export function AppLockSettingsRow() {
       <button
         onClick={() => setView(enabled ? "remove" : "setup")}
         style={{
-          padding: "8px 14px", borderRadius: 10, border: `0.5px solid ${V2.line}`,
+          padding: "8px 14px", borderRadius: "var(--r-xl)", border: `0.5px solid ${V2.line}`,
           background: V2.card, color: enabled ? V2.loss : V2.ink,
           fontFamily: UI, fontSize: 12, fontWeight: 600, cursor: "pointer",
         }}

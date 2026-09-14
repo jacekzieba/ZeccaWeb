@@ -507,7 +507,7 @@ function YearlyAverageChart({
             top: Math.max(4, y(hovered.avgResult) - 62),
             width: 132,
             padding: "8px 10px",
-            borderRadius: 9,
+            borderRadius: "var(--r-lg)",
             border: `0.5px solid ${V2.line}`,
             background: V2.card,
             boxShadow: `0 8px 22px ${v2Mix(V2.ink, 0.12)}`,
@@ -553,7 +553,7 @@ function ModalShell({
         onClick={onClose}
         style={{ position: "absolute", inset: 0, border: "none", background: "rgba(12,16,13,0.36)", cursor: "default" }}
       />
-      <div role="dialog" aria-modal="true" aria-label={title} style={{ position: "relative", width: "min(720px, 100%)", maxHeight: "calc(100vh - 32px)", overflow: "auto", borderRadius: 14, background: V2.card, border: `0.5px solid ${V2.line}`, boxShadow: `0 24px 70px ${v2Mix(V2.ink, 0.28)}` }}>
+      <div role="dialog" aria-modal="true" aria-label={title} style={{ position: "relative", width: "min(720px, 100%)", maxHeight: "calc(100vh - 32px)", overflow: "auto", borderRadius: "var(--r-xl)", background: V2.card, border: `0.5px solid ${V2.line}`, boxShadow: `0 24px 70px ${v2Mix(V2.ink, 0.28)}` }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "18px 20px", borderBottom: `0.5px solid ${V2.line2}` }}>
           <div style={{ fontFamily: V2_TYPE.serif, fontSize: 21, fontWeight: 500 }}>{title}</div>
           <IconButton label="Zamknij" onClick={onClose}><X size={16} /></IconButton>
@@ -936,7 +936,7 @@ export function EarningsPage() {
         </V2Card>
       )}
       {message && (
-        <div style={{ padding: "10px 12px", borderRadius: 10, background: v2Mix(V2.brand, 0.08), border: `0.5px solid ${v2Mix(V2.brand, 0.16)}`, color: V2.brand, fontSize: 13 }}>
+        <div style={{ padding: "10px 12px", borderRadius: "var(--r-xl)", background: v2Mix(V2.brand, 0.08), border: `0.5px solid ${v2Mix(V2.brand, 0.16)}`, color: V2.brand, fontSize: 13 }}>
           {message}
         </div>
       )}
@@ -1064,7 +1064,7 @@ export function EarningsPage() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             {(["all", "earnings", "burdens"] as EarningsTableFilter[]).map((filter) => (
-              <button key={filter} type="button" onClick={() => setTableFilter(filter)} style={{ padding: "8px 13px", borderRadius: 9, border: `0.5px solid ${tableFilter === filter ? "transparent" : V2.line}`, background: tableFilter === filter ? V2.brand : V2.card, color: tableFilter === filter ? V2.onBrand : V2.muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+              <button key={filter} type="button" onClick={() => setTableFilter(filter)} style={{ padding: "8px 13px", borderRadius: "var(--r-lg)", border: `0.5px solid ${tableFilter === filter ? "transparent" : V2.line}`, background: tableFilter === filter ? V2.brand : V2.card, color: tableFilter === filter ? V2.onBrand : V2.muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 {filter === "all" ? "Wszystko" : filter === "earnings" ? "Zarobki" : "Obciążenia"}
               </button>
             ))}

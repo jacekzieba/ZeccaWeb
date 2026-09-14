@@ -157,7 +157,7 @@ const inputStyle: CSSProperties = {
   paddingRight: 12,
   paddingBottom: 9,
   paddingLeft: 12,
-  borderRadius: 9,
+  borderRadius: "var(--r-lg)",
   border: "0.5px solid rgba(22,29,24,0.14)",
   background: PAPER,
   fontSize: 13,
@@ -251,7 +251,7 @@ function DecimalSeparatorHint() {
         gap: 10,
         border: `0.5px solid ${LINE_SOFT}`,
         background: v2Mix(V2.card, 0.68),
-        borderRadius: 10,
+        borderRadius: "var(--r-xl)",
         padding: "9px 12px",
         marginBottom: 12,
         fontSize: 12,
@@ -297,7 +297,7 @@ function IconBadge({
       style={{
         width: selected ? 36 : 31,
         height: selected ? 36 : 31,
-        borderRadius: 9,
+        borderRadius: "var(--r-lg)",
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
@@ -1108,7 +1108,7 @@ export function AddTransactionModal({
           height: "min(760px, calc(100vh - 32px))",
           overflow: "hidden",
           background: PAPER,
-          borderRadius: 22,
+          borderRadius: "var(--r-xl)",
           boxShadow: `0 24px 64px ${v2Mix(INK, 0.22)}, inset 0 0.5px 0 ${v2Mix(INK, 0.08)}`,
           border: `0.5px solid ${V2.line}`,
           display: "grid",
@@ -1177,7 +1177,7 @@ export function AddTransactionModal({
                       style={{
                         position: "relative",
                         border: "none",
-                        borderRadius: 10,
+                        borderRadius: "var(--r-xl)",
                         padding: "7px 9px",
                         background: selected ? v2Mix(V2.ink, 0.07) : "transparent",
                         color: INK,
@@ -1421,7 +1421,7 @@ export function AddTransactionModal({
                           height: 36,
                           padding: "0 13px",
                           border: "none",
-                          borderRadius: 10,
+                          borderRadius: "var(--r-xl)",
                           background: txDef.heldOnly ? v2Mix(V2.ink, 0.04) : v2Mix(V2.ink, 0.07),
                           color: txDef.heldOnly ? SUBTLE : INK,
                           display: "inline-flex",
@@ -1502,7 +1502,7 @@ export function AddTransactionModal({
                       display: "flex",
                       gap: 4,
                       padding: 3,
-                      borderRadius: 11,
+                      borderRadius: "var(--r-xl)",
                       background: v2Mix(V2.ink, 0.06),
                       width: "fit-content",
                     }}
@@ -1629,7 +1629,7 @@ export function AddTransactionModal({
               </details>
 
               {error && (
-                <div style={{ fontSize: 12, color: LOSS, padding: "9px 12px", borderRadius: 10, background: `${LOSS}10`, marginTop: 16, fontWeight: 700 }}>
+                <div style={{ fontSize: 12, color: LOSS, padding: "9px 12px", borderRadius: "var(--r-xl)", background: `${LOSS}10`, marginTop: 16, fontWeight: 700 }}>
                   {error}
                 </div>
               )}

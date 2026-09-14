@@ -189,7 +189,7 @@ export function OnboardingController({
   };
 
   const btn = (primary: boolean): React.CSSProperties => ({
-    fontFamily: V2_TYPE.ui, fontWeight: 600, fontSize: 13, borderRadius: 9,
+    fontFamily: V2_TYPE.ui, fontWeight: 600, fontSize: 13, borderRadius: "var(--r-lg)",
     padding: "10px 18px", cursor: "pointer",
     border: primary ? "none" : `1px solid ${V2.line}`,
     background: primary ? V2.brand : "transparent",

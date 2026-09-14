@@ -489,7 +489,7 @@ export function AppShell({
         style={{
           position: "sticky", top: PAD, zIndex: 50,
           ...glassSurface,
-          borderRadius: 14,
+          borderRadius: "var(--r-xl)",
           marginBottom: PAD * 2,
           transform: topbarHidden ? `translateY(-${PAD * 2 + 56}px)` : "translateY(0)",
           opacity: topbarHidden ? 0 : 1,
@@ -506,7 +506,7 @@ export function AppShell({
               onClick={() => setDrawerOpen(true)}
               aria-label="Menu"
               style={{
-                width: 44, height: 44, borderRadius: 9, flexShrink: 0,
+                width: 44, height: 44, borderRadius: "var(--r-lg)", flexShrink: 0,
                 border: `0.5px solid ${COLORS.border}`,
                 background: v2Mix(V2.card, 0.5),
                 cursor: "pointer",
@@ -515,7 +515,7 @@ export function AppShell({
               }}
             >
               {[0, 1, 2].map((i) => (
-                <span key={i} style={{ width: 14, height: 1.5, background: COLORS.text, borderRadius: 1, display: "block" }} />
+                <span key={i} style={{ width: 14, height: 1.5, background: COLORS.text, borderRadius: "var(--r-xs)", display: "block" }} />
               ))}
             </button>
           )}
@@ -523,7 +523,7 @@ export function AppShell({
           {/* Mobile: brand text */}
           {!isDesktop && (
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, color: COLORS.text, letterSpacing: ".01em" }}>
-              <Image src="/zecca-logo.png" alt="" width={24} height={24} style={{ width: 24, height: 24, borderRadius: 7, objectFit: "cover" }} />
+              <Image src="/zecca-logo.png" alt="" width={24} height={24} style={{ width: 24, height: 24, borderRadius: "var(--r-lg)", objectFit: "cover" }} />
               Zecca
             </span>
           )}
@@ -531,7 +531,7 @@ export function AppShell({
           {/* Desktop: brand */}
           {isDesktop && (
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <Image src="/zecca-logo.png" alt="" width={24} height={24} style={{ width: 24, height: 24, borderRadius: 7, objectFit: "cover" }} />
+              <Image src="/zecca-logo.png" alt="" width={24} height={24} style={{ width: 24, height: 24, borderRadius: "var(--r-lg)", objectFit: "cover" }} />
               <span style={{ fontSize: 13, fontWeight: 700, color: COLORS.text, letterSpacing: ".02em" }}>Zecca</span>
               <span
                 style={{
@@ -554,7 +554,7 @@ export function AppShell({
               onClick={() => setSearchOpen(true)}
               style={{
                 display: "flex", alignItems: "center", gap: 8,
-                padding: "6px 12px 6px 10px", borderRadius: 10,
+                padding: "6px 12px 6px 10px", borderRadius: "var(--r-xl)",
                 background: V2.card,
                 border: `1px solid ${v2Mix(V2.ink, 0.28)}`,
                 minWidth: 300, cursor: "text",
@@ -582,7 +582,7 @@ export function AppShell({
               onClick={() => setSearchOpen(true)}
               aria-label="Szukaj"
               style={{
-                width: 44, height: 44, borderRadius: 9, flexShrink: 0,
+                width: 44, height: 44, borderRadius: "var(--r-lg)", flexShrink: 0,
                 border: `0.5px solid ${COLORS.border}`,
                 background: v2Mix(V2.card, 0.5),
                 cursor: "pointer", color: COLORS.text, fontSize: 15,
@@ -659,7 +659,7 @@ export function AppShell({
               maxHeight: `calc(100vh - ${PAD * 3 + 56}px)`,
               display: "flex", flexDirection: "column",
               ...glassSurface,
-              borderRadius: 14, overflow: "hidden",
+              borderRadius: "var(--r-xl)", overflow: "hidden",
             }}
           >
             <SidebarContent publicDemo={publicDemo} />

@@ -188,7 +188,7 @@ export function PortfolioListPage() {
           disabled={!userDataKey}
           style={{
             padding: "8px 14px",
-            borderRadius: 9,
+            borderRadius: "var(--r-lg)",
             border: "none",
             background: userDataKey ? INK : v2Mix(INK, 0.12),
             color: userDataKey ? PAPER : SUBTLE,
@@ -250,7 +250,7 @@ export function PortfolioListPage() {
             padding: "12px 22px",
             background: v2Mix(INK, 0.025),
             borderBottom: `0.5px solid ${LINE_SOFT}`,
-            borderRadius: "16px 16px 0 0",
+            borderRadius: "var(--r-xl) var(--r-xl) 0 0",
           }}
         >
           {["Nazwa", "Waluta", "Pozycje", "Wartość", "Udział", "Akcje"].map((h, i) => (

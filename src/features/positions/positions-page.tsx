@@ -58,7 +58,7 @@ function Badge({ label, color }: { label: string; color: string }) {
     <span style={{
       display: "inline-flex", alignItems: "center",
       fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: ".04em",
-      padding: "3px 7px", borderRadius: 5, color, background: v2Mix(color, 0.13), whiteSpace: "nowrap",
+      padding: "3px 7px", borderRadius: "var(--r-md)", color, background: v2Mix(color, 0.13), whiteSpace: "nowrap",
     }}>
       {label}
     </span>
@@ -128,7 +128,7 @@ function TransactionSheet({
         aria-labelledby="positions-transaction-sheet-title"
         onKeyDown={handleDialogKeyDown}
         style={{
-          background: V2.card, borderRadius: "18px 18px 0 0", width: "100%", maxWidth: 720,
+          background: V2.card, borderRadius: "var(--r-xl) var(--r-xl) 0 0", width: "100%", maxWidth: 720,
           maxHeight: "80vh", overflow: "auto",
           boxShadow: "0 -8px 48px rgba(22,29,24,0.18)",
         }}
@@ -330,7 +330,7 @@ export function PositionsPage() {
             onClick={() => setKindFilter(option.id)}
             style={{
               border: `1.5px solid ${kindFilter === option.id ? V2.brand : V2.line}`,
-              borderRadius: 20, padding: "6px 14px",
+              borderRadius: "var(--r-xl)", padding: "6px 14px",
               background: kindFilter === option.id ? v2Mix(V2.brand, 0.08) : V2.card,
               color: kindFilter === option.id ? V2.brand : V2.muted,
               fontFamily: UI, fontSize: 12, fontWeight: kindFilter === option.id ? 700 : 500,

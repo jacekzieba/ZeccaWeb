@@ -211,7 +211,7 @@ export function AllocationEditorModal({
           width: "100%",
           maxWidth: 480,
           background: PAPER,
-          borderRadius: 18,
+          borderRadius: "var(--r-xl)",
           boxShadow:
             `0 24px 64px ${v2Mix(V2.ink, 0.22)}, inset 0 0.5px 0 ${v2Mix(V2.ink, 0.08)}`,
           border: `0.5px solid ${V2.line}`,
@@ -321,7 +321,7 @@ export function AllocationEditorModal({
             onClick={clearAll}
             style={{
               padding: "7px 14px",
-              borderRadius: 9,
+              borderRadius: "var(--r-lg)",
               border: `0.5px solid ${V2.line}`,
               background: V2.card,
               color: V2.muted,
@@ -363,7 +363,7 @@ export function AllocationEditorModal({
             onClick={onClose}
             style={{
               padding: "9px 18px",
-              borderRadius: 9,
+              borderRadius: "var(--r-lg)",
               border: `0.5px solid ${V2.line}`,
               background: "transparent",
               color: V2.muted,
@@ -381,7 +381,7 @@ export function AllocationEditorModal({
             disabled={saving || locked}
             style={{
               padding: "9px 20px",
-              borderRadius: 9,
+              borderRadius: "var(--r-lg)",
               border: "none",
               background: saving || locked ? v2Mix(V2.ink, 0.12) : V2.ink,
               color: saving || locked ? V2.subtle : PAPER,

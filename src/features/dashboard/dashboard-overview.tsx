@@ -319,7 +319,7 @@ function Card({
         backdropFilter: glass ? "blur(30px) saturate(170%)" : "none",
         WebkitBackdropFilter: glass ? "blur(30px) saturate(170%)" : "none",
         border: `0.5px solid ${glass ? PALETTE.spec : PALETTE.line}`,
-        borderRadius: 16,
+        borderRadius: "var(--r-xl)",
         padding: pad,
         boxShadow: glass
           ? `inset 0 1px 0 ${PALETTE.spec}, 0 8px 28px ${v2Mix(PALETTE.ink, 0.07)}`
@@ -385,7 +385,7 @@ function Badge({ label, color }: { label: string; color: string }) {
         fontWeight: 700,
         letterSpacing: ".04em",
         padding: "3px 7px",
-        borderRadius: 5,
+        borderRadius: "var(--r-md)",
         color,
         background: v2Mix(color, 0.13),
         whiteSpace: "nowrap",
@@ -401,7 +401,7 @@ function PeriodBar({ value, onChange }: { value: Period; onChange: (period: Peri
     <div
       role="radiogroup"
       aria-label="Zakres wykresu historii"
-      style={{ display: "inline-flex", background: v2Mix(PALETTE.ink, 0.06), borderRadius: 11, padding: 3 }}
+      style={{ display: "inline-flex", background: v2Mix(PALETTE.ink, 0.06), borderRadius: "var(--r-xl)", padding: 3 }}
     >
       {PERIOD_OPTIONS.map((option) => (
         <button
@@ -549,7 +549,7 @@ function V2Area({ data, height = 240 }: { data: ValuationPoint[]; height?: numbe
             background: PALETTE.ink,
             color: PALETTE.card,
             padding: "7px 11px",
-            borderRadius: 9,
+            borderRadius: "var(--r-lg)",
             pointerEvents: "none",
             boxShadow: "0 8px 22px rgba(0,0,0,.22)",
             minWidth: 116,
@@ -1031,7 +1031,7 @@ export function DashboardOverview() {
           aria-expanded={showCustomize}
           style={{
             border: `0.5px solid ${PALETTE.line}`,
-            borderRadius: 10,
+            borderRadius: "var(--r-xl)",
             background: showCustomize ? v2Mix(PALETTE.brand, 0.1) : PALETTE.card,
             color: showCustomize ? PALETTE.brand : PALETTE.ink,
             cursor: "pointer",

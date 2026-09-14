@@ -258,7 +258,7 @@ export default function FAQPage() {
                       fontWeight: 700,
                       color: COLORS.green,
                       background: COLORS.accentSoft,
-                      borderRadius: 5,
+                      borderRadius: "var(--r-md)",
                       padding: "3px 7px",
                       textTransform: "uppercase",
                       letterSpacing: ".04em",

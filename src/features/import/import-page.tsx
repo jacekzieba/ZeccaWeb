@@ -93,7 +93,7 @@ function PrimaryButton({ children, onClick, disabled }: { children: React.ReactN
       onClick={onClick}
       disabled={disabled}
       style={{
-        border: "none", borderRadius: 10, padding: "9px 16px", fontFamily: UI, fontSize: 13, fontWeight: 600,
+        border: "none", borderRadius: "var(--r-xl)", padding: "9px 16px", fontFamily: UI, fontSize: 13, fontWeight: 600,
         cursor: disabled ? "not-allowed" : "pointer", whiteSpace: "nowrap",
         background: disabled ? v2Mix(V2.ink, 0.12) : V2.ink,
         color: disabled ? V2.subtle : V2.card,
@@ -111,7 +111,7 @@ function GhostButton({ children, onClick, disabled }: { children: React.ReactNod
       onClick={onClick}
       disabled={disabled}
       style={{
-        border: `0.5px solid ${V2.line}`, borderRadius: 10, padding: "9px 16px", fontFamily: UI, fontSize: 13,
+        border: `0.5px solid ${V2.line}`, borderRadius: "var(--r-xl)", padding: "9px 16px", fontFamily: UI, fontSize: 13,
         fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", whiteSpace: "nowrap",
         background: V2.card, color: disabled ? V2.subtle : V2.ink, opacity: disabled ? 0.55 : 1,
       }}
@@ -659,7 +659,7 @@ export function ImportPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: UI, color: V2.ink }}>
       <V2ScreenHead eyebrow="System" title="Import / Eksport" sub="Wczytaj lub pobierz transakcje i pełną kopię portfela — wszystko lokalnie w przeglądarce" />
 
-      <div style={{ display: "inline-flex", gap: 6, background: v2Mix(V2.ink, 0.05), borderRadius: 11, padding: 4, alignSelf: "flex-start" }}>
+      <div style={{ display: "inline-flex", gap: 6, background: v2Mix(V2.ink, 0.05), borderRadius: "var(--r-xl)", padding: 4, alignSelf: "flex-start" }}>
         {([["import", "Import"], ["export", "Eksport"]] as const).map(([id, label]) => (
           <button
             key={id}
@@ -775,7 +775,7 @@ export function ImportPage() {
 
           <label
             aria-busy={progress !== null}
-            style={{ display: "block", cursor: progress ? "wait" : "pointer", borderRadius: 16, border: `1.5px dashed ${V2.line}`, background: v2Mix(V2.card, 0.6), padding: "30px 18px", textAlign: "center" }}
+            style={{ display: "block", cursor: progress ? "wait" : "pointer", borderRadius: "var(--r-xl)", border: `1.5px dashed ${V2.line}`, background: v2Mix(V2.card, 0.6), padding: "30px 18px", textAlign: "center" }}
           >
             <input
               accept=".csv,.xls,.xlsx,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"

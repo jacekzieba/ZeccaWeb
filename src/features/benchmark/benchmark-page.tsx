@@ -397,7 +397,7 @@ function MultiLineChart({
             background: C.ink,
             color: C.card,
             padding: "8px 11px",
-            borderRadius: 10,
+            borderRadius: "var(--r-xl)",
             pointerEvents: "none",
             minWidth: 140,
           }}
@@ -520,7 +520,7 @@ export function BenchmarkPage() {
             display: "inline-flex",
             gap: 2,
             padding: 3,
-            borderRadius: 11,
+            borderRadius: "var(--r-xl)",
             background: C.card2,
             border: `0.5px solid ${C.line}`,
           }}
@@ -562,7 +562,7 @@ export function BenchmarkPage() {
               style={{
                 textAlign: "left",
                 padding: "14px 16px",
-                borderRadius: 14,
+                borderRadius: "var(--r-xl)",
                 cursor: "pointer",
                 border: `1px solid ${active ? item.color : C.line}`,
                 background: active ? v2Mix(item.color, 0.08) : C.card,

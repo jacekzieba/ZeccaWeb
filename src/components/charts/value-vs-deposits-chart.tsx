@@ -113,7 +113,7 @@ export function ValueVsDepositsChart({
           <Legend color={DEPOSIT_COLOR} label="Wpłaty (skumulowane)" dashed />
         </div>
         {showPeriodControl && (
-          <div role="radiogroup" aria-label="Zakres wykresu wartość vs wpłaty" style={{ display: "inline-flex", background: "rgba(22,29,24,0.06)", borderRadius: 10, padding: 3 }}>
+          <div role="radiogroup" aria-label="Zakres wykresu wartość vs wpłaty" style={{ display: "inline-flex", background: "rgba(22,29,24,0.06)", borderRadius: "var(--r-xl)", padding: 3 }}>
             {PERIOD_OPTIONS.map((option) => (
               <button
                 key={option}
@@ -123,7 +123,7 @@ export function ValueVsDepositsChart({
                 onClick={() => setPeriod(option)}
                 style={{
                   padding: "4px 9px",
-                  borderRadius: 7,
+                  borderRadius: "var(--r-lg)",
                   border: "none",
                   cursor: "pointer",
                   fontFamily: TYPOGRAPHY.system,

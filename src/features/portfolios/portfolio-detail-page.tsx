@@ -201,7 +201,7 @@ function HistoryCard({
         <div style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>
           Historia wartości · {period === "MAX" ? "maksimum" : period}
         </div>
-        <div style={{ display: "inline-flex", background: v2Mix(INK, 0.06), borderRadius: 11, padding: 3 }}>
+        <div style={{ display: "inline-flex", background: v2Mix(INK, 0.06), borderRadius: "var(--r-xl)", padding: 3 }}>
           {PERIOD_OPTIONS.map((option) => (
             <button
               key={option}
@@ -647,7 +647,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
           aria-expanded={showCustomize}
           style={{
             border: `0.5px solid ${PD_THEME.line}`,
-            borderRadius: 10,
+            borderRadius: "var(--r-xl)",
             background: showCustomize ? "rgba(52,105,154,0.10)" : token("surface"),
             color: showCustomize ? PD_THEME.brand : INK,
             cursor: "pointer",

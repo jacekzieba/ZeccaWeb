@@ -256,7 +256,7 @@ export function TourOverlay({
   }
 
   const btn = (primary: boolean): React.CSSProperties => ({
-    fontFamily: V2_TYPE.ui, fontWeight: 600, fontSize: 12, borderRadius: 9,
+    fontFamily: V2_TYPE.ui, fontWeight: 600, fontSize: 12, borderRadius: "var(--r-lg)",
     padding: "9px 15px", cursor: "pointer",
     border: primary ? "none" : `1px solid ${V2.line}`,
     background: primary ? V2.brand : "transparent",
@@ -286,7 +286,7 @@ export function TourOverlay({
           style={{
             position: "fixed",
             top: spot.top, left: spot.left, width: spot.width, height: spot.height,
-            borderRadius: 14,
+            borderRadius: "var(--r-xl)",
             boxShadow: `0 0 0 9999px ${DIM}`,
             pointerEvents: "none",
             opacity: shown ? 1 : 0,
@@ -305,7 +305,7 @@ export function TourOverlay({
           ...tipStyle,
           zIndex: 901,
           background: V2.card,
-          borderRadius: 14,
+          borderRadius: "var(--r-xl)",
           border: `0.5px solid ${V2.line}`,
           boxShadow: "0 12px 40px rgba(30,26,22,.28)",
           padding: "18px 20px",

@@ -26,7 +26,7 @@ export function ImportProgressIndicator({
         flexDirection: "column",
         gap: 7,
         padding: "11px 12px",
-        borderRadius: 10,
+        borderRadius: "var(--r-xl)",
         background: v2Mix(V2.brand, 0.06),
         color: V2.ink,
         fontFamily: V2_TYPE.ui,

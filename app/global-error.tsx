@@ -44,7 +44,7 @@ export default function GlobalError({
             onClick={() => reset()}
             style={{
               padding: "10px 18px",
-              borderRadius: 10,
+              borderRadius: "var(--r-xl)",
               border: "none",
               background: COLORS.text,
               color: COLORS.white,

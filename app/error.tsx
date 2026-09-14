@@ -24,7 +24,7 @@ export default function GlobalError({
           width: "100%",
           maxWidth: 420,
           ...SURFACES.glassPanel,
-          borderRadius: 18,
+          borderRadius: "var(--r-xl)",
           boxShadow: SHADOWS.cardStrong,
           padding: "36px 32px",
           textAlign: "center",
@@ -48,7 +48,7 @@ export default function GlobalError({
             onClick={reset}
             style={{
               padding: "11px 16px",
-              borderRadius: 10,
+              borderRadius: "var(--r-xl)",
               border: "none",
               background: COLORS.text,
               color: COLORS.white,
@@ -65,7 +65,7 @@ export default function GlobalError({
             href="/dashboard"
             style={{
               padding: "11px 16px",
-              borderRadius: 10,
+              borderRadius: "var(--r-xl)",
               border: `0.5px solid ${COLORS.border}`,
               background: COLORS.surface,
               color: COLORS.text,

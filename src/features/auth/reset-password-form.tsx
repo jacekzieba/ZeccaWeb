@@ -67,7 +67,7 @@ export function ResetPasswordForm() {
   const inputStyle: React.CSSProperties = {
     width: "100%",
     padding: "10px 12px",
-    borderRadius: 10,
+    borderRadius: "var(--r-xl)",
     border: `0.5px solid ${COLORS.border}`,
     background: COLORS.surface,
     fontSize: 13,
@@ -97,7 +97,7 @@ export function ResetPasswordForm() {
   const linkBtnStyle: React.CSSProperties = {
     textAlign: "center",
     padding: "11px 16px",
-    borderRadius: 10,
+    borderRadius: "var(--r-xl)",
     border: `0.5px solid ${COLORS.border}`,
     background: COLORS.surface,
     color: COLORS.text,
@@ -194,7 +194,7 @@ export function ResetPasswordForm() {
         style={{
           marginTop: 4,
           padding: "11px 16px",
-          borderRadius: 10,
+          borderRadius: "var(--r-xl)",
           border: "none",
           background: isLoading ? COLORS.surfaceAlt : COLORS.text,
           color: isLoading ? COLORS.textMuted : COLORS.white,

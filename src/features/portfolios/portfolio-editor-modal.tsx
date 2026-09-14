@@ -43,7 +43,7 @@ const labelStyle: CSSProperties = {
 const inputStyle: CSSProperties = {
   width: "100%",
   padding: "9px 12px",
-  borderRadius: 9,
+  borderRadius: "var(--r-lg)",
   border: `0.5px solid ${token("line")}`,
   background: PAPER,
   fontSize: 13,
@@ -193,7 +193,7 @@ export function PortfolioEditorModal({
           width: "100%",
           maxWidth: 460,
           background: PAPER,
-          borderRadius: 18,
+          borderRadius: "var(--r-xl)",
           boxShadow: `0 24px 64px ${v2Mix(INK, 0.22)}, inset 0 0.5px 0 ${v2Mix(INK, 0.08)}`,
           border: `0.5px solid ${token("line")}`,
         }}
@@ -317,7 +317,7 @@ export function PortfolioEditorModal({
               onClick={onClose}
               style={{
                 padding: "9px 18px",
-                borderRadius: 9,
+                borderRadius: "var(--r-lg)",
                 border: `0.5px solid ${token("line")}`,
                 background: "transparent",
                 color: MUTED,
@@ -334,7 +334,7 @@ export function PortfolioEditorModal({
               disabled={saving || !userDataKey}
               style={{
                 padding: "9px 20px",
-                borderRadius: 9,
+                borderRadius: "var(--r-lg)",
                 border: "none",
                 background: saving || !userDataKey ? v2Mix(INK, 0.12) : INK,
                 color: saving || !userDataKey ? SUBTLE : PAPER,

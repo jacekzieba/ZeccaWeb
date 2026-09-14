@@ -72,7 +72,7 @@ function Switch({ on, onChange, label }: { on: boolean; onChange: (value: boolea
       style={{
         width: 42,
         height: 25,
-        borderRadius: 13,
+        borderRadius: "var(--r-xl)",
         border: "none",
         padding: 0,
         cursor: "pointer",
@@ -115,7 +115,7 @@ function Segmented({
     <div
       role="radiogroup"
       aria-label={label ?? "Wybór ustawienia"}
-      style={{ display: "inline-flex", background: v2Mix(V2.ink, 0.06), borderRadius: 9, padding: 3 }}
+      style={{ display: "inline-flex", background: v2Mix(V2.ink, 0.06), borderRadius: "var(--r-lg)", padding: 3 }}
     >
       {options.map((option) => (
         <button
@@ -125,7 +125,7 @@ function Segmented({
           aria-checked={value === option.value}
           style={{
             padding: "6px 12px",
-            borderRadius: 7,
+            borderRadius: "var(--r-lg)",
             border: "none",
             cursor: "pointer",
             fontFamily: V2_TYPE.ui,
@@ -315,7 +315,7 @@ export function SettingsPage() {
               style={{
                 fontFamily: V2_TYPE.ui, fontSize: 12, fontWeight: 600,
                 color: V2.brand, textDecoration: "none",
-                border: `1px solid ${V2.line}`, borderRadius: 9, padding: "8px 14px",
+                border: `1px solid ${V2.line}`, borderRadius: "var(--r-lg)", padding: "8px 14px",
               }}
             >
               Zobacz wprowadzenie →
@@ -490,7 +490,7 @@ function DangerZone() {
 
   const buttonBase: React.CSSProperties = {
     padding: "9px 15px",
-    borderRadius: 10,
+    borderRadius: "var(--r-xl)",
     fontFamily: V2_TYPE.ui,
     fontSize: 12,
     fontWeight: 600,
@@ -653,7 +653,7 @@ function ProfileCard({
             <V2Badge label={portfolioCountLabel(portfolioCount)} color={V2.equity} />
           </div>
         </div>
-        <Link href="/import" style={{ padding: "9px 16px", borderRadius: 10, border: `0.5px solid ${V2.line}`, background: V2.card, color: V2.ink, fontFamily: V2_TYPE.ui, fontSize: 12, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>Import / Eksport</Link>
+        <Link href="/import" style={{ padding: "9px 16px", borderRadius: "var(--r-xl)", border: `0.5px solid ${V2.line}`, background: V2.card, color: V2.ink, fontFamily: V2_TYPE.ui, fontSize: 12, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>Import / Eksport</Link>
       </div>
     </V2Card>
   );
@@ -722,7 +722,7 @@ function AccountsSection({ accounts }: { accounts: PortfolioSummary[] }) {
                       aria-label={`Alokacja ${account.name}`}
                       style={{
                         padding: "6px 13px",
-                        borderRadius: 9,
+                        borderRadius: "var(--r-lg)",
                         border: `0.5px solid ${V2.line}`,
                         background: V2.card,
                         color: V2.ink,
@@ -797,7 +797,7 @@ function NotificationSection({ prefs }: { prefs: NotificationPrefs }) {
           onClick={requestPermission}
           disabled={permission === "granted" || permission === "unsupported" || permission === "denied"}
           style={{
-            padding: "9px 15px", borderRadius: 10, border: "none", whiteSpace: "nowrap",
+            padding: "9px 15px", borderRadius: "var(--r-xl)", border: "none", whiteSpace: "nowrap",
             background: permission === "granted" || permission === "unsupported" || permission === "denied" ? v2Mix(V2.ink, 0.1) : V2.ink,
             color: permission === "granted" || permission === "unsupported" || permission === "denied" ? V2.subtle : V2.card,
             fontFamily: V2_TYPE.ui, fontSize: 12, fontWeight: 600,

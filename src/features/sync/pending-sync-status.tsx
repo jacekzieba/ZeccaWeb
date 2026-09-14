@@ -22,7 +22,7 @@ const panelStyle: CSSProperties = {
   top: 44,
   width: 380,
   maxWidth: "calc(100vw - 24px)",
-  borderRadius: 14,
+  borderRadius: "var(--r-xl)",
   background: COLORS.surface,
   border: `0.5px solid ${COLORS.border}`,
   boxShadow: `0 14px 36px ${v2Mix(V2.ink, 0.2)}`,
@@ -146,7 +146,7 @@ export function PendingSyncStatus() {
           alignItems: "center",
           gap: 7,
           padding: "7px 11px",
-          borderRadius: 9,
+          borderRadius: "var(--r-lg)",
           border: `0.5px solid ${conflictCount > 0 ? "rgba(184,80,66,0.26)" : COLORS.border}`,
           background: conflictCount > 0 ? "rgba(184,80,66,0.10)" : COLORS.surface,
           color: conflictCount > 0 ? token("down") : COLORS.textMuted,
@@ -213,7 +213,7 @@ export function PendingSyncStatus() {
                 key={operation.operationId}
                 style={{
                   padding: 10,
-                  borderRadius: 10,
+                  borderRadius: "var(--r-xl)",
                   border: `0.5px solid ${COLORS.border}`,
                   background: COLORS.surface,
                 }}
@@ -233,7 +233,7 @@ export function PendingSyncStatus() {
                       disabled={!supabase || syncing}
                       style={{
                         padding: "5px 8px",
-                        borderRadius: 7,
+                        borderRadius: "var(--r-lg)",
                         border: "0.5px solid rgba(184,80,66,0.20)",
                         background: "transparent",
                         color: token("down"),
@@ -249,7 +249,7 @@ export function PendingSyncStatus() {
                       disabled={syncing}
                       style={{
                         padding: "5px 8px",
-                        borderRadius: 7,
+                        borderRadius: "var(--r-lg)",
                         border: `0.5px solid ${COLORS.border}`,
                         background: "transparent",
                         color: COLORS.textMuted,

@@ -43,7 +43,7 @@ const glassCard: CSSProperties = {
   background: V2.card,
   backdropFilter: "blur(30px) saturate(160%)",
   WebkitBackdropFilter: "blur(30px) saturate(160%)",
-  borderRadius: 16,
+  borderRadius: "var(--r-xl)",
   border: `0.5px solid ${V2.line}`,
   boxShadow: `0 1px 0 ${v2Mix(V2.ink, 0.03)}, 0 6px 20px ${v2Mix(V2.ink, 0.05)}`,
 };
@@ -641,7 +641,7 @@ export function TransactionsPage() {
               onClick={() => { setSearch(""); setPortfolioFilter("all"); setTypeFilter("all"); }}
               style={{
                 padding: "7px 12px",
-                borderRadius: 9,
+                borderRadius: "var(--r-lg)",
                 border: `0.5px solid ${V2.line}`,
                 background: "transparent",
                 color: V2.muted,
@@ -664,7 +664,7 @@ export function TransactionsPage() {
             alignItems: "center",
             gap: 12,
             padding: "10px 12px",
-            borderRadius: 10,
+            borderRadius: "var(--r-xl)",
             background: v2Mix(V2.brand, 0.08),
             border: `0.5px solid ${v2Mix(V2.brand, 0.16)}`,
           }}
@@ -722,7 +722,7 @@ export function TransactionsPage() {
             alignItems: "center",
             gap: 12,
             padding: "10px 12px",
-            borderRadius: 10,
+            borderRadius: "var(--r-xl)",
             background: v2Mix(V2.loss, 0.08),
             border: `0.5px solid ${v2Mix(V2.loss, 0.22)}`,
           }}

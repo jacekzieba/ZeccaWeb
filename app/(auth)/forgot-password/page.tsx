@@ -19,7 +19,7 @@ export default function ForgotPasswordPage() {
           width: "100%",
           maxWidth: 420,
           ...SURFACES.glassPanel,
-          borderRadius: 18,
+          borderRadius: "var(--r-xl)",
           boxShadow: SHADOWS.cardStrong,
           padding: "36px 32px",
         }}
@@ -31,7 +31,7 @@ export default function ForgotPasswordPage() {
               style={{
                 width: 32,
                 height: 32,
-                borderRadius: 9,
+                borderRadius: "var(--r-lg)",
                 background: COLORS.text,
                 color: COLORS.white,
                 display: "flex",

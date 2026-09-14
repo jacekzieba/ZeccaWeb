@@ -34,7 +34,7 @@ export function OnboardingCard({
       <div
         style={{
           width: "min(620px, 100%)", maxHeight: "92vh", overflowY: "auto",
-          background: V2.card, borderRadius: 20,
+          background: V2.card, borderRadius: "var(--r-xl)",
           border: `0.5px solid ${V2.line}`,
           boxShadow: "0 18px 60px rgba(20,26,21,.35)",
           padding: "34px 38px", textAlign: "center",

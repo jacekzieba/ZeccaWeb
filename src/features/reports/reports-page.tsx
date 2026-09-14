@@ -141,7 +141,7 @@ function Kpi({
             style={{
               width: 20,
               height: 20,
-              borderRadius: 6,
+              borderRadius: "var(--r-lg)",
               color: SUBTLE,
               background: v2Mix(V2.ink, 0.05),
               display: "inline-flex",

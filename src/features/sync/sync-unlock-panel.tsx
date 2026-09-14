@@ -651,7 +651,7 @@ export function SyncUnlockPanel({
                 alignItems: "center",
                 gap: 6,
                 padding: "8px 14px",
-                borderRadius: 9,
+                borderRadius: "var(--r-lg)",
                 border: `0.5px solid ${token("line")}`,
                 background: PAPER,
                 color: INK,
@@ -671,7 +671,7 @@ export function SyncUnlockPanel({
               alignItems: "center",
               gap: 6,
               padding: "8px 16px",
-              borderRadius: 9,
+              borderRadius: "var(--r-lg)",
               background: INK,
               color: PAPER,
               fontSize: 13,
@@ -805,7 +805,7 @@ export function SyncUnlockPanel({
               style={{
                 width: "100%",
                 padding: "9px 12px",
-                borderRadius: 9,
+                borderRadius: "var(--r-lg)",
                 border: `0.5px solid ${token("line")}`,
                 background: PAPER,
                 fontSize: 13,
@@ -824,7 +824,7 @@ export function SyncUnlockPanel({
               style={{
                 width: "100%",
                 padding: "9px 12px",
-                borderRadius: 9,
+                borderRadius: "var(--r-lg)",
                 border: `0.5px solid ${token("line")}`,
                 background: PAPER,
                 fontSize: 13,
@@ -839,7 +839,7 @@ export function SyncUnlockPanel({
               style={{
                 justifySelf: "start",
                 padding: "9px 16px",
-                borderRadius: 9,
+                borderRadius: "var(--r-lg)",
                 border: "none",
                 background: createStatus === "creating" ? v2Mix(INK, 0.12) : INK,
                 color: createStatus === "creating" ? SUBTLE : PAPER,
@@ -913,7 +913,7 @@ export function SyncUnlockPanel({
               style={{
                 width: "100%",
                 padding: "9px 12px",
-                borderRadius: 9,
+                borderRadius: "var(--r-lg)",
                 border: `0.5px solid ${token("line")}`,
                 background: PAPER,
                 fontSize: 13,
@@ -928,7 +928,7 @@ export function SyncUnlockPanel({
             disabled={isBusy || passphrase.length === 0}
             style={{
               padding: "9px 16px",
-              borderRadius: 9,
+              borderRadius: "var(--r-lg)",
               border: "none",
               background: isBusy || passphrase.length === 0 ? v2Mix(INK, 0.12) : INK,
               color: isBusy || passphrase.length === 0 ? SUBTLE : PAPER,
