@@ -205,22 +205,35 @@ function Field({
     !htmlFor && kandydat && !kandydat.props.id
       ? cloneElement(kandydat, { id })
       : children;
-  // Gwiazdka tylko gdy dziecko faktycznie ma required — pole samo mówi, czy
-  // jest wymagane, więc etykieta nigdy się z tym nie rozjedzie. Gwiazdka jest
-  // SIOSTRĄ etykiety, nie jej dzieckiem: w środku <label> zmieniałaby dostępną
-  // nazwę pola na "Portfel *" (getByLabelText("Portfel") przestawał trafiać),
-  // mimo aria-hidden — accname z tekstu etykiety liczy się z jej zawartości.
-  const required = kandydat?.props.required === true;
+  // Gwiazdka/„opcjonalnie" tylko dla prostych pól (bez htmlFor) — pole samo
+  // mówi, czy jest wymagane, więc etykieta nigdy się z tym nie rozjedzie.
+  // Kompozytowe pola (z htmlFor, np. Instrument) nie mają jednego <input> do
+  // odpytania o required, więc świadomie zostają bez znacznika w żadną stronę
+  // zamiast zgadywać. Badania Baymard: oznaczanie WYŁĄCZNIE jednej strony
+  // (tylko wymagane albo tylko opcjonalne) myliło 32% użytkowników w testach
+  // e-commerce — tu większość pól jest opcjonalna, więc obie strony są jawne.
+  // Znacznik jest SIOSTRĄ etykiety, nie jej dzieckiem: w środku <label>
+  // zmieniałby dostępną nazwę pola na "Portfel *" (getByLabelText("Portfel")
+  // przestawał trafiać), mimo aria-hidden — accname liczy się z zawartości.
+  const required = !htmlFor && kandydat?.props.required === true;
+  const optional = !htmlFor && kandydat !== null && !required;
 
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 3, marginBottom: 5 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginBottom: 5 }}>
         {id ? (
           <label htmlFor={id} style={{ ...labelStyle, marginBottom: 0 }}>{label}</label>
         ) : (
           <span style={{ ...labelStyle, marginBottom: 0 }}>{label}</span>
         )}
         {required && <span aria-hidden="true" style={{ color: AMBER, fontSize: 10 }}>*</span>}
+        {optional && (
+          // Bez aria-hidden — w przeciwieństwie do gwiazdki nie ma tu żadnego
+          // natywnego atrybutu, który powiedziałby to czytnikom ekranu inaczej.
+          <span style={{ ...labelStyle, marginBottom: 0, textTransform: "none", letterSpacing: 0, fontWeight: 500, color: SUBTLE }}>
+            (opcjonalnie)
+          </span>
+        )}
       </div>
       {dziecko}
     </div>
@@ -268,7 +281,10 @@ function DecimalSeparatorHint() {
         padding: "9px 12px",
         marginBottom: 12,
         fontSize: 12,
-        color: MUTED,
+        // MUTED (6:1) technicznie przechodzi kontrast, ale to jedyna wskazówka
+        // formatowania w całym formularzu — jej złamanie psuje zapis. Pełny
+        // INK, żeby czytała się jak treść, nie jak metadana.
+        color: INK,
         lineHeight: 1.4,
       }}
     >
@@ -1699,7 +1715,11 @@ export function AddTransactionModal({
                     padding: "0 18px",
                     borderRadius: "var(--r-pill)",
                     border: "none",
-                    background: v2Mix(V2.ink, 0.08),
+                    // 0.08 siedziało tak blisko tła inputów (PAPER), że przycisk
+                    // i pole tekstowe czytały się jak ten sam element w innym
+                    // kształcie. Mocniejsze wypełnienie realnie odróżnia "klikalne"
+                    // od "edytowalnego".
+                    background: v2Mix(V2.ink, 0.16),
                     color: INK,
                     fontSize: 13,
                     fontWeight: 700,
