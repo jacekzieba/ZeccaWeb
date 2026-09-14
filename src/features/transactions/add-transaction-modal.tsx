@@ -205,18 +205,13 @@ function Field({
     !htmlFor && kandydat && !kandydat.props.id
       ? cloneElement(kandydat, { id })
       : children;
-  // Gwiazdka/„opcjonalnie" tylko dla prostych pól (bez htmlFor) — pole samo
-  // mówi, czy jest wymagane, więc etykieta nigdy się z tym nie rozjedzie.
-  // Kompozytowe pola (z htmlFor, np. Instrument) nie mają jednego <input> do
-  // odpytania o required, więc świadomie zostają bez znacznika w żadną stronę
-  // zamiast zgadywać. Badania Baymard: oznaczanie WYŁĄCZNIE jednej strony
-  // (tylko wymagane albo tylko opcjonalne) myliło 32% użytkowników w testach
-  // e-commerce — tu większość pól jest opcjonalna, więc obie strony są jawne.
-  // Znacznik jest SIOSTRĄ etykiety, nie jej dzieckiem: w środku <label>
-  // zmieniałby dostępną nazwę pola na "Portfel *" (getByLabelText("Portfel")
-  // przestawał trafiać), mimo aria-hidden — accname liczy się z zawartości.
-  const required = !htmlFor && kandydat?.props.required === true;
-  const optional = !htmlFor && kandydat !== null && !required;
+  // „Opcjonalnie" tylko dla prostych pól (bez htmlFor) — pole samo mówi, czy
+  // jest wymagane, więc etykieta nigdy się z tym nie rozjedzie. Kompozytowe
+  // pola (z htmlFor, np. Instrument) nie mają jednego <input> do odpytania
+  // o required, więc świadomie zostają bez znacznika zamiast zgadywać.
+  // Wymagane pola nie dostają żadnego oznaczenia — tylko opcjonalne są jawnie
+  // podpisane, reszta jest wymagana przez brak podpisu.
+  const optional = !htmlFor && kandydat !== null && kandydat.props.required !== true;
 
   return (
     <div>
@@ -226,10 +221,8 @@ function Field({
         ) : (
           <span style={{ ...labelStyle, marginBottom: 0 }}>{label}</span>
         )}
-        {required && <span aria-hidden="true" style={{ color: AMBER, fontSize: 10 }}>*</span>}
         {optional && (
-          // Bez aria-hidden — w przeciwieństwie do gwiazdki nie ma tu żadnego
-          // natywnego atrybutu, który powiedziałby to czytnikom ekranu inaczej.
+          // Bez aria-hidden — czytnik ekranu ma to usłyszeć jako część opisu pola.
           <span style={{ ...labelStyle, marginBottom: 0, textTransform: "none", letterSpacing: 0, fontWeight: 500, color: SUBTLE }}>
             (opcjonalnie)
           </span>
