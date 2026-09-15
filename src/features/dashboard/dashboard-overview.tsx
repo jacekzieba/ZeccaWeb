@@ -1127,7 +1127,7 @@ function SummaryCard({
             overflow: "hidden",
           }}
         >
-          <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+          <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 10, rowGap: 8, flexWrap: "wrap", marginBottom: 16 }}>
             <Eyebrow>Wartość portfela</Eyebrow>
             <span
               title={lastSyncedAt ? new Date(lastSyncedAt).toLocaleString("pl-PL") : undefined}
