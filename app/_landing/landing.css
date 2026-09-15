@@ -1379,6 +1379,13 @@
   .zlanding .faq-inner,
   .zlanding .closing > .wrap { grid-template-columns: minmax(0, 1fr); gap: 40px; }
 
+  /* .hero-copy/.hero-panel wciąż mają jawne miejsce z siatki 12-kolumnowej
+     (span 8 / 9 / span 4, patrz reguła bazowa wyżej) — bez resetu, kolaps do
+     jednej jawnej kolumny każe przeglądarce dorobić osiem niewidzialnych
+     kolumn, żeby zmieścić linię 9, i panel renderuje się szerzej niż ekran
+     (ten sam błąd, który .register-grid miał wcześniej). */
+  .zlanding .hero-copy,
+  .zlanding .hero-panel { grid-column: auto; }
   .zlanding .hero-panel { max-width: 420px; }
   .zlanding .sec-split { display: block; }
   .zlanding .sec-split .sec-aside { max-width: 56ch; padding-bottom: 0; margin-top: 20px; }
@@ -1650,6 +1657,14 @@
   .zlanding .faq-inner,
   .zlanding .closing > .wrap { grid-template-columns: minmax(0, 1fr); gap: 40px; }
   .zlanding .sec-split { align-items: start; }
+  /* .alloc-ring i jej rodzeństwo wciąż mają jawne miejsce z bazowej siatki
+     12-kolumnowej (9 / span 4, 1 / span 7 — patrz reguły przy .asset-classes,
+     linia ~579) — bez resetu, kolaps do jednej jawnej kolumny każe
+     przeglądarce dorobić niewidzialne kolumny, żeby zmieścić linię 9, i
+     pierścień z legendą wyjeżdżają poza ekran (ten sam błąd co .register-grid
+     i .hero-panel wyżej). */
+  .zlanding .asset-classes-inner > .alloc-ring,
+  .zlanding .asset-classes-inner > :not(.alloc-ring) { grid-column: auto; grid-row: auto; }
   .zlanding .asset-classes-inner > .alloc-ring { order: 0; }
   .zlanding .hero-panel { max-width: 420px; }
 }
