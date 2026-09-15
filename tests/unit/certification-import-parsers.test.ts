@@ -158,7 +158,7 @@ describe("certification import parity", () => {
     expect(vwce.currency).toBe("EUR");
   });
 
-  it("XTB: persists the verified Yahoo listing for USD ICOM and VWRL", () => {
+  it("XTB: resolves EUR VWRL (unambiguous .NL suffix) and USD ICOM (dividend harvest)", () => {
     const catalog = buildEtfCatalog([
       { ticker: "VWRL", isin: "IE00B3RBWM25", name: "Vanguard FTSE All-World", domicile: "Irlandia" },
       { ticker: "ICOM", isin: "IE00BDFL4P12", name: "iShares Diversified Commodity Swap", domicile: "Irlandia" },
@@ -166,6 +166,10 @@ describe("certification import parity", () => {
     const rows: unknown[][] = [
       ["ID", "Type", "Time", "Ticker", "Instrument", "Comment", "Amount"],
       [400001, "Stock purchase", new Date("2026-07-15T10:00:00Z"), "VWRL.NL", "Vanguard FTSE All-World", "OPEN BUY 1 @ 131.25", -550],
+      // The dividend comment states the fund's own distribution currency (USD,
+      // as Vanguard reports everywhere), not the settlement currency of this
+      // listing — VWRL.NL trades in EUR on Euronext Amsterdam. The unambiguous
+      // .NL suffix must win over this harvested-but-irrelevant "USD".
       [400002, "Dividend", new Date("2026-07-15T10:01:00Z"), "VWRL.NL", "Vanguard FTSE All-World", "VWRL.NL USD 0.1/SHR", 1],
       [400003, "Stock purchase", new Date("2026-07-15T10:02:00Z"), "ICOM.UK", "iShares Diversified Commodity Swap", "OPEN BUY 1 @ 8.6595", -36],
       [400004, "Dividend", new Date("2026-07-15T10:03:00Z"), "ICOM.UK", "iShares Diversified Commodity Swap", "ICOM.UK USD 0.1/SHR", 1],
@@ -176,11 +180,13 @@ describe("certification import parity", () => {
       preview.newInstrumentPayloads.find((payload) => payload.symbol === symbol) as Record<string, unknown>;
 
     expect(payloadFor("VWRL.NL")).toMatchObject({
-      currency: "USD",
+      currency: "EUR",
       isin: "IE00B3RBWM25",
-      marketDataID: "VWRL.L",
-      exchange: "LSE",
+      marketDataID: "VWRL.AS",
+      exchange: "Euronext Amsterdam",
     });
+    // ICOM.UK has no unambiguous exchange currency (.UK can be USD or GBP), so
+    // it still falls back to the harvested dividend currency — correctly, here.
     expect(payloadFor("ICOM.UK")).toMatchObject({
       currency: "USD",
       isin: "IE00BDFL4P12",
@@ -214,6 +220,30 @@ describe("certification import parity", () => {
     const preview = parseXtbXlsx(XTB_ROWS, PORTFOLIO, refs);
     expect(preview.warnings.some((w) => w.includes("bez dopasowanej"))).toBe(false);
     expect(preview.warnings.some((w) => w.includes("bez pary"))).toBe(false);
+  });
+
+  it("XTB: reconciles against the file's own Total row with no warning", () => {
+    const rowsWithTotal = [...XTB_ROWS, ["", "Total", "", "", "", "", 28_167.1]];
+    const preview = parseXtbXlsx(rowsWithTotal, PORTFOLIO, references);
+    expect(preview.warnings.some((w) => w.includes('wierszem "Total"'))).toBe(false);
+  });
+
+  it("XTB: a deduped re-import still reconciles against Total (no false mismatch)", () => {
+    const rowsWithTotal = [...XTB_ROWS, ["", "Total", "", "", "", "", 28_167.1]];
+    const refs: ImportReferenceData = {
+      ...references,
+      existingExternalImportIds: new Set(["xtb:100002", "xtb:100003"]), // VWCE buy + its commission
+    };
+    const preview = parseXtbXlsx(rowsWithTotal, PORTFOLIO, refs);
+    expect(preview.warnings.some((w) => w.includes('wierszem "Total"'))).toBe(false);
+  });
+
+  it("XTB: warns when parsed rows don't reconcile with the Total row", () => {
+    // A wrong Total simulates a row that silently failed to parse elsewhere —
+    // the check can't know which row, only that the sums disagree.
+    const rowsWithBadTotal = [...XTB_ROWS, ["", "Total", "", "", "", "", 999_999]];
+    const preview = parseXtbXlsx(rowsWithBadTotal, PORTFOLIO, references);
+    expect(preview.warnings.some((w) => w.includes('wierszem "Total"'))).toBe(true);
   });
 
   it("XTB: warns about an interest tax with no matching interest", () => {

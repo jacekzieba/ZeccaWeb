@@ -151,10 +151,26 @@ export function parseXtbXlsx(
 
   // Parse raw rows
   const cashRows: CashRow[] = [];
+  // XTB's own running total for the sheet — the file's ground truth for
+  // "every cash-moving row summed". Kept so we can warn if our own sum of
+  // parsed rows disagrees, which would mean a row silently failed to parse
+  // instead of being accounted for.
+  let reportedTotal: number | null = null;
+  // Every row that parsed (valid date + finite amount) counts here, even one
+  // dropped afterward for dedup — a deduped row was already counted against
+  // the file's Total on the import that first added it, and re-imports must
+  // not flag a false mismatch.
+  let coveredAmountSum = 0;
   for (let i = headerRowIdx + 1; i < rows.length; i++) {
     const cells = rows[i];
     const typeRaw = String(cells[typeCol] ?? "").trim();
-    if (!typeRaw || typeRaw.toLowerCase() === "total") continue;
+    if (!typeRaw) continue;
+    if (typeRaw.toLowerCase() === "total") {
+      const totalRaw = cells[amountCol];
+      const total = typeof totalRaw === "number" ? totalRaw : parseFloat(String(totalRaw ?? "").replace(",", "."));
+      if (isFinite(total)) reportedTotal = total;
+      continue;
+    }
 
     const timeRaw = cells[timeCol];
     let date: Date;
@@ -171,6 +187,7 @@ export function parseXtbXlsx(
     const amountRaw = cells[amountCol];
     const amount = typeof amountRaw === "number" ? amountRaw : parseFloat(String(amountRaw ?? "").replace(",", "."));
     if (!isFinite(amount)) continue;
+    coveredAmountSum += amount;
 
     const rawId = idCol >= 0 ? String(cells[idCol] ?? "").trim() : "";
     const externalId = rawId ? `xtb:${rawId}` : null;
@@ -199,6 +216,12 @@ export function parseXtbXlsx(
       externalId,
       comment,
     });
+  }
+
+  if (reportedTotal !== null && Math.abs(coveredAmountSum - reportedTotal) > 0.01) {
+    warnings.push(
+      `Suma zaimportowanych wierszy (${coveredAmountSum.toFixed(2)} PLN) nie zgadza się z wierszem "Total" w pliku (${reportedTotal.toFixed(2)} PLN) — część wierszy mogła nie zostać poprawnie odczytana.`,
+    );
   }
 
   // Pre-index commission rows by ticker for pairing with trades
@@ -264,15 +287,23 @@ export function parseXtbXlsx(
     }
 
     // Create a new provisional instrument. The XTB export doesn't state the
-    // instrument's currency directly, so resolve it best-effort: harvested
-    // dividend currency first (most reliable — it's XTB's own data), then an
-    // unambiguous exchange suffix. If neither applies, keep the "?" placeholder
-    // and warn — never guess. A non-PLN currency (including "?") still lets the
-    // buy/sell path capture the observed FX rate, so the PLN cost is preserved.
+    // instrument's currency directly, so resolve it best-effort: an unambiguous
+    // exchange suffix first (it names the settlement currency of this exact
+    // listing), then the harvested dividend currency. The dividend comment only
+    // states the fund's own distribution currency (e.g. Vanguard funds report in
+    // USD everywhere), which is NOT the same thing — VWRL.NL settles in EUR on
+    // Euronext Amsterdam even though its dividend comment says "USD ...  /SHR".
+    // Trusting the harvested currency over the exchange suffix mislabels every
+    // EUR-settled listing as USD, which — while the buy/sell FX rate is captured
+    // observationally and stays correct — corrupts anything downstream keyed off
+    // the instrument's currency (market data listing lookup, valuation display).
+    // If neither resolves, keep the "?" placeholder and warn — never guess. A
+    // non-PLN currency (including "?") still lets the buy/sell path capture the
+    // observed FX rate, so the PLN cost is preserved.
     const exchange = upper.includes(".") ? upper.split(".").pop() : undefined;
     const currency =
-      dividendCurrencyByTicker.get(upper) ??
       (exchange ? EXCHANGE_CURRENCY[exchange] : undefined) ??
+      dividendCurrencyByTicker.get(upper) ??
       "?";
     if (currency === "?") {
       warnings.push(`Instrument ${upper}: nie ustalono waluty (zagraniczny) — ustaw ręcznie`);
