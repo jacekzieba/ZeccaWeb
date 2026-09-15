@@ -989,15 +989,19 @@
 .zlanding .closing-signup .sec-desc { max-width: 38ch; }
 
 /* ── 02 · Proweniencja + historia w jednej sekcji ─────────────────────────── */
+/* grid-template-columns i gap żyją w jednym miejscu: „Siatka: prawa kolumna…"
+   niżej w tym pliku (współdzielone z .sec-split/.asset-classes-inner) — tam
+   też jest kolaps na wąskich ekranach. Kiedyś obie kolumny miały tu jeszcze
+   jawne `grid-column` (siatka 12-kolumnowa sprzed uproszczenia do 2 kolumn):
+   przy kolapsie do jednej jawnej kolumny to `9 / span 4` samo dociągało 8
+   niewidzialnych, dorabianych kolumn, więc karta z wykresem wyjeżdżała poza
+   ekran na telefonie zamiast się złożyć pod tekst. Bez jawnego `grid-column`
+   dzieci trafiają po kolei do kolumn, które faktycznie istnieją. */
 .zlanding .register-grid {
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  column-gap: var(--col-gap);
   align-items: start;
   margin-top: 44px;
 }
-.zlanding .register-rows { grid-column: span 8; }
-.zlanding .register-visual { grid-column: 9 / span 4; }
 .zlanding .register > .wrap { display: block; }
 .zlanding .register .sec-head { max-width: none; }
 .zlanding .register-visual { display: flex; flex-direction: column; gap: 18px; }
