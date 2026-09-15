@@ -41,7 +41,7 @@ export const landingCopy = {
     // Rejestr: wiersz = jedna wartość z portfela demo plus cecha jej źródła.
     // Reguła kierunku: na szynie stoi wyłącznie to, co da się ocechować.
     register: {
-      eyebrow: "Proweniencja",
+      eyebrow: "Źródła danych",
       title: "Nie szacujemy.<br>Odtwarzamy.",
       note: "Liczby pochodzą z portfela demonstracyjnego — te same przeliczenia, które Zecca robi na Twoich danych.",
       rows: [

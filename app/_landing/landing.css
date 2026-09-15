@@ -1395,7 +1395,12 @@
   .zlanding .steps-row:nth-child(even) { direction: ltr; }
   .zlanding .steps-row-figure { aspect-ratio: 16 / 9; }
 
-  .zlanding .alloc-ring { align-items: flex-start; }
+  /* padding-top: 40px w regule bazowej wyrównywał pierścień do sąsiedniej
+     kolumny tekstu na desktopie — na wąskim ekranie pierścień jest teraz
+     pierwszym elementem (order: 0), więc ten sam odstęp zostaje pustym
+     pasem nad nim. Sam pierścień też jest za duży na 320-390px. */
+  .zlanding .alloc-ring { align-items: center; padding-top: 0; }
+  .zlanding .alloc-ring svg { width: min(200px, 56%); }
   .zlanding .alloc-legend { max-width: none; }
   .zlanding .closing .sec-bg { object-position: 72% center; }
 }
@@ -1416,15 +1421,23 @@
      łuk rantu, a nie całe lico krążka pod tekstem. */
   .zlanding .hero-bg { object-position: 26% 58%; }
   /* Poziomy scrim był rysowany pod układ dwukolumnowy: chronił lewą trzecią
-     część kadru. Tekst idzie tu przez całą szerokość, więc zasłona też musi. */
+     część kadru. Tekst idzie tu przez całą szerokość, więc zasłona też musi.
+     Poprzednie stopnie (0,9 → 0,76 → pełne krycie od połowy) gasiły rondel
+     niemal całkowicie — pod tekstem został tylko ledwo widoczny cień. Niżej
+     zasłona jaśnieje mocniej, żeby monetę było widać pod kartą "Wartość
+     portfela", a pełne krycie wraca dopiero tuż nad następną sekcją. */
   .zlanding .hero::before {
-    background: linear-gradient(180deg, rgba(2, 10, 11, 0.9) 0%, rgba(2, 10, 11, 0.76) 44%, var(--vault) 100%);
+    background: linear-gradient(180deg, rgba(2, 10, 11, 0.92) 0%, rgba(2, 10, 11, 0.55) 34%, rgba(2, 10, 11, 0.22) 60%, var(--vault) 96%);
   }
 
   /* Wiersz rejestru: etykieta i źródło jedno pod drugim, bez ściskania */
   .zlanding .register-row { flex-wrap: wrap; gap: 8px 16px; }
   .zlanding .register-row .rail-mark { order: 0; flex: 1 0 100%; text-align: left; }
   .zlanding .register-what { flex: 1 0 100%; }
+  /* Pięć wierszy na wąskim ekranie to długie przewijanie przed dotarciem do
+     wykresu — zostają trzy najważniejsze (wartość, zwrot realny, XIRR). */
+  .zlanding .register-row:nth-of-type(4),
+  .zlanding .register-row:nth-of-type(5) { display: none; }
 
   /* Zakres wykresu wychodził poza kadr — zawija się i kurczy */
   .zlanding .static-chart-head { gap: 10px; }
