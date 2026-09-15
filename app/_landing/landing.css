@@ -1120,19 +1120,22 @@
 .zlanding .steps-shot-body { position: relative; flex: 1; }
 
 /* Miniatura interfejsu wewnątrz okna — te same tokeny i komponenty co
-   produkt (pigułka, pole, kafelek), wyreżyserowane pod jedną ideę na krok
-   zamiast pokazywać przypadkowy fragment prawdziwej strony. Kroki 02/03
-   dzielą motyw linii zbiegających N→1 (.mini-converge), żeby "wiele źródeł
-   składa się w jedno" czytało się tak samo w obu miejscach. */
+   produkt (pigułka klasy aktywów, pole, zakładka, kafelek metryki z cechą
+   źródła), kotwiczone od góry jak prawdziwy, przycięty zrzut ekranu (więcej
+   treści domyślnie niżej, poza kadrem) zamiast wyśrodkowanej ikony. Pierwsza
+   wersja próbowała zasugerować "wiele źródeł → jeden wynik" samą linią bez
+   podpisu — czytała się jak przypadkowa strzałka. Tu tę samą ideę niesie
+   prawdziwa etykieta kafelka (np. "FIFO" jako cecha źródła), nie geometria. */
 .zlanding .mini {
   position: absolute;
   inset: 0;
-  padding: 22px 22px;
+  padding: 20px 22px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: flex-start;
+  gap: 14px;
   font-family: var(--text);
+  overflow: hidden;
 }
 .zlanding .mini-field-label {
   display: block;
@@ -1143,68 +1146,163 @@
   color: var(--ink-3);
   margin-bottom: 6px;
 }
-.zlanding .mini-row { display: flex; align-items: center; gap: 10px; }
-.zlanding .mini-pill {
-  font-size: 12px;
+/* Krój dopasowany do reszty miniatur: żadna inna nie sięga po --display
+   (Bodoni), więc jeden serifowy nagłówek tu wyglądał jak przypadek, nie
+   decyzja. Ten sam głos co aktywna zakładka w kroku 02 (sans, pogrubiony). */
+.zlanding .mini-section-title { font-family: var(--text); font-size: 13px; font-weight: 600; color: var(--ink); }
+
+/* Krok 01 — pigułki klasy aktywów, tak jak w prawdziwym formularzu transakcji. */
+.zlanding .mini-asset-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.zlanding .mini-asset-pill {
+  font-size: 10.5px;
   font-weight: 600;
-  padding: 5px 12px;
+  padding: 5px 10px;
   border-radius: 99px;
-  border: 1px solid var(--hair);
-  background: rgba(79, 199, 154, 0.12);
-  color: var(--up);
-}
-.zlanding .mini-hint { font-size: 11.5px; color: var(--ink-3); }
-.zlanding .mini-field {
-  font-family: var(--mono);
-  font-size: 14px;
-  color: var(--ink);
-  border: 1px solid var(--hair);
-  border-radius: 4px;
-  padding: 8px 11px;
-  background: var(--vault-2);
-}
-.zlanding .mini-chip-row { display: flex; gap: 8px; }
-.zlanding .mini-chip {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  padding: 4px 9px;
-  border-radius: 4px;
   border: 1px solid var(--hair);
   color: var(--ink-2);
   background: var(--vault-2);
 }
-.zlanding .mini-converge { display: block; width: 100%; flex: 1; min-height: 28px; }
-.zlanding .mini-result { font-family: var(--mono); font-size: 22px; color: var(--up); font-weight: 500; }
-.zlanding .mini-result span { font-size: 11px; color: var(--ink-3); display: block; margin-top: 3px; font-family: var(--text); }
-.zlanding .mini-acct-list { display: flex; flex-direction: column; }
-.zlanding .mini-acct-row {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 7px 0;
-  border-top: 0.5px solid var(--hair-2);
+.zlanding .mini-asset-pill--active {
+  border-color: rgba(79, 199, 154, 0.5);
+  background: rgba(79, 199, 154, 0.12);
+  color: var(--up);
 }
-.zlanding .mini-acct-row:first-child { border-top: none; padding-top: 0; }
-.zlanding .mini-dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 7px; }
-.zlanding .mini-acct-name {
-  font-size: 12px;
+.zlanding .mini-field-row { display: flex; gap: 10px; }
+.zlanding .mini-field-row .mini-field-group { flex: 1; min-width: 0; }
+.zlanding .mini-field-group { display: flex; flex-direction: column; }
+.zlanding .mini-field {
+  font-family: var(--mono);
+  font-size: 13px;
   color: var(--ink);
-  flex: 1;
-  min-width: 0;
+  border: 1px solid var(--hair);
+  border-radius: 4px;
+  padding: 7px 11px;
+  background: var(--vault-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.zlanding .mini-acct-val { font-family: var(--mono); font-size: 12px; color: var(--ink-2); white-space: nowrap; }
+.zlanding .mini-import-hint { font-size: 11px; color: var(--ink-3); display: flex; align-items: center; gap: 7px; }
+.zlanding .mini-csv-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px dashed var(--hair);
+  color: var(--ink-2);
+}
+/* Stopka formularza — suma + przyciski, tak jak w prawdziwym modalu
+   transakcji. Wypełnia dół okna treścią zamiast pustym tłem, i kończy krok
+   01 na tej samej nucie, na której naprawdę kończy się dodawanie transakcji:
+   decyzją "zapisz". */
+.zlanding .mini-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--hair);
+}
+.zlanding .mini-footer-total { display: block; font-family: var(--mono); font-size: 16px; color: var(--ink); margin-top: 2px; }
+.zlanding .mini-footer-actions { display: flex; gap: 8px; flex: 0 0 auto; }
+.zlanding .mini-btn { font-size: 11px; font-weight: 600; padding: 7px 12px; border-radius: 5px; white-space: nowrap; }
+.zlanding .mini-btn--ghost { border: 1px solid var(--hair); color: var(--ink-2); }
+.zlanding .mini-btn--primary { background: var(--amber); color: var(--vault); }
+
+/* Krok 02 — zakładki Raportów + rejestr kafelków, ta sama cecha źródła
+   (mark/label/value) co w prawdziwym kafelku metryki (zob. metric-tiles.tsx). */
+.zlanding .mini-tabs { display: flex; gap: 14px; }
+.zlanding .mini-tab { font-size: 11px; color: var(--ink-3); }
+.zlanding .mini-tab--active { color: var(--ink); font-weight: 600; }
+.zlanding .mini-tile-row { display: flex; gap: 8px; align-items: stretch; }
+.zlanding .mini-tile {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 11px;
+  border: 1px solid var(--hair);
+  border-radius: 4px;
+  background: var(--vault-2);
+}
+.zlanding .mini-tile-mark {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  line-height: 1.4;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.zlanding .mini-tile-mark em { display: block; font-style: normal; text-transform: none; letter-spacing: 0.01em; color: var(--ink-3); opacity: 0.8; }
+.zlanding .mini-tile-label { font-size: 10.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.zlanding .mini-tile-value {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.zlanding .mini-tile-sub { font-size: 9px; color: var(--ink-3); }
+/* Wodospad kapitał→wynik pod kafelkami — realne wartości (demo.metrics),
+   nie ozdobna krzywa. Próbowaliśmy wcześniej linii (za blisko "liniowy",
+   wprost wykluczony) i siatki-cieplnej (odrzucona). Wodospad ilustruje
+   dosłownie treść nagłówka kroku — "Zecca przelicza" — jako budowanie
+   wyniku z kapitału plus dwóch zysków, nie tylko pokazuje liczby obok
+   siebie. Dwa skrajne słupki (Kapitał, Wynik) stoją od zera; dwa środkowe
+   "unoszą się" — zaczynają tam, gdzie kończy się poprzedni. */
+.zlanding .mini-chart-block { margin-top: auto; padding-top: 10px; }
+.zlanding .mini-chart-block .mini-field-label { margin-bottom: 8px; }
+.zlanding .mini-waterfall { display: flex; gap: 12px; height: 116px; }
+.zlanding .mini-wf-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+.zlanding .mini-wf-value { font-family: var(--mono); font-size: 10.5px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.zlanding .mini-wf-track { position: relative; width: 100%; flex: 1; }
+.zlanding .mini-wf-bar { position: absolute; left: 0; right: 0; border-radius: 5px 5px 2px 2px; }
+.zlanding .mini-wf-bar--total { opacity: 0.55; }
+.zlanding .mini-wf-label { font-size: 9.5px; color: var(--ink-3); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
+/* Krok 03 — dwa osobne wykresy odpowiadające na dwa różne pytania. Słupki
+   kolumnowe: "ile na którym koncie" — próbowaliśmy najpierw prawdziwego
+   30-dniowego mini-wykresu na wiersz (portfolio.sparkline), seria w danych
+   demo jest prawie płaska (rzadkie wyceny ręczne), wyglądała jak usterka;
+   potem cienki poziomy pasek, za mało "wykresem" wizualnie. Kolumny z realną
+   wysokością czytają się jak właściwy wykres porównawczy. Kołowy obok:
+   "z czego się to składa" — tu kołowy pasuje naprawdę, bo to udział w
+   całości (100%), nie porównanie niezależnych wielkości jak konta. */
+.zlanding .mini-split { display: flex; gap: 20px; align-items: flex-start; }
+.zlanding .mini-column-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  height: 108px;
+  padding: 0 4px;
+  flex: 1.3;
+}
+.zlanding .mini-column { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 8px; }
+.zlanding .mini-column-value { font-family: var(--mono); font-size: 10.5px; color: var(--ink); white-space: nowrap; }
+.zlanding .mini-column-bar { width: 100%; max-width: 52px; border-radius: 6px 6px 2px 2px; }
+.zlanding .mini-donut-block { flex: 1; display: flex; flex-direction: column; gap: 10px; padding-left: 18px; border-left: 1px solid var(--hair); min-width: 0; }
+.zlanding .mini-donut-row { display: flex; align-items: center; gap: 12px; }
+.zlanding .mini-donut { position: relative; width: 74px; height: 74px; border-radius: 50%; flex: 0 0 auto; }
+.zlanding .mini-donut-hole { position: absolute; inset: 15px; border-radius: 50%; background: var(--vault-3); }
+.zlanding .mini-donut-legend { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.zlanding .mini-donut-legend .mini-legend-item b { font-family: var(--mono); font-weight: 500; color: var(--ink); margin-left: 3px; }
+.zlanding .mini-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; padding-top: 4px; }
+.zlanding .mini-legend-item { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--ink-2); white-space: nowrap; }
+.zlanding .mini-dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 7px; }
 .zlanding .mini-sum {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  padding-top: 4px;
+  padding-top: 10px;
+  margin-top: 2px;
+  border-top: 1px solid var(--hair);
 }
 .zlanding .mini-sum .mini-field-label { margin-bottom: 0; }
-.zlanding .mini-sum b { font-family: var(--mono); font-size: 16px; font-weight: 500; color: var(--ink); }
+.zlanding .mini-sum b { font-family: var(--mono); font-size: 17px; font-weight: 500; color: var(--ink); }
 .zlanding .steps-row-figure::after {
   content: "";
   position: absolute;
@@ -1333,19 +1431,35 @@
   .zlanding .foot-top { flex-direction: column; gap: 32px; }
   .zlanding .foot-bot { flex-direction: column; gap: 8px; }
 
-  /* Okno kroków przechodzi na 16∶9 (patrz reguła niżej) — miniatura wewnątrz
-     dostaje ciaśniejszy odstęp, a krok 01 traci drugie pole (Data): dwa pola
-     pełnej wysokości mieściły się w 16∶10 na desktopie, nie w niższym kadrze
-     tutaj. */
-  .zlanding .mini { padding: 14px 16px; gap: 8px; }
-  .zlanding .mini-entry-date { display: none; }
-  .zlanding .mini-field { padding: 6px 9px; font-size: 12.5px; }
-  .zlanding .mini-result { font-size: 18px; }
-  .zlanding .mini-converge { min-height: 14px; }
-  .zlanding .mini-acct-row { padding: 4px 0; }
-  .zlanding .mini-acct-name,
-  .zlanding .mini-acct-val { font-size: 11px; }
-  .zlanding .mini-sum { padding-top: 0; }
+  /* Okno kroków przechodzi na 16∶9 (patrz reguła niżej) — mniej wysokości niż
+     16∶10 na desktopie, więc każda miniatura traci jeden, najmniej istotny
+     element zamiast przycinać resztę przez overflow: hidden ramki. Krok 01
+     traci kwotę (instrument zostaje jako konkretny przykład, wskazówka o
+     imporcie zostaje jako dowód drugiej połowy nagłówka — "albo importujesz
+     pliki"). Krok 02 traci FIFO (dwa kafelki zamiast trzech, żeby etykieta
+     i liczba w pozostałych nie obcinały się w połowie słowa/cyfry) — zostają
+     akurat te dwa, które nagłówek kroku wprost nazywa: "wynik realny po
+     inflacji" i XIRR. */
+  .zlanding .mini { padding: 12px 14px; gap: 6px; }
+  .zlanding .mini-tile-sub,
+  .zlanding .mini-tabs,
+  .zlanding .mini-tile-secondary,
+  .zlanding .mini-field-group--amount,
+  .zlanding .mini-field-group--date,
+  .zlanding .mini-footer,
+  .zlanding .mini-chart-block { display: none; }
+  .zlanding .mini-import-hint { font-size: 10px; }
+  .zlanding .mini-field-label { margin-bottom: 3px; }
+  .zlanding .mini-field { padding: 5px 8px; font-size: 12px; }
+  .zlanding .mini-asset-pill { padding: 3px 8px; font-size: 9.5px; }
+  .zlanding .mini-tile { padding: 6px 7px; gap: 2px; }
+  .zlanding .mini-tile-value { font-size: 13px; }
+  .zlanding .mini-section-title { display: none; }
+  .zlanding .mini-donut-block { display: none; }
+  .zlanding .mini-column-chart { height: 62px; gap: 12px; }
+  .zlanding .mini-column-value { font-size: 9.5px; }
+  .zlanding .mini-legend { display: none; }
+  .zlanding .mini-sum { padding-top: 4px; margin-top: 0; }
   .zlanding .mini-sum b { font-size: 14px; }
 }
 

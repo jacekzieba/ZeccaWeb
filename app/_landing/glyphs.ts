@@ -14,8 +14,12 @@ export const GLYPHS = {
   // ── Funkcje ─────────────────────────────────────────────────────────────
   portfele:    g('<rect x="3" y="9" width="8" height="13" rx="1"/><rect x="12" y="5" width="6" height="17" rx="1"/><rect x="19" y="13" width="6" height="9" rx="1"/>'),
   statystyki:  g('<path d="M3 21l6-8 5 4 4-9 7 5"/><path d="M3 24h22"/><circle cx="9" cy="13" r="1.2"/><circle cx="18" cy="8" r="1.2"/>'),
-  inflacja:    g('<path d="M3 14h22"/><path d="M4 20l7-3 7 1 7-5"/><path d="M4 9l7 2 7-3 7 1"/>'),
-  historia:    g('<path d="M25 7h-6V4"/><path d="M25 7l-5 5-5-3-5 6-6 3"/><path d="M3 24h22"/>'),
+  // Ten sam słupek, dwie wysokości: nominalna kwota i to, co z niej zostaje
+  // po odjęciu inflacji — mechanizm "wynik realny", nie fale bez znaczenia.
+  inflacja:    g('<path d="M3 24h22"/><rect x="5" y="9" width="6" height="15"/><path d="M14 12.5l4 3"/><rect x="19" y="15.5" width="6" height="8.5"/>'),
+  // Kartka kalendarza ze strzałką wstecz: dopisujesz transakcję pod wcześniejszą
+  // datą, nie "statystyki" jeszcze raz tą samą rosnącą kreską co dwie karty wcześniej.
+  historia:    g('<rect x="4" y="7" width="20" height="17" rx="1.5"/><path d="M4 12.5h20"/><path d="M9.5 4v5.5M18.5 4v5.5"/><path d="M15 20l-3.2-3 3.2-3"/>'),
   zarobki:     g('<path d="M3 24h22"/><rect x="5" y="14" width="4" height="8"/><rect x="12" y="9" width="4" height="13"/><rect x="19" y="17" width="4" height="5"/><path d="M5 6h18"/>'),
   import:      g('<path d="M14 3v12"/><path d="M10 11l4 4 4-4"/><path d="M4 19v4h20v-4"/><path d="M4 19h20"/>'),
   eksport:     g('<path d="M14 15V3"/><path d="M10 7l4-4 4 4"/><path d="M4 19v4h20v-4"/><path d="M4 19h20"/>'),

@@ -92,66 +92,175 @@ const PLUS_SVG = `<svg class="pm" viewBox="0 0 24 24" fill="none" stroke="curren
 
 import { buildLandingDemoSnapshot } from "./landing-demo-data";
 import { formatCurrency, formatPercent } from "@/lib/money";
-import { portfolioDotColor } from "@/lib/asset-colors";
+import { assetClassColor, portfolioDotColor } from "@/lib/asset-colors";
 
 const c = landingCopy;
 const demo = buildLandingDemoSnapshot();
 
+function fmtSignedPct(value: number): string {
+  return `${value >= 0 ? "+" : ""}${formatPercent(value)}`;
+}
 // Kotwica pod opisem karty: jedna konkretna wartość zamiast samej obietnicy.
 // Puste tam, gdzie nie ma liczby, której nie trzeba by zmyślić.
 // Znak przy wierszu — w kolejności copy.ts.
 // Zawartość okna: miniatura interfejsu, nie zrzut ekranu ani abstrakcyjny
-// wykres. Trzy zrzuty trzech różnych stron obok siebie nie czytały się jak
-// jedna sekwencja (różne kadry, różne dane w tle); czysty diagram odchodził
-// za daleko od "to jest nasz produkt". Miniatura używa tych samych tokenów,
-// kroju i komponentów co appka (pigułka, pole, mono cyfry), wyreżyserowanych
-// pod jedną ideę na krok — a kroki 02/03 pożyczają z diagramu motyw linii
-// zbiegających N→1 (dane → wynik, konta → suma), żeby "wiele źródeł składa
-// się w jedno" czytało się tak samo w obu miejscach.
+// wykres. Pełny zrzut ekranu odpadał — trzy różne strony obok siebie nie
+// czytały się jak jedna sekwencja; pierwsza wersja miniatury poszła za daleko
+// w drugą stronę (linie zbiegające bez podpisu czytały się jako przypadkowa
+// strzałka). Druga wersja naprawiła to realnymi komponentami, ale zostawiała
+// dużo pustego tła pod nimi. Ta wersja dodaje po jednym elemencie na krok,
+// który wypełnia przestrzeń TREŚCIĄ, nie ozdobą: krok 01 dostaje stopkę
+// formularza (suma + przyciski, jak w prawdziwym modalu), krok 02 wodospad
+// kapitał→wynik pod kafelkami (netInvested → +niezrealizowany → +zrealizowany
+// → wynik, demo.metrics). Krok 03 ma dwa OSOBNE wykresy obok siebie — słupki
+// kolumnowe porównujące wartość trzech kont (demo.portfolios) i kołowy
+// (jedyne miejsce, gdzie kołowy pasuje: to naprawdę udział procentowy, nie
+// porównanie wielkości) z podziałem na rodzaj aktywów (demo.allocation) —
+// dwa różne pytania ("ile na którym koncie" i "z czego to się składa"),
+// każde swoim własnym typem wykresu.
 const STEP_MINIATURES = [
   `<div class="mini mini-entry">
-    <div class="mini-row">
-      <span class="mini-pill">Zakup</span>
-      <span class="mini-hint">lub import CSV</span>
+    <div class="mini-asset-pills">
+      <span class="mini-asset-pill mini-asset-pill--active">Wszystkie</span>
+      <span class="mini-asset-pill">ETF</span>
+      <span class="mini-asset-pill">Obligacje</span>
+      <span class="mini-asset-pill">Krypto</span>
     </div>
-    <div class="mini-entry-date">
-      <span class="mini-field-label">Data</span>
-      <div class="mini-field">15.09.2026</div>
+    <div class="mini-field-row">
+      <div class="mini-field-group mini-field-group--date">
+        <span class="mini-field-label">Data</span>
+        <div class="mini-field">15.09.2026</div>
+      </div>
+      <div class="mini-field-group mini-field-group--instrument">
+        <span class="mini-field-label">Instrument</span>
+        <div class="mini-field">VWCE.DE</div>
+      </div>
     </div>
-    <div>
+    <div class="mini-field-group mini-field-group--amount">
       <span class="mini-field-label">Kwota (brutto)</span>
       <div class="mini-field">1&nbsp;792,00 zł</div>
     </div>
-  </div>`,
-  `<div class="mini mini-compute">
-    <div class="mini-chip-row">
-      <span class="mini-chip">NBP</span>
-      <span class="mini-chip">GUS</span>
-      <span class="mini-chip">FIFO</span>
+    <div class="mini-import-hint"><span class="mini-csv-badge">CSV</span> albo import pliku od brokera</div>
+    <div class="mini-footer">
+      <div>
+        <span class="mini-field-label">Suma</span>
+        <span class="mini-footer-total">1&nbsp;792,00 zł</span>
+      </div>
+      <div class="mini-footer-actions">
+        <span class="mini-btn mini-btn--ghost">Anuluj</span>
+        <span class="mini-btn mini-btn--primary">Dodaj zakup</span>
+      </div>
     </div>
-    <svg class="mini-converge" viewBox="0 0 220 28" preserveAspectRatio="none" aria-hidden="true">
-      <path d="M20,0 L110,26 M110,0 L110,26 M200,0 L110,26" stroke="var(--hair)" stroke-width="1.5" fill="none" />
-    </svg>
-    <div class="mini-result">${demo.metrics.xirrPct === null ? "—" : formatPercent(demo.metrics.xirrPct)} <span>MWR · XIRR, rocznie</span></div>
   </div>`,
-  `<div class="mini mini-together">
-    <div class="mini-acct-list">
-      ${demo.portfolios
-        .slice(0, 3)
+  (() => {
+    const { netInvested, unrealizedPnl, realizedPnl } = demo.metrics;
+    // Wodospad: kapitał jako pełny słupek od zera, dwa zyski jako "unoszące
+    // się" przyrosty, wynik jako pełny słupek zamykający — dosłownie
+    // "Zecca przelicza" złożone w jeden obrazek, nie tylko trzy osobne liczby.
+    const steps = [
+      { label: "Kapitał", value: netInvested, base: 0, tone: "ink" },
+      { label: "Niezrealizowany", value: unrealizedPnl, base: netInvested, tone: unrealizedPnl >= 0 ? "up" : "down" },
+      { label: "Zrealizowany", value: realizedPnl, base: netInvested + unrealizedPnl, tone: realizedPnl >= 0 ? "up" : "down" },
+    ];
+    const finalValue = netInvested + unrealizedPnl + realizedPnl;
+    steps.push({ label: "Wynik", value: finalValue, base: 0, tone: "ink" });
+    const scaleMax = Math.max(...steps.map((s) => s.base + s.value), 1);
+    return `<div class="mini mini-compute">
+    <div class="mini-tabs">
+      <span class="mini-tab mini-tab--active">Wyniki</span>
+      <span class="mini-tab">Roczne zwroty</span>
+      <span class="mini-tab">Alokacja</span>
+    </div>
+    <div class="mini-tile-row">
+      <div class="mini-tile mini-tile-secondary">
+        <span class="mini-tile-mark">FIFO<em>wg kosztu nabycia</em></span>
+        <span class="mini-tile-label">Zysk niezrealizowany</span>
+        <span class="mini-tile-value" style="color:var(--up)">${demo.metrics.unrealizedPnl >= 0 ? "+" : ""}${formatCurrency(demo.metrics.unrealizedPnl, "PLN")}</span>
+      </div>
+      <div class="mini-tile">
+        <span class="mini-tile-mark">Inflacja GUS<em>wskaźnik CPI</em></span>
+        <span class="mini-tile-label">Wynik realny</span>
+        <span class="mini-tile-value" style="color:var(--up)">${fmtSignedPct(demo.metrics.realReturnPct)}</span>
+        <span class="mini-tile-sub">rocznie, po inflacji</span>
+      </div>
+      <div class="mini-tile">
+        <span class="mini-tile-mark">Liczone lokalnie<em>na Twoim urządzeniu</em></span>
+        <span class="mini-tile-label">MWR · XIRR</span>
+        <span class="mini-tile-value" style="color:var(--up)">${demo.metrics.xirrPct === null ? "—" : fmtSignedPct(demo.metrics.xirrPct)}</span>
+        <span class="mini-tile-sub">rocznie</span>
+      </div>
+    </div>
+    <div class="mini-chart-block">
+      <span class="mini-field-label">Kapitał → wynik</span>
+      <div class="mini-waterfall">
+        ${steps
+          .map((step, index) => {
+            const isTotal = index === 0 || index === steps.length - 1;
+            const height = Math.max((Math.abs(step.value) / scaleMax) * 100, 4).toFixed(1);
+            const bottom = ((Math.min(step.base, step.base + step.value) / scaleMax) * 100).toFixed(1);
+            const sign = !isTotal && step.value >= 0 ? "+" : "";
+            return `<div class="mini-wf-col">
+          <span class="mini-wf-value">${sign}${formatCurrency(step.value, "PLN")}</span>
+          <div class="mini-wf-track">
+            <div class="mini-wf-bar${isTotal ? " mini-wf-bar--total" : ""}" style="height:${height}%;bottom:${bottom}%;background:var(--${step.tone})"></div>
+          </div>
+          <span class="mini-wf-label">${step.label}</span>
+        </div>`;
+          })
+          .join("")}
+      </div>
+    </div>
+  </div>`;
+  })(),
+  (() => {
+    const portfolios = demo.portfolios.slice(0, 3);
+    const maxValue = Math.max(...portfolios.map((p) => p.value));
+    return `<div class="mini mini-together">
+    <span class="mini-section-title">Podział na konta</span>
+    <div class="mini-split">
+      <div class="mini-column-chart">
+        ${portfolios
+          .map(
+            (portfolio) => `<div class="mini-column">
+          <span class="mini-column-value">${formatCurrency(portfolio.value, portfolio.baseCurrency)}</span>
+          <div class="mini-column-bar" style="height:${Math.max((portfolio.value / maxValue) * 100, 6).toFixed(1)}%;background:${portfolioDotColor(portfolio.colorHex)}"></div>
+        </div>`,
+          )
+          .join("")}
+      </div>
+      <div class="mini-donut-block">
+        <span class="mini-field-label">Rodzaj aktywów</span>
+        <div class="mini-donut-row">
+          <div class="mini-donut" style="background:conic-gradient(${(() => {
+            let cursor = 0;
+            return demo.allocation
+              .map((slice) => {
+                const start = cursor;
+                cursor += slice.percent;
+                return `${assetClassColor(slice.label)} ${start.toFixed(1)}% ${cursor.toFixed(1)}%`;
+              })
+              .join(", ");
+          })()})"><div class="mini-donut-hole"></div></div>
+          <div class="mini-donut-legend">
+            ${demo.allocation
+              .map(
+                (slice) => `<span class="mini-legend-item"><span class="mini-dot" style="background:${assetClassColor(slice.label)}"></span>${slice.label} <b>${formatPercent(slice.percent)}</b></span>`,
+              )
+              .join("")}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mini-legend">
+      ${portfolios
         .map(
-          (portfolio) => `<div class="mini-acct-row">
-        <span class="mini-dot" style="background:${portfolioDotColor(portfolio.id)}"></span>
-        <span class="mini-acct-name">${portfolio.name}</span>
-        <span class="mini-acct-val">${formatCurrency(portfolio.value, portfolio.baseCurrency)}</span>
-      </div>`,
+          (portfolio) => `<span class="mini-legend-item"><span class="mini-dot" style="background:${portfolioDotColor(portfolio.colorHex)}"></span>${portfolio.name}</span>`,
         )
         .join("")}
     </div>
-    <svg class="mini-converge" viewBox="0 0 220 16" preserveAspectRatio="none" aria-hidden="true">
-      <path d="M20,0 L110,15 M110,0 L110,15 M200,0 L110,15" stroke="var(--hair)" stroke-width="1.5" fill="none" />
-    </svg>
     <div class="mini-sum"><span class="mini-field-label">Razem</span><b>${formatCurrency(demo.totalValue, "PLN")}</b></div>
-  </div>`,
+  </div>`;
+  })(),
 ];
 const FEATURE_GLYPHS = [GLYPHS.portfele, GLYPHS.statystyki, GLYPHS.inflacja, GLYPHS.historia,
   GLYPHS.zarobki, GLYPHS.import, GLYPHS.eksport, GLYPHS.sync];
