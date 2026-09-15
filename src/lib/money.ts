@@ -43,15 +43,26 @@ export function formatPercent(value: number) {
   }).format(value / 100);
 }
 
-/** Etykieta waluty przy kwocie.
- *
- * Złoty ma w polszczyźnie symbol i tak go pisze `Intl` na landingu
- * („306 424 zł"). Aplikacja doklejała po liczbie kod ISO („301 765 PLN"),
- * więc ta sama kwota miała dwa zapisy w zależności od tego, gdzie się na nią
- * patrzyło. Kod zostaje tam, gdzie nazywa walutę — w kolumnie transakcji,
- * przy kursie NBP, w wyborze waluty bazowej — bo tam identyfikuje, a nie mierzy. */
+/** Symbol tam, gdzie mierzy kwotę — kod tam, gdzie nazywa walutę (kolumna
+ * transakcji, kurs NBP, wybór waluty bazowej renderują `currency`/kod wprost,
+ * nigdy przez tę funkcję). Pełna lista rozstrzygnięta po stronie natywnej —
+ * musi zostać tym samym zestawem co `DisplayNumberFormatter.swift`, inaczej
+ * ta sama kwota ma dwa zapisy zależnie od platformy. Nieznany kod zostaje
+ * kodem. */
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  PLN: "zł",
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  JPY: "¥",
+  CZK: "Kč",
+  SEK: "kr",
+  NOK: "kr",
+  DKK: "kr",
+};
+
 export function currencyLabel(code: string) {
-  return code === "PLN" ? "zł" : code;
+  return CURRENCY_SYMBOLS[code] ?? code;
 }
 
 /** Procent po polsku — z przecinkiem.

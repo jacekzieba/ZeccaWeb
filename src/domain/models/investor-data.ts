@@ -27,6 +27,10 @@ export type PortfolioSummary = {
   positions: number;
   /** Recent daily values for an inline sparkline (chronological). */
   sparkline: number[];
+  /** Zapisany kolor konta z kontraktu synchronizacji — dowolny hex, w tym
+   * osiem starych barw sprzed migracji na Skarbiec. Renderuj wyłącznie przez
+   * `portfolioDotColor()`, nigdy wprost — patrz jej komentarz. */
+  colorHex: string;
 };
 
 export type IncomeSummary = {

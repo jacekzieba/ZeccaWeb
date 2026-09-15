@@ -1373,6 +1373,9 @@ function buildPortfolioSummary(
     dailyChange,
     positions: valuation.positionCount,
     sparkline,
+    // Ten sam domyślny hex co macos-payloads.ts i natywny model konta —
+    // rekord bez zapisanego koloru dostaje ten sam kolor na każdej platformie.
+    colorHex: account.colorHex ?? "#7EA16B",
   };
 }
 

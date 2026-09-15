@@ -89,6 +89,7 @@ describe("InvestorDataSnapshot mapper", () => {
         dailyChange: 0,
         positions: 1,
         sparkline: expect.any(Array),
+        colorHex: "#7EA16B",
       },
     ]);
     expect(snapshot.allocation.map((slice) => slice.label)).toEqual([

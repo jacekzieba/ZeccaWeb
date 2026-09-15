@@ -1,6 +1,7 @@
 "use client";
 
 import { token } from "@/design/tokens";
+import { portfolioDotColor } from "@/lib/asset-colors";
 import { SURFACES } from "@/lib/design-tokens";
 import { v2Mix } from "@/lib/v2-design";
 import Link from "next/link";
@@ -39,10 +40,6 @@ function fmt(n: number) {
 function fmtPct(n: number) {
   return `${n >= 0 ? "+" : ""}${n.toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
 }
-
-const PORTFOLIO_COLORS = [
-  "#6B3F5A", token("assetEquity"), token("up"), token("accent"), token("inkMuted"), token("assetBonds"),
-];
 
 export function PortfolioListPage() {
   const records = useSyncStore((s) => s.records);
@@ -288,8 +285,8 @@ export function PortfolioListPage() {
           </div>
         )}
 
-        {snapshot?.portfolios.map((pf, i) => {
-          const color = PORTFOLIO_COLORS[i % PORTFOLIO_COLORS.length];
+        {snapshot?.portfolios.map((pf) => {
+          const color = portfolioDotColor(pf.colorHex);
           const pct = snapshot.totalValue > 0 ? (pf.value / snapshot.totalValue) * 100 : 0;
 
           return (

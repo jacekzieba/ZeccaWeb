@@ -27,6 +27,7 @@
   --asset-deposit: #7A6E63;
   --asset-cash: #4A5A68;
   --asset-crypto: #6E52B0;
+  --asset-other: #7A5540;
 
   --r-xs: 2px;
   --r-sm: 3px;
@@ -94,4 +95,12 @@
   --asset-deposit: #8A9E97;
   --asset-cash: #5C7E93;
   --asset-crypto: #B6A2E4;
+  /* Szósta klasa, rozstrzygnięta po stronie natywnej (macOS/iOS) — "Inne
+     aktywa" (dzieła, wino, nieruchomości, surowce) to realna pozycja
+     portfela, nie worek na resztę. Dobrana pomiarem na --ground: kontrast
+     5,25:1, ΔE 31 do najbliższej klasy (najciaśniejsza istniejąca para ma
+     17), ΔE 51 do bursztynu. Musi być tym samym hexem co
+     Sources/InvestorCore/DesignTokens.swift (assetOther) w repo natywnym,
+     inaczej ta sama klasa ma dwa kolory zależnie od platformy. */
+  --asset-other: #A8776A;
 }

@@ -27,6 +27,7 @@ describe("tokeny", () => {
       assetDeposit: "#7A6E63",
       assetCash: "#4A5A68",
       assetCrypto: "#6E52B0",
+      assetOther: "#7A5540",
     });
   });
 
@@ -50,12 +51,13 @@ describe("tokeny", () => {
       assetDeposit: "#8A9E97",
       assetCash: "#5C7E93",
       assetCrypto: "#B6A2E4",
+      assetOther: "#A8776A",
     });
   });
 
-  it("jest pięć klas aktywów, nie cztery", () => {
+  it("jest sześć klas aktywów, nie pięć — szósta to 'Inne aktywa', rozstrzygnięta po stronie natywnej", () => {
     const classes = TOKEN_NAMES.filter((n) => n.startsWith("asset"));
-    expect(classes).toHaveLength(5);
+    expect(classes).toHaveLength(6);
   });
 
   it("nie ma tokenu ostrzeżenia — stan niesie słowo i glif", () => {

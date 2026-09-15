@@ -46,6 +46,7 @@ export const sampleSnapshot: InvestorDataSnapshot = {
       dailyChange: 0.7,
       positions: 3,
       sparkline: [27_400, 27_900, 28_300, 28_100, 29_000, 29_600, 30_200, 30_050, 30_800, 31_200],
+      colorHex: "#63A594",
     },
     {
       id: "bond",
@@ -55,6 +56,7 @@ export const sampleSnapshot: InvestorDataSnapshot = {
       dailyChange: 0.1,
       positions: 2,
       sparkline: [17_900, 18_000, 18_120, 18_240, 18_300, 18_410, 18_520, 18_600, 18_700, 18_760],
+      colorHex: "#C9A24F",
     },
   ],
   valuationSeries: SAMPLE_HISTORY,

@@ -1549,11 +1549,10 @@ function PortfoliosCard({
       ) : (
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {portfolios.map((portfolio, index) => {
-          // Kolor kropki wynika z tożsamości portfela, nie z jego miejsca w tablicy.
-          // Wcześniej pierwsze konto dostawało bursztyn (akcent w danych), a każde
-          // kolejne ten sam kolor obligacji — trzy konta, dwie barwy, dwie
-          // identyczne. Dołożenie portfela przesuwało bursztyn na inne konto.
-          const color = portfolioDotColor(portfolio.id);
+          // Kolor kropki wynika z zapisanego colorHex konta (dane z kontraktu
+          // synchronizacji), nie z miejsca w tablicy ani z haszu id — inaczej
+          // ten sam portfel rysuje się innym kolorem na Macu, iPhonie i tu.
+          const color = portfolioDotColor(portfolio.colorHex);
           const series = portfolio.sparkline.length >= 2 ? portfolio.sparkline : [portfolio.value, portfolio.value];
           // 30d change derived from the same points as the sparkline, so the
           // number and the chart always agree.

@@ -5,7 +5,7 @@ export const TOKEN_NAMES = [
   "ink", "inkMuted", "inkFaint",
   "accent", "onAccent", "rail",
   "up", "down",
-  "assetEquity", "assetBonds", "assetDeposit", "assetCash", "assetCrypto",
+  "assetEquity", "assetBonds", "assetDeposit", "assetCash", "assetCrypto", "assetOther",
 ] as const;
 
 export type TokenName = (typeof TOKEN_NAMES)[number];
@@ -30,6 +30,7 @@ export const LIGHT: ThemeTokens = {
   assetDeposit: "#7A6E63",
   assetCash: "#4A5A68",
   assetCrypto: "#6E52B0",
+  assetOther: "#7A5540",
 };
 
 export const DARK: ThemeTokens = {
@@ -51,6 +52,9 @@ export const DARK: ThemeTokens = {
   assetDeposit: "#8A9E97",
   assetCash: "#5C7E93",
   assetCrypto: "#B6A2E4",
+  // Musi być tym samym hexem co assetOther w Sources/InvestorCore/DesignTokens.swift
+  // (repo natywne) — inaczej ta sama klasa aktywu ma dwa kolory zależnie od platformy.
+  assetOther: "#A8776A",
 };
 
 export const RADIUS = {
