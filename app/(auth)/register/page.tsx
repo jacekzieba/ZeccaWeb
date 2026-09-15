@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { SignupForm } from "@/features/auth/signup-form";
-import { COLORS, SHADOWS, SURFACES } from "@/lib/design-tokens";
+import { COLORS, SURFACES } from "@/lib/design-tokens";
 
 export default function RegisterPage() {
   return (
@@ -19,8 +19,7 @@ export default function RegisterPage() {
           width: "100%",
           maxWidth: 420,
           ...SURFACES.glassPanel,
-          borderRadius: 18,
-          boxShadow: SHADOWS.cardStrong,
+          borderRadius: "var(--r-xl)",
           padding: "36px 32px",
         }}
       >
@@ -31,15 +30,14 @@ export default function RegisterPage() {
               style={{
                 width: 32,
                 height: 32,
-                borderRadius: 9,
+                borderRadius: "var(--r-lg)",
                 background: COLORS.text,
                 color: COLORS.white,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: 15,
-                fontWeight: 800,
-                boxShadow: SHADOWS.button,
+                fontWeight: 700,
               }}
             >
               <Image
@@ -51,7 +49,7 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text }}>Zecca</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.text }}>Zecca</div>
               <div
                 style={{
                   fontSize: 10,
@@ -64,7 +62,7 @@ export default function RegisterPage() {
               </div>
             </div>
           </div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: COLORS.text, letterSpacing: "-0.01em" }}>
+          <h1 style={{ fontSize: 21, fontWeight: 700, color: COLORS.text, letterSpacing: "-0.01em" }}>
             Załóż konto
           </h1>
           <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 6, lineHeight: 1.5 }}>

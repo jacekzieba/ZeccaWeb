@@ -13,9 +13,12 @@ export function LanguageBootstrap() {
   const language = useAppLanguage();
   const records = useSyncStore((state) => state.records);
 
-  useEffect(() => {
-    document.documentElement.lang = language;
-  }, [language]);
+  // `lang` opisuje język TREŚCI, nie preferencję w ustawieniach. Słownik tłumaczy
+  // dziś osiemnaście napisów — menu boczne i własną etykietę przełącznika — więc
+  // dokument pozostaje polski. Ustawianie tu `en` powodowało, że czytnik ekranu
+  // czytał polski tekst angielską fonetyką: przełącznik pogarszał dostępność,
+  // zamiast cokolwiek przetłumaczyć. Wróci tu, gdy wróci tłumaczenie.
+  void language;
 
   useEffect(() => {
     const settings = records?.find((record) => record.envelope.type === "settings");

@@ -3,7 +3,7 @@
 import { token } from "@/design/tokens";
 import { useEffect, useState, type CSSProperties } from "react";
 import { RefreshCw } from "lucide-react";
-import { COLORS, SHADOWS } from "@/lib/design-tokens";
+import { COLORS } from "@/lib/design-tokens";
 import { isFakeSyncEnabled } from "@/lib/env";
 import { V2, v2Mix } from "@/lib/v2-design";
 import { runSyncCycle } from "@/sync/records/sync-cycle";
@@ -22,10 +22,10 @@ const feedbackStyle: CSSProperties = {
   width: "max-content",
   maxWidth: "min(320px, calc(100vw - 24px))",
   padding: "8px 11px",
-  borderRadius: 9,
+  borderRadius: "var(--r-lg)",
   border: `0.5px solid ${COLORS.border}`,
-  background: "rgba(255,253,249,0.98)",
-  boxShadow: SHADOWS.cardStrong,
+  background: COLORS.surface,
+  boxShadow: `0 14px 36px ${v2Mix(V2.ink, 0.2)}`,
   fontSize: 11,
   lineHeight: 1.4,
 };
@@ -105,7 +105,7 @@ export function ManualSyncButton({ compact = false }: { compact?: boolean }) {
           alignItems: "center",
           justifyContent: "center",
           gap: 7,
-          borderRadius: 9,
+          borderRadius: "var(--r-lg)",
           border: `0.5px solid ${COLORS.border}`,
           background: v2Mix(V2.card, 0.7),
           color: COLORS.textMuted,

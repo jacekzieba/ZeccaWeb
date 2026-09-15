@@ -17,12 +17,13 @@ export const COLORS = {
   forest: token("ink"),
   accent: token("accent"),
   neutral: token("inkFaint"),
-  gold: token("assetBonds"),
+  // `gold` był drugim aliasem --asset-bonds; został sam bursztyn akcentu.
+  brand: token("accent"),
   crypto: token("assetCrypto"),
   other: token("assetDeposit"),
   plum: token("assetCrypto"),
   white: token("onAccent"),
-  overlay: "rgba(11,26,20,0.42)",
+  overlay: "color-mix(in srgb, var(--ground) 42%, transparent)",
   subtle: token("inkFaint"),
   muted: token("inkMuted"),
   lineSoft: token("line"),
@@ -62,14 +63,30 @@ export const TYPOGRAPHY = {
   mono: "var(--font-code)",
 } as const;
 
-// Pozostałość starego systemu — nowy system nie ma cieni. Nie dokładaj tu nowych
-// wpisów; ten blok zniknie razem z migracją src/features na tokeny (Plan 3).
-export const SHADOWS = {
-  card: "0 1px 0 rgba(22,29,24,0.03), 0 6px 20px rgba(22,29,24,0.05)",
-  cardStrong: "inset 0 1px 0 rgba(255,255,255,0.75), 0 14px 36px rgba(22,29,24,0.08)",
-  button: "0 3px 10px rgba(22,29,24,0.22), inset 0 0.5px 0 rgba(255,255,255,0.16)",
-  tooltip: "0 8px 22px rgba(0,0,0,0.22)",
+/** Skala stopni pisma — dziesięć kroków, definicja w src/design/tokens.css.
+ *
+ * Style w tym produkcie są w większości inline, więc obok zmiennych CSS musi
+ * istnieć ta sama drabina w TypeScripcie. Wartości są liczbami, bo `fontSize`
+ * w stylach inline i tak przyjmuje px.
+ */
+export const TYPE_SCALE = {
+  t1: 10,
+  t2: 11,
+  t3: 12,
+  t4: 13,
+  t5: 15,
+  t6: 18,
+  t7: 21,
+  t8: 26,
+  t9: 31,
+  t10: 52,
 } as const;
+
+/** Najbliższy krok skali. Używane przez migrację i przy nowych stylach. */
+export function typeStep(px: number): number {
+  const kroki = Object.values(TYPE_SCALE);
+  return kroki.reduce((a, b) => (Math.abs(b - px) < Math.abs(a - px) ? b : a));
+}
 
 export const SURFACES = {
   glassCard: {

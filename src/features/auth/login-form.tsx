@@ -3,7 +3,8 @@
 import { useId, useState } from "react";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { authRedirectBase } from "@/lib/auth-redirect";
-import { COLORS, SHADOWS } from "@/lib/design-tokens";
+import { COLORS } from "@/lib/design-tokens";
+import { v2Mix } from "@/lib/v2-design";
 
 function GoogleIcon() {
   return (
@@ -93,13 +94,13 @@ export function LoginForm() {
   const inputStyle: React.CSSProperties = {
     width: "100%",
     padding: "10px 12px",
-    borderRadius: 10,
+    borderRadius: "var(--r-xl)",
     border: `0.5px solid ${COLORS.border}`,
     background: COLORS.surface,
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.text,
     outline: "none",
-    boxShadow: "inset 0 1px 2px rgba(28,49,68,0.04)",
+    boxShadow: `inset 0 1px 2px ${v2Mix(COLORS.text, 0.04)}`,
     fontFamily: "inherit",
   };
 
@@ -120,9 +121,9 @@ export function LoginForm() {
     justifyContent: "center",
     gap: 10,
     padding: "10px 16px",
-    borderRadius: 10,
+    borderRadius: "var(--r-xl)",
     border: `0.5px solid ${COLORS.border}`,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 500,
     cursor: isLoading ? "not-allowed" : "pointer",
     fontFamily: "inherit",
@@ -221,17 +222,17 @@ export function LoginForm() {
           style={{
             marginTop: 4,
             padding: "11px 16px",
-            borderRadius: 10,
+            borderRadius: "var(--r-xl)",
             border: "none",
             background: isLoading ? COLORS.surfaceAlt : COLORS.text,
             color: isLoading ? COLORS.textMuted : COLORS.white,
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: 600,
             cursor: isLoading ? "not-allowed" : "pointer",
             boxShadow:
               isLoading
                 ? "none"
-                : SHADOWS.button,
+                : `0 3px 10px ${v2Mix(COLORS.text, 0.22)}, inset 0 0.5px 0 ${v2Mix(COLORS.text, 0.1)}`,
             transition: "background .15s",
             fontFamily: "inherit",
           }}

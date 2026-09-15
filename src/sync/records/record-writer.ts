@@ -5,6 +5,7 @@ import {
   fetchActiveEncryptedRecords,
   fetchEncryptedRecordMetadata,
   softDeleteEncryptedRecord,
+  restoreEncryptedRecord,
   upsertEncryptedRecord,
   type UpsertPayload,
 } from "@/sync/records/supabase-sync-store";
@@ -67,6 +68,16 @@ type SaveRecordOptions = {
 
 export type WriteRecordResult = {
   queued: boolean;
+  /** Znacznik czasu, który cofnięcie usunięcia musi podać jako `baseUpdatedAt`,
+   *  inaczej strażnik konfliktów je odrzuci. Gdy zapis poszedł na serwer, to
+   *  świeży znacznik z tej operacji. Gdy `queued`, serwer w ogóle nie widział
+   *  usunięcia — to wciąż stary znacznik sprzed próby, bo to on nadal stoi
+   *  na wierszu zdalnym. */
+  updatedAt?: string;
+  /** Ustawione tylko gdy `queued`: identyfikator wpisu w lokalnej kolejce,
+   *  do skasowania przy cofnięciu — inaczej odłożone usunięcie i tak
+   *  wykona się później, gdy połączenie wróci. */
+  operationId?: string;
 };
 
 type SyncMutationDetail = {
@@ -158,6 +169,10 @@ async function assertNoConflict(
   recordType: string,
   id: string,
   baseUpdatedAt: string | null | undefined,
+  // Cofnięcie usunięcia z definicji zastaje rekord usunięty, więc dla niego
+  // `deleted_at` nie jest konfliktem. Znacznik czasu i tak musi się zgadzać —
+  // chodzi tylko o to, żeby nie odrzucać operacji za sam fakt usunięcia.
+  { allowDeleted = false }: { allowDeleted?: boolean } = {},
 ) {
   const remote = await fetchEncryptedRecordMetadata(supabase, recordType, id);
 
@@ -180,7 +195,7 @@ async function assertNoConflict(
     );
   }
 
-  if (remote.deleted_at || !timestampsMatchInstant(remote.updated_at, baseUpdatedAt)) {
+  if ((remote.deleted_at && !allowDeleted) || !timestampsMatchInstant(remote.updated_at, baseUpdatedAt)) {
     throw new SyncConflictError(
       "Rekord zmienił się na innym urządzeniu. Odśwież dane i ponów zmianę.",
       recordType,
@@ -316,8 +331,9 @@ export async function deleteRecord(
       throw error;
     }
 
+    const operationId = crypto.randomUUID();
     enqueuePendingOperation({
-      operationId: crypto.randomUUID(),
+      operationId,
       operation: "delete",
       recordType,
       id,
@@ -333,7 +349,12 @@ export async function deleteRecord(
       id,
       queued: true,
     });
-    return { queued: true };
+    // Ten znacznik nigdy nie dotarł na serwer — wiersz zdalny wciąż ma stary,
+    // sprzed próby usunięcia. Zwrócenie świeżego `updatedAt` jako podstawy
+    // cofnięcia gwarantowało konflikt: restoreRecord porównałby go z realnym,
+    // niezmienionym znacznikiem zdalnym i odrzucił jako "zmienione gdzie
+    // indziej", mimo że nic się nie zmieniło.
+    return { queued: true, updatedAt: options.baseUpdatedAt ?? undefined, operationId };
   }
 
   dispatchSyncMutation({
@@ -342,7 +363,43 @@ export async function deleteRecord(
     id,
     queued: false,
   });
-  return { queued: false };
+  return { queued: false, updatedAt };
+}
+
+/** Cofnięcie usunięcia rekordu.
+ *
+ * Usunięcie jest miękkie — szyfrogram zostaje w wierszu, zmienia się wyłącznie
+ * `deleted_at`. Cofnięcie czyści ten znacznik.
+ *
+ * `baseUpdatedAt` MUSI być znacznikiem z chwili usunięcia, nie sprzed niego:
+ * strażnik konfliktów porównuje go z tym, co stoi na serwerze, więc podanie
+ * starszej wartości cofnęłoby też zmianę zapisaną w międzyczasie na innym
+ * urządzeniu. `deleteRecord` zwraca ten znacznik właśnie po to.
+ */
+export async function restoreRecord(
+  supabase: BrowserSupabaseClient,
+  recordType: string,
+  id: string,
+  options: SaveRecordOptions = {},
+): Promise<WriteRecordResult> {
+  const userId = await getCurrentUserId(supabase);
+  const updatedAt = new Date().toISOString();
+
+  await assertNoConflict(supabase, recordType, id, options.baseUpdatedAt, { allowDeleted: true });
+  await restoreEncryptedRecord(supabase, {
+    id,
+    user_id: userId,
+    record_type: recordType,
+    updated_at: updatedAt,
+  });
+
+  dispatchSyncMutation({
+    operation: "upsert",
+    recordType,
+    id,
+    queued: false,
+  });
+  return { queued: false, updatedAt };
 }
 
 export async function flushPendingSyncOperations(

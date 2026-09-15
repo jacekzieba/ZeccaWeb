@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { V2, V2_TYPE } from "@/lib/v2-design";
+import { V2, V2_TYPE, v2Mix } from "@/lib/v2-design";
 import { nextPresentStep, type TourStep } from "./steps";
 
-const DIM = "rgba(20,26,21,.52)";
+const DIM = v2Mix(V2.page, 0.52);
 const ANCHOR_TIMEOUT_MS = 2000;
 const ANCHOR_POLL_MS = 50;
 const SPOT_PAD = 6;
@@ -256,7 +256,7 @@ export function TourOverlay({
   }
 
   const btn = (primary: boolean): React.CSSProperties => ({
-    fontFamily: V2_TYPE.ui, fontWeight: 600, fontSize: 12.5, borderRadius: 9,
+    fontFamily: V2_TYPE.ui, fontWeight: 600, fontSize: 12, borderRadius: "var(--r-lg)",
     padding: "9px 15px", cursor: "pointer",
     border: primary ? "none" : `1px solid ${V2.line}`,
     background: primary ? V2.brand : "transparent",
@@ -286,7 +286,7 @@ export function TourOverlay({
           style={{
             position: "fixed",
             top: spot.top, left: spot.left, width: spot.width, height: spot.height,
-            borderRadius: 14,
+            borderRadius: "var(--r-xl)",
             boxShadow: `0 0 0 9999px ${DIM}`,
             pointerEvents: "none",
             opacity: shown ? 1 : 0,
@@ -305,9 +305,9 @@ export function TourOverlay({
           ...tipStyle,
           zIndex: 901,
           background: V2.card,
-          borderRadius: 14,
+          borderRadius: "var(--r-xl)",
           border: `0.5px solid ${V2.line}`,
-          boxShadow: "0 12px 40px rgba(30,26,22,.28)",
+          boxShadow: `0 12px 40px ${v2Mix(V2.ink, 0.28)}`,
           padding: "18px 20px",
           fontFamily: V2_TYPE.ui,
           color: V2.ink,
@@ -321,13 +321,13 @@ export function TourOverlay({
           className="onboarding-tip-content"
           style={{ animation: `onboarding-tip-content-in .48s ${EASE} .1s both` }}
         >
-          <div style={{ fontFamily: V2_TYPE.mono, fontSize: 10, letterSpacing: ".08em", color: V2.gold }}>
+          <div style={{ fontFamily: V2_TYPE.mono, fontSize: 10, letterSpacing: ".08em", color: V2.brand }}>
             TOUR · KROK {stepIndex + 1} / {steps.length}
           </div>
-          <div style={{ fontFamily: V2_TYPE.serif, fontWeight: 500, fontSize: 19, marginTop: 7, lineHeight: 1.2 }}>
+          <div style={{ fontFamily: V2_TYPE.serif, fontWeight: 500, fontSize: 18, marginTop: 7, lineHeight: 1.2 }}>
             {step.title}
           </div>
-          <p style={{ fontSize: 12.5, lineHeight: 1.6, color: V2.muted, marginTop: 8 }}>{step.body}</p>
+          <p style={{ fontSize: 12, lineHeight: 1.6, color: V2.muted, marginTop: 8 }}>{step.body}</p>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14 }}>
             {stepIndex > 0 && (
               <button style={btn(false)} onClick={() => goTo(-1)}>

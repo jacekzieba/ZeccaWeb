@@ -111,6 +111,11 @@ export default function LandingPage() {
           __html: JSON.stringify(landingJsonLd).replace(/</g, "\\u003c"),
         }}
       />
+      {/* Kroje: --display/--text/--mono w landing.css aliasują --font-display/
+          --font-text/--font-code z app/layout.tsx. Strona ładowała tu drugi
+          komplet tych samych rodzin (--font-landing-display/-text) pod inną
+          nazwą zmiennej — CSS nigdy jej nie czytał, więc font pobierał się
+          na darmo, nie robiąc nic. */}
       <main className="zlanding">
         <div dangerouslySetInnerHTML={{ __html: LANDING_NAV_HTML }} />
         <LandingHero />

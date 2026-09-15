@@ -2,7 +2,8 @@
 
 import { useEffect, useId, useState } from "react";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
-import { COLORS, SHADOWS } from "@/lib/design-tokens";
+import { COLORS } from "@/lib/design-tokens";
+import { v2Mix } from "@/lib/v2-design";
 
 type Status = "checking" | "idle" | "loading" | "error" | "no-session" | "done";
 
@@ -67,13 +68,13 @@ export function ResetPasswordForm() {
   const inputStyle: React.CSSProperties = {
     width: "100%",
     padding: "10px 12px",
-    borderRadius: 10,
+    borderRadius: "var(--r-xl)",
     border: `0.5px solid ${COLORS.border}`,
     background: COLORS.surface,
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.text,
     outline: "none",
-    boxShadow: "inset 0 1px 2px rgba(28,49,68,0.04)",
+    boxShadow: `inset 0 1px 2px ${v2Mix(COLORS.text, 0.04)}`,
     fontFamily: "inherit",
   };
 
@@ -89,7 +90,7 @@ export function ResetPasswordForm() {
 
   const panelStyle: React.CSSProperties = {
     padding: "14px 16px",
-    borderRadius: 12,
+    borderRadius: "var(--r-xl)",
     background: COLORS.surfaceAlt,
     border: `0.5px solid ${COLORS.border}`,
   };
@@ -97,11 +98,11 @@ export function ResetPasswordForm() {
   const linkBtnStyle: React.CSSProperties = {
     textAlign: "center",
     padding: "11px 16px",
-    borderRadius: 10,
+    borderRadius: "var(--r-xl)",
     border: `0.5px solid ${COLORS.border}`,
     background: COLORS.surface,
     color: COLORS.text,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 600,
     textDecoration: "none",
   };
@@ -118,7 +119,7 @@ export function ResetPasswordForm() {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={panelStyle}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: COLORS.text, marginBottom: 4 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: COLORS.text, marginBottom: 4 }}>
             Link wygasł lub jest nieprawidłowy
           </div>
           <p style={{ fontSize: 13, color: COLORS.textMuted, lineHeight: 1.5 }}>
@@ -137,7 +138,7 @@ export function ResetPasswordForm() {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={panelStyle}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: COLORS.text, marginBottom: 4 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: COLORS.text, marginBottom: 4 }}>
             Hasło zmienione
           </div>
           <p style={{ fontSize: 13, color: COLORS.textMuted, lineHeight: 1.5 }}>
@@ -194,14 +195,14 @@ export function ResetPasswordForm() {
         style={{
           marginTop: 4,
           padding: "11px 16px",
-          borderRadius: 10,
+          borderRadius: "var(--r-xl)",
           border: "none",
           background: isLoading ? COLORS.surfaceAlt : COLORS.text,
           color: isLoading ? COLORS.textMuted : COLORS.white,
-          fontSize: 14,
+          fontSize: 13,
           fontWeight: 600,
           cursor: isLoading ? "not-allowed" : "pointer",
-          boxShadow: isLoading ? "none" : SHADOWS.button,
+          boxShadow: isLoading ? "none" : `0 3px 10px ${v2Mix(COLORS.text, 0.22)}, inset 0 0.5px 0 ${v2Mix(COLORS.text, 0.1)}`,
           transition: "background .15s",
           fontFamily: "inherit",
         }}

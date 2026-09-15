@@ -7,9 +7,9 @@ import { useSyncStore } from "@/sync/store/sync-store";
 import { useProfile } from "@/features/profile/profile-store";
 import type { InstrumentRow, TransactionRow } from "@/domain/models/investor-data";
 import { V2, V2Card, V2ScreenHead, V2_TYPE, v2Mix } from "@/lib/v2-design";
+import { currencyLabel, formatShare } from "@/lib/money";
 
 const UI = V2_TYPE.ui;
-const SERIF = V2_TYPE.serif;
 const MONO = V2_TYPE.mono;
 
 type SortKey = "symbol" | "kind" | "quantity" | "marketValue" | "lastPrice";
@@ -58,7 +58,7 @@ function Badge({ label, color }: { label: string; color: string }) {
     <span style={{
       display: "inline-flex", alignItems: "center",
       fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: ".04em",
-      padding: "3px 7px", borderRadius: 5, color, background: v2Mix(color, 0.13), whiteSpace: "nowrap",
+      padding: "3px 7px", borderRadius: "var(--r-md)", color, background: v2Mix(color, 0.13), whiteSpace: "nowrap",
     }}>
       {label}
     </span>
@@ -118,7 +118,7 @@ function TransactionSheet({
     <div
       style={{
         position: "fixed", inset: 0, zIndex: 600,
-        background: "rgba(22,29,24,0.44)", display: "flex", alignItems: "flex-end", justifyContent: "center",
+        background: v2Mix(V2.page, 0.44), display: "flex", alignItems: "flex-end", justifyContent: "center",
       }}
       onClick={onClose}
     >
@@ -128,9 +128,9 @@ function TransactionSheet({
         aria-labelledby="positions-transaction-sheet-title"
         onKeyDown={handleDialogKeyDown}
         style={{
-          background: V2.card, borderRadius: "18px 18px 0 0", width: "100%", maxWidth: 720,
+          background: V2.card, borderRadius: "var(--r-xl) var(--r-xl) 0 0", width: "100%", maxWidth: 720,
           maxHeight: "80vh", overflow: "auto",
-          boxShadow: "0 -8px 48px rgba(22,29,24,0.18)",
+          boxShadow: `0 -8px 48px ${v2Mix(V2.ink, 0.18)}`,
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -144,19 +144,19 @@ function TransactionSheet({
             ref={closeButtonRef}
             onClick={onClose}
             aria-label="Zamknij historię transakcji"
-            style={{ border: "none", background: "transparent", fontSize: 20, color: V2.muted, cursor: "pointer", lineHeight: 1, padding: "4px 8px" }}
+            style={{ border: "none", background: "transparent", fontSize: 21, color: V2.muted, cursor: "pointer", lineHeight: 1, padding: "4px 8px" }}
           >
             ×
           </button>
         </div>
         {transactions.length === 0 ? (
-          <div style={{ padding: "32px 24px", color: V2.subtle, fontSize: 14 }}>Brak transakcji dla tego instrumentu.</div>
+          <div style={{ padding: "32px 24px", color: V2.subtle, fontSize: 13 }}>Brak transakcji dla tego instrumentu.</div>
         ) : (
           <table style={{ borderCollapse: "collapse", width: "100%" }}>
             <thead>
               <tr style={{ background: v2Mix(V2.ink, 0.025) }}>
                 {["Data", "Typ", "Portfel", "Ilość", "Cena", "Kwota", "Waluta"].map((h, i) => (
-                  <th key={h} style={{ fontFamily: UI, fontSize: 9.5, fontWeight: 700, color: V2.subtle, textTransform: "uppercase", letterSpacing: ".07em", padding: "9px 14px", textAlign: i === 0 ? "left" : "right" }}>
+                  <th key={h} style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, color: V2.subtle, textTransform: "uppercase", letterSpacing: ".07em", padding: "9px 14px", textAlign: i === 0 ? "left" : "right" }}>
                     {h}
                   </th>
                 ))}
@@ -174,7 +174,7 @@ function TransactionSheet({
                     <td style={{ ...tdStyle, textAlign: "right", color: V2.muted }}>{tx.portfolioName}</td>
                     <td style={{ ...tdStyle, textAlign: "right", fontFamily: MONO }}>{tx.quantity != null ? fmtQty(tx.quantity) : "—"}</td>
                     <td style={{ ...tdStyle, textAlign: "right", fontFamily: MONO }}>{tx.price != null ? fmt(tx.price, 2) : "—"}</td>
-                    <td style={{ ...tdStyle, textAlign: "right", fontFamily: MONO, fontWeight: 600, color: income ? V2.profit : V2.ink }}>
+                    <td style={{ ...tdStyle, textAlign: "right", fontFamily: MONO, fontWeight: 500, color: income ? V2.profit : V2.ink }}>
                       {income ? "+" : ""}{fmt(tx.grossAmount, 2)}
                     </td>
                     <td style={{ ...tdStyle, textAlign: "right", fontFamily: MONO, color: V2.muted }}>{tx.currency}</td>
@@ -190,7 +190,7 @@ function TransactionSheet({
   );
 }
 
-const tdStyle: CSSProperties = { fontFamily: UI, fontSize: 12.5, color: V2.ink, paddingTop: 10, paddingRight: 14, paddingBottom: 10, paddingLeft: 14, verticalAlign: "middle" };
+const tdStyle: CSSProperties = { fontFamily: UI, fontSize: 12, color: V2.ink, paddingTop: 10, paddingRight: 14, paddingBottom: 10, paddingLeft: 14, verticalAlign: "middle" };
 
 export function PositionsPage() {
   const records = useSyncStore((s) => s.records);
@@ -281,7 +281,7 @@ export function PositionsPage() {
 
   function thStyle(key: SortKey, align: "left" | "right" = "right"): CSSProperties {
     return {
-      fontFamily: UI, fontSize: 9.5, fontWeight: 700, color: V2.subtle,
+      fontFamily: UI, fontSize: 10, fontWeight: 700, color: V2.subtle,
       textTransform: "uppercase", letterSpacing: ".07em",
       paddingTop: 9, paddingRight: 14, paddingBottom: 9, paddingLeft: 14, textAlign: align, userSelect: "none",
       whiteSpace: "nowrap",
@@ -330,10 +330,10 @@ export function PositionsPage() {
             onClick={() => setKindFilter(option.id)}
             style={{
               border: `1.5px solid ${kindFilter === option.id ? V2.brand : V2.line}`,
-              borderRadius: 20, padding: "6px 14px",
+              borderRadius: "var(--r-xl)", padding: "6px 14px",
               background: kindFilter === option.id ? v2Mix(V2.brand, 0.08) : V2.card,
               color: kindFilter === option.id ? V2.brand : V2.muted,
-              fontFamily: UI, fontSize: 12.5, fontWeight: kindFilter === option.id ? 700 : 500,
+              fontFamily: UI, fontSize: 12, fontWeight: kindFilter === option.id ? 700 : 500,
               cursor: "pointer",
             }}
           >
@@ -348,27 +348,31 @@ export function PositionsPage() {
 
       {!records ? (
         <V2Card>
-          <div style={{ padding: "20px 4px", textAlign: "center", color: V2.subtle, fontSize: 14 }}>
+          <div style={{ padding: "20px 4px", textAlign: "center", color: V2.subtle, fontSize: 13 }}>
             Odblokuj dane w panelu synchronizacji, żeby zobaczyć pozycje.
           </div>
         </V2Card>
       ) : (
         <div data-tour="positions-table">
         <V2Card pad={0} style={{ overflow: "hidden" }}>
-          {/* Stats header */}
+          {/* Pasek statystyk stoi wewnątrz karty z tabelą, nie osobno — pełny
+              kafelek z ramką dublowałby ramkę karty. Cecha zostaje lżejsza:
+              sam mono nagłówek nad wartością, ten sam co w kafelkach niżej. */}
           <div style={{ padding: "16px 22px", borderBottom: `0.5px solid ${V2.line}`, display: "flex", alignItems: "center", gap: 22, flexWrap: "wrap" }}>
             <div>
+              <div className="metric-tile-mark">Pozycje<em>po filtrze</em></div>
               <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: V2.subtle }}>Pozycji</div>
-              <div style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 500, color: V2.ink }}>{filtered.length}</div>
+              <div style={{ fontFamily: MONO, fontSize: 26, fontWeight: 500, color: V2.ink }}>{filtered.length}</div>
             </div>
             <div>
+              <div className="metric-tile-mark">Wycena<em>ostatnia cena × ilość</em></div>
               <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: V2.subtle }}>Wartość (przefiltrowana)</div>
-              <div style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 500, color: V2.ink }}>{fmt(totalValue)} <span style={{ fontSize: 12, color: V2.subtle, fontStyle: "italic" }}>{displayCurrency}</span></div>
+              <div style={{ fontFamily: MONO, fontSize: 26, fontWeight: 500, color: V2.ink }}>{fmt(totalValue)} <span style={{ fontSize: 12, color: V2.subtle, fontStyle: "italic" }}>{currencyLabel(displayCurrency)}</span></div>
             </div>
           </div>
 
           {filtered.length === 0 ? (
-            <div style={{ padding: "40px 24px", textAlign: "center", color: V2.subtle, fontSize: 14 }}>
+            <div style={{ padding: "40px 24px", textAlign: "center", color: V2.subtle, fontSize: 13 }}>
               Brak aktywnych pozycji dla wybranej kategorii.
             </div>
           ) : (
@@ -380,7 +384,7 @@ export function PositionsPage() {
                     <SortHeader column="kind" label="Klasa" />
                     <SortHeader column="quantity" label="Ilość" />
                     <SortHeader column="lastPrice" label="Cena" />
-                    <SortHeader column="marketValue" label={`Wartość (${displayCurrency})`} />
+                    <SortHeader column="marketValue" label={`Wartość (${currencyLabel(displayCurrency)})`} />
                     <th style={{ ...thStyle("marketValue"), cursor: "default" }}>Udział</th>
                     <th style={{ ...thStyle("marketValue"), cursor: "default" }}>Wycena</th>
                   </tr>
@@ -422,13 +426,13 @@ export function PositionsPage() {
                         </td>
                         <td style={{ ...tdStyle, textAlign: "right", fontFamily: MONO }}>
                           <div>{fmt(instrument.lastPrice, 2)}</div>
-                          <div style={{ fontSize: 10.5, color: V2.subtle }}>{instrument.currency}</div>
+                          <div style={{ fontSize: 10, color: V2.subtle }}>{instrument.currency}</div>
                         </td>
                         <td style={{ ...tdStyle, textAlign: "right" }}>
-                          <div style={{ fontFamily: SERIF, fontSize: 15, fontWeight: 500 }}>{fmt(instrument.marketValue)}</div>
+                          <div style={{ fontFamily: MONO, fontSize: 15, fontWeight: 500 }}>{fmt(instrument.marketValue)}</div>
                         </td>
                         <td style={{ ...tdStyle, textAlign: "right", fontFamily: MONO, fontSize: 12 }}>
-                          {(totalValue > 0 ? ((instrument.marketValue / totalValue) * 100) : 0).toFixed(1)}%
+                          {formatShare(totalValue > 0 ? (instrument.marketValue / totalValue) * 100 : 0)}
                         </td>
                         <td style={{ ...tdStyle, textAlign: "right" }}>
                           <span style={{ fontFamily: MONO, fontSize: 11, color: V2.subtle }}>{instrument.valuationSourceLabel}</span>

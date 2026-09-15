@@ -41,6 +41,7 @@ import {
 import { isFakeSyncEnabled } from "@/lib/env";
 import { parsePositiveAmount } from "@/lib/parse-amount";
 import { V2, V2Badge, V2Button, V2Card, V2Kpi, V2ScreenHead, V2_TYPE, v2InputStyle, v2Mix, v2SelectStyle } from "@/lib/v2-design";
+import { MetricTiles } from "@/components/layout/metric-tiles";
 import { buildIncomeLists, buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import { deleteRecord, refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
 import {
@@ -49,6 +50,8 @@ import {
   telemetrySnakeCased,
 } from "@/lib/telemetry";
 import { useSyncStore } from "@/sync/store/sync-store";
+import { currencyLabel } from "@/lib/money";
+import { pluralPl } from "@/lib/plural-pl";
 import type {
   EarningsImportPreview,
 } from "@/features/earnings/earnings-import";
@@ -236,7 +239,7 @@ function IconButton({
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        borderRadius: 8,
+        borderRadius: "var(--r-lg)",
         border: `0.5px solid ${danger ? v2Mix(V2.loss, 0.28) : V2.line}`,
         background: danger ? v2Mix(V2.loss, 0.06) : v2Mix(V2.card, 0.74),
         color: danger ? V2.loss : V2.muted,
@@ -296,22 +299,25 @@ function MonthlyChart({
           return (
             <div key={item.id} style={{ display: "grid", gridTemplateColumns: isMobile ? "58px minmax(72px, 1fr) 82px" : "72px minmax(120px, 1fr) 108px", alignItems: "center", gap: isMobile ? 8 : 12, minWidth: 0 }}>
               <div>
-                <div style={{ fontSize: 12.5, fontWeight: 700, color: V2.ink }}>{MONTH_LABELS_SHORT[item.month - 1]}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: V2.ink }}>{MONTH_LABELS_SHORT[item.month - 1]}</div>
                 <div style={{ fontFamily: V2_TYPE.mono, fontSize: 10, color: V2.subtle }}>{item.year}</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 4, minWidth: 0 }}>
-                <div style={{ height: 5, borderRadius: 4, background: v2Mix(V2.ink, 0.06), overflow: "hidden" }}>
-                  <div title={`Przed obciążeniami: ${fmt(item.sourcePLN)} PLN`} style={{ width: `${sourceWidth}%`, height: "100%", borderRadius: 4, background: v2Mix(V2.equity, 0.32) }} />
+                <div style={{ height: 5, borderRadius: "var(--r-md)", background: v2Mix(V2.ink, 0.06), overflow: "hidden" }}>
+                  {/* Bursztyn ma zamkniętą listę zadań, zieleń tylko kierunek — a to
+                      pole nie jest ani jednym, ani drugim, ani klasą aktywu. Neutralny
+                      atrament, tak jak w legendzie i nagłówku niżej. */}
+                  <div title={`Przed obciążeniami: ${fmt(item.sourcePLN)} ${currencyLabel("PLN")}`} style={{ width: `${sourceWidth}%`, height: "100%", borderRadius: "var(--r-md)", background: v2Mix(V2.ink, 0.28) }} />
                 </div>
-                <div style={{ height: 7, borderRadius: 4, background: v2Mix(V2.ink, 0.06), overflow: "hidden" }}>
-                  <div title={`Po obciążeniach: ${fmt(item.totalPLN)} PLN`} style={{ width: `${totalWidth}%`, height: "100%", borderRadius: 4, background: item.totalPLN >= 0 ? V2.profit : V2.loss }} />
+                <div style={{ height: 7, borderRadius: "var(--r-md)", background: v2Mix(V2.ink, 0.06), overflow: "hidden" }}>
+                  <div title={`Po obciążeniach: ${fmt(item.totalPLN)} ${currencyLabel("PLN")}`} style={{ width: `${totalWidth}%`, height: "100%", borderRadius: "var(--r-md)", background: item.totalPLN >= 0 ? V2.profit : V2.loss }} />
                 </div>
               </div>
               <div style={{ minWidth: 0, textAlign: "right" }}>
-                <div style={{ fontFamily: V2_TYPE.mono, fontSize: isMobile ? 11 : 12, fontWeight: 700, color: item.totalPLN >= 0 ? V2.profit : V2.loss, whiteSpace: "nowrap" }}>
+                <div style={{ fontFamily: V2_TYPE.mono, fontSize: isMobile ? 11 : 12, fontWeight: 500, color: item.totalPLN >= 0 ? V2.profit : V2.loss, whiteSpace: "nowrap" }}>
                   {fmt(item.totalPLN)} zł
                 </div>
-                <div style={{ fontSize: 9.5, color: V2.subtle, whiteSpace: "nowrap" }}>przed: {fmt(item.sourcePLN)} zł</div>
+                <div style={{ fontSize: 10, color: V2.subtle, whiteSpace: "nowrap" }}>przed: {fmt(item.sourcePLN)} zł</div>
               </div>
             </div>
           );
@@ -389,7 +395,7 @@ function YearlyAverageChart({
               y={y(tick) + 4}
               textAnchor="end"
               fontFamily={V2_TYPE.mono}
-              fontSize={compact ? 9 : 10.5}
+              fontSize={compact ? 10 : 10}
               fill={V2.subtle}
             >
               {Math.abs(tick) >= 1000 ? `${fmt(tick / 1000, tick >= 10000 ? 0 : 1)}k` : fmt(tick)}
@@ -399,6 +405,9 @@ function YearlyAverageChart({
 
         {items.map((item, index) => {
           const incomplete = item.months < 12;
+          // Wykres pokazuje wynik ze znakiem, więc słupek go niesie; linia łącząca
+          // lata zostaje neutralna, bo opisuje trend, a nie plus/minus.
+          const barColor = item.avgResult >= 0 ? V2.profit : V2.loss;
           const top = item.avgResult >= 0 ? y(item.avgResult) : zeroY;
           const columnHeight = Math.max(2, Math.abs(y(item.avgResult) - zeroY));
           return (
@@ -425,16 +434,16 @@ function YearlyAverageChart({
                 width={barWidth}
                 height={columnHeight}
                 rx={Math.min(6, barWidth / 5)}
-                fill={incomplete ? v2Mix(V2.equity, 0.1) : v2Mix(V2.equity, 0.32)}
-                stroke={incomplete ? v2Mix(V2.equity, 0.58) : "none"}
+                fill={incomplete ? v2Mix(barColor, 0.1) : v2Mix(barColor, 0.32)}
+                stroke={incomplete ? v2Mix(barColor, 0.58) : "none"}
                 strokeDasharray={incomplete ? "4 3" : undefined}
               />
               <text
                 x={x(index)}
                 y={height - 24}
                 textAnchor="middle"
-                fontFamily={V2_TYPE.ui}
-                fontSize={compact ? 9.5 : 11}
+                fontFamily={V2_TYPE.mono}
+                fontSize={compact ? 10 : 11}
                 fontWeight={item.year === items.at(-1)?.year ? 700 : 500}
                 fill={item.year === items.at(-1)?.year ? V2.ink : V2.subtle}
               >
@@ -445,8 +454,8 @@ function YearlyAverageChart({
                   x={x(index)}
                   y={height - 9}
                   textAnchor="middle"
-                  fontFamily={V2_TYPE.ui}
-                  fontSize={compact ? 8 : 9}
+                  fontFamily={V2_TYPE.mono}
+                  fontSize={compact ? 10 : 10}
                   fill={V2.subtle}
                 >
                   {item.months} mies.
@@ -466,11 +475,11 @@ function YearlyAverageChart({
               y1={y(item.avgResult)}
               x2={x(index + 1)}
               y2={y(next.avgResult)}
-              stroke={V2.equity}
+              stroke={V2.muted}
               strokeWidth="2"
               strokeLinecap="round"
               strokeDasharray={incompleteSegment ? "5 5" : undefined}
-              opacity={incompleteSegment ? 0.58 : 0.92}
+              opacity={incompleteSegment ? 0.42 : 0.7}
               pointerEvents="none"
             />
           );
@@ -482,8 +491,8 @@ function YearlyAverageChart({
             cx={x(index)}
             cy={y(item.avgResult)}
             r={hoveredIndex === index ? 5 : 3.5}
-            fill={item.months < 12 ? V2.card : V2.equity}
-            stroke={V2.equity}
+            fill={item.months < 12 ? V2.card : (item.avgResult >= 0 ? V2.profit : V2.loss)}
+            stroke={item.avgResult >= 0 ? V2.profit : V2.loss}
             strokeWidth="2"
             pointerEvents="none"
           />
@@ -498,7 +507,7 @@ function YearlyAverageChart({
             top: Math.max(4, y(hovered.avgResult) - 62),
             width: 132,
             padding: "8px 10px",
-            borderRadius: 9,
+            borderRadius: "var(--r-lg)",
             border: `0.5px solid ${V2.line}`,
             background: V2.card,
             boxShadow: `0 8px 22px ${v2Mix(V2.ink, 0.12)}`,
@@ -510,7 +519,7 @@ function YearlyAverageChart({
             <span>{hovered.year}</span>
             <span>{hovered.months} mies.</span>
           </div>
-          <div style={{ marginTop: 3, fontFamily: V2_TYPE.mono, fontSize: 13, fontWeight: 700, color: V2.ink }}>
+          <div style={{ marginTop: 3, fontFamily: V2_TYPE.mono, fontSize: 13, fontWeight: 500, color: V2.ink }}>
             {fmt(hovered.avgResult)} zł
           </div>
         </div>
@@ -542,11 +551,11 @@ function ModalShell({
         type="button"
         aria-label="Zamknij modal"
         onClick={onClose}
-        style={{ position: "absolute", inset: 0, border: "none", background: "rgba(12,16,13,0.36)", cursor: "default" }}
+        style={{ position: "absolute", inset: 0, border: "none", background: v2Mix(V2.page, 0.36), cursor: "default" }}
       />
-      <div role="dialog" aria-modal="true" aria-label={title} style={{ position: "relative", width: "min(720px, 100%)", maxHeight: "calc(100vh - 32px)", overflow: "auto", borderRadius: 14, background: V2.card, border: `0.5px solid ${V2.line}`, boxShadow: `0 24px 70px ${v2Mix(V2.ink, 0.28)}` }}>
+      <div role="dialog" aria-modal="true" aria-label={title} style={{ position: "relative", width: "min(720px, 100%)", maxHeight: "calc(100vh - 32px)", overflow: "auto", borderRadius: "var(--r-xl)", background: V2.card, border: `0.5px solid ${V2.line}`, boxShadow: `0 24px 70px ${v2Mix(V2.ink, 0.28)}` }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "18px 20px", borderBottom: `0.5px solid ${V2.line2}` }}>
-          <div style={{ fontFamily: V2_TYPE.serif, fontSize: 22, fontWeight: 500 }}>{title}</div>
+          <div style={{ fontFamily: V2_TYPE.serif, fontSize: 21, fontWeight: 500 }}>{title}</div>
           <IconButton label="Zamknij" onClick={onClose}><X size={16} /></IconButton>
         </div>
         {children}
@@ -923,11 +932,11 @@ export function EarningsPage() {
 
       {!unlocked && (
         <V2Card style={{ color: V2.muted, fontSize: 13 }}>
-          Odblokuj prywatną synchronizację, aby dodawać i edytować zarobki. Widok pokazuje dane `income`, gdy są dostępne w sync.
+          Odblokuj prywatną synchronizację, aby dodawać i edytować zarobki. Do czasu odblokowania widok pokazuje zarobki tylko wtedy, gdy są już zsynchronizowane.
         </V2Card>
       )}
       {message && (
-        <div style={{ padding: "10px 12px", borderRadius: 10, background: v2Mix(V2.brand, 0.08), border: `0.5px solid ${v2Mix(V2.brand, 0.16)}`, color: V2.brand, fontSize: 13 }}>
+        <div style={{ padding: "10px 12px", borderRadius: "var(--r-xl)", background: v2Mix(V2.brand, 0.08), border: `0.5px solid ${v2Mix(V2.brand, 0.16)}`, color: V2.brand, fontSize: 13 }}>
           {message}
         </div>
       )}
@@ -937,31 +946,47 @@ export function EarningsPage() {
         <div style={{ display: "grid", gridTemplateColumns: isTablet ? "1fr" : "minmax(300px, 430px) 1fr" }}>
           <div style={{ padding: isMobile ? 20 : 28, borderRight: isTablet ? "none" : `0.5px solid ${V2.line}`, borderBottom: isTablet ? `0.5px solid ${V2.line}` : "none" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 12 }}>
-              <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: V2.subtle }}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: V2.subtle }}>
                 Łącznie w PLN {selectedYear === "all" ? "ogółem" : selectedYear}
               </div>
-              <select value={selectedYear} onChange={(event) => setSelectedYear(event.target.value === "all" ? "all" : Number(event.target.value))} style={v2SelectStyle}>
+              <select aria-label="Filtr roku" value={selectedYear} onChange={(event) => setSelectedYear(event.target.value === "all" ? "all" : Number(event.target.value))} style={v2SelectStyle}>
                 <option value="all">Wszystkie lata</option>
                 {incomeLists.years.map((year) => <option key={year} value={year}>{year}</option>)}
               </select>
             </div>
-            <div style={{ fontFamily: V2_TYPE.serif, fontWeight: 500, fontSize: isMobile ? 44 : 58, lineHeight: 0.98, color: V2.profit, fontVariantNumeric: "tabular-nums" }}>
+            <div style={{ fontFamily: V2_TYPE.mono, fontWeight: 500, fontSize: isMobile ? 44 : 58, lineHeight: 0.98, color: V2.profit, fontVariantNumeric: "tabular-nums" }}>
               {fmt(summariesForSelection.totals.totalPLN)}
-              <span style={{ fontSize: 22, fontStyle: "italic", color: V2.subtle, marginLeft: 8 }}>PLN</span>
+              <span style={{ fontSize: 21, fontStyle: "italic", color: V2.subtle, marginLeft: 8 }}>{currencyLabel("PLN")}</span>
             </div>
+            {/* Karta z wielkim wynikiem jest już cechą dla całej sekcji (nagłówek
+                „Łącznie w PLN"), ale te cztery liczby liczą się osobno — dostają
+                własną, lżejszą cechę zamiast pełnego kafelka, żeby zmieścić się
+                w wąskiej szynie bocznej bez podwójnych ramek. */}
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 18, marginTop: 24 }}>
-              <V2Kpi label="Średnia / m-c" value={`${fmt(summariesForSelection.totals.averagePLN)} zł`} sub="po obciążeniach" />
-              <V2Kpi label="Śr. przed obc." value={`${fmt(summariesForSelection.totals.averageBeforeBurdensPLN)} zł`} sub="dochód + przychód" />
-              <V2Kpi label="Najwyższy miesiąc" value={`${fmt(summariesForSelection.totals.highestMonthPLN)} zł`} accent={V2.equity} />
-              <V2Kpi label="Rekordy" value={`${incomeLists.earnings.length + incomeLists.burdens.length}`} sub={`${incomeLists.earnings.length} zarobków / ${incomeLists.burdens.length} obciążeń`} />
+              <div>
+                <div className="metric-tile-mark">Wpisy<em>średnia w oknie</em></div>
+                <V2Kpi label="Średnia / m-c" value={`${fmt(summariesForSelection.totals.averagePLN)} ${currencyLabel("PLN")}`} sub="po obciążeniach" />
+              </div>
+              <div>
+                <div className="metric-tile-mark">Wpisy<em>średnia w oknie</em></div>
+                <V2Kpi label="Śr. przed obc." value={`${fmt(summariesForSelection.totals.averageBeforeBurdensPLN)} ${currencyLabel("PLN")}`} sub="dochód + przychód" />
+              </div>
+              <div>
+                <div className="metric-tile-mark">Wpisy<em>maksimum w oknie</em></div>
+                <V2Kpi label="Najwyższy miesiąc" value={`${fmt(summariesForSelection.totals.highestMonthPLN)} ${currencyLabel("PLN")}`} accent={V2.profit} />
+              </div>
+              <div>
+                <div className="metric-tile-mark">Wpisy<em>liczba zapisów</em></div>
+                <V2Kpi label="Rekordy" value={`${incomeLists.earnings.length + incomeLists.burdens.length}`} sub={`${incomeLists.earnings.length} ${pluralPl(incomeLists.earnings.length, "zarobek", "zarobki", "zarobków")} / ${incomeLists.burdens.length} ${pluralPl(incomeLists.burdens.length, "obciążenie", "obciążenia", "obciążeń")}`} />
+              </div>
             </div>
           </div>
           <div style={{ padding: isMobile ? 18 : 24, background: v2Mix(V2.card2, 0.42), minWidth: 0 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginBottom: 4 }}>
-              <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: V2.subtle }}>Wynik miesięczny</div>
-              <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 11.5, color: V2.muted }}>
-                <span><span style={{ display: "inline-block", width: 9, height: 9, borderRadius: 2, background: v2Mix(V2.equity, 0.32), marginRight: 6 }} />Przed obc.</span>
-                <span><span style={{ display: "inline-block", width: 9, height: 9, borderRadius: 2, background: V2.profit, marginRight: 6 }} />Po obc.</span>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: V2.subtle }}>Wynik miesięczny</div>
+              <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 11, color: V2.muted }}>
+                <span><span style={{ display: "inline-block", width: 9, height: 9, borderRadius: "var(--r-xs)", background: v2Mix(V2.ink, 0.28), marginRight: 6 }} />Przed obc.</span>
+                <span><span style={{ display: "inline-block", width: 9, height: 9, borderRadius: "var(--r-xs)", background: V2.profit, marginRight: 6 }} />Po obc.</span>
               </div>
             </div>
             <MonthlyChart key={selectedYear} summaries={summariesForSelection.summaries} isMobile={isMobile} />
@@ -971,40 +996,57 @@ export function EarningsPage() {
       </div>
 
       <div>
-        <div style={{ fontFamily: V2_TYPE.serif, fontSize: 19, fontWeight: 500, margin: "2px 2px 10px" }}>Struktura bieżącego wyboru</div>
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 14 }}>
-          <V2Card style={{ minWidth: 0 }}>
-            <V2Kpi label="Zatrudnienie" value={`${fmt(summariesForSelection.summaries.reduce((sum, item) => sum + item.employmentPLN, 0))} zł`} accent={V2.profit} />
-          </V2Card>
-          <V2Card style={{ minWidth: 0 }}>
-            <V2Kpi label="B2B" value={`${fmt(summariesForSelection.summaries.reduce((sum, item) => sum + item.businessRevenuePLN, 0))} zł`} accent={V2.equity} />
-          </V2Card>
-          <V2Card style={{ minWidth: 0 }}>
-            <V2Kpi label="Obciążenia" value={`${fmt(summariesForSelection.summaries.reduce((sum, item) => sum + item.burdenPLN, 0))} zł`} accent={V2.loss} />
-          </V2Card>
-        </div>
+        <div style={{ fontFamily: V2_TYPE.serif, fontSize: 18, fontWeight: 500, margin: "2px 2px 10px" }}>Struktura bieżącego wyboru</div>
+        <MetricTiles
+          rows={[
+            {
+              key: "zatrudnienie",
+              source: "Wpisy",
+              detail: "suma w oknie",
+              label: "Zatrudnienie",
+              value: `${fmt(summariesForSelection.summaries.reduce((sum, item) => sum + item.employmentPLN, 0))} ${currencyLabel("PLN")}`,
+              color: V2.profit,
+            },
+            {
+              key: "b2b",
+              source: "Wpisy",
+              detail: "suma w oknie",
+              label: "B2B",
+              value: `${fmt(summariesForSelection.summaries.reduce((sum, item) => sum + item.businessRevenuePLN, 0))} ${currencyLabel("PLN")}`,
+              color: V2.profit,
+            },
+            {
+              key: "obciazenia",
+              source: "Wpisy",
+              detail: "suma w oknie",
+              label: "Obciążenia",
+              value: `${fmt(summariesForSelection.summaries.reduce((sum, item) => sum + item.burdenPLN, 0))} ${currencyLabel("PLN")}`,
+              color: V2.loss,
+            },
+          ]}
+        />
       </div>
 
       <V2Card style={{ overflow: "hidden" }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 14, flexWrap: "wrap", marginBottom: 6 }}>
           <div>
-            <div style={{ fontFamily: V2_TYPE.serif, fontSize: 19, fontWeight: 500 }}>Średnie roczne</div>
+            <div style={{ fontFamily: V2_TYPE.serif, fontSize: 18, fontWeight: 500 }}>Średnie roczne</div>
             <div style={{ color: V2.subtle, fontSize: 11, marginTop: 3 }}>Średni miesięczny wynik · linia pokazuje przebieg</div>
           </div>
           {latestYearAverage && (
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontFamily: V2_TYPE.mono, fontSize: 18, fontWeight: 700, color: V2.ink }}>
+              <div style={{ fontFamily: V2_TYPE.mono, fontSize: 18, fontWeight: 500, color: V2.ink }}>
                 {fmt(latestYearAverage.avgResult)} zł
               </div>
-              <div style={{ marginTop: 2, fontSize: 10.5, color: latestYearChange === null ? V2.subtle : latestYearChange >= 0 ? V2.profit : V2.loss }}>
+              <div style={{ marginTop: 2, fontSize: 10, color: latestYearChange === null ? V2.subtle : latestYearChange >= 0 ? V2.profit : V2.loss }}>
                 {latestYearChange === null ? `${latestYearAverage.year}` : `${latestYearChange >= 0 ? "+" : ""}${fmt(latestYearChange, 1)}% r/r · vs ${previousYearAverage?.year}`}
               </div>
             </div>
           )}
         </div>
-        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 12, color: V2.subtle, fontSize: 10.5 }}>
-            <span><span style={{ display: "inline-block", width: 16, borderTop: `2px solid ${V2.equity}`, marginRight: 6, verticalAlign: "middle" }} />pełny rok</span>
-            <span><span style={{ display: "inline-block", width: 16, borderTop: `2px dashed ${v2Mix(V2.equity, 0.65)}`, marginRight: 6, verticalAlign: "middle" }} />niepełny rok</span>
+        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 12, color: V2.subtle, fontSize: 10 }}>
+            <span><span style={{ display: "inline-block", width: 16, borderTop: `2px solid ${V2.muted}`, marginRight: 6, verticalAlign: "middle" }} />pełny rok</span>
+            <span><span style={{ display: "inline-block", width: 16, borderTop: `2px dashed ${v2Mix(V2.muted, 0.65)}`, marginRight: 6, verticalAlign: "middle" }} />niepełny rok</span>
         </div>
         <YearlyAverageChart data={incomeLists.yearlyAverages} />
       </V2Card>
@@ -1013,8 +1055,8 @@ export function EarningsPage() {
         <div style={{ padding: 16, background: v2Mix(V2.card2, 0.48), borderBottom: `0.5px solid ${V2.line2}` }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
             <div>
-              <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: V2.subtle }}>Wpisy</div>
-              <div style={{ fontFamily: V2_TYPE.serif, fontSize: 24, fontWeight: 500 }}>{filteredRows.length} rekordów</div>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: V2.subtle }}>Wpisy</div>
+              <div style={{ fontFamily: V2_TYPE.serif, fontSize: 26, fontWeight: 500 }}>{filteredRows.length} rekordów</div>
             </div>
             {activeFilterCount > 0 && <V2Badge label={`${activeFilterCount} filtrów`} color={V2.equity} />}
             <div style={{ flex: 1 }} />
@@ -1022,7 +1064,7 @@ export function EarningsPage() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             {(["all", "earnings", "burdens"] as EarningsTableFilter[]).map((filter) => (
-              <button key={filter} type="button" onClick={() => setTableFilter(filter)} style={{ padding: "8px 13px", borderRadius: 9, border: `0.5px solid ${tableFilter === filter ? "transparent" : V2.line}`, background: tableFilter === filter ? V2.ink : V2.card, color: tableFilter === filter ? V2.card : V2.muted, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>
+              <button key={filter} type="button" onClick={() => setTableFilter(filter)} style={{ padding: "8px 13px", borderRadius: "var(--r-lg)", border: `0.5px solid ${tableFilter === filter ? "transparent" : V2.line}`, background: tableFilter === filter ? V2.brand : V2.card, color: tableFilter === filter ? V2.onBrand : V2.muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 {filter === "all" ? "Wszystko" : filter === "earnings" ? "Zarobki" : "Obciążenia"}
               </button>
             ))}
@@ -1031,15 +1073,15 @@ export function EarningsPage() {
               <input value={searchText} onChange={(event) => setSearchText(event.target.value)} placeholder="Szukaj po źródle, notatce, kategorii..." style={{ ...v2InputStyle, paddingLeft: 32 }} />
             </div>
             <Filter size={15} color={V2.subtle} />
-            <select value={selectedTableYear} onChange={(event) => setSelectedTableYear(event.target.value === "all" ? "all" : Number(event.target.value))} style={v2SelectStyle}>
+            <select aria-label="Filtr roku w tabeli" value={selectedTableYear} onChange={(event) => setSelectedTableYear(event.target.value === "all" ? "all" : Number(event.target.value))} style={v2SelectStyle}>
               <option value="all">Rok: wybór</option>
               {incomeLists.years.map((year) => <option key={year} value={year}>{year}</option>)}
             </select>
-            <select value={selectedMonth} onChange={(event) => setSelectedMonth(event.target.value === "all" ? "all" : Number(event.target.value))} style={v2SelectStyle}>
+            <select aria-label="Filtr miesiąca" value={selectedMonth} onChange={(event) => setSelectedMonth(event.target.value === "all" ? "all" : Number(event.target.value))} style={v2SelectStyle}>
               <option value="all">Miesiąc: wszystkie</option>
               {MONTH_LABELS_LONG.map((label, index) => <option key={label} value={index + 1}>{label}</option>)}
             </select>
-            <select value={selectedEmploymentType} onChange={(event) => setSelectedEmploymentType(event.target.value as EmploymentType | "all")} style={v2SelectStyle}>
+            <select aria-label="Filtr formy zatrudnienia" value={selectedEmploymentType} onChange={(event) => setSelectedEmploymentType(event.target.value as EmploymentType | "all")} style={v2SelectStyle}>
               <option value="all">Typ pracy: każdy</option>
               {EMPLOYMENT_TYPES.map((type) => <option key={type} value={type}>{EMPLOYMENT_TYPE_LABEL[type]}</option>)}
             </select>
@@ -1061,15 +1103,17 @@ export function EarningsPage() {
             {visibleRows.map((row, index) => {
               const summary = buildEarningsMonthSummary(row.year, row.month, incomeLists.earnings, incomeLists.burdens);
               const isEarning = row.kind === "earning";
-              const color = isEarning ? (row.employmentType === "employment" ? V2.profit : V2.equity) : V2.loss;
+              // Kierunek niesie kwota po prawej. Plakietka i sygnet nazywają
+              // rodzaj wpisu, a rodzaj to nie wzrost ani spadek.
+              const color = V2.muted;
               return (
                 <div key={`${row.kind}-${row.id}`} style={{ display: "grid", gridTemplateColumns: isMobile ? "34px minmax(0, 1fr) auto" : "38px minmax(0, 1fr) minmax(180px, auto) auto", alignItems: "center", gap: 12, padding: "13px 16px", borderTop: index ? `0.5px solid ${V2.line2}` : "none" }}>
-                  <div style={{ width: 32, height: 32, display: "grid", placeItems: "center", borderRadius: 8, background: v2Mix(color, 0.12), color }}>
+                  <div style={{ width: 32, height: 32, display: "grid", placeItems: "center", borderRadius: "var(--r-lg)", background: v2Mix(color, 0.12), color }}>
                     {isEarning ? (row.employmentType === "employment" ? <UserRound size={16} /> : <Building2 size={16} />) : <Banknote size={16} />}
                   </div>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 13.5, fontWeight: 700 }}>{monthYearLabel(row.year, row.month)}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700 }}>{monthYearLabel(row.year, row.month)}</span>
                       <V2Badge label={isEarning ? EMPLOYMENT_TYPE_LABEL[row.employmentType] : "Obciążenie"} color={color} />
                     </div>
                     <div style={{ fontSize: 12, color: V2.subtle, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -1077,18 +1121,18 @@ export function EarningsPage() {
                     </div>
                     {(!isMobile && (!isEarning || row.employmentType === "business")) && (
                       <div style={{ fontSize: 11, color: V2.subtle, marginTop: 2 }}>
-                        Obciążenia miesiąca: {fmt(summary.burdenPLN)} PLN · wynik: {fmt(summary.totalPLN)} PLN
+                        Obciążenia miesiąca: {fmt(summary.burdenPLN)} {currencyLabel("PLN")} · wynik: {fmt(summary.totalPLN)} {currencyLabel("PLN")}
                       </div>
                     )}
                   </div>
                   {!isMobile && (
                     <div style={{ textAlign: "right" }}>
-                      <div style={{ fontFamily: V2_TYPE.serif, fontSize: 17, fontWeight: 500, color, whiteSpace: "nowrap" }}>
-                        {isEarning ? "+" : "-"}{fmt(isEarning ? row.plnAmount : row.amountPLN)} PLN
+                      <div style={{ fontFamily: V2_TYPE.mono, fontSize: 18, fontWeight: 500, color, whiteSpace: "nowrap" }}>
+                        {isEarning ? "+" : "-"}{fmt(isEarning ? row.plnAmount : row.amountPLN)} {currencyLabel("PLN")}
                       </div>
                       {isEarning && (
-                        <div style={{ fontFamily: V2_TYPE.mono, fontSize: 10.5, color: V2.subtle }}>
-                          {fmt(row.enteredAmount, row.currency === "PLN" ? 0 : 2)} {row.currency} · kurs {fmt(row.fxRateToPLN, row.currency === "PLN" ? 0 : 4)}
+                        <div style={{ fontFamily: V2_TYPE.mono, fontSize: 10, color: V2.subtle }}>
+                          {fmt(row.enteredAmount, row.currency === "PLN" ? 0 : 2)} {currencyLabel(row.currency)} · kurs {fmt(row.fxRateToPLN, row.currency === "PLN" ? 0 : 4)}
                         </div>
                       )}
                     </div>

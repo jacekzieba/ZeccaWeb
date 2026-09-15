@@ -83,7 +83,7 @@ function csvCell(value: string | number | null | undefined) {
 }
 
 const SECTION_HEAD: CSSProperties = {
-  fontFamily: UI, fontSize: 10.5, fontWeight: 700, letterSpacing: ".13em",
+  fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: ".13em",
   textTransform: "uppercase", color: V2.subtle,
 };
 
@@ -93,7 +93,7 @@ function PrimaryButton({ children, onClick, disabled }: { children: React.ReactN
       onClick={onClick}
       disabled={disabled}
       style={{
-        border: "none", borderRadius: 10, padding: "9px 16px", fontFamily: UI, fontSize: 13, fontWeight: 600,
+        border: "none", borderRadius: "var(--r-xl)", padding: "9px 16px", fontFamily: UI, fontSize: 13, fontWeight: 600,
         cursor: disabled ? "not-allowed" : "pointer", whiteSpace: "nowrap",
         background: disabled ? v2Mix(V2.ink, 0.12) : V2.ink,
         color: disabled ? V2.subtle : V2.card,
@@ -111,7 +111,7 @@ function GhostButton({ children, onClick, disabled }: { children: React.ReactNod
       onClick={onClick}
       disabled={disabled}
       style={{
-        border: `0.5px solid ${V2.line}`, borderRadius: 10, padding: "9px 16px", fontFamily: UI, fontSize: 13,
+        border: `0.5px solid ${V2.line}`, borderRadius: "var(--r-xl)", padding: "9px 16px", fontFamily: UI, fontSize: 13,
         fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", whiteSpace: "nowrap",
         background: V2.card, color: disabled ? V2.subtle : V2.ink, opacity: disabled ? 0.55 : 1,
       }}
@@ -176,13 +176,13 @@ function ImportIdentityReview({
                 value={payloadText(payload, field)}
                 placeholder={placeholder}
                 onChange={(event) => onEdit(field, event.target.value)}
-                style={{ width: "100%", boxSizing: "border-box", borderRadius: 8, border: `1px solid ${invalid ? V2.loss : V2.line}`, background: V2.card, color: V2.ink, fontFamily: MONO, fontSize: 12, padding: "7px 8px" }}
+                style={{ width: "100%", boxSizing: "border-box", borderRadius: "var(--r-lg)", border: `1px solid ${invalid ? V2.loss : V2.line}`, background: V2.card, color: V2.ink, fontFamily: MONO, fontSize: 12, padding: "7px 8px" }}
               />
             </label>
           );
         })}
       </div>
-      <label style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 11, color: canConfirm ? V2.ink : V2.subtle, fontSize: 12.5 }}>
+      <label style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 11, color: canConfirm ? V2.ink : V2.subtle, fontSize: 12 }}>
         <input
           type="checkbox"
           checked={confirmed}
@@ -659,14 +659,14 @@ export function ImportPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: UI, color: V2.ink }}>
       <V2ScreenHead eyebrow="System" title="Import / Eksport" sub="Wczytaj lub pobierz transakcje i pełną kopię portfela — wszystko lokalnie w przeglądarce" />
 
-      <div style={{ display: "inline-flex", gap: 6, background: v2Mix(V2.ink, 0.05), borderRadius: 11, padding: 4, alignSelf: "flex-start" }}>
+      <div style={{ display: "inline-flex", gap: 6, background: v2Mix(V2.ink, 0.05), borderRadius: "var(--r-xl)", padding: 4, alignSelf: "flex-start" }}>
         {([["import", "Import"], ["export", "Eksport"]] as const).map(([id, label]) => (
           <button
             key={id}
             onClick={() => setTab(id)}
             style={{
-              padding: "7px 18px", borderRadius: 8, border: "none", cursor: "pointer",
-              fontFamily: UI, fontSize: 12.5, fontWeight: tab === id ? 700 : 500,
+              padding: "7px 18px", borderRadius: "var(--r-lg)", border: "none", cursor: "pointer",
+              fontFamily: UI, fontSize: 12, fontWeight: tab === id ? 700 : 500,
               background: tab === id ? V2.card : "transparent", color: tab === id ? V2.ink : V2.muted,
               boxShadow: tab === id ? `0 1px 4px ${v2Mix(V2.ink, 0.1)}` : "none",
             }}
@@ -678,15 +678,15 @@ export function ImportPage() {
 
       {!records && (
         <V2Card>
-          <div style={{ padding: "20px 4px", textAlign: "center", color: V2.subtle, fontSize: 14 }}>
+          <div style={{ padding: "20px 4px", textAlign: "center", color: V2.subtle, fontSize: 13 }}>
             Odblokuj dane w panelu synchronizacji, żeby importować lub eksportować.
           </div>
         </V2Card>
       )}
 
       {records && tab === "import" && publicDemo && (
-        <V2Card style={{ borderColor: v2Mix(V2.gold, 0.35), background: v2Mix(V2.gold, 0.06) }}>
-          <div style={{ fontFamily: UI, fontSize: 12.5, fontWeight: 700, color: V2.gold }}>
+        <V2Card style={{ borderColor: v2Mix(V2.brand, 0.35), background: v2Mix(V2.brand, 0.06) }}>
+          <div style={{ fontFamily: UI, fontSize: 12, fontWeight: 700, color: V2.brand }}>
             Import jest wyłączony w trybie demo
           </div>
           <div style={{ fontFamily: UI, fontSize: 12, color: V2.muted, marginTop: 3, lineHeight: 1.45 }}>
@@ -724,7 +724,7 @@ export function ImportPage() {
                   }}
                   style={{
                     border: `1.5px solid ${importFormat === id ? V2.brand : V2.line}`,
-                    borderRadius: 12, padding: "10px 16px", textAlign: "left",
+                    borderRadius: "var(--r-xl)", padding: "10px 16px", textAlign: "left",
                     background: importFormat === id ? v2Mix(V2.brand, 0.07) : V2.card,
                     cursor: progress ? "wait" : "pointer", minWidth: 200,
                     opacity: progress ? 0.65 : 1,
@@ -744,7 +744,7 @@ export function ImportPage() {
                   disabled={progress !== null}
                   onChange={(e) => setSelectedPortfolioId(e.target.value)}
                   style={{
-                    fontFamily: UI, fontSize: 13, padding: "8px 12px", borderRadius: 8,
+                    fontFamily: UI, fontSize: 13, padding: "8px 12px", borderRadius: "var(--r-lg)",
                     border: `0.5px solid ${V2.line}`, background: V2.card, color: V2.ink, cursor: "pointer",
                   }}
                 >
@@ -760,8 +760,8 @@ export function ImportPage() {
             <V2Card>
               <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 14, alignItems: "center" }}>
                 <div>
-                  <div style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 500, color: V2.ink, marginBottom: 4 }}>Transakcje lub wyceny CSV / XLSX</div>
-                  <div style={{ color: V2.muted, fontSize: 12.5, lineHeight: 1.5 }}>
+                  <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 500, color: V2.ink, marginBottom: 4 }}>Transakcje lub wyceny CSV / XLSX</div>
+                  <div style={{ color: V2.muted, fontSize: 12, lineHeight: 1.5 }}>
                     Transakcje: date, portfolio, transactionType, grossAmount, currency. Wyceny: date, instrument, value albo quantity + totalValue, currency.
                   </div>
                 </div>
@@ -775,7 +775,7 @@ export function ImportPage() {
 
           <label
             aria-busy={progress !== null}
-            style={{ display: "block", cursor: progress ? "wait" : "pointer", borderRadius: 16, border: `1.5px dashed ${V2.line}`, background: v2Mix(V2.card, 0.6), padding: "30px 18px", textAlign: "center" }}
+            style={{ display: "block", cursor: progress ? "wait" : "pointer", borderRadius: "var(--r-xl)", border: `1.5px dashed ${V2.line}`, background: v2Mix(V2.card, 0.6), padding: "30px 18px", textAlign: "center" }}
           >
             <input
               accept=".csv,.xls,.xlsx,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -784,8 +784,8 @@ export function ImportPage() {
               onChange={(event) => void handleFile(event.target.files?.[0] ?? null)}
               style={{ display: "none" }}
             />
-            <div style={{ fontSize: 22, color: V2.subtle, marginBottom: 8 }}>⬇</div>
-            <div style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 500, color: V2.ink }}>
+            <div style={{ fontSize: 21, color: V2.subtle, marginBottom: 8 }}>⬇</div>
+            <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 500, color: V2.ink }}>
               {progress ? "Wczytywanie pliku…" : fileName ?? "Wybierz plik CSV albo XLSX / XLS"}
             </div>
             <div style={{ color: V2.subtle, fontSize: 12, marginTop: 5 }}>
@@ -815,7 +815,7 @@ export function ImportPage() {
             <V2Card>
               <div style={{ ...SECTION_HEAD, marginBottom: 8 }}>Ostrzeżenia parsera ({preview.parserWarnings.length})</div>
               {preview.parserWarnings.slice(0, 10).map((w, i) => (
-                <div key={i} style={{ fontFamily: MONO, fontSize: 11.5, color: V2.muted, lineHeight: 1.6 }}>{w}</div>
+                <div key={i} style={{ fontFamily: MONO, fontSize: 11, color: V2.muted, lineHeight: 1.6 }}>{w}</div>
               ))}
               {preview.parserWarnings.length > 10 && (
                 <div style={{ fontSize: 11, color: V2.subtle, marginTop: 4 }}>… i {preview.parserWarnings.length - 10} więcej</div>
@@ -827,7 +827,7 @@ export function ImportPage() {
             <V2Card pad={0} style={{ overflow: "hidden" }}>
               <div style={{ borderBottom: `0.5px solid ${V2.line}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "15px 20px", flexWrap: "wrap" }}>
                 <div>
-                  <div style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 500, color: V2.ink }}>Podgląd importu {preview.kind === "manualValuation" ? "wycen" : "transakcji"}</div>
+                  <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 500, color: V2.ink }}>Podgląd importu {preview.kind === "manualValuation" ? "wycen" : "transakcji"}</div>
                   <div style={{ color: V2.muted, fontSize: 12, marginTop: 3 }}>
                     <span style={{ color: V2.profit, fontWeight: 600 }}>{validCount} poprawnych</span> · {selectedCount} wybranych · {warningCount} z ostrzeżeniami · <span style={{ color: errorCount ? V2.loss : V2.muted }}>{errorCount} z błędami</span>
                     {newInstCount > 0 && <span style={{ color: V2.bonds, fontWeight: 600 }}> · {newInstCount} nowych instrumentów</span>}
@@ -866,13 +866,13 @@ export function ImportPage() {
                   {selectedTreasuryBonds.map((payload) => {
                     const item = identityErrorsByInstrument.get(payload.id);
                     return (
-                      <div key={payload.id} style={{ borderTop: `0.5px solid ${V2.line}`, padding: "12px 20px", color: item ? V2.loss : V2.profit, fontSize: 12.5, fontWeight: 600 }}>
+                      <div key={payload.id} style={{ borderTop: `0.5px solid ${V2.line}`, padding: "12px 20px", color: item ? V2.loss : V2.profit, fontSize: 12, fontWeight: 600 }}>
                         {String(payload.symbol ?? "Obligacja")} · {item ? item.message : "Parametry emisji i data zakupu są kompletne — wycena będzie naliczana automatycznie."}
                       </div>
                     );
                   })}
                   {!importReadyToCommit && (
-                    <div role="alert" style={{ borderTop: `0.5px solid ${V2.line}`, color: V2.loss, fontSize: 12.5, fontWeight: 600, padding: "10px 20px" }}>
+                    <div role="alert" style={{ borderTop: `0.5px solid ${V2.line}`, color: V2.loss, fontSize: 12, fontWeight: 600, padding: "10px 20px" }}>
                       {importIdentityErrors.length > 0
                         ? "Uzupełnij pola oznaczone jako wymagane przed zapisem."
                         : `Potwierdź tożsamość ${unconfirmedMarketInstrumentCount === 1 ? "instrumentu" : "instrumentów"} przed zapisem.`}
@@ -886,7 +886,7 @@ export function ImportPage() {
                   style={{
                     borderBottom: `0.5px solid ${V2.line}`,
                     color: error ? V2.loss : V2.profit,
-                    fontSize: 12.5,
+                    fontSize: 12,
                     fontWeight: 600,
                     padding: "10px 20px",
                   }}
@@ -957,7 +957,7 @@ export function ImportPage() {
                             ) : !isSelected ? (
                               <span style={{ color: V2.muted }}>Pominięte</span>
                             ) : row.warnings.length > 0 ? (
-                              <span style={{ color: V2.gold }}>{row.warnings.join(" ")}</span>
+                              <span style={{ color: V2.brand }}>{row.warnings.join(" ")}</span>
                             ) : (
                               <span style={{ color: V2.profit }}>Gotowe</span>
                             )}
@@ -980,7 +980,7 @@ export function ImportPage() {
               <div>
                 <div style={SECTION_HEAD}>CSV</div>
                 <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 500, color: V2.ink, margin: "3px 0 4px" }}>Transakcje ({txCount})</div>
-                <div style={{ color: V2.muted, fontSize: 12.5, lineHeight: 1.5 }}>
+                <div style={{ color: V2.muted, fontSize: 12, lineHeight: 1.5 }}>
                   Pełna lista transakcji w formacie zgodnym z szablonem importu.
                 </div>
               </div>
@@ -993,7 +993,7 @@ export function ImportPage() {
               <div>
                 <div style={SECTION_HEAD}>CSV</div>
                 <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 500, color: V2.ink, margin: "3px 0 4px" }}>Historia dzienna ({snapshotPoints} punktów)</div>
-                <div style={{ color: V2.muted, fontSize: 12.5, lineHeight: 1.5 }}>
+                <div style={{ color: V2.muted, fontSize: 12, lineHeight: 1.5 }}>
                   Dzienne wartości portfela — do importu do arkusza lub zewnętrznego narzędzia.
                 </div>
               </div>
@@ -1006,7 +1006,7 @@ export function ImportPage() {
               <div>
                 <div style={SECTION_HEAD}>CSV</div>
                 <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 500, color: V2.ink, margin: "3px 0 4px" }}>Dywidendy i odsetki ({incomeCount})</div>
-                <div style={{ color: V2.muted, fontSize: 12.5, lineHeight: 1.5 }}>
+                <div style={{ color: V2.muted, fontSize: 12, lineHeight: 1.5 }}>
                   Transakcje typu dividend, interest, bondCoupon — do zestawienia podatkowego.
                 </div>
               </div>
@@ -1019,7 +1019,7 @@ export function ImportPage() {
               <div>
                 <div style={SECTION_HEAD}>CSV</div>
                 <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 500, color: V2.ink, margin: "3px 0 4px" }}>Pozycje na dziś ({positionCount})</div>
-                <div style={{ color: V2.muted, fontSize: 12.5, lineHeight: 1.5 }}>
+                <div style={{ color: V2.muted, fontSize: 12, lineHeight: 1.5 }}>
                   Aktualne instrumenty z ilościami, cenami i wartością rynkową.
                 </div>
               </div>
@@ -1032,7 +1032,7 @@ export function ImportPage() {
               <div>
                 <div style={SECTION_HEAD}>JSON</div>
                 <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 500, color: V2.ink, margin: "3px 0 4px" }}>Pełna kopia portfela</div>
-                <div style={{ color: V2.muted, fontSize: 12.5, lineHeight: 1.5 }}>
+                <div style={{ color: V2.muted, fontSize: 12, lineHeight: 1.5 }}>
                   Migawka portfela (konta, pozycje, wyceny, historia) w formacie JSON.
                 </div>
               </div>

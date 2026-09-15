@@ -22,7 +22,6 @@ const C = {
   line: token("line"),
   line2: token("line2"),
   brand: token("accent"),
-  gold: token("assetBonds"),
   profit: token("up"),
   loss: token("down"),
   equity: token("assetEquity"),
@@ -246,8 +245,10 @@ function allocColor(key: Benchmark["alloc"][number]["key"]) {
     eq: C.equity,
     lt: C.bonds,
     it: v2Mix(C.bonds, 0.65),
-    gold: C.gold,
-    comm: C.brand,
+    // Złoto i surowce miały kolor obligacji i bursztyn akcentu — czyli jedna
+    // barwa na trzy serie (lt, it, gold) i akcent wpuszczony w dane.
+    gold: C.deposit,
+    comm: C.crypto,
     cash: C.cash,
   }[key];
 }
@@ -280,9 +281,8 @@ function Card({
       style={{
         background: C.card,
         border: `0.5px solid ${C.line}`,
-        borderRadius: 16,
+        borderRadius: "var(--r-md)",
         padding: pad,
-        boxShadow: `0 1px 0 ${v2Mix(C.ink, 0.03)}, 0 6px 20px ${v2Mix(C.ink, 0.05)}`,
         ...style,
       }}
     >
@@ -293,7 +293,7 @@ function Card({
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ fontFamily: UI, fontSize: 10.5, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: C.subtle }}>
+    <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: C.subtle }}>
       {children}
     </div>
   );
@@ -377,7 +377,7 @@ function MultiLineChart({
         ))}
         {labels.map((label, index) =>
           index % xStep === 0 || index === labels.length - 1 ? (
-            <text key={`${label}-${index}`} x={tx(index)} y={pt + innerHeight + 19} textAnchor="middle" fontSize="9.5" fill={C.subtle} fontFamily={MONO}>
+            <text key={`${label}-${index}`} x={tx(index)} y={pt + innerHeight + 19} textAnchor="middle" fontSize="10" fill={C.subtle} fontFamily={MONO}>
               {label}
             </text>
           ) : null,
@@ -397,18 +397,17 @@ function MultiLineChart({
             background: C.ink,
             color: C.card,
             padding: "8px 11px",
-            borderRadius: 10,
+            borderRadius: "var(--r-xl)",
             pointerEvents: "none",
-            boxShadow: "0 8px 22px rgba(0,0,0,.22)",
             minWidth: 140,
           }}
         >
-          <div style={{ opacity: 0.6, fontSize: 9.5, fontFamily: MONO, marginBottom: 4 }}>{labels[hover]}</div>
+          <div style={{ opacity: 0.6, fontSize: 10, fontFamily: MONO, marginBottom: 4 }}>{labels[hover]}</div>
           {series.map((item) => (
             <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 3 }}>
-              <span style={{ width: 8, height: 8, borderRadius: 2, background: item.color }} />
+              <span style={{ width: 8, height: 8, borderRadius: "var(--r-xs)", background: item.color }} />
               <span style={{ fontSize: 11, opacity: 0.8, flex: 1 }}>{item.label}</span>
-              <span style={{ fontFamily: SERIF, fontSize: 13, fontVariantNumeric: "tabular-nums" }}>{fmt(item.data[hover], 1)}</span>
+              <span style={{ fontFamily: MONO, fontSize: 13, fontVariantNumeric: "tabular-nums" }}>{fmt(item.data[hover], 1)}</span>
             </div>
           ))}
         </div>
@@ -454,7 +453,7 @@ function Donut({
           />
         );
       })}
-      <text x={center} y={center - 2} textAnchor="middle" fontFamily={SERIF} fontSize={size * 0.18} fontWeight="500" fill={C.ink}>
+      <text x={center} y={center - 2} textAnchor="middle" fontFamily={MONO} fontSize={size * 0.18} fontWeight="500" fill={C.ink}>
         {data.length}
       </text>
       <text x={center} y={center + size * 0.14} textAnchor="middle" fontFamily={UI} fontSize={size * 0.075} fill={C.subtle} letterSpacing=".05em">
@@ -521,7 +520,7 @@ export function BenchmarkPage() {
             display: "inline-flex",
             gap: 2,
             padding: 3,
-            borderRadius: 11,
+            borderRadius: "var(--r-xl)",
             background: C.card2,
             border: `0.5px solid ${C.line}`,
           }}
@@ -535,7 +534,7 @@ export function BenchmarkPage() {
                 aria-pressed={active}
                 style={{
                   padding: "6px 13px",
-                  borderRadius: 8,
+                  borderRadius: "var(--r-lg)",
                   border: "none",
                   cursor: "pointer",
                   fontFamily: UI,
@@ -543,7 +542,6 @@ export function BenchmarkPage() {
                   fontWeight: 700,
                   background: active ? C.card : "transparent",
                   color: active ? C.ink : C.subtle,
-                  boxShadow: active ? `0 1px 3px ${v2Mix(C.ink, 0.12)}` : "none",
                   transition: "all .15s",
                 }}
               >
@@ -564,18 +562,17 @@ export function BenchmarkPage() {
               style={{
                 textAlign: "left",
                 padding: "14px 16px",
-                borderRadius: 14,
+                borderRadius: "var(--r-xl)",
                 cursor: "pointer",
                 border: `1px solid ${active ? item.color : C.line}`,
                 background: active ? v2Mix(item.color, 0.08) : C.card,
-                boxShadow: active ? `0 2px 10px ${v2Mix(item.color, 0.18)}` : "none",
                 transition: "all .15s",
                 minWidth: 0,
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                <span style={{ width: 10, height: 10, borderRadius: 3, background: item.color, flexShrink: 0 }} />
-                <span style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 500, color: C.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <span style={{ width: 10, height: 10, borderRadius: "var(--r-sm)", background: item.color, flexShrink: 0 }} />
+                <span style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 500, color: C.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {item.name}
                 </span>
               </div>
@@ -595,7 +592,7 @@ export function BenchmarkPage() {
           </div>
           <div style={{ display: "flex", gap: 18, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, color: C.muted }}>
-              <span style={{ width: 14, height: 3, borderRadius: 2, background: C.brand }} />
+              <span style={{ width: 14, height: 3, borderRadius: "var(--r-xs)", background: C.brand }} />
               Twój portfel
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, color: C.muted }}>
@@ -618,10 +615,11 @@ export function BenchmarkPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: isTablet ? "1fr" : "1fr 1.1fr", gap: 14 }}>
         <Card>
+          <div className="metric-tile-mark">Model referencyjny<em>ścieżka znormalizowana</em></div>
           <Eyebrow>Werdykt</Eyebrow>
-          <div style={{ fontFamily: SERIF, fontSize: isMobile ? 22 : 26, fontWeight: 500, color: diff >= 0 ? C.profit : C.loss, marginTop: 6, lineHeight: 1.15 }}>
+          <div style={{ fontFamily: MONO, fontSize: isMobile ? 22 : 26, fontWeight: 500, color: diff >= 0 ? C.profit : C.loss, marginTop: 6, lineHeight: 1.15 }}>
             {diff >= 0 ? "Wyprzedzasz" : "Pozostajesz za"} {selected.name}
-            <br />o {fmtPct(Math.abs(diff), 2)} <span style={{ fontSize: 14, color: C.subtle, fontStyle: "italic" }}>rocznie</span>
+            <br />o {fmtPct(Math.abs(diff), 2)} <span style={{ fontSize: 13, color: C.subtle, fontStyle: "italic" }}>rocznie</span>
           </div>
           <div style={{ fontSize: 13, color: C.muted, marginTop: 10, lineHeight: 1.5 }}>{selected.desc}</div>
 
@@ -632,9 +630,9 @@ export function BenchmarkPage() {
             <div style={{ flex: 1, minWidth: 160, display: "flex", flexDirection: "column", gap: 9 }}>
               {selected.alloc.map((item) => (
                 <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                  <span style={{ width: 9, height: 9, borderRadius: 2, background: allocColor(item.key) }} />
-                  <span style={{ fontSize: 12.5, color: C.muted, flex: 1 }}>{item.label}</span>
-                  <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600, color: C.ink }}>{item.value}%</span>
+                  <span style={{ width: 9, height: 9, borderRadius: "var(--r-xs)", background: allocColor(item.key) }} />
+                  <span style={{ fontSize: 12, color: C.muted, flex: 1 }}>{item.label}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 500, color: C.ink }}>{item.value}%</span>
                 </div>
               ))}
             </div>
@@ -642,12 +640,15 @@ export function BenchmarkPage() {
         </Card>
 
         <Card pad={0}>
+          <div style={{ padding: "12px 22px 0" }}>
+            <div className="metric-tile-mark">Model referencyjny<em>siedem miar, ta sama ścieżka</em></div>
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "1.35fr 1fr 1fr", padding: "15px 22px", borderBottom: `0.5px solid ${C.line}`, background: v2Mix(C.ink, 0.022) }}>
             {["Miara", "Twój portfel", selected.name].map((label, index) => (
               <span
                 key={label}
                 style={{
-                  fontSize: 9.5,
+                  fontSize: 10,
                   fontWeight: 700,
                   color: index === 1 ? C.brand : index === 2 ? selected.color : C.subtle,
                   textTransform: "uppercase",
@@ -670,12 +671,12 @@ export function BenchmarkPage() {
                 alignItems: "center",
               }}
             >
-              <span style={{ fontSize: 12.5, color: C.muted }}>{row.label}</span>
-              <span style={{ fontFamily: SERIF, fontSize: 15, fontWeight: 500, color: C.ink, textAlign: "right", fontVariantNumeric: "tabular-nums", display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 5 }}>
+              <span style={{ fontSize: 12, color: C.muted }}>{row.label}</span>
+              <span style={{ fontFamily: MONO, fontSize: 15, fontWeight: 500, color: C.ink, textAlign: "right", fontVariantNumeric: "tabular-nums", display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 5 }}>
                 {row.better && <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.profit }} />}
                 {row.portfolio}
               </span>
-              <span style={{ fontFamily: SERIF, fontSize: 15, fontWeight: 500, color: C.muted, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+              <span style={{ fontFamily: MONO, fontSize: 15, fontWeight: 500, color: C.muted, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
                 {row.benchmark}
               </span>
             </div>

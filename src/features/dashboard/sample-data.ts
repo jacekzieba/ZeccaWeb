@@ -79,6 +79,7 @@ export const sampleSnapshot: InvestorDataSnapshot = {
     cagrPct: 7.21,
     realReturnPct: 11.42,
     xirrPct: 8.74,
+    xirrHistory: [6.2, 6.8, 6.5, 7.1, 7.4, 7.0, 7.8, 8.1, 7.9, 8.3, 8.6, 8.74],
     maxDrawdownPct: -6.94,
     realizedPnl: 18_430,
     inflationPct: 3.5,

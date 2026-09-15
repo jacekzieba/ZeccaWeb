@@ -1,32 +1,36 @@
 "use client";
 
 import { token } from "@/design/tokens";
+import { SURFACES } from "@/lib/design-tokens";
+import { v2Mix } from "@/lib/v2-design";
 import Link from "next/link";
 import { useMemo, useState, type CSSProperties } from "react";
 import { PortfolioEditorModal } from "@/features/portfolios/portfolio-editor-modal";
-import { deleteRecord, refreshSyncStore } from "@/sync/records/record-writer";
+import { deleteRecord,
+  removePendingSyncOperation, restoreRecord, refreshSyncStore } from "@/sync/records/record-writer";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import { isFakeSyncEnabled } from "@/lib/env";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
 import { useProfile } from "@/features/profile/profile-store";
+import { currencyLabel } from "@/lib/money";
+import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
+import { announce } from "@/components/feedback/status-announcer";
+import { pluralPl } from "@/lib/plural-pl";
 
 const INK = token("ink");
-const MUTED = "rgba(28,49,68,0.58)";
-const SUBTLE = "rgba(28,49,68,0.38)";
-const LINE_SOFT = "rgba(28,49,68,0.06)";
+const MUTED = token("inkMuted");
+const SUBTLE = token("inkFaint");
+const LINE_SOFT = token("line2");
 const PROFIT = token("up");
 const LOSS = token("down");
 const AMBER = token("accent");
-const glassCard: CSSProperties = {
-  background: "rgba(255,253,249,0.82)",
-  backdropFilter: "blur(30px) saturate(160%)",
-  WebkitBackdropFilter: "blur(30px) saturate(160%)",
-  borderRadius: 16,
-  border: "0.5px solid rgba(255,255,255,0.7)",
-  boxShadow:
-    "inset 0 1px 0 rgba(255,255,255,0.9), 0 1px 0 rgba(28,49,68,0.04), 0 4px 16px rgba(28,49,68,0.05)",
-};
+const PAPER = token("ground");
+// Była kartą "ze szkła" na kremowo-białym tle (rgba(255,253,249,...)) —
+// zupełnie inny, jasny język wizualny niż reszta produktu. Nowy system (patrz
+// SURFACES w design-tokens.ts) elewację buduje samą powierzchnią i włosem,
+// nigdy rozmyciem ani cieniem — to ten sam przepis, którego już używa AppShell.
+const glassCard: CSSProperties = SURFACES.glassCard;
 
 function fmt(n: number) {
   return n.toLocaleString("pl-PL", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -84,6 +88,24 @@ export function PortfolioListPage() {
     ? editablePortfolios.find((portfolio) => portfolio.id === editingPortfolioId) ?? null
     : null;
 
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; opis: string } | null>(null);
+
+  async function przywrocPortfel(id: string, baseUpdatedAt: string, operationId?: string) {
+    if (!userDataKey || !supabase) return;
+    try {
+      // Odłożone usunięcie (offline/nieudany zapis) nigdy nie dotarło na
+      // serwer — bez skasowania wpisu z kolejki wykonałoby się później, mimo
+      // że właśnie je cofnięto.
+      if (operationId) removePendingSyncOperation(operationId);
+      await restoreRecord(supabase, "account", id, { baseUpdatedAt });
+      const { records: nextRecords, snapshot: nextSnapshot } = await refreshSyncStore(supabase, userDataKey);
+      setSync(nextRecords, nextSnapshot);
+      announce("Portfel przywrócony.");
+    } catch {
+      announce("Nie udało się cofnąć — portfel zmienił się na innym urządzeniu.");
+    }
+  }
+
   async function handleDeletePortfolio(id: string) {
     if (!userDataKey || !supabase || !records) {
       return;
@@ -97,13 +119,10 @@ export function PortfolioListPage() {
     ).length;
 
     if (linkedTransactions > 0) {
-      window.alert("Nie można usunąć portfela, który ma przypisane transakcje.");
+      announce(`Nie można usunąć portfela: ma ${linkedTransactions} ${pluralPl(linkedTransactions, "przypisaną transakcję", "przypisane transakcje", "przypisanych transakcji")}.`);
       return;
     }
 
-    if (!window.confirm("Usunąć portfel?")) {
-      return;
-    }
 
     setDeletingId(id);
 
@@ -129,6 +148,12 @@ export function PortfolioListPage() {
         );
         setSync(nextRecords, nextSnapshot);
       }
+      const usunietyO = result.updatedAt;
+      const operationId = result.operationId;
+      announce(
+        "Portfel usunięty.",
+        usunietyO ? { label: "Cofnij", run: () => void przywrocPortfel(id, usunietyO, operationId) } : undefined,
+      );
     } finally {
       setDeletingId(null);
     }
@@ -148,7 +173,7 @@ export function PortfolioListPage() {
         }}
       >
         <div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: INK, letterSpacing: "-0.01em" }}>
+          <div style={{ fontSize: 21, fontWeight: 700, color: INK, letterSpacing: "-0.01em" }}>
             Portfele
           </div>
           <div style={{ fontSize: 12, color: MUTED, marginTop: 2 }}>
@@ -163,10 +188,10 @@ export function PortfolioListPage() {
           disabled={!userDataKey}
           style={{
             padding: "8px 14px",
-            borderRadius: 9,
+            borderRadius: "var(--r-lg)",
             border: "none",
-            background: userDataKey ? INK : "rgba(28,49,68,0.12)",
-            color: userDataKey ? "#fff" : SUBTLE,
+            background: userDataKey ? INK : v2Mix(INK, 0.12),
+            color: userDataKey ? PAPER : SUBTLE,
             fontSize: 13,
             fontWeight: 700,
             cursor: userDataKey ? "pointer" : "not-allowed",
@@ -187,29 +212,29 @@ export function PortfolioListPage() {
           }}
         >
           <div style={{ ...glassCard, padding: "18px 20px" }}>
-            <div style={{ fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 6 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 6 }}>
               Łączna wartość
             </div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
+            <div style={{ fontSize: 26, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
               {fmt(snapshot.totalValue)}{" "}
-              <span style={{ fontSize: 13, fontWeight: 500, opacity: 0.6 }}>{displayCurrency}</span>
+              <span style={{ fontSize: 13, fontWeight: 500, opacity: 0.6 }}>{currencyLabel(displayCurrency)}</span>
             </div>
           </div>
           <div style={{ ...glassCard, padding: "18px 20px" }}>
-            <div style={{ fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 6 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 6 }}>
               Portfeli
             </div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: INK }}>
+            <div style={{ fontSize: 26, fontWeight: 700, color: INK }}>
               {snapshot.portfolios.length}
             </div>
           </div>
           <div style={{ ...glassCard, padding: "18px 20px" }}>
-            <div style={{ fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 6 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 6 }}>
               Gotówka
             </div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
+            <div style={{ fontSize: 26, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
               {fmt(snapshot.cash)}{" "}
-              <span style={{ fontSize: 13, fontWeight: 500, opacity: 0.6 }}>{displayCurrency}</span>
+              <span style={{ fontSize: 13, fontWeight: 500, opacity: 0.6 }}>{currencyLabel(displayCurrency)}</span>
             </div>
           </div>
         </div>
@@ -223,9 +248,9 @@ export function PortfolioListPage() {
             display: "grid",
             gridTemplateColumns: "minmax(0,2fr) minmax(0,0.7fr) minmax(0,0.5fr) minmax(0,1.2fr) minmax(0,1fr) 130px",
             padding: "12px 22px",
-            background: "rgba(28,49,68,0.025)",
+            background: v2Mix(INK, 0.025),
             borderBottom: `0.5px solid ${LINE_SOFT}`,
-            borderRadius: "16px 16px 0 0",
+            borderRadius: "var(--r-xl) var(--r-xl) 0 0",
           }}
         >
           {["Nazwa", "Waluta", "Pozycje", "Wartość", "Udział", "Akcje"].map((h, i) => (
@@ -247,8 +272,8 @@ export function PortfolioListPage() {
 
         {!snapshot && (
           <div style={{ padding: "48px 22px", textAlign: "center" }}>
-            <div style={{ fontSize: 32, opacity: 0.12, marginBottom: 12 }}>◎</div>
-            <div style={{ fontSize: 14, color: SUBTLE }}>
+            <div style={{ fontSize: 31, opacity: 0.12, marginBottom: 12 }}>◎</div>
+            <div style={{ fontSize: 13, color: SUBTLE }}>
               Odblokuj dane w panelu synchronizacji
             </div>
           </div>
@@ -256,8 +281,8 @@ export function PortfolioListPage() {
 
         {snapshot && snapshot.portfolios.length === 0 && (
           <div style={{ padding: "48px 22px", textAlign: "center" }}>
-            <div style={{ fontSize: 32, opacity: 0.12, marginBottom: 12 }}>◎</div>
-            <div style={{ fontSize: 14, color: SUBTLE }}>
+            <div style={{ fontSize: 31, opacity: 0.12, marginBottom: 12 }}>◎</div>
+            <div style={{ fontSize: 13, color: SUBTLE }}>
               Nie masz jeszcze żadnego portfela — utwórz pierwszy przyciskiem powyżej.
             </div>
           </div>
@@ -278,7 +303,7 @@ export function PortfolioListPage() {
                 alignItems: "center",
                 transition: "background .12s",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(28,49,68,0.025)")}
+              onMouseEnter={(e) => (e.currentTarget.style.background = v2Mix(INK, 0.025))}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
               {/* Name */}
@@ -287,7 +312,7 @@ export function PortfolioListPage() {
                   style={{
                     width: 28,
                     height: 28,
-                    borderRadius: 8,
+                    borderRadius: "var(--r-lg)",
                     background: `${color}18`,
                     border: `1.5px solid ${color}40`,
                     display: "flex",
@@ -303,7 +328,7 @@ export function PortfolioListPage() {
                 <div>
                   <Link
                     href={`/portfolios/${pf.id}`}
-                    style={{ fontSize: 14, fontWeight: 700, color: INK, textDecoration: "none" }}
+                    style={{ fontSize: 13, fontWeight: 700, color: INK, textDecoration: "none" }}
                   >
                     {pf.name}
                   </Link>
@@ -317,14 +342,14 @@ export function PortfolioListPage() {
               </div>
 
               {/* Positions */}
-              <div style={{ textAlign: "right", fontSize: 14, color: INK, fontWeight: 600 }}>
+              <div style={{ textAlign: "right", fontSize: 13, color: INK, fontWeight: 600 }}>
                 {pf.positions}
               </div>
 
               {/* Value */}
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
-                  {fmt(pf.value)} <span style={{ fontSize: 11, opacity: 0.55 }}>{displayCurrency}</span>
+                  {fmt(pf.value)} <span style={{ fontSize: 11, opacity: 0.55 }}>{currencyLabel(displayCurrency)}</span>
                 </div>
                 <div style={{ fontSize: 11, color: pf.dailyChange >= 0 ? PROFIT : LOSS, fontWeight: 600, marginTop: 1 }}>
                   {fmtPct(pf.dailyChange)} dziś
@@ -342,8 +367,8 @@ export function PortfolioListPage() {
                     style={{
                       width: 60,
                       height: 3,
-                      borderRadius: 2,
-                      background: "rgba(28,49,68,0.08)",
+                      borderRadius: "var(--r-xs)",
+                      background: v2Mix(INK, 0.08),
                       marginTop: 4,
                     }}
                   >
@@ -351,7 +376,7 @@ export function PortfolioListPage() {
                       style={{
                         width: `${Math.min(pct, 100)}%`,
                         height: "100%",
-                        borderRadius: 2,
+                        borderRadius: "var(--r-xs)",
                         background: color,
                       }}
                     />
@@ -359,7 +384,7 @@ export function PortfolioListPage() {
                 </div>
                 <Link
                   href={`/portfolios/${pf.id}`}
-                  style={{ fontSize: 16, color: SUBTLE, marginLeft: 4, textDecoration: "none" }}
+                  style={{ fontSize: 15, color: SUBTLE, marginLeft: 4, textDecoration: "none" }}
                 >
                   ›
                 </Link>
@@ -372,9 +397,9 @@ export function PortfolioListPage() {
                   }}
                   style={{
                     padding: "6px 10px",
-                    borderRadius: 8,
-                    border: "0.5px solid rgba(28,49,68,0.12)",
-                    background: "rgba(255,255,255,0.7)",
+                    borderRadius: "var(--r-lg)",
+                    border: `0.5px solid ${token("line")}`,
+                    background: v2Mix(PAPER, 0.7),
                     color: MUTED,
                     fontSize: 12,
                     cursor: "pointer",
@@ -384,13 +409,13 @@ export function PortfolioListPage() {
                   Edytuj
                 </button>
                 <button
-                  onClick={() => void handleDeletePortfolio(pf.id)}
+                  onClick={() => setConfirmDelete({ id: pf.id, opis: pf.name })}
                   disabled={!userDataKey || deletingId === pf.id}
                   style={{
                     padding: "6px 10px",
-                    borderRadius: 8,
-                    border: "0.5px solid rgba(184,80,66,0.18)",
-                    background: deletingId === pf.id ? "rgba(184,80,66,0.08)" : "transparent",
+                    borderRadius: "var(--r-lg)",
+                    border: `0.5px solid ${v2Mix(LOSS, 0.18)}`,
+                    background: deletingId === pf.id ? v2Mix(LOSS, 0.08) : "transparent",
                     color: deletingId === pf.id ? LOSS : AMBER,
                     fontSize: 12,
                     cursor: !userDataKey || deletingId === pf.id ? "not-allowed" : "pointer",
@@ -413,6 +438,19 @@ export function PortfolioListPage() {
           setEditingPortfolioId(null);
         }}
       />
+
+    <ConfirmDialog
+      open={confirmDelete !== null}
+      title="Usunąć portfel?"
+      body={confirmDelete ? `${confirmDelete.opis}. Cofniesz to zaraz po usunięciu.` : undefined}
+      onCancel={() => setConfirmDelete(null)}
+      onConfirm={() => {
+        const id = confirmDelete?.id;
+        setConfirmDelete(null);
+        if (id) void handleDeletePortfolio(id);
+      }}
+    />
+
     </div>
   );
 }

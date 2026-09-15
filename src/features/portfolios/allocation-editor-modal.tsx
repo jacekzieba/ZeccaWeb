@@ -32,12 +32,12 @@ const PAPER = token("ground");
 const numberInputStyle: CSSProperties = {
   width: 56,
   padding: "6px 8px",
-  borderRadius: 8,
+  borderRadius: "var(--r-lg)",
   border: `0.5px solid ${V2.line}`,
   background: V2.card,
   color: V2.ink,
   fontFamily: V2_TYPE.mono,
-  fontSize: 12.5,
+  fontSize: 12,
   textAlign: "right",
   outline: "none",
 };
@@ -199,7 +199,7 @@ export function AllocationEditorModal({
         style={{
           position: "absolute",
           inset: 0,
-          background: "rgba(22,29,24,0.45)",
+          background: v2Mix(PAPER, 0.45),
           backdropFilter: "blur(8px)",
           WebkitBackdropFilter: "blur(8px)",
         }}
@@ -211,28 +211,28 @@ export function AllocationEditorModal({
           width: "100%",
           maxWidth: 480,
           background: PAPER,
-          borderRadius: 18,
+          borderRadius: "var(--r-xl)",
           boxShadow:
-            "0 24px 64px rgba(22,29,24,0.22), inset 0 0.5px 0 rgba(255,255,255,0.8)",
-          border: "0.5px solid rgba(255,255,255,0.7)",
+            `0 24px 64px ${v2Mix(V2.ink, 0.22)}, inset 0 0.5px 0 ${v2Mix(V2.ink, 0.08)}`,
+          border: `0.5px solid ${V2.line}`,
           fontFamily: V2_TYPE.ui,
         }}
       >
         <div style={{ padding: "18px 22px 14px", borderBottom: `0.5px solid ${V2.line2}` }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: V2.ink }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: V2.ink }}>
             Alokacja docelowa
           </div>
-          <div style={{ fontSize: 12.5, color: V2.muted, marginTop: 2 }}>{draft.name}</div>
+          <div style={{ fontSize: 12, color: V2.muted, marginTop: 2 }}>{draft.name}</div>
         </div>
 
         {locked && (
           <div
             style={{
               padding: "13px 22px",
-              background: `${V2.gold}12`,
+              background: `${V2.bonds}12`,
               borderBottom: `0.5px solid ${V2.line2}`,
               fontSize: 12,
-              color: V2.gold,
+              color: V2.bonds,
               fontWeight: 600,
             }}
           >
@@ -259,13 +259,13 @@ export function AllocationEditorModal({
                 style={{
                   width: 11,
                   height: 11,
-                  borderRadius: 3,
+                  borderRadius: "var(--r-sm)",
                   background: color,
                   flexShrink: 0,
                 }}
               />
               <span
-                style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: V2.ink }}
+                style={{ flex: 1, fontSize: 13, fontWeight: 600, color: V2.ink }}
               >
                 {label}
               </span>
@@ -304,7 +304,7 @@ export function AllocationEditorModal({
             alignItems: "center",
           }}
         >
-          <span style={{ fontSize: 12.5, fontWeight: 600, color: V2.ink }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: V2.ink }}>
             Suma:{" "}
             <span
               style={{
@@ -321,11 +321,11 @@ export function AllocationEditorModal({
             onClick={clearAll}
             style={{
               padding: "7px 14px",
-              borderRadius: 9,
+              borderRadius: "var(--r-lg)",
               border: `0.5px solid ${V2.line}`,
               background: V2.card,
               color: V2.muted,
-              fontSize: 12.5,
+              fontSize: 12,
               fontWeight: 600,
               cursor: "pointer",
               fontFamily: "inherit",
@@ -342,7 +342,7 @@ export function AllocationEditorModal({
               fontSize: 12,
               color: V2.loss,
               padding: "8px 12px",
-              borderRadius: 8,
+              borderRadius: "var(--r-lg)",
               background: `${V2.loss}10`,
             }}
           >
@@ -363,7 +363,7 @@ export function AllocationEditorModal({
             onClick={onClose}
             style={{
               padding: "9px 18px",
-              borderRadius: 9,
+              borderRadius: "var(--r-lg)",
               border: `0.5px solid ${V2.line}`,
               background: "transparent",
               color: V2.muted,
@@ -381,10 +381,10 @@ export function AllocationEditorModal({
             disabled={saving || locked}
             style={{
               padding: "9px 20px",
-              borderRadius: 9,
+              borderRadius: "var(--r-lg)",
               border: "none",
               background: saving || locked ? v2Mix(V2.ink, 0.12) : V2.ink,
-              color: saving || locked ? V2.subtle : "#fff",
+              color: saving || locked ? V2.subtle : PAPER,
               fontSize: 13,
               fontWeight: 700,
               cursor: saving || locked ? "not-allowed" : "pointer",

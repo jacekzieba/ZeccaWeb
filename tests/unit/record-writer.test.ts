@@ -5,6 +5,8 @@ import {
   flushPendingSyncOperations,
   forcePendingSyncOperation,
   getPendingSyncOperations,
+  removePendingSyncOperation,
+  restoreRecord,
   saveRecord,
   SyncConflictError,
 } from "@/sync/records/record-writer";
@@ -356,5 +358,44 @@ describe("record writer", () => {
     expect(result.forced).toBe(true);
     expect(getPendingSyncOperations()).toHaveLength(0);
     expect(store.updates).toHaveLength(2);
+  });
+
+  it("undoing a queued delete restores without a false conflict", async () => {
+    // Regression: a queued delete never reached the server, so the remote
+    // row still has its ORIGINAL updated_at. Returning the fresh, locally
+    // generated timestamp as the undo basis made restoreRecord compare it
+    // against that unchanged remote value and reject the undo as "changed
+    // on another device" — even though nothing had changed.
+    const original = "2026-05-17T10:00:00.000Z";
+    const { client, store } = createSupabaseStore({
+      metadata: {
+        id: recordId,
+        record_type: "asset",
+        updated_at: original,
+        deleted_at: null,
+      },
+      updateError: new Error("offline"),
+    });
+
+    const result = await deleteRecord(client, "asset", recordId, {
+      baseUpdatedAt: original,
+    });
+
+    expect(result.queued).toBe(true);
+    expect(result.updatedAt).toBe(original);
+    expect(result.operationId).toBeTruthy();
+    expect(getPendingSyncOperations()).toHaveLength(1);
+
+    store.updateError = null;
+    removePendingSyncOperation(result.operationId!);
+    expect(getPendingSyncOperations()).toHaveLength(0);
+
+    await expect(
+      restoreRecord(client, "asset", recordId, { baseUpdatedAt: result.updatedAt! }),
+    ).resolves.toMatchObject({ queued: false });
+
+    // The stale queued delete must not survive to be flushed later — it
+    // would re-delete a record the user just restored.
+    expect(getPendingSyncOperations()).toHaveLength(0);
   });
 });

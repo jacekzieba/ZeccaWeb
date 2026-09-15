@@ -20,6 +20,9 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   typedRoutes: true,
+  // "N" badge dev tools nakładały się na kartę w rogu ekranu podczas testów —
+  // widoczne tylko w `next dev`, nigdy w produkcji, ale zasłaniały UI lokalnie.
+  devIndicators: false,
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

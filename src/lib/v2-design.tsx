@@ -14,7 +14,8 @@ export const V2 = {
   brand: token("accent"),
   brandDeep: token("accent"),
   onBrand: token("onAccent"),
-  gold: token("assetBonds"),
+  // `gold` usunięty: był drugim aliasem --asset-bonds i trzy pliki nazywały go
+  // AMBER. Alias, który nie ma własnej wartości, gwarantuje pomyłkę.
   profit: token("up"),
   loss: token("down"),
   equity: token("assetEquity"),
@@ -64,7 +65,7 @@ export function V2Eyebrow({ children, style }: { children: ReactNode; style?: CS
     <div
       style={{
         fontFamily: V2_TYPE.ui,
-        fontSize: 10.5,
+        fontSize: 10,
         fontWeight: 700,
         letterSpacing: ".13em",
         textTransform: "uppercase",
@@ -114,9 +115,11 @@ export function V2ScreenHead({
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 12, padding: "2px 2px 0" }}>
       <div>
         <V2Eyebrow>{eyebrow}</V2Eyebrow>
-        <div style={{ fontFamily: V2_TYPE.serif, fontSize: 31, fontWeight: 500, color: V2.ink, letterSpacing: "-.01em", marginTop: 3 }}>
+        {/* Tytuł strony to h1, nie stylowany div — bez nagłówków czytnik ekranu
+            nie ma czym nawigować po dokumencie. */}
+        <h1 style={{ fontFamily: V2_TYPE.serif, fontSize: 31, fontWeight: 500, color: V2.ink, letterSpacing: "-.01em", margin: "3px 0 0" }}>
           {title}
-        </div>
+        </h1>
         {sub && <div style={{ fontFamily: V2_TYPE.ui, fontSize: 13, color: V2.muted, marginTop: 4 }}>{sub}</div>}
       </div>
       {action}
@@ -140,8 +143,8 @@ export function V2Button({
   const palette: Record<typeof variant, CSSProperties> = {
     primary: {
       border: "none",
-      background: V2.ink,
-      color: V2.card,
+      background: V2.brand,
+      color: V2.onBrand,
     },
     soft: {
       border: `0.5px solid ${V2.line}`,
@@ -202,10 +205,12 @@ export function V2Kpi({
       <div style={{ fontFamily: V2_TYPE.ui, fontSize: 10, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: V2.subtle }}>
         {label}
       </div>
-      <div style={{ fontFamily: V2_TYPE.serif, fontSize: 25, fontWeight: 500, color: accent, marginTop: 4, fontVariantNumeric: "tabular-nums" }}>
+      <div style={{ fontFamily: V2_TYPE.mono, fontSize: 26, fontWeight: 500, color: accent, marginTop: 4, fontVariantNumeric: "tabular-nums" }}>
         {value}
       </div>
-      {sub && <div style={{ fontFamily: V2_TYPE.ui, fontSize: 11.5, color: V2.muted, marginTop: 2 }}>{sub}</div>}
+      {/* Podpis bywa kwotą („87 110 zł" pod nazwą największej pozycji), więc
+          idzie mono z cyframi tabelarycznymi jak każda inna liczba. */}
+      {sub && <div style={{ fontFamily: V2_TYPE.mono, fontSize: 11, color: V2.muted, marginTop: 2, fontVariantNumeric: "tabular-nums" }}>{sub}</div>}
     </div>
   );
 }
@@ -222,7 +227,7 @@ export const v2InputStyle: CSSProperties = {
   border: `0.5px solid ${V2.line}`,
   background: v2Mix(V2.card, 0.72),
   color: V2.ink,
-  fontSize: 12.5,
+  fontSize: 12,
   fontFamily: V2_TYPE.ui,
   outline: "none",
   boxSizing: "border-box",

@@ -118,7 +118,7 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
         type="button"
         aria-label="Zamknij import zarobków"
         onClick={onClose}
-        style={{ position: "absolute", inset: 0, border: "none", background: "rgba(12,16,13,0.36)" }}
+        style={{ position: "absolute", inset: 0, border: "none", background: v2Mix(V2.page, 0.36) }}
       />
       <div
         role="dialog"
@@ -129,7 +129,7 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
           width: "min(820px, 100%)",
           maxHeight: "calc(100vh - 32px)",
           overflow: "auto",
-          borderRadius: 14,
+          borderRadius: "var(--r-xl)",
           background: V2.card,
           border: `0.5px solid ${V2.line}`,
           boxShadow: `0 24px 70px ${v2Mix(V2.ink, 0.28)}`,
@@ -139,7 +139,7 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "18px 20px", borderBottom: `0.5px solid ${V2.line2}` }}>
           <div>
-            <div style={{ fontFamily: V2_TYPE.serif, fontSize: 22, fontWeight: 500 }}>Import zarobków</div>
+            <div style={{ fontFamily: V2_TYPE.serif, fontSize: 21, fontWeight: 500 }}>Import zarobków</div>
             <div style={{ color: V2.subtle, fontSize: 12, marginTop: 3 }}>CSV lub pierwszy arkusz XLSX · zapis dopiero po podglądzie</div>
           </div>
           <button type="button" aria-label="Zamknij" onClick={onClose} style={iconButtonStyle}>
@@ -153,7 +153,7 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
             <div style={{ color: V2.muted, fontSize: 13, lineHeight: 1.5 }}>
               Jeden wiersz oznacza jeden zarobek albo jedno obciążenie. Najpewniejszy rezultat daje wzór CSV i instrukcja przekazana AI razem z wyciągiem bankowym.
             </div>
-            <code style={{ display: "block", overflowX: "auto", padding: "9px 10px", borderRadius: 8, background: V2.card2, color: V2.muted, fontFamily: V2_TYPE.mono, fontSize: 11 }}>
+            <code style={{ display: "block", overflowX: "auto", padding: "9px 10px", borderRadius: "var(--r-lg)", background: V2.card2, color: V2.muted, fontFamily: V2_TYPE.mono, fontSize: 11 }}>
               {EARNINGS_IMPORT_COLUMNS.join(", ")}
             </code>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -180,7 +180,7 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
           {progress && <ImportProgressIndicator {...progress} />}
 
           {error && (
-            <div role="alert" style={{ padding: "10px 12px", borderRadius: 9, border: `0.5px solid ${v2Mix(V2.loss, 0.25)}`, background: v2Mix(V2.loss, 0.07), color: V2.loss, fontSize: 13 }}>
+            <div role="alert" style={{ padding: "10px 12px", borderRadius: "var(--r-lg)", border: `0.5px solid ${v2Mix(V2.loss, 0.25)}`, background: v2Mix(V2.loss, 0.07), color: V2.loss, fontSize: 13 }}>
               {error}
             </div>
           )}
@@ -203,7 +203,7 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
               {preview.issues.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                   {preview.issues.map((issue, index) => (
-                    <div key={`${issue.rowNumber}-${index}`} style={{ color: issue.severity === "error" ? V2.loss : V2.gold, fontSize: 12 }}>
+                    <div key={`${issue.rowNumber}-${index}`} style={{ color: issue.severity === "error" ? V2.loss : V2.brand, fontSize: 12 }}>
                       {issue.rowNumber ? `Wiersz ${issue.rowNumber}: ` : ""}{issue.message}
                     </div>
                   ))}
@@ -211,7 +211,7 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
               )}
 
               {displayItems.length > 0 && (
-                <div style={{ border: `0.5px solid ${V2.line}`, borderRadius: 10, overflow: "hidden" }}>
+                <div style={{ border: `0.5px solid ${V2.line}`, borderRadius: "var(--r-xl)", overflow: "hidden" }}>
                   {displayItems.map((item, index) => (
                     <ImportRow key={`${item.payload.id}-${index}`} item={item} />
                   ))}
@@ -224,7 +224,7 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
               )}
             </section>
           ) : !error && (
-            <div style={{ minHeight: 120, display: "grid", placeItems: "center", border: `0.5px dashed ${V2.line}`, borderRadius: 10, color: V2.subtle, fontSize: 13, textAlign: "center" }}>
+            <div style={{ minHeight: 120, display: "grid", placeItems: "center", border: `0.5px dashed ${V2.line}`, borderRadius: "var(--r-xl)", color: V2.subtle, fontSize: 13, textAlign: "center" }}>
               <div><FileSpreadsheet size={24} style={{ marginBottom: 7 }} /><br />Wybierz plik, aby zobaczyć podgląd.</div>
             </div>
           )}
@@ -245,9 +245,9 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
 
 function Summary({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <div aria-label={`${label}: ${value}`} style={{ padding: "10px 11px", borderRadius: 9, background: V2.card2 }}>
+    <div aria-label={`${label}: ${value}`} style={{ padding: "10px 11px", borderRadius: "var(--r-lg)", background: V2.card2 }}>
       <div style={sectionLabelStyle}>{label}</div>
-      <div style={{ marginTop: 3, color, fontFamily: V2_TYPE.mono, fontSize: 20, fontWeight: 700 }}>{value}</div>
+      <div style={{ marginTop: 3, color, fontFamily: V2_TYPE.mono, fontSize: 21, fontWeight: 500 }}>{value}</div>
     </div>
   );
 }
@@ -264,7 +264,7 @@ function ImportRow({ item }: { item: EarningsImportItem }) {
       <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12 }}>
         {payload.year}-{String(payload.month).padStart(2, "0")} · {title}
       </span>
-      <span style={{ color: payload.entryKind === "earning" ? V2.ink : V2.loss, fontFamily: V2_TYPE.mono, fontSize: 11.5, whiteSpace: "nowrap" }}>
+      <span style={{ color: payload.entryKind === "earning" ? V2.ink : V2.loss, fontFamily: V2_TYPE.mono, fontSize: 11, whiteSpace: "nowrap" }}>
         {payload.entryKind === "burden" ? "−" : ""}{amount?.toLocaleString("pl-PL", { maximumFractionDigits: 2 })} PLN
       </span>
     </div>
@@ -273,7 +273,7 @@ function ImportRow({ item }: { item: EarningsImportItem }) {
 
 const sectionLabelStyle = {
   color: V2.subtle,
-  fontSize: 10.5,
+  fontSize: 10,
   fontWeight: 700,
   letterSpacing: ".1em",
   textTransform: "uppercase" as const,
@@ -284,7 +284,7 @@ const iconButtonStyle = {
   height: 32,
   display: "grid",
   placeItems: "center",
-  borderRadius: 8,
+  borderRadius: "var(--r-lg)",
   border: `0.5px solid ${V2.line}`,
   background: V2.card,
   color: V2.muted,
@@ -297,9 +297,9 @@ const primaryActionStyle = {
   justifyContent: "center",
   gap: 7,
   padding: "10px 16px",
-  borderRadius: 10,
-  background: V2.ink,
-  color: V2.card,
+  borderRadius: "var(--r-sm)",
+  background: V2.brand,
+  color: V2.onBrand,
   fontSize: 13,
   fontWeight: 600,
   cursor: "pointer",

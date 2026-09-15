@@ -10,9 +10,11 @@ import { sampleSnapshot } from "@/features/dashboard/sample-data";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
 import { AreaChart } from "@/components/charts/area-chart";
 import { ValueVsDepositsChart } from "@/components/charts/value-vs-deposits-chart";
-import { KPI_HELP_HREFS, type KpiTileId } from "@/components/metrics/portfolio-kpi-strip";
+import { KPI_HELP_HREFS, KPI_MARKS, type KpiTileId } from "@/components/metrics/portfolio-kpi-strip";
 import type { ValuationPoint } from "@/domain/models/investor-data";
 import { V2, V2_TYPE, v2Mix } from "@/lib/v2-design";
+import { assetClassColor } from "@/lib/asset-colors";
+import { currencyLabel } from "@/lib/money";
 
 const INK = V2.ink;
 const MUTED = V2.muted;
@@ -27,9 +29,10 @@ const MONO = V2_TYPE.mono;
 
 const card: CSSProperties = {
   background: V2.card,
-  borderRadius: 16,
+  // 16px był poza skalą promieni (2/3/4/8/12) — wartość z epoki sprzed
+  // Skarbca. Panel bierze --r-md, tak jak V2Card na każdym innym ekranie.
+  borderRadius: "var(--r-md)",
   border: `0.5px solid ${LINE}`,
-  boxShadow: `0 1px 0 ${v2Mix(V2.ink, 0.03)}, 0 6px 20px ${v2Mix(V2.ink, 0.05)}`,
 };
 
 function fmt(n: number, d = 0) {
@@ -109,17 +112,27 @@ function Kpi({
   sub,
   color = INK,
   helpHref,
+  mark,
 }: {
   label: string;
   value: string;
   sub?: string;
   color?: string;
   helpHref?: string;
+  /** Cecha źródła — jak w kafelkach wskaźnika, tylko na karcie Raportów, która
+      ma własny promień i padding. Ten sam mono nagłówek, żeby liczba i tu miała
+      źródło i podstawę liczenia, bez podmiany całej karty na MetricTiles. */
+  mark?: { source: string; detail: string };
 }) {
   return (
     <div style={{ ...card, padding: "18px 20px" }}>
+      {mark && <div className="metric-tile-mark">{mark.source}<em>{mark.detail}</em></div>}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
-        <span style={{ fontFamily: UI, fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>{label}</span>
+        {/* Ta sama nazwa co w kafelku wskaźnika: Archivo 12,5px, --ink-muted, bez
+            wersalików. Wcześniej te dwie karty stały na jednym ekranie z kafelkami
+            i różniły się krojem, stopniem, grubością, światłem i kolorem — osiem
+            różnic między dwoma rzędami tego samego obiektu. */}
+        <span style={{ fontFamily: UI, fontSize: 12, fontWeight: 400, color: MUTED }}>{label}</span>
         {helpHref && (
           <a
             href={helpHref}
@@ -128,7 +141,7 @@ function Kpi({
             style={{
               width: 20,
               height: 20,
-              borderRadius: 6,
+              borderRadius: "var(--r-lg)",
               color: SUBTLE,
               background: v2Mix(V2.ink, 0.05),
               display: "inline-flex",
@@ -142,7 +155,7 @@ function Kpi({
           </a>
         )}
       </div>
-      <div style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 500, color, fontVariantNumeric: "tabular-nums" }}>{value}</div>
+      <div style={{ fontFamily: MONO, fontSize: 21, fontWeight: 500, color, fontVariantNumeric: "tabular-nums", wordSpacing: "-.26em" }}>{value}</div>
       {sub && <div style={{ fontFamily: UI, fontSize: 12, color: MUTED, marginTop: 3 }}>{sub}</div>}
     </div>
   );
@@ -154,7 +167,7 @@ function helpFor(id: KpiTileId) {
 
 function SectionHead({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ fontFamily: UI, fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>{children}</div>
+    <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>{children}</div>
   );
 }
 
@@ -165,7 +178,9 @@ export function ReportsPage() {
   const { displayCurrency } = useProfile();
   // Demo/sample numbers are illustrative PLN, so only label real data in the
   // chosen currency.
-  const ccy = isDemo ? "PLN" : displayCurrency;
+  // Symbol przy kwocie, kod tylko tam, gdzie nazywa walutę. Ten plik omijał
+  // `currencyLabel`, więc raporty pisały „306 424 PLN" obok pulpitu z „306 424 zł".
+  const ccy = currencyLabel(isDemo ? "PLN" : displayCurrency);
   useSampleDataSignal(isDemo);
   const [report, setReport] = useState<ReportId>("performance");
 
@@ -183,8 +198,8 @@ export function ReportsPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: UI, color: INK }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 12, padding: "2px 2px 0" }}>
         <div>
-          <div style={{ fontFamily: UI, fontSize: 10.5, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: SUBTLE }}>Analiza</div>
-          <div style={{ fontFamily: SERIF, fontSize: 31, fontWeight: 500, color: INK, letterSpacing: "-.01em", marginTop: 3 }}>Raporty</div>
+          <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: SUBTLE }}>Analiza</div>
+          <h1 style={{ fontFamily: SERIF, fontSize: 31, fontWeight: 500, color: INK, letterSpacing: "-.01em", margin: "3px 0 0" }}>Raporty</h1>
           <div style={{ fontSize: 13, color: MUTED, marginTop: 4 }}>
             {isDemo ? "Tryb demo · " : ""}Dane na {asOfLabel} · zwroty liczone metodą ważoną czasem (bez wpłat)
           </div>
@@ -194,17 +209,16 @@ export function ReportsPage() {
       <DataQualityBanner diagnostics={snapshot.diagnostics ?? []} />
 
       {/* Report-type selector */}
-      <div style={{ display: "inline-flex", flexWrap: "wrap", gap: 6, background: v2Mix(V2.ink, 0.05), borderRadius: 11, padding: 4, alignSelf: "flex-start" }}>
+      <div style={{ display: "inline-flex", flexWrap: "wrap", gap: 6, background: v2Mix(V2.ink, 0.05), borderRadius: "var(--r-lg)", padding: 4, alignSelf: "flex-start" }}>
         {REPORTS.map((item) => (
           <button
             key={item.id}
             onClick={() => setReport(item.id)}
             style={{
-              padding: "7px 15px", borderRadius: 8, border: "none", cursor: "pointer",
-              fontFamily: UI, fontSize: 12.5, fontWeight: report === item.id ? 700 : 500,
+              padding: "7px 15px", borderRadius: "var(--r-sm)", border: "none", cursor: "pointer",
+              fontFamily: UI, fontSize: 12, fontWeight: report === item.id ? 700 : 500,
               background: report === item.id ? V2.card : "transparent",
               color: report === item.id ? INK : MUTED,
-              boxShadow: report === item.id ? `0 1px 4px ${v2Mix(V2.ink, 0.1)}` : "none",
             }}
           >
             {item.label}
@@ -215,12 +229,12 @@ export function ReportsPage() {
       {report === "performance" && (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
-            <Kpi label="Łączny zwrot (TWR)" value={fmtPct(metrics.totalReturnPct)} sub={`${absGain >= 0 ? "+" : ""}${fmt(absGain)} ${ccy} ponad wpłaty`} color={metrics.totalReturnPct >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiTwr")} />
-            <Kpi label="CAGR" value={fmtPct(metrics.cagrPct)} sub="rocznie, ważony czasem" color={metrics.cagrPct >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiCagr")} />
-            <Kpi label="MWR · XIRR" value={metrics.xirrPct == null ? "—" : fmtPct(metrics.xirrPct)} sub="rocznie, ważony kapitałem" color={(metrics.xirrPct ?? 0) >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiXirr")} />
-            <Kpi label="Maks. obsunięcie" value={`${fmt(metrics.maxDrawdownPct, 2)}%`} sub="od szczytu" color={LOSS} helpHref={helpFor("kpiMaxDd")} />
-            <Kpi label="Zysk zrealizowany" value={`${metrics.realizedPnl >= 0 ? "+" : ""}${fmt(metrics.realizedPnl)} ${ccy}`} sub="zamknięte pozycje" color={metrics.realizedPnl >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiRealized")} />
-            <Kpi label="Wartość portfela" value={fmt(snapshot.totalValue)} sub={ccy} />
+            <Kpi label="Łączny zwrot (TWR)" value={fmtPct(metrics.totalReturnPct)} sub={`${absGain >= 0 ? "+" : ""}${fmt(absGain)} ${ccy} ponad wpłaty`} color={metrics.totalReturnPct >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiTwr")} mark={KPI_MARKS.kpiTwr} />
+            <Kpi label="CAGR" value={fmtPct(metrics.cagrPct)} sub="rocznie, ważony czasem" color={metrics.cagrPct >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiCagr")} mark={KPI_MARKS.kpiCagr} />
+            <Kpi label="MWR · XIRR" value={metrics.xirrPct == null ? "—" : fmtPct(metrics.xirrPct)} sub="rocznie, ważony kapitałem" color={(metrics.xirrPct ?? 0) >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiXirr")} mark={KPI_MARKS.kpiXirr} />
+            <Kpi label="Maks. obsunięcie" value={`${fmt(metrics.maxDrawdownPct, 2)}%`} sub="od szczytu" color={LOSS} helpHref={helpFor("kpiMaxDd")} mark={KPI_MARKS.kpiMaxDd} />
+            <Kpi label="Zysk zrealizowany" value={`${metrics.realizedPnl >= 0 ? "+" : ""}${fmt(metrics.realizedPnl)} ${ccy}`} sub="zamknięte pozycje" color={metrics.realizedPnl >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiRealized")} mark={KPI_MARKS.kpiRealized} />
+            <Kpi label="Wartość portfela" value={fmt(snapshot.totalValue)} sub={ccy} mark={{ source: "Wycena", detail: "ostatnia cena × ilość" }} />
           </div>
 
           <div style={{ ...card, padding: "22px 22px 18px" }}>
@@ -244,15 +258,16 @@ export function ReportsPage() {
 
           {monthlyStats.best && monthlyStats.worst && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-              <Kpi label="Najlepszy miesiąc" value={fmtPct(monthlyStats.best.pct)} sub={monthlyStats.best.label} color={PROFIT} />
-              <Kpi label="Najgorszy miesiąc" value={fmtPct(monthlyStats.worst.pct)} sub={monthlyStats.worst.label} color={LOSS} />
+              <Kpi label="Najlepszy miesiąc" value={fmtPct(monthlyStats.best.pct)} sub={monthlyStats.best.label} color={PROFIT} mark={{ source: "Seria wycen", detail: "zwrot miesięczny" }} />
+              <Kpi label="Najgorszy miesiąc" value={fmtPct(monthlyStats.worst.pct)} sub={monthlyStats.worst.label} color={LOSS} mark={{ source: "Seria wycen", detail: "zwrot miesięczny" }} />
               <div style={{ ...card, padding: "18px 20px" }}>
-                <div style={{ fontFamily: UI, fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 8 }}>Miesiące z zyskiem</div>
+                <div className="metric-tile-mark">Seria wycen<em>miesiące dodatnie</em></div>
+                <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 8 }}>Miesiące z zyskiem</div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                  <span style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 500, color: PROFIT }}>{monthlyStats.positive}</span>
-                  <span style={{ fontSize: 14, color: SUBTLE }}>/ {monthlyStats.total}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 26, fontWeight: 500, color: PROFIT }}>{monthlyStats.positive}</span>
+                  <span style={{ fontSize: 13, color: SUBTLE }}>/ {monthlyStats.total}</span>
                 </div>
-                <div style={{ display: "flex", borderRadius: 4, overflow: "hidden", marginTop: 8, height: 6 }}>
+                <div style={{ display: "flex", borderRadius: "var(--r-md)", overflow: "hidden", marginTop: 8, height: 6 }}>
                   <div style={{ flex: monthlyStats.positive, background: PROFIT, minWidth: monthlyStats.positive > 0 ? 4 : 0 }} />
                   <div style={{ flex: monthlyStats.negative, background: LOSS, minWidth: monthlyStats.negative > 0 ? 4 : 0 }} />
                 </div>
@@ -265,6 +280,9 @@ export function ReportsPage() {
       {report === "yearly" && (
         <div style={{ ...card, padding: 0 }}>
           <div style={{ padding: "16px 22px 12px", borderBottom: `0.5px solid ${LINE_SOFT}` }}>
+            {/* Jedna cecha dla całej listy, nie po jednej na wiersz — przy kilku
+                latach powtórzenie tego samego źródła dwanaście razy byłoby szumem. */}
+            <div className="metric-tile-mark">Seria wycen<em>zwrot roczny, ważony czasem</em></div>
             <SectionHead>Zwrot rok do roku (ważony czasem)</SectionHead>
           </div>
           {yearlyReturns.length === 0 ? (
@@ -274,11 +292,11 @@ export function ReportsPage() {
               const isPos = yr.returnPct >= 0;
               return (
                 <div key={yr.year} style={{ display: "grid", gridTemplateColumns: "90px 1fr 110px", padding: "14px 22px", borderTop: i === 0 ? "none" : `0.5px solid ${LINE_SOFT}`, alignItems: "center", gap: 12 }}>
-                  <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 500, color: INK }}>{yr.year}</div>
-                  <div style={{ height: 8, borderRadius: 4, background: v2Mix(V2.ink, 0.06), position: "relative", overflow: "hidden" }}>
-                    <div style={{ width: `${Math.min(Math.abs(yr.returnPct) * 2.5, 100)}%`, height: "100%", borderRadius: 4, background: isPos ? PROFIT : LOSS }} />
+                  <div style={{ fontFamily: MONO, fontSize: 18, fontWeight: 500, color: INK }}>{yr.year}</div>
+                  <div style={{ height: 8, borderRadius: "var(--r-md)", background: v2Mix(V2.ink, 0.06), position: "relative", overflow: "hidden" }}>
+                    <div style={{ width: `${Math.min(Math.abs(yr.returnPct) * 2.5, 100)}%`, height: "100%", borderRadius: "var(--r-md)", background: isPos ? PROFIT : LOSS }} />
                   </div>
-                  <div style={{ textAlign: "right", fontFamily: SERIF, fontSize: 17, fontWeight: 500, color: isPos ? PROFIT : LOSS }}>{fmtPct(yr.returnPct)}</div>
+                  <div style={{ textAlign: "right", fontFamily: MONO, fontSize: 18, fontWeight: 500, color: isPos ? PROFIT : LOSS }}>{fmtPct(yr.returnPct)}</div>
                 </div>
               );
             })
@@ -289,22 +307,22 @@ export function ReportsPage() {
       {report === "income" && (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
-            <Kpi label="Dywidendy" value={`+${fmt(cashflows.dividends)} ${ccy}`} color={PROFIT} />
-            <Kpi label="Odsetki / kupony" value={`+${fmt(cashflows.interest)} ${ccy}`} color={V2.bonds} />
-            <Kpi label="Prowizje" value={`-${fmt(cashflows.fees)} ${ccy}`} color={LOSS} />
-            <Kpi label="Podatki" value={`-${fmt(cashflows.taxes)} ${ccy}`} color={LOSS} />
+            <Kpi label="Dywidendy" value={`+${fmt(cashflows.dividends)} ${ccy}`} color={PROFIT} mark={KPI_MARKS.kpiDividends} />
+            <Kpi label="Odsetki / kupony" value={`+${fmt(cashflows.interest)} ${ccy}`} color={PROFIT} mark={{ source: "Transakcje", detail: "kupony i odsetki" }} />
+            <Kpi label="Prowizje" value={`-${fmt(cashflows.fees)} ${ccy}`} color={LOSS} mark={{ source: "Transakcje", detail: "opłaty transakcyjne" }} />
+            <Kpi label="Podatki" value={`-${fmt(cashflows.taxes)} ${ccy}`} color={LOSS} mark={{ source: "Transakcje", detail: "zapłacone podatki" }} />
           </div>
           <div style={{ ...card, padding: "20px 22px" }}>
             <SectionHead>Dochód pasywny netto</SectionHead>
             {(() => {
               const net = cashflows.dividends + cashflows.interest - cashflows.fees - cashflows.taxes;
               return (
-                <div style={{ fontFamily: SERIF, fontSize: 30, fontWeight: 500, marginTop: 8, color: net >= 0 ? PROFIT : LOSS }}>
+                <div style={{ fontFamily: MONO, fontSize: 31, fontWeight: 500, marginTop: 8, color: net >= 0 ? PROFIT : LOSS }}>
                   {net >= 0 ? "+" : ""}{fmt(net)} {ccy}
                 </div>
               );
             })()}
-            <div style={{ fontSize: 12.5, color: MUTED, marginTop: 6 }}>
+            <div style={{ fontSize: 12, color: MUTED, marginTop: 6 }}>
               Dywidendy i odsetki pomniejszone o prowizje i podatki. Wpłaty/wypłaty kapitału nie są wliczane do dochodu.
             </div>
           </div>
@@ -314,17 +332,17 @@ export function ReportsPage() {
       {report === "personalIncome" && (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
-            <Kpi label="Zarobki" value={`+${fmt(personalIncome.earningsPLN)} ${ccy}`} sub={`${personalIncome.earningCount} rekordów`} color={PROFIT} />
-            <Kpi label="Obciążenia" value={`-${fmt(personalIncome.burdensPLN)} ${ccy}`} sub={`${personalIncome.burdenCount} rekordów`} color={LOSS} />
-            <Kpi label="Netto" value={`${personalIncome.netPLN >= 0 ? "+" : ""}${fmt(personalIncome.netPLN)} ${ccy}`} color={personalIncome.netPLN >= 0 ? PROFIT : LOSS} />
-            <Kpi label="Razem wpisów" value={fmt(personalIncome.earningCount + personalIncome.burdenCount)} sub="zsynchronizowane wpisy przychodów" />
+            <Kpi label="Zarobki" value={`+${fmt(personalIncome.earningsPLN)} ${ccy}`} sub={`${personalIncome.earningCount} rekordów`} color={PROFIT} mark={{ source: "Wpisy", detail: "suma zarobków" }} />
+            <Kpi label="Obciążenia" value={`-${fmt(personalIncome.burdensPLN)} ${ccy}`} sub={`${personalIncome.burdenCount} rekordów`} color={LOSS} mark={{ source: "Wpisy", detail: "suma obciążeń" }} />
+            <Kpi label="Netto" value={`${personalIncome.netPLN >= 0 ? "+" : ""}${fmt(personalIncome.netPLN)} ${ccy}`} color={personalIncome.netPLN >= 0 ? PROFIT : LOSS} mark={{ source: "Wpisy", detail: "zarobki − obciążenia" }} />
+            <Kpi label="Razem wpisów" value={fmt(personalIncome.earningCount + personalIncome.burdenCount)} sub="zsynchronizowane wpisy przychodów" mark={{ source: "Wpisy", detail: "liczba rekordów" }} />
           </div>
           <div style={{ ...card, padding: "20px 22px" }}>
             <SectionHead>Zarobki i obciążenia</SectionHead>
-            <div style={{ fontFamily: SERIF, fontSize: 30, fontWeight: 500, marginTop: 8, color: personalIncome.netPLN >= 0 ? PROFIT : LOSS }}>
+            <div style={{ fontFamily: MONO, fontSize: 31, fontWeight: 500, marginTop: 8, color: personalIncome.netPLN >= 0 ? PROFIT : LOSS }}>
               {personalIncome.netPLN >= 0 ? "+" : ""}{fmt(personalIncome.netPLN)} {ccy}
             </div>
-            <div style={{ fontSize: 12.5, color: MUTED, marginTop: 6 }}>
+            <div style={{ fontSize: 12, color: MUTED, marginTop: 6 }}>
               Suma rekordów zarobków i obciążeń zsynchronizowanych z macOS. Nie jest mieszana z gotówką portfela.
             </div>
           </div>
@@ -342,20 +360,19 @@ export function ReportsPage() {
             {snapshot.allocation.length === 0 ? (
               <div style={{ padding: "24px 22px", textAlign: "center", fontSize: 13, color: SUBTLE }}>Brak danych alokacji</div>
             ) : (
-              snapshot.allocation.map((slice, i) => {
-                const COLORS = [V2.equity, V2.bonds, V2.gold, V2.deposit, V2.profit, V2.cash];
-                const color = COLORS[i % COLORS.length];
+              snapshot.allocation.map((slice) => {
+                const color = assetClassColor(slice.label);
                 return (
                   <div key={slice.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 22px", borderTop: `0.5px solid ${LINE_SOFT}`, gap: 12 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ width: 10, height: 10, borderRadius: 3, background: color, flexShrink: 0, display: "block" }} />
+                      <span style={{ width: 10, height: 10, borderRadius: "var(--r-sm)", background: color, flexShrink: 0, display: "block" }} />
                       <span style={{ fontSize: 13, color: INK, fontWeight: 500 }}>{slice.label}</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                      <div style={{ width: 80, height: 4, borderRadius: 2, background: v2Mix(V2.ink, 0.08) }}>
-                        <div style={{ width: `${slice.percent}%`, height: "100%", borderRadius: 2, background: color }} />
+                      <div style={{ width: 80, height: 4, borderRadius: "var(--r-xs)", background: v2Mix(V2.ink, 0.08) }}>
+                        <div style={{ width: `${slice.percent}%`, height: "100%", borderRadius: "var(--r-xs)", background: color }} />
                       </div>
-                      <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums", minWidth: 48, textAlign: "right" }}>
+                      <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 500, color: INK, fontVariantNumeric: "tabular-nums", minWidth: 48, textAlign: "right" }}>
                         {slice.percent.toLocaleString("pl-PL", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
                       </span>
                     </div>

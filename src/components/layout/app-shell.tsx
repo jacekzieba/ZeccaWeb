@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useState, useEffect, useMemo, type CSSProperties } from "react";
+import { useCallback, useState, useEffect, useMemo, useRef, type CSSProperties } from "react";
 import type { Route } from "next";
 import {
   ArrowDownUp,
@@ -37,12 +37,14 @@ import {
   type InitialSyncUser,
   type SyncLoadResult,
 } from "@/features/sync/sync-unlock-panel";
-import { COLORS, SHADOWS, SURFACES, TYPOGRAPHY } from "@/lib/design-tokens";
+import { COLORS, SURFACES, TYPOGRAPHY } from "@/lib/design-tokens";
 import { V2, v2Mix } from "@/lib/v2-design";
 import { clearCachedUserDataKey } from "@/sync/encryption/key-cache";
 import { initials, useProfile } from "@/features/profile/profile-store";
 import { AppLock } from "@/features/auth/app-lock";
 import { useTranslation } from "@/features/i18n/translate";
+import { currencyLabel } from "@/lib/money";
+import { StatusAnnouncer } from "@/components/feedback/status-announcer";
 
 declare global {
   interface Window {
@@ -264,13 +266,10 @@ function SidebarContent({ onNav, publicDemo = false }: { onNav?: () => void; pub
                   onClick={onNav}
                   style={{
                     display: "flex", alignItems: "center", gap: 10,
-                    width: "100%", padding: "8px 11px", borderRadius: 9,
-                    background: active ? COLORS.green : "transparent",
+                    width: "100%", padding: "8px 11px", borderRadius: "var(--r-sm)",
+                    background: active ? COLORS.brand : "transparent",
                     color: active ? COLORS.white : COLORS.text,
                     textDecoration: "none", marginBottom: 1,
-                    boxShadow: active
-                      ? `0 2px 8px rgba(33,74,53,0.35), inset 0 0.5px 0 rgba(255,255,255,0.22)`
-                      : "none",
                     transition: "background .15s",
                   }}
                   onMouseEnter={(e) => {
@@ -298,8 +297,8 @@ function SidebarContent({ onNav, publicDemo = false }: { onNav?: () => void; pub
                     <span
                       style={{
                         fontFamily: TYPOGRAPHY.mono,
-                        fontSize: 10.5,
-                        color: active ? "rgba(255,255,255,0.8)" : COLORS.subtle,
+                        fontSize: 10,
+                        color: active ? COLORS.text : COLORS.subtle,
                         flexShrink: 0,
                       }}
                     >
@@ -319,26 +318,28 @@ function SidebarContent({ onNav, publicDemo = false }: { onNav?: () => void; pub
         <div
           style={{
             padding: "14px", borderRadius: "var(--r-md)",
-            // Karta celowo odwrócona: atrament jako tło. W ciemnym motywie
-            // odwraca się razem z tokenami i pozostaje kontrastowym akcentem.
-            background: COLORS.text, color: COLORS.white,
+            // Dawniej karta odwrócona: atrament jako tło. Miało to „odwrócić
+            // się razem z tokenami", ale w skarbcu odwrotnością atramentu jest
+            // krem — czyli jasna płyta w ciemnym pasku bocznym. Głębię niesie
+            // powierzchnia i krawędź, nie negatyw.
+            background: COLORS.surfaceAlt, color: COLORS.text,
             border: `1px solid ${COLORS.border}`,
             position: "relative", overflow: "hidden",
           }}
         >
-          <div style={{ fontSize: 9.5, fontWeight: 700, color: "rgba(244,242,230,0.62)", textTransform: "uppercase", letterSpacing: ".13em", position: "relative" }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: COLORS.subtle, textTransform: "uppercase", letterSpacing: ".13em", position: "relative" }}>
             {t("Łączna wartość")}
           </div>
-          <div style={{ fontFamily: TYPOGRAPHY.serif, fontSize: 27, fontWeight: 500, marginTop: 5, position: "relative", fontVariantNumeric: "tabular-nums", letterSpacing: "-.01em" }}>
+          <div style={{ fontFamily: TYPOGRAPHY.mono, fontSize: 26, fontWeight: 500, marginTop: 5, position: "relative", fontVariantNumeric: "tabular-nums", letterSpacing: "-.01em", wordSpacing: "-.26em" }}>
             {totalValue == null ? "—" : fmtNavNumber(totalValue, numberLocale)}
-            <span style={{ fontSize: 13, fontStyle: "italic", opacity: 0.6, marginLeft: 5 }}>{displayCurrency}</span>
+            <span style={{ fontSize: 13, fontStyle: "italic", opacity: 0.6, marginLeft: 5 }}>{currencyLabel(displayCurrency)}</span>
           </div>
-          <div style={{ fontSize: 11.5, color: "#7FD9A8", fontWeight: 600, marginTop: 4, fontVariantNumeric: "tabular-nums", position: "relative" }}>
+          <div style={{ fontSize: 11, color: COLORS.profit, fontWeight: 600, marginTop: 4, fontVariantNumeric: "tabular-nums", position: "relative" }}>
             {changePLN == null || changePct == null
               ? t("Ładowanie danych")
-              : `${changeSign}${fmtNavNumber(changePLN, numberLocale)} ${displayCurrency} (${changePct >= 0 ? "+" : ""}${fmtNavNumber(changePct, numberLocale, 2)}%)`}
+              : `${changeSign}${fmtNavNumber(changePLN, numberLocale)} ${currencyLabel(displayCurrency)} (${changePct >= 0 ? "+" : ""}${fmtNavNumber(changePct, numberLocale, 2)}%)`}
           </div>
-          <div style={{ fontSize: 10.5, color: "rgba(244,242,230,0.50)", marginTop: 1, position: "relative" }}>{t("vs 30 dni temu")}</div>
+          <div style={{ fontSize: 10, color: COLORS.subtle, marginTop: 1, position: "relative" }}>{t("vs 30 dni temu")}</div>
         </div>
       </div>
 
@@ -349,7 +350,7 @@ function SidebarContent({ onNav, publicDemo = false }: { onNav?: () => void; pub
           data-testid={publicDemo ? "exit-demo" : undefined}
           style={{
             width: "100%", display: "flex", alignItems: "center", gap: 8,
-            padding: "8px 11px", borderRadius: 9,
+            padding: "8px 11px", borderRadius: "var(--r-sm)",
             border: "none", background: "transparent",
             color: COLORS.textMuted, fontSize: 12, fontWeight: 500,
             cursor: "pointer", fontFamily: "inherit",
@@ -377,6 +378,26 @@ export function AppShell({
   publicDemo?: boolean;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const drawerRef = useRef<HTMLElement | null>(null);
+  const drawerTriggerRef = useRef<HTMLButtonElement | null>(null);
+
+  // Szuflada jest warstwą modalną, więc zachowuje się jak dialog: Escape zamyka,
+  // ognisko wchodzi do środka i wraca na przycisk, który ją otworzył. Wcześniej
+  // Escape nic nie robił, a Tab wędrował po przyciskach nagłówka za nią.
+  useEffect(() => {
+    if (!drawerOpen) return;
+    drawerRef.current?.focus();
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      setDrawerOpen(false);
+    }
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown, true);
+      drawerTriggerRef.current?.focus();
+    };
+  }, [drawerOpen]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [accountOnboardingCompleted, setAccountOnboardingCompleted] = useState(
     initialUser?.onboardingCompleted ?? true,
@@ -456,6 +477,11 @@ export function AppShell({
 
   return (
     <AppLock>
+    {/* Osiemnaście przystanków Tab przez menu boczne dzieliło klawiaturę od treści
+        na każdym wejściu na stronę. Odsyłacz jest pierwszy w kolejności i pokazuje
+        się dopiero po sfokusowaniu. */}
+    <a href="#tresc" className="skip-link">Przejdź do treści</a>
+    <StatusAnnouncer />
     <div style={{ minHeight: "100vh", background: V2.page, padding: `${PAD}px ${PAD}px ${PAD + 8}px`, overflowX: "hidden" }}>
 
       {/* ── FLOATING TOPBAR ──────────────────────────────────── */}
@@ -463,7 +489,7 @@ export function AppShell({
         style={{
           position: "sticky", top: PAD, zIndex: 50,
           ...glassSurface,
-          borderRadius: 14,
+          borderRadius: "var(--r-xl)",
           marginBottom: PAD * 2,
           transform: topbarHidden ? `translateY(-${PAD * 2 + 56}px)` : "translateY(0)",
           opacity: topbarHidden ? 0 : 1,
@@ -476,10 +502,11 @@ export function AppShell({
           {/* Mobile: hamburger */}
           {!isDesktop && (
             <button
+              ref={drawerTriggerRef}
               onClick={() => setDrawerOpen(true)}
               aria-label="Menu"
               style={{
-                width: 44, height: 44, borderRadius: 9, flexShrink: 0,
+                width: 44, height: 44, borderRadius: "var(--r-lg)", flexShrink: 0,
                 border: `0.5px solid ${COLORS.border}`,
                 background: v2Mix(V2.card, 0.5),
                 cursor: "pointer",
@@ -488,15 +515,15 @@ export function AppShell({
               }}
             >
               {[0, 1, 2].map((i) => (
-                <span key={i} style={{ width: 14, height: 1.5, background: COLORS.text, borderRadius: 1, display: "block" }} />
+                <span key={i} style={{ width: 14, height: 1.5, background: COLORS.text, borderRadius: "var(--r-xs)", display: "block" }} />
               ))}
             </button>
           )}
 
           {/* Mobile: brand text */}
           {!isDesktop && (
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 800, color: COLORS.text, letterSpacing: ".01em" }}>
-              <Image src="/zecca-logo.png" alt="" width={24} height={24} style={{ width: 24, height: 24, borderRadius: 7, objectFit: "cover" }} />
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, color: COLORS.text, letterSpacing: ".01em" }}>
+              <Image src="/zecca-logo.png" alt="" width={24} height={24} style={{ width: 24, height: 24, borderRadius: "var(--r-lg)", objectFit: "cover" }} />
               Zecca
             </span>
           )}
@@ -504,12 +531,12 @@ export function AppShell({
           {/* Desktop: brand */}
           {isDesktop && (
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <Image src="/zecca-logo.png" alt="" width={24} height={24} style={{ width: 24, height: 24, borderRadius: 7, objectFit: "cover" }} />
-              <span style={{ fontSize: 13, fontWeight: 800, color: COLORS.text, letterSpacing: ".02em" }}>Zecca</span>
+              <Image src="/zecca-logo.png" alt="" width={24} height={24} style={{ width: 24, height: 24, borderRadius: "var(--r-lg)", objectFit: "cover" }} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: COLORS.text, letterSpacing: ".02em" }}>Zecca</span>
               <span
                 style={{
                   fontSize: 10, color: COLORS.subtle,
-                  padding: "2px 6px", borderRadius: 4,
+                  padding: "2px 6px", borderRadius: "var(--r-md)",
                   background: COLORS.surfaceAlt,
                   textTransform: "uppercase", letterSpacing: ".08em",
                 }}
@@ -527,7 +554,7 @@ export function AppShell({
               onClick={() => setSearchOpen(true)}
               style={{
                 display: "flex", alignItems: "center", gap: 8,
-                padding: "6px 12px 6px 10px", borderRadius: 10,
+                padding: "6px 12px 6px 10px", borderRadius: "var(--r-xl)",
                 background: V2.card,
                 border: `1px solid ${v2Mix(V2.ink, 0.28)}`,
                 minWidth: 300, cursor: "text",
@@ -539,7 +566,7 @@ export function AppShell({
               <span
                 style={{
                   marginLeft: "auto", fontSize: 10, color: COLORS.muted,
-                  padding: "2px 6px", borderRadius: 4,
+                  padding: "2px 6px", borderRadius: "var(--r-md)",
                   background: v2Mix(V2.ink, 0.07),
                   fontFamily: TYPOGRAPHY.mono,
                 }}
@@ -555,7 +582,7 @@ export function AppShell({
               onClick={() => setSearchOpen(true)}
               aria-label="Szukaj"
               style={{
-                width: 44, height: 44, borderRadius: 9, flexShrink: 0,
+                width: 44, height: 44, borderRadius: "var(--r-lg)", flexShrink: 0,
                 border: `0.5px solid ${COLORS.border}`,
                 background: v2Mix(V2.card, 0.5),
                 cursor: "pointer", color: COLORS.text, fontSize: 15,
@@ -580,15 +607,14 @@ export function AppShell({
             style={{
               display: "inline-flex", alignItems: "center", gap: isDesktop ? 6 : 0,
               padding: isDesktop ? "8px 14px" : 0, width: isDesktop ? undefined : 44, height: isDesktop ? undefined : 44,
-              justifyContent: "center", borderRadius: 9,
-              border: "none", background: V2.ink, color: V2.card,
+              justifyContent: "center", borderRadius: "var(--r-sm)",
+              border: "none", background: V2.brand, color: V2.onBrand,
               fontSize: 13, fontWeight: 600, cursor: "pointer",
               whiteSpace: "nowrap",
-              boxShadow: SHADOWS.button,
               fontFamily: "inherit",
             }}
           >
-            <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
+            <span style={{ fontSize: 15, lineHeight: 1 }}>+</span>
             {isDesktop && "Dodaj transakcję"}
           </button>
 
@@ -598,10 +624,14 @@ export function AppShell({
             aria-label="Profil"
             style={{
               width: isDesktop ? 34 : 44, height: isDesktop ? 34 : 44, borderRadius: "50%", flexShrink: 0, overflow: "hidden",
-              background: V2.brand, color: V2.onBrand,
+              // Tożsamość nie jest na liście zadań bursztynu (cecha źródła,
+              // odsyłacz, akcja główna, stan wybrania), a stała tuż obok
+              // bursztynowego „Dodaj transakcję" — dwie plamy akcentu w jednym
+              // rogu, z których jedna niczego nie znaczy.
+              background: V2.card2, color: V2.ink,
+              border: `0.5px solid ${V2.line}`,
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 12, fontWeight: 700,
-              boxShadow: "inset 0 0.5px 0 rgba(255,255,255,0.3)",
               cursor: "pointer", textDecoration: "none",
             }}
           >
@@ -629,7 +659,7 @@ export function AppShell({
               maxHeight: `calc(100vh - ${PAD * 3 + 56}px)`,
               display: "flex", flexDirection: "column",
               ...glassSurface,
-              borderRadius: 14, overflow: "hidden",
+              borderRadius: "var(--r-xl)", overflow: "hidden",
             }}
           >
             <SidebarContent publicDemo={publicDemo} />
@@ -649,14 +679,15 @@ export function AppShell({
               }}
             />
             <aside
+              ref={drawerRef}
+              tabIndex={-1}
               style={{
                 position: "fixed", left: 10, top: 10, bottom: 10,
                 width: 268, zIndex: 90,
                 ...glassSurface,
                 background: v2Mix(V2.card, 0.94),
-                borderRadius: 14,
+                borderRadius: "var(--r-xl)",
                 display: "flex", flexDirection: "column",
-                boxShadow: SHADOWS.cardStrong,
                 overflow: "hidden",
               }}
               className="animate-slide-in-left"
@@ -678,8 +709,10 @@ export function AppShell({
           </>
         )}
 
-        {/* Main content — capped on very wide screens (topbar + sidebar stay full-bleed) */}
-        <main style={{ flex: 1, minWidth: 0, maxWidth: 1240, marginInline: "auto", width: "100%", paddingBottom: 4 }}>
+        {/* Main content — capped on very wide screens (topbar + sidebar stay full-bleed).
+            id/tabIndex są celem odsyłacza pomijającego wyżej — bez id link nie miał
+            dokąd skoczyć, bez tabIndex=-1 skok przesuwał widok, ale nie ognisko. */}
+        <main id="tresc" tabIndex={-1} style={{ flex: 1, minWidth: 0, maxWidth: 1240, marginInline: "auto", width: "100%", paddingBottom: 4 }}>
           {children}
         </main>
       </div>
@@ -699,11 +732,10 @@ export function AppShell({
             position: "fixed", right: 16, bottom: 16, zIndex: 902,
             fontSize: 11, fontWeight: 700,
             letterSpacing: ".08em", textTransform: "uppercase",
-            color: V2.gold, background: "rgba(255,252,244,.82)",
-            padding: "6px 11px", borderRadius: 99,
-            border: "0.5px solid rgba(162,119,46,.35)",
+            color: V2.brand, background: v2Mix(V2.card2, 0.92),
+            padding: "6px 11px", borderRadius: "var(--r-pill)",
+            border: `0.5px solid ${v2Mix(V2.brand, 0.34)}`,
             backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
-            boxShadow: "0 4px 16px rgba(22,29,24,.14)",
             pointerEvents: "none",
           }}
         >
@@ -749,8 +781,7 @@ function SyncUnlockGate({
           width: "100%",
           maxWidth: 460,
           ...glassSurface,
-          borderRadius: 18,
-          boxShadow: SHADOWS.cardStrong,
+          borderRadius: "var(--r-xl)",
           overflow: "hidden",
         }}
       >
@@ -761,16 +792,15 @@ function SyncUnlockGate({
               style={{
                 width: 32,
                 height: 32,
-                borderRadius: 9,
+                borderRadius: "var(--r-md)",
                 background: COLORS.text,
                 color: COLORS.white,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 fontFamily: TYPOGRAPHY.serif,
-                fontSize: 17,
+                fontSize: 18,
                 fontWeight: 600,
-                boxShadow: SHADOWS.button,
               }}
             >
               <Image
@@ -782,11 +812,11 @@ function SyncUnlockGate({
               />
             </div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text }}>Zecca</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.text }}>Zecca</div>
               <div
                 style={{
                   fontFamily: TYPOGRAPHY.mono,
-                  fontSize: 9.5,
+                  fontSize: 10,
                   color: COLORS.subtle,
                   textTransform: "uppercase",
                   letterSpacing: ".10em",
@@ -797,7 +827,7 @@ function SyncUnlockGate({
               </div>
             </div>
           </div>
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: COLORS.text, letterSpacing: "-0.01em" }}>
+          <h1 style={{ fontSize: 21, fontWeight: 700, color: COLORS.text, letterSpacing: "-0.01em" }}>
             Odblokuj swoje dane
           </h1>
           <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 6, lineHeight: 1.5 }}>

@@ -5,7 +5,49 @@
 // copy into the final (trusted, static) HTML string that page.tsx injects.
 // Styles live in landing.css.
 
+import { GLYPHS } from "./glyphs";
 import { landingCopy } from "./copy";
+import { bindOrphans as b } from "./typo";
+
+/* ── Szkielet trzech sekcji („Obraz Twojego majątku", „Funkcje",
+   „Dla polskiego inwestora") ─────────────────────────────────────────────
+
+   Wcześniej wszystkie trzy używały tego samego szablonu: nagłówek + lista
+   wierszy z glifem, tą samą paletą i tym samym rytmem — trzy kopie jednego
+   projektu. Klej, który ma je trzymać jako jedną stronę mimo różnych
+   układów, jest dokładnie tym, co reszta landingu już ma i czego tu nie
+   ruszam: --vault/--surface/--ink/--amber, Bodoni Moda + Archivo + IBM Plex
+   Mono, skala odstępów 12-kolumnowej siatki (--col-gap, --gut), promień 4px
+   (--r-md odpowiednik na landingu). Różnicuję układ i akcenty, nie system.
+
+   Każda sekcja miała punktem wyjścia osobny losowy string (nigdzie w UI —
+   tylko tu, jako źródło inspiracji, nie treść):
+     obraz-majatku   6T4pMP7uFmKN0RPi → układ: naprzemiennie lewo/prawo;
+                     forma: sekwencja numerowana; akcent: wersaliki
+                     z szerokim tropieniem; kształt: zaokrąglony kwadrat;
+                     jedna kropka akcentu; wejście: fade-up ze zwłoką.
+     funkcje         lUr5LInmkQucCLYj → układ: siatka kart; forma: karty
+                     z plakietkami; akcent: kursywa pierwszego słowa;
+                     kształt: romb za glifem; włosowe obramowanie;
+                     wejście: wsunięcie z boku, naprzemiennie.
+     polski-inwestor b4CN5IU5ED71ab6v → układ: karuzela pozioma pod dużą
+                     liczbą; forma: card-carousel; akcent: duża figura
+                     otwierająca sekcję; kształt: włosowa linia w karcie;
+                     zdjęcie (druk.jpg) jako jedyna sekcja z fotografią;
+                     wejście: scale-in.
+   Trzy różne układy, trzy różne formy prezentacji, trzy różne style
+   ilustracji (podgląd aplikacji w oknie / ikona liniowa / fotografia) —
+   każda para różni się więc co najmniej dwoma wymiarami.
+
+   Figury w „Obraz Twojego majątku" to na razie placeholdery: ramka okna
+   aplikacji z tym samym wykresem-śladem co wcześniej w środku, zamiast
+   pustego widma. Docelowo `.steps-shot-body` przyjmie prawdziwy zrzut
+   ekranu (<img>) na miejsce SVG — patrz TODO przy STEP_MARKS. */
+
+function emFirstWord(text: string): string {
+  const i = text.indexOf(" ");
+  return i === -1 ? `<em>${text}</em>` : `<em>${text.slice(0, i)}</em>${text.slice(i)}`;
+}
 
 // ── Static design assets (not copy) ─────────────────────────────────────────
 
@@ -49,7 +91,63 @@ const PLUS_SVG = `<svg class="pm" viewBox="0 0 24 24" fill="none" stroke="curren
 
 // ── Section builders ────────────────────────────────────────────────────────
 
+import { buildLandingDemoSnapshot } from "./landing-demo-data";
+import { formatPercent } from "@/lib/money";
+
 const c = landingCopy;
+const demo = buildLandingDemoSnapshot();
+
+// Kotwica pod opisem karty: jedna konkretna wartość zamiast samej obietnicy.
+// Puste tam, gdzie nie ma liczby, której nie trzeba by zmyślić.
+// Znak przy wierszu — w kolejności copy.ts.
+// Zawartość okna-placeholdera: trzy różne TYPY wykresu, nie trzy warianty tej
+// samej kreski — rozrzucone punkty (wprowadzasz dane pojedynczo), słupki
+// (Zecca liczy), jedna gładka linia (wszystko złożone w jedno). Rysowane w
+// viewBox 300×140 — wysokość ciała okna po odjęciu paska tytułowego.
+// TODO(zrzuty ekranu): zamienić `.steps-figure-spark` na <img> z prawdziwym
+// zrzutem produktu, gdy powstaną — patrz notatka na górze pliku.
+const STEP_MARKS = [
+  '<g class="steps-figure-mark steps-figure-dots">' +
+    [40, 95, 150, 205, 260].map((x, i) => `<circle cx="${x}" cy="${((58 - i * 9 - (i % 2) * 6) * 1.75).toFixed(1)}" r="6" />`).join("") +
+    "</g>",
+  '<g class="steps-figure-mark steps-figure-bars">' +
+    [
+      [30, 22], [78, 34], [126, 18], [174, 44], [222, 30], [270, 52],
+    ].map(([x, h]) => `<rect x="${x}" y="${(140 - h * 1.75).toFixed(1)}" width="20" height="${(h * 1.75).toFixed(1)}" rx="1.5" />`).join("") +
+    "</g>",
+  '<polyline class="steps-figure-mark steps-figure-line" points="0,73.5 60,70 120,64.8 180,59.5 240,35 300,14" />',
+];
+const FEATURE_GLYPHS = [GLYPHS.portfele, GLYPHS.statystyki, GLYPHS.inflacja, GLYPHS.historia,
+  GLYPHS.zarobki, GLYPHS.import, GLYPHS.eksport, GLYPHS.sync];
+// Karty karuzeli nie mają już ikon linowych — ten język znaków należy teraz
+// wyłącznie do Funkcji. Dla polskiego inwestora różni się anatomią karty, nie
+// tylko układem, więc GLYPHS.emerytalne/obligacje/nbp/gus/lokaty/waluty
+// zostają w bibliotece nieużywane, na wypadek gdyby wróciły gdzie indziej.
+
+const FEATURE_ANCHORS: readonly string[] = [
+  "IKE + IKZE",
+  demo.metrics.xirrPct === null ? "" : `XIRR ${formatPercent(demo.metrics.xirrPct)}`,
+  formatPercent(demo.metrics.realReturnPct),
+  "8 lat wstecz",
+  "UoP + B2B",
+  "XTB · PKO",
+  "CSV + JSON",
+  "AES-GCM",
+];
+
+// Kotwice tej sekcji to nazwy i stawki — rzeczy stałe, nie odczyty z portfela.
+// Wcześniej czwarta brała wynik realny z danych demo, przez co ta sama liczba
+// („8,8%") stała raz jako mono w rejestrze, raz jako Didone tutaj: jedna wartość
+// w dwóch krojach. Reguła: mono to zmierzona wielkość z Twoich danych, Didone to
+// figura retoryczna. Wynik realny należy do rejestru i tam zostaje.
+const INVESTOR_ANCHORS: readonly string[] = [
+  "IKE + IKZE",
+  "6 serii",
+  "tabela A",
+  "wskaźnik CPI",
+  "19% podatku",
+  "PLN / EUR / USD",
+];
 const waitlistEnabled = process.env.NEXT_PUBLIC_BETA_WAITLIST_ENABLED === "1";
 const showcasePlatforms = [...c.showcase.desktop, c.showcase.ios];
 
@@ -57,7 +155,7 @@ const navHtml = `
 <nav class="nav">
   <div class="nav-in">
     <a class="brand" href="#top">
-      <span class="mark"><img src="/zecca-logo-96.png" width="96" height="96" alt="" /></span>
+      <span class="mark"><img src="/zecca-mark-96.png" width="96" height="96" alt="" /></span>
       <span class="wordmark">Zecca</span>
       <span class="beta-pill">beta</span>
     </a>
@@ -75,67 +173,111 @@ const how = c.howItWorks;
 const howItWorksHtml = `
 <section class="block steps" id="jak-dziala">
   <div class="wrap">
-    <div class="rail-row sec-head reveal">
-      <span class="rail-mark" aria-hidden="true"></span>
-      <div>
-        <div class="sec-kicker">${how.eyebrow}</div>
-        <h2 class="sec-title">${how.title}</h2>
-        <p class="sec-desc">${how.desc}</p>
-      </div>
+    <div class="steps-head">
+      <span class="sec-kicker">${how.eyebrow}</span>
+      <h2 class="sec-title">${b(how.title)}</h2>
+      <p class="sec-desc">${b(how.desc)}</p>
     </div>
-
-    ${how.steps
-      .map(
-        (step) => `<article class="rail-row step reveal">
-      <span class="rail-mark">${step.label}<em>${step.meta}</em></span>
-      <div>
-        <h3>${step.title}</h3>
-        <p>${step.desc}</p>
-      </div>
-    </article>`,
-      )
-      .join("\n    ")}
+    <ol class="steps-seq">
+      ${how.steps
+        .map(
+          (step, index) => `<li class="steps-row reveal reveal-fade-up" style="--i:${index}">
+        <div class="steps-row-copy">
+          <span class="steps-label">Krok ${String(index + 1).padStart(2, "0")}</span>
+          <h3>${b(step.title)}</h3>
+          <p>${b(step.desc)}</p>
+          <span class="src src-quiet">${step.meta}</span>
+        </div>
+        <div class="steps-row-figure" aria-hidden="true">
+          <div class="steps-shot">
+            <div class="steps-shot-bar"><span></span><span></span><span></span></div>
+            <div class="steps-shot-body">
+              <svg class="steps-figure-spark" viewBox="0 0 300 140" preserveAspectRatio="none">${STEP_MARKS[index] ?? STEP_MARKS[0]}</svg>
+            </div>
+          </div>
+        </div>
+      </li>`,
+        )
+        .join("\n      ")}
+    </ol>
   </div>
 </section>`;
 
 const featuresHtml = `
 <section class="block scope" id="funkcje">
   <div class="wrap">
-    <div class="rail-row sec-head reveal">
-      <span class="rail-mark" aria-hidden="true"></span>
-      <div>
-        <h2 class="sec-title">${c.features.title}</h2>
-        <p class="sec-desc">${c.features.desc}</p>
+    <div class="sec-split">
+      <div class="sec-head">
+        <span class="sec-kicker">${c.features.eyebrow}</span>
+        <h2 class="sec-title">${b(c.features.title)}</h2>
       </div>
+      <p class="sec-desc sec-aside">${b(c.features.desc)}</p>
     </div>
+    <div class="feature-grid">
+      ${c.features.items
+        .map((item, index) => {
+          const slideX = index % 2 === 0 ? "-16px" : "16px";
+          return `<article class="feature-card reveal reveal-slide" style="--i:${index};--slide-x:${slideX}">
+        <div class="feature-card-head">
+          <span class="glyph-slot feature-card-glyph">${FEATURE_GLYPHS[index] ?? ""}</span>
+          ${FEATURE_ANCHORS[index] ? `<span class="feature-card-anchor">${FEATURE_ANCHORS[index]}</span>` : ""}
+        </div>
+        <h3 class="feature-card-title">${b(emFirstWord(item.title))}</h3>
+        <p>${b(item.desc)}</p>
+        <ul class="feature-tags">${item.tags.map((tag) => `<li>${tag}</li>`).join("")}</ul>
+      </article>`;
+        })
+        .join("\n      ")}
+    </div>
+  </div>
+</section>`;
 
-    ${c.features.items
-      .map(
-        (item) => `<article class="rail-row scope-item reveal">
-      <span class="rail-mark">${item.tags.map((t) => `<em>${t}</em>`).join("")}</span>
-      <div>
-        <h3>${item.title}</h3>
-        <p>${item.desc}</p>
-      </div>
-    </article>`,
-      )
-      .join("\n    ")}
+const investorHtml = `
+<section class="block investor-block" id="inwestor">
+  <img class="sec-bg" src="/landing/depozyt/druk.jpg" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+  <span class="sec-scrim" style="background:linear-gradient(100deg,var(--vault) 0%,rgba(2,10,11,.88) 40%,rgba(2,10,11,.6) 70%,rgba(2,10,11,.88) 100%)"></span>
+  <span class="sec-scrim" style="background:linear-gradient(180deg,var(--vault) 0%,transparent 22%,transparent 80%,var(--vault) 100%)"></span>
+  <div class="wrap">
+    <div class="investor-lead">
+      <span class="sec-kicker">${c.investor.eyebrow}</span>
+      <!-- Jedna wypowiedź, nie etykieta+nagłówek+akapit — Funkcje mają dokładnie
+           ten trzypoziomowy szablon, więc tytuł i opis tutaj płyną jednym,
+           serifowym ciągiem zamiast rozjeżdżać się na nagłówek + szary akapit
+           groteskiem. Liczba obszarów wchodzi w zdanie, nie stoi obok niego. -->
+      <p class="investor-statement">
+        <strong>${b(c.investor.title)}</strong>
+        ${b(c.investor.desc)}
+        <span class="investor-statement-count">${c.investor.cells.length} obszarów niżej.</span>
+      </p>
+    </div>
+    <div class="investor-carousel-wrap">
+      <span class="investor-scroll-hint">przewiń <span aria-hidden="true">→</span></span>
+      <ul class="investor-carousel">
+        ${c.investor.cells
+          .map(
+            (cell, index) => `<li class="investor-card reveal reveal-scale" style="--i:${index}">
+          <span class="investor-card-badge">${cell.badge}</span>
+          <h3>${b(cell.title)}</h3>
+          <p>${b(cell.desc)}</p>
+          ${INVESTOR_ANCHORS[index] ? `<span class="investor-card-spec">${INVESTOR_ANCHORS[index]}</span>` : ""}
+        </li>`,
+          )
+          .join("\n        ")}
+      </ul>
+    </div>
   </div>
 </section>`;
 
 const showcaseHtml = `
 <section class="block platform-showcase" id="aplikacje">
   <div class="wrap">
-    <div class="rail-row sec-head reveal">
-      <span class="rail-mark" aria-hidden="true"></span>
-      <div>
-        <div class="sec-kicker">${c.showcase.eyebrow}</div>
-        <h2 class="sec-title">${c.showcase.title}</h2>
-        <p class="sec-desc">${c.showcase.desc}</p>
-      </div>
+    <div class="steps-head">
+      <span class="sec-kicker">${c.showcase.eyebrow}</span>
+      <h2 class="sec-title">${b(c.showcase.title)}</h2>
+      <p class="sec-desc">${b(c.showcase.desc)}</p>
     </div>
 
-    <article class="rail-row platform-stage reveal" data-platform-gallery>
+    <article class="platform-stage reveal" data-platform-gallery>
       <div class="platform-tabs" role="tablist" aria-label="Wybierz platformę Zecca">
         ${showcasePlatforms
           .map(
@@ -149,14 +291,7 @@ const showcaseHtml = `
           .map((screen, index) => {
             const media = SHOWCASE_MEDIA[screen.id];
             const firstShot = media.shots[0];
-            const shotNavigation =
-              media.shots.length > 1
-                ? `<div class="platform-shot-nav" role="group" aria-label="Widoki ${screen.tab}">${media.shots
-                    .map(
-                      (shot, shotIndex) => `<button type="button" aria-pressed="${shotIndex === 0 ? "true" : "false"}" data-platform-shot-target data-src="${shot.src}" data-width="${shot.width}" data-height="${shot.height}" data-alt="${shot.alt}">${shot.label}</button>`,
-                    )
-                    .join("")}</div>`
-                : "";
+            const shotNavigation = "";
             return `<figure id="platform-panel-${screen.id}" role="tabpanel" aria-labelledby="platform-tab-${screen.id}" data-platform-panel="${screen.id}" data-device="${media.device}"${index === 0 ? "" : " hidden"}><img data-platform-shot src="${firstShot.src}" width="${firstShot.width}" height="${firstShot.height}" loading="lazy" decoding="async" alt="${firstShot.alt}" />${shotNavigation}</figure>`;
           })
           .join("\n        ")}
@@ -164,10 +299,10 @@ const showcaseHtml = `
         ${showcasePlatforms
           .map(
             (screen, index) => `<div class="platform-story" data-platform-copy="${screen.id}"${index === 0 ? "" : " hidden"}>
-          <h3>${screen.title}</h3>
-          <p>${screen.desc}</p>
+          <h3>${b(screen.title)}</h3>
+          <p>${b(screen.desc)}</p>
           <ul class="show-list">
-            ${screen.points.map((point) => `<li>${point}</li>`).join("\n            ")}
+            ${screen.points.map((point) => `<li>${b(point)}</li>`).join("\n            ")}
           </ul>
         </div>`,
           )
@@ -175,100 +310,48 @@ const showcaseHtml = `
       </div>
     </article>
 
-    <div class="rail-row store-row reveal">
-      <span class="rail-mark">Aplikacje<em>wkrótce</em></span>
-      <div class="store-badges">
-        ${c.hero.storeBadges
-          .map(
-            (badge) => `<span class="store-badge" aria-disabled="true">${APPLE_SVG}<span><small>${badge.top}</small><strong>${badge.main}</strong></span><em>${badge.soon}</em></span>`,
-          )
-          .join("")}
-      </div>
-    </div>
+    <p class="store-note reveal">Aplikacje natywne na macOS i iOS — wkrótce w App Store. Wersja webowa działa już teraz.</p>
   </div>
 </section>`;
-
-const investorHtml = `
-<section class="block band-dark" id="inwestor">
-  <div class="wrap">
-    <div class="rail-row sec-head reveal">
-      <span class="rail-mark" aria-hidden="true"></span>
-      <div>
-        <h2 class="sec-title">${c.investor.title}</h2>
-        <p class="sec-desc">${c.investor.desc}</p>
-      </div>
-    </div>
-
-    ${c.investor.cells
-      .map(
-        (cell) => `<article class="rail-row pl-row reveal">
-      <span class="rail-mark">${cell.badge}</span>
-      <div>
-        <h3>${cell.title}</h3>
-        <p>${cell.desc}</p>
-      </div>
-    </article>`,
-      )
-      .join("\n    ")}
-  </div>
-</section>`;
-
 
 const faqHtml = `
 <section class="block faq-block" id="faq">
-  <div class="wrap">
-    <div class="rail-row sec-head reveal">
-      <span class="rail-mark" aria-hidden="true"></span>
-      <h2 class="sec-title">${c.faq.title}</h2>
+  <div class="wrap faq-inner">
+    <div class="sec-head">
+      <h2 class="sec-title">${b(c.faq.title)}</h2>
     </div>
-    ${c.faq.items
-      .map(
-        (item, index) =>
-          `<div class="rail-row faq-row reveal">
-      <span class="rail-mark" aria-hidden="true"></span>
-      <details class="faq"${"open" in item && item.open ? " open" : ""}>
-        <summary><span data-landing-edit-id="faq.items.${index}.question">${item.q}</span>${PLUS_SVG}</summary>
-        <div class="ans" data-landing-edit-id="faq.items.${index}.answer">${item.a}</div>
-      </details>
-    </div>`,
-      )
-      .join("\n    ")}
+    <div class="faq-list">
+      ${c.faq.items
+        .map(
+          (item, index) => `<details class="faq">
+        <summary><span data-landing-edit-id="faq.items.${index}.question">${b(item.q)}</span>${PLUS_SVG}</summary>
+        <div class="ans" data-landing-edit-id="faq.items.${index}.answer">${b(item.a)}</div>
+      </details>`,
+        )
+        .join("\n      ")}
+    </div>
   </div>
 </section>`;
 
-const beta = c.betaList;
-const betaListHtml = `
-<section class="block beta-list-section" id="lista-beta">
+// ── Domknięcie: prywatność + zaproszenie ─────────────────────────────────
+const closingHtml = `
+<section class="block closing" id="prywatnosc">
+  <img class="sec-bg" src="/landing/depozyt/pieczec.jpg" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+  <span class="sec-scrim" style="background:linear-gradient(90deg,rgba(2,10,11,.94) 0%,rgba(2,10,11,.86) 34%,rgba(2,10,11,.35) 62%,transparent 84%)"></span>
+  <span class="sec-scrim" style="background:linear-gradient(180deg,var(--vault) 0%,transparent 20%,transparent 76%,var(--vault) 100%)"></span>
   <div class="wrap">
-    <div class="rail-row sec-head reveal">
-      <span class="rail-mark" aria-hidden="true"></span>
-      <div>
-        <h2 class="sec-title">${beta.title}</h2>
-        <p class="sec-desc">${beta.desc}</p>
+    <div class="sec-head closing-head">
+      <span class="sec-kicker">${c.privacy.eyebrow}</span>
+      <h2 class="sec-title">${b(c.privacy.title)}</h2>
+      <p class="sec-desc">${b(c.privacy.desc)}</p>
+      <ul class="privacy-marks">
+        ${c.privacy.marks.map((m, i) => `<li class="src">${m}</li>`).join("\n        ")}
+      </ul>
+      <div class="closing-actions">
+        <a class="btn btn-accent" href="${c.closing.ctaPrimaryHref}">${c.closing.ctaPrimary}</a>
+        <a class="btn btn-quiet" href="${c.closing.ctaSecondaryHref}">${c.closing.ctaSecondary}</a>
       </div>
-    </div>
-    <div class="rail-row reveal">
-      <span class="rail-mark">Zapisy<em>${waitlistEnabled ? "otwarte" : "wkrótce"}</em></span>
-      <form class="beta-waitlist-form" id="betaWaitlistForm" data-provider="airtable" data-enabled="${waitlistEnabled ? "true" : "false"}" data-status="${waitlistEnabled ? "ready" : "planned"}" aria-describedby="beta-waitlist-status" novalidate>
-        <div class="field">
-          <label for="beta-email">${beta.form.emailLabel}</label>
-          <input id="beta-email" name="email" type="email" placeholder="${beta.form.emailPlaceholder}" autocomplete="email"${waitlistEnabled ? "" : " disabled"} />
-        </div>
-        <div class="field hp-field" aria-hidden="true">
-          <label for="beta-company">Firma</label>
-          <input id="beta-company" name="company" type="text" tabindex="-1" autocomplete="off" />
-        </div>
-        <label class="beta-consent" for="beta-consent">
-          <input id="beta-consent" name="consent" type="checkbox"${waitlistEnabled ? "" : " disabled"} />
-          <span>${beta.form.consentLabel}</span>
-        </label>
-        <button type="submit" class="btn btn-brand btn-lg"${waitlistEnabled ? "" : " disabled"}>${waitlistEnabled ? beta.form.submit : beta.form.disabledSubmit}</button>
-        <p class="beta-waitlist-status" id="beta-waitlist-status" role="status" aria-live="polite"
-          data-success="${beta.form.success}"
-          data-error="${beta.form.error}"
-          data-invalid-email="${beta.form.invalidEmail}"
-          data-missing-consent="${beta.form.missingConsent}"></p>
-      </form>
+      <p class="micro closing-note">${b(c.closing.note)}</p>
     </div>
   </div>
 </section>`;
@@ -280,7 +363,7 @@ const footerHtml = `
   <div class="wrap">
     <div class="foot-top">
       <div class="foot-brand">
-        <a class="brand" href="#top"><span class="mark"><img src="/zecca-logo-96.png" width="96" height="96" alt="" /></span><span class="wordmark">Zecca</span></a>
+        <a class="brand" href="#top"><span class="mark"><img src="/zecca-mark-96.png" width="96" height="96" alt="" /></span><span class="wordmark">Zecca</span></a>
         <p>${c.footer.tagline}</p>
       </div>
       ${c.footer.columns
@@ -302,14 +385,6 @@ const footerHtml = `
         )
         .join("\n      ")}
     </div>
-    <div class="rail-row foot-contact" id="kontakt">
-      <span class="rail-mark">Kontakt<em>${fb.email}</em></span>
-      <div>
-        <p>${fb.desc}</p>
-        <a class="btn btn-ink" href="${fb.discordHref}" target="_blank" rel="noopener">${DISCORD_SVG}${fb.discordButton}</a>
-        <a class="foot-mail" href="mailto:${fb.email}?subject=${encodeURIComponent(fb.emailSubject)}">${fb.email}</a>
-      </div>
-    </div>
     <div class="foot-bot">
       <span>${c.footer.copyright}</span>
       <span>${c.footer.betaNote}</span>
@@ -322,9 +397,9 @@ export const LANDING_NAV_HTML = navHtml;
 export const LANDING_BODY_HTML = `
 ${howItWorksHtml}
 ${featuresHtml}
-${showcaseHtml}
 ${investorHtml}
+${showcaseHtml}
 ${faqHtml}
-${betaListHtml}
+${closingHtml}
 ${footerHtml}
 `;

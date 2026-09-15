@@ -1,6 +1,8 @@
 "use client";
 
 import { token } from "@/design/tokens";
+import { SURFACES } from "@/lib/design-tokens";
+import { v2Mix } from "@/lib/v2-design";
 import Link from "next/link";
 import { use, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useSyncStore } from "@/sync/store/sync-store";
@@ -16,10 +18,11 @@ import {
 } from "@/domain/bonds/bond-series-groups";
 import {
   getKpiTiles,
+  KPI_MARKS,
   KPI_TILE_META,
-  KpiCard,
   type KpiTileId,
 } from "@/components/metrics/portfolio-kpi-strip";
+import { MetricTiles } from "@/components/layout/metric-tiles";
 import { ValueVsDepositsChart } from "@/components/charts/value-vs-deposits-chart";
 import {
   useSectionCustomization,
@@ -32,6 +35,7 @@ import {
   type SectionPanelTheme,
 } from "@/components/customize/section-customize-panel";
 import { SectionGrid } from "@/components/customize/section-grid";
+import { currencyLabel } from "@/lib/money";
 import {
   BadgeDollarSign,
   BadgePercent,
@@ -76,20 +80,16 @@ function useMedia(query: string) {
 }
 
 const INK = token("ink");
-const MUTED = "rgba(28,49,68,0.58)";
-const SUBTLE = "rgba(28,49,68,0.38)";
-const LINE_SOFT = "rgba(28,49,68,0.06)";
+const MUTED = token("inkMuted");
+const SUBTLE = token("inkFaint");
+const LINE_SOFT = token("line2");
 const PROFIT = token("up");
 
-const glassCard: CSSProperties = {
-  background: "rgba(255,253,249,0.82)",
-  backdropFilter: "blur(30px) saturate(160%)",
-  WebkitBackdropFilter: "blur(30px) saturate(160%)",
-  borderRadius: 16,
-  border: "0.5px solid rgba(255,255,255,0.7)",
-  boxShadow:
-    "inset 0 1px 0 rgba(255,255,255,0.9), 0 1px 0 rgba(28,49,68,0.04), 0 4px 16px rgba(28,49,68,0.05)",
-};
+// Była kartą "ze szkła" na kremowo-białym tle (rgba(255,253,249,...)) —
+// zupełnie inny, jasny język wizualny niż reszta produktu. Nowy system (patrz
+// SURFACES w design-tokens.ts) elewację buduje samą powierzchnią i włosem,
+// nigdy rozmyciem ani cieniem — to ten sam przepis, którego już używa AppShell.
+const glassCard: CSSProperties = SURFACES.glassCard;
 
 function fmt(n: number, d = 0) {
   return n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -124,7 +124,7 @@ const KIND_COLORS: Record<string, string> = {
   etf: token("up"),
   treasuryBond: token("assetBonds"),
   listedBond: token("up"),
-  crypto: "#9B6BC4",
+  crypto: token("assetCrypto"),
   deposit: token("accent"),
   cash: token("inkMuted"),
 };
@@ -173,9 +173,9 @@ const PD_THEME: SectionPanelTheme = {
   card: token("surface"),
   ink: token("ink"),
   brand: token("assetEquity"),
-  muted: "rgba(28,49,68,0.58)",
-  subtle: "rgba(28,49,68,0.38)",
-  line: "rgba(28,49,68,0.10)",
+  muted: token("inkMuted"),
+  subtle: token("inkFaint"),
+  line: token("line"),
   fontUi: TYPOGRAPHY.system,
   fontSerif: TYPOGRAPHY.serif,
   fontMono: TYPOGRAPHY.mono,
@@ -198,25 +198,25 @@ function HistoryCard({
   return (
     <div style={{ ...glassCard, padding: "22px 22px 18px", height: "100%" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
-        <div style={{ fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>
           Historia wartości · {period === "MAX" ? "maksimum" : period}
         </div>
-        <div style={{ display: "inline-flex", background: "rgba(28,49,68,0.06)", borderRadius: 11, padding: 3 }}>
+        <div style={{ display: "inline-flex", background: v2Mix(INK, 0.06), borderRadius: "var(--r-xl)", padding: 3 }}>
           {PERIOD_OPTIONS.map((option) => (
             <button
               key={option}
               onClick={() => onPeriodChange(option)}
               style={{
                 padding: "5px 12px",
-                borderRadius: 8,
+                borderRadius: "var(--r-lg)",
                 border: "none",
                 cursor: "pointer",
                 fontFamily: TYPOGRAPHY.system,
-                fontSize: 11.5,
+                fontSize: 11,
                 fontWeight: period === option ? 700 : 500,
                 background: period === option ? token("surface") : "transparent",
                 color: period === option ? INK : MUTED,
-                boxShadow: period === option ? "0 1px 4px rgba(28,49,68,0.12)" : "none",
+                boxShadow: period === option ? `0 1px 4px ${v2Mix(INK, 0.12)}` : "none",
                 transition: "all .15s",
               }}
             >
@@ -251,7 +251,7 @@ function HoldingsCard({
           borderBottom: `0.5px solid ${LINE_SOFT}`,
         }}
       >
-        <div style={{ fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>
           Pozycje ({groupedCount})
         </div>
       </div>
@@ -262,7 +262,7 @@ function HoldingsCard({
           display: "grid",
           gridTemplateColumns: "minmax(0,2.5fr) minmax(0,0.8fr) minmax(0,1fr) minmax(0,1.2fr) minmax(0,0.8fr)",
           padding: "10px 22px",
-          background: "rgba(28,49,68,0.025)",
+          background: v2Mix(INK, 0.025),
         }}
       >
         {["Instrument", "Ilość", "Cena", "Wartość", "Udział"].map((h, i) => (
@@ -315,7 +315,7 @@ function HoldingsCard({
               transition: "background .12s",
               cursor: isGroup ? "pointer" : "default",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(28,49,68,0.025)")}
+            onMouseEnter={(e) => (e.currentTarget.style.background = v2Mix(INK, 0.025))}
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
           >
             {/* Instrument */}
@@ -324,14 +324,14 @@ function HoldingsCard({
                 style={{
                   width: 32,
                   height: 32,
-                  borderRadius: 8,
+                  borderRadius: "var(--r-lg)",
                   background: `${color}14`,
                   border: `1.5px solid ${color}30`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   fontSize: 11,
-                  fontWeight: 800,
+                  fontWeight: 700,
                   color,
                   flexShrink: 0,
                   letterSpacing: "-0.02em",
@@ -366,9 +366,9 @@ function HoldingsCard({
 
             {/* Market value */}
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
                 {fmt(h.marketValue)}{" "}
-                <span style={{ fontSize: 10, opacity: 0.5 }}>{displayCurrency}</span>
+                <span style={{ fontSize: 10, opacity: 0.5 }}>{currencyLabel(displayCurrency)}</span>
               </div>
             </div>
 
@@ -381,8 +381,8 @@ function HoldingsCard({
                 style={{
                   width: "100%",
                   height: 3,
-                  borderRadius: 2,
-                  background: "rgba(28,49,68,0.08)",
+                  borderRadius: "var(--r-xs)",
+                  background: v2Mix(INK, 0.08),
                   marginTop: 4,
                 }}
               >
@@ -390,7 +390,7 @@ function HoldingsCard({
                   style={{
                     width: `${Math.min(h.portfolioPercent, 100)}%`,
                     height: "100%",
-                    borderRadius: 2,
+                    borderRadius: "var(--r-xs)",
                     background: color,
                   }}
                 />
@@ -412,7 +412,7 @@ function CashCard({ balances }: { balances: CashBalance[] }) {
           borderBottom: `0.5px solid ${LINE_SOFT}`,
         }}
       >
-        <div style={{ fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>
           Środki pieniężne
         </div>
       </div>
@@ -432,14 +432,14 @@ function CashCard({ balances }: { balances: CashBalance[] }) {
               style={{
                 width: 32,
                 height: 32,
-                borderRadius: 8,
+                borderRadius: "var(--r-lg)",
                 background: `${PROFIT}14`,
                 border: `1.5px solid ${PROFIT}30`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: 11,
-                fontWeight: 800,
+                fontWeight: 700,
                 color: PROFIT,
               }}
             >
@@ -508,8 +508,8 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <Breadcrumb name="—" />
         <div style={{ ...glassCard, padding: "48px 22px", textAlign: "center" }}>
-          <div style={{ fontSize: 32, opacity: 0.12, marginBottom: 12 }}>◎</div>
-          <div style={{ fontSize: 14, color: SUBTLE }}>
+          <div style={{ fontSize: 31, opacity: 0.12, marginBottom: 12 }}>◎</div>
+          <div style={{ fontSize: 13, color: SUBTLE }}>
             Odblokuj dane w panelu synchronizacji
           </div>
         </div>
@@ -522,7 +522,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <Breadcrumb name="Nieznany portfel" />
         <div style={{ ...glassCard, padding: "48px 22px", textAlign: "center" }}>
-          <div style={{ fontSize: 14, color: SUBTLE }}>Portfel nie istnieje lub nie zawiera danych.</div>
+          <div style={{ fontSize: 13, color: SUBTLE }}>Portfel nie istnieje lub nie zawiera danych.</div>
         </div>
       </div>
     );
@@ -570,10 +570,46 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
   );
 
   const renderSection = (id: string) => {
-    if (id === "kpiValue") return <KpiCard label="Wartość portfela" value={`${fmt(detail.totalValue)} ${displayCurrency}`} />;
-    if (id === "kpiCash") return <KpiCard label="Gotówka" value={`${fmt(detail.cashValue)} ${displayCurrency}`} />;
+    if (id === "kpiValue")
+      return (
+        <MetricTiles
+          rows={[{
+            key: id,
+            source: "Wycena",
+            detail: "ostatnia cena × ilość",
+            label: "Wartość portfela",
+            value: `${fmt(detail.totalValue)} ${currencyLabel(displayCurrency)}`,
+          }]}
+        />
+      );
+    if (id === "kpiCash")
+      return (
+        <MetricTiles
+          rows={[{
+            key: id,
+            source: "Portfel",
+            detail: "salda gotówkowe",
+            label: "Gotówka",
+            value: `${fmt(detail.cashValue)} ${currencyLabel(displayCurrency)}`,
+          }]}
+        />
+      );
     const kpi = kpiById.get(id as KpiTileId);
-    if (kpi) return <KpiCard label={kpi.label} value={kpi.value} sub={kpi.sub} color={kpi.color} helpHref={kpi.helpHref} />;
+    if (kpi)
+      return (
+        <MetricTiles
+          rows={[{
+            key: id,
+            source: KPI_MARKS[id as KpiTileId].source,
+            detail: KPI_MARKS[id as KpiTileId].detail,
+            label: kpi.label,
+            value: kpi.value,
+            sub: kpi.sub,
+            color: kpi.color,
+            helpHref: kpi.helpHref,
+          }]}
+        />
+      );
     if (id === "history") return (
       <HistoryCard
         detail={detail}
@@ -584,7 +620,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
     );
     if (id === "valueVsDeposits") return (
       <div style={{ ...glassCard, padding: "22px 22px 18px", height: "100%" }}>
-        <div style={{ fontSize: 10.5, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 14 }}>Wartość konta na tle wpłat</div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 14 }}>Wartość konta na tle wpłat</div>
         <ValueVsDepositsChart value={detail.valuationSeries} deposits={detail.netInvestedSeries} currency={displayCurrency} height={210} />
       </div>
     );
@@ -611,12 +647,12 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
           aria-expanded={showCustomize}
           style={{
             border: `0.5px solid ${PD_THEME.line}`,
-            borderRadius: 10,
-            background: showCustomize ? "rgba(52,105,154,0.10)" : token("surface"),
+            borderRadius: "var(--r-xl)",
+            background: showCustomize ? v2Mix(PD_THEME.brand, 0.10) : token("surface"),
             color: showCustomize ? PD_THEME.brand : INK,
             cursor: "pointer",
             fontFamily: TYPOGRAPHY.system,
-            fontSize: 12.5,
+            fontSize: 12,
             fontWeight: 700,
             padding: "8px 13px",
           }}

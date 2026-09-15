@@ -31,7 +31,7 @@ function widthLabel(width: number) {
 function smallControlStyle(disabled: boolean, theme: SectionPanelTheme) {
   return {
     border: `0.5px solid ${theme.line}`,
-    borderRadius: 8,
+    borderRadius: "var(--r-lg)",
     background: theme.card,
     color: disabled ? mixHex(theme.ink, 0.25) : theme.ink,
     cursor: disabled ? "not-allowed" : "pointer",
@@ -114,17 +114,17 @@ export function SectionCustomizePanel<Id extends string>({
       style={{
         background: theme.card,
         border: `0.5px solid ${theme.line}`,
-        borderRadius: 16,
+        borderRadius: "var(--r-xl)",
         padding: 22,
         boxSizing: "border-box",
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14, flexWrap: "wrap", marginBottom: 14 }}>
         <div>
-          <div style={{ fontFamily: theme.fontUi, fontSize: 10.5, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: theme.subtle }}>
+          <div style={{ fontFamily: theme.fontUi, fontSize: 10, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: theme.subtle }}>
             {eyebrow}
           </div>
-          <div style={{ fontFamily: theme.fontSerif, fontSize: 19, fontWeight: 500, color: theme.ink, marginTop: 3 }}>{title}</div>
+          <div style={{ fontFamily: theme.fontSerif, fontSize: 18, fontWeight: 500, color: theme.ink, marginTop: 3 }}>{title}</div>
           <div style={{ fontFamily: theme.fontUi, fontSize: 12, color: theme.muted, marginTop: 3 }}>{subtitle}</div>
         </div>
         <button
@@ -132,7 +132,7 @@ export function SectionCustomizePanel<Id extends string>({
           onClick={onReset}
           style={{
             border: `0.5px solid ${theme.line}`,
-            borderRadius: 9,
+            borderRadius: "var(--r-lg)",
             background: theme.card,
             color: theme.ink,
             cursor: "pointer",
@@ -157,7 +157,7 @@ export function SectionCustomizePanel<Id extends string>({
           const visibleCount = sections.filter((id) => visibleSections.has(id)).length;
           const panelId = `${categoryPanelId}-${categoryId}`;
           return (
-            <div key={categoryId} style={{ border: `0.5px solid ${theme.line}`, borderRadius: 12, background: mixHex(theme.ink, 0.014), overflow: "hidden" }}>
+            <div key={categoryId} style={{ border: `0.5px solid ${theme.line}`, borderRadius: "var(--r-xl)", background: mixHex(theme.ink, 0.014), overflow: "hidden" }}>
               <button
                 type="button"
                 onClick={() => toggleCategory(categoryId)}
@@ -176,14 +176,14 @@ export function SectionCustomizePanel<Id extends string>({
                   textAlign: "left",
                 }}
               >
-                <span style={{ width: 28, height: 28, borderRadius: 8, background: mixHex(theme.brand, 0.11), color: theme.brand, display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto" }}>
+                <span style={{ width: 28, height: 28, borderRadius: "var(--r-lg)", background: mixHex(theme.brand, 0.11), color: theme.brand, display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto" }}>
                   <CategoryIcon size={15.5} strokeWidth={2} aria-hidden="true" />
                 </span>
                 <span style={{ minWidth: 0, flex: 1 }}>
-                  <span style={{ display: "block", fontFamily: theme.fontUi, fontSize: 13, fontWeight: 800, color: theme.ink }}>{category.label}</span>
-                  <span style={{ display: "block", fontFamily: theme.fontUi, fontSize: 11.5, color: theme.muted, marginTop: 2, lineHeight: 1.35 }}>{category.desc}</span>
+                  <span style={{ display: "block", fontFamily: theme.fontUi, fontSize: 13, fontWeight: 700, color: theme.ink }}>{category.label}</span>
+                  <span style={{ display: "block", fontFamily: theme.fontUi, fontSize: 11, color: theme.muted, marginTop: 2, lineHeight: 1.35 }}>{category.desc}</span>
                 </span>
-                <span style={{ fontFamily: theme.fontMono, fontSize: 11, fontWeight: 700, color: theme.muted, background: theme.card, border: `0.5px solid ${theme.line}`, borderRadius: 999, padding: "3px 7px", whiteSpace: "nowrap" }}>
+                <span style={{ fontFamily: theme.fontMono, fontSize: 11, fontWeight: 700, color: theme.muted, background: theme.card, border: `0.5px solid ${theme.line}`, borderRadius: "var(--r-pill)", padding: "3px 7px", whiteSpace: "nowrap" }}>
                   {visibleCount}/{sections.length}
                 </span>
                 {expanded ? <ChevronUp size={16} strokeWidth={2} aria-hidden="true" /> : <ChevronDown size={16} strokeWidth={2} aria-hidden="true" />}
@@ -197,16 +197,16 @@ export function SectionCustomizePanel<Id extends string>({
                     const currentSize = config.sectionSizes[sectionId] ?? section.sizePresets[0];
                     const SectionIcon = section.icon;
                     return (
-                      <div key={sectionId} style={{ border: `0.5px solid ${checked ? mixHex(theme.brand, 0.42) : theme.line}`, borderRadius: 11, background: checked ? mixHex(theme.brand, 0.055) : theme.card, padding: "11px 12px" }}>
+                      <div key={sectionId} style={{ border: `0.5px solid ${checked ? mixHex(theme.brand, 0.42) : theme.line}`, borderRadius: "var(--r-xl)", background: checked ? mixHex(theme.brand, 0.055) : theme.card, padding: "11px 12px" }}>
                         <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                           <input type="checkbox" checked={checked} onChange={() => onToggle(sectionId)} aria-label={`Pokaż sekcję ${section.label}`} style={{ marginTop: 6 }} />
-                          <span style={{ width: 26, height: 26, borderRadius: 8, background: checked ? mixHex(theme.brand, 0.12) : mixHex(theme.ink, 0.045), color: checked ? theme.brand : theme.muted, display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto" }}>
+                          <span style={{ width: 26, height: 26, borderRadius: "var(--r-lg)", background: checked ? mixHex(theme.brand, 0.12) : mixHex(theme.ink, 0.045), color: checked ? theme.brand : theme.muted, display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto" }}>
                             <SectionIcon size={14.5} strokeWidth={2} aria-hidden="true" />
                           </span>
                           <div style={{ minWidth: 0, flex: 1 }}>
                             <div>
                               <div style={{ fontFamily: theme.fontUi, fontSize: 13, fontWeight: 700, color: theme.ink }}>{section.label}</div>
-                              <div style={{ fontFamily: theme.fontUi, fontSize: 11.5, color: theme.muted, marginTop: 2, lineHeight: 1.35 }}>{section.desc}</div>
+                              <div style={{ fontFamily: theme.fontUi, fontSize: 11, color: theme.muted, marginTop: 2, lineHeight: 1.35 }}>{section.desc}</div>
                             </div>
                             <div role="radiogroup" aria-label={`Szerokość sekcji ${section.label}`} style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
                               {section.sizePresets.map((preset) => {
@@ -218,7 +218,7 @@ export function SectionCustomizePanel<Id extends string>({
                                     role="radio"
                                     aria-checked={selected}
                                     onClick={() => onResize(sectionId, preset)}
-                                    style={{ border: `0.5px solid ${selected ? mixHex(theme.brand, 0.48) : theme.line}`, borderRadius: 8, background: selected ? mixHex(theme.brand, 0.1) : theme.card, color: selected ? theme.brand : theme.muted, cursor: "pointer", fontFamily: theme.fontMono, fontSize: 11, fontWeight: 700, padding: "5px 8px" }}
+                                    style={{ border: `0.5px solid ${selected ? mixHex(theme.brand, 0.48) : theme.line}`, borderRadius: "var(--r-lg)", background: selected ? mixHex(theme.brand, 0.1) : theme.card, color: selected ? theme.brand : theme.muted, cursor: "pointer", fontFamily: theme.fontMono, fontSize: 11, fontWeight: 700, padding: "5px 8px" }}
                                   >
                                     {widthLabel(preset.width)}
                                   </button>
@@ -238,7 +238,7 @@ export function SectionCustomizePanel<Id extends string>({
       </div>
 
       <div style={{ marginTop: 18 }}>
-        <div style={{ fontFamily: theme.fontUi, fontSize: 10.5, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: theme.subtle }}>
+        <div style={{ fontFamily: theme.fontUi, fontSize: 10, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: theme.subtle }}>
           Układ
         </div>
         <div style={{ fontFamily: theme.fontUi, fontSize: 12, color: theme.muted, marginTop: 3, marginBottom: 10 }}>
@@ -287,7 +287,7 @@ export function SectionCustomizePanel<Id extends string>({
                     border: `0.5px solid ${
                       dropTarget?.id === sectionId ? mixHex(theme.brand, 0.65) : theme.line
                     }`,
-                    borderRadius: 10,
+                    borderRadius: "var(--r-xl)",
                     background: dropTarget?.id === sectionId ? mixHex(theme.brand, 0.06) : theme.card,
                     boxShadow: dropTarget?.id === sectionId ? `inset 0 ${dropTarget.placement === "before" ? 2 : -2}px 0 ${theme.brand}` : "none",
                     opacity: draggedSectionId === sectionId ? 0.52 : 1,
@@ -298,7 +298,7 @@ export function SectionCustomizePanel<Id extends string>({
                   <span style={{ fontFamily: theme.fontMono, fontSize: 11, fontWeight: 700, color: theme.muted, width: 18, textAlign: "right", flex: "0 0 auto" }}>
                     {position + 1}
                   </span>
-                  <span style={{ width: 24, height: 24, borderRadius: 7, background: mixHex(theme.brand, 0.12), color: theme.brand, display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto" }}>
+                  <span style={{ width: 24, height: 24, borderRadius: "var(--r-lg)", background: mixHex(theme.brand, 0.12), color: theme.brand, display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto" }}>
                     <SectionIcon size={13.5} strokeWidth={2} aria-hidden="true" />
                   </span>
                   <span style={{ minWidth: 0, flex: 1, fontFamily: theme.fontUi, fontSize: 13, fontWeight: 600, color: theme.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>

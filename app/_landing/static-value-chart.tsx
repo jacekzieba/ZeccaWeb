@@ -7,7 +7,7 @@ import type { ValuationPoint } from "@/domain/models/investor-data";
 const PERIOD_OPTIONS = ["1M", "3M", "6M", "1Y", "2Y", "MAX"] as const;
 const PERIOD_LABELS: Partial<Record<(typeof PERIOD_OPTIONS)[number], string>> = {
   "1Y": "1R",
-  "2Y": "2L",
+  "2Y": "2R",
 };
 const RANGE_DAYS: Partial<Record<(typeof PERIOD_OPTIONS)[number], number>> = {
   "1M": 31,
@@ -17,15 +17,22 @@ const RANGE_DAYS: Partial<Record<(typeof PERIOD_OPTIONS)[number], number>> = {
   "2Y": 731,
 };
 
-const VALUE_COLOR = token("accent");
-const DEPOSIT_COLOR = token("assetBonds");
+const VALUE_COLOR = "#F0A43C";      // bursztyn landingu
+const DEPOSIT_COLOR = "#7F948C";    // stalowa zieleń — wpłaty schodzą w tło
 
-function compactAxis(value: number) {
+function compactAxis(value: number, tight = false) {
   if (Math.abs(value) >= 1_000_000) {
-    return `${(value / 1_000_000).toLocaleString("pl-PL", { maximumFractionDigits: 1 })} mln`;
+    return tight
+      ? `${(value / 1_000_000).toLocaleString("pl-PL", { maximumFractionDigits: 1 })}mln`
+      : `${(value / 1_000_000).toLocaleString("pl-PL", { maximumFractionDigits: 1 })} mln`;
   }
   if (Math.abs(value) >= 1_000) {
-    return `${Math.round(value / 1_000).toLocaleString("pl-PL")} tys.`;
+    // Wariant hero: "300 tys." nie mieściło się bez windowania lewego marginesu
+    // (pl) do szerokości, przy której wykres wygląda węziej niż karta wokół
+    // niego. "300k" zajmuje o połowę mniej miejsca.
+    return tight
+      ? `${Math.round(value / 1_000).toLocaleString("pl-PL")}k`
+      : `${Math.round(value / 1_000).toLocaleString("pl-PL")} tys.`;
   }
   return value.toLocaleString("pl-PL", { maximumFractionDigits: 0 });
 }
@@ -60,7 +67,10 @@ function downsamplePair(pairs: Array<{ value: ValuationPoint; deposits: Valuatio
 export function StaticValueChart({
   value,
   deposits,
+  compact = false,
 }: {
+  /** Wariant do panelu w hero: niższy, bez legendy, z zakresami po prawej. */
+  compact?: boolean;
   value: ValuationPoint[];
   deposits: ValuationPoint[];
 }) {
@@ -71,12 +81,24 @@ export function StaticValueChart({
   );
   if (sampled.length < 2) return null;
 
-  const chartWidth = 640;
-  const chartHeight = 168;
-  const pl = 76;
-  const pr = 16;
-  const pt = 18;
-  const pb = 32;
+  // viewBox trzyma się szerokości renderu (~345 px), inaczej SVG skaluje się
+  // w dół razem z opisami osi i 10 px zamienia się w 5 px.
+  const chartWidth = 352;
+  // Compact ma własną (niższą) wysokość viewBox, nie tylko CSS max-height na
+  // wspólnym 184 — inaczej domyślne preserveAspectRatio="meet" skaluje CAŁY
+  // rysunek (obie osie równo) w dół do niższego pudełka i centruje go w
+  // poziomie, zostawiając puste pasy po bokach zamiast wypełniać kartę.
+  const chartHeight = compact ? 132 : 184;
+  // Compact dostaje węższą, ale realną kolumnę na etykiety osi Y (34px, nie
+  // 46 jak pełny wariant — mniejszy font na to pozwala) zamiast stawiać je
+  // na samej linii: przy inline etykiety leżały dokładnie tam, gdzie
+  // zaczynała się linia wartości, więc nachodziła na nie niezależnie od
+  // podkładu. pr zostaje minimalne, żeby prawa krawędź nadal kończyła się
+  // przy "MAX" — asymetria jest tu celowa, nie błędem sprzed naprawy.
+  const pl = compact ? 34 : 46;
+  const pr = compact ? 6 : 10;
+  const pt = 14;
+  const pb = 26;
   const innerWidth = chartWidth - pl - pr;
   const innerHeight = chartHeight - pt - pb;
   const valueSeries = sampled.map((pair) => pair.value.value);
@@ -95,10 +117,47 @@ export function StaticValueChart({
       .join(" ");
   const valuePoints = pointString(valueSeries);
   const depositPoints = pointString(depositsSeries);
-  const yTicks = [0, 0.33, 0.66, 1].map((factor) => min + factor * range);
+  // Oś czasu: podziałka na granicach lat, nie na ułamkach szerokości. Wcześniej
+  // znaczniki stały na 0/0.33/0.66/1 szerokości, a etykietą był rok punktu z tego
+  // samego ułamka tablicy — przez co „2025" lądowało tam, gdzie akurat wypadło
+  // 66% serii, i równe odstępy roczne rysowały się jako 190px i 97px.
+  const xTicks = (() => {
+    if (!sampled.length) return [] as Array<{ x: number; label: string }>;
+    // Zakres bierzemy z serii RYSOWANEJ, nie z pełnego propa — inaczej po
+    // wybraniu „1M" linia pokazuje miesiąc, a etykiety lat dalej rozciągają
+    // całą historię na szerokość wykresu.
+    const first = new Date(sampled[0].value.date);
+    const last = new Date(sampled[sampled.length - 1].value.date);
+    if (Number.isNaN(first.getTime()) || Number.isNaN(last.getTime())) return [];
+    const span = last.getTime() - first.getTime();
+    if (span <= 0) return [{ x: pl, label: String(first.getUTCFullYear()) }];
+
+    const ticks = [{ x: pl, label: String(first.getUTCFullYear()) }];
+    for (let year = first.getUTCFullYear() + 1; year <= last.getUTCFullYear(); year += 1) {
+      const boundary = Date.UTC(year, 0, 1);
+      if (boundary > last.getTime()) break;
+      ticks.push({
+        x: pl + ((boundary - first.getTime()) / span) * innerWidth,
+        label: String(year),
+      });
+    }
+    return ticks;
+  })();
+
+  const yTicks = (() => {
+    // Okrągła podziałka: krok 1/2/5 × 10^n, żeby etykiety brzmiały jak liczby,
+    // a nie jak zakres podzielony na cztery.
+    const raw = (max - min) / 3;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = [1, 2, 5, 10].map((m2) => m2 * mag).find((c) => c >= raw) ?? mag * 10;
+    const first = Math.ceil(min / step) * step;
+    const out: number[] = [];
+    for (let v = first; v <= max; v += step) out.push(v);
+    return out.length >= 2 ? out : [min, max];
+  })();
 
   return (
-    <div className="static-vvd-chart">
+    <div className={`static-vvd-chart${compact ? " is-compact" : ""}`}>
       <div className="static-chart-head">
         <div className="static-chart-legend">
           <span><i style={{ background: VALUE_COLOR }} />Wartość konta</span>
@@ -132,13 +191,27 @@ export function StaticValueChart({
             <stop offset="100%" stopColor={VALUE_COLOR} stopOpacity="0" />
           </linearGradient>
         </defs>
+        {xTicks.map((tick, index) => (
+          // Skrajne etykiety wyśrodkowane na granicy roku wychodziłyby połową
+          // znaków poza wykres (np. "2024" ucięte po lewej) — pierwsza i
+          // ostatnia kotwiczą więc do wewnątrz, środkowe zostają wyśrodkowane.
+          <text
+            key={`x-${tick.x}`}
+            x={tick.x}
+            y={pt + innerHeight + 17}
+            textAnchor={index === 0 ? "start" : index === xTicks.length - 1 ? "end" : "middle"}
+            className="x-axis"
+          >
+            {tick.label}
+          </text>
+        ))}
         {yTicks.map((tick) => (
           <g key={tick}>
             <line x1={pl} x2={pl + innerWidth} y1={y(tick)} y2={y(tick)} />
-            <text x={pl - 10} y={y(tick) + 4} textAnchor="end">{compactAxis(tick)}</text>
+            <text x={pl - (compact ? 6 : 9)} y={y(tick) + 3.5} textAnchor="end">{compactAxis(tick, compact)}</text>
           </g>
         ))}
-        <path d={`M${pl},${pt + innerHeight} L${valuePoints} L${pl + innerWidth},${pt + innerHeight} Z`} />
+        <path className="value-area" fill="url(#landing-vvd-fill)" d={`M${pl},${pt + innerHeight} L${valuePoints} L${pl + innerWidth},${pt + innerHeight} Z`} />
         <polyline className="deposit-line" pathLength="1" points={depositPoints} />
         <polyline className="value-line" pathLength="1" points={valuePoints} />
       </svg>

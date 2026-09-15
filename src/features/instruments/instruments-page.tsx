@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Check, RefreshCw, X } from "lucide-react";
 import { InstrumentEditorModal } from "@/features/instruments/instrument-editor-modal";
-import { deleteRecord, refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
+import { deleteRecord,
+  removePendingSyncOperation, restoreRecord, refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
 import { makeManualValuationPayload } from "@/sync/records/macos-payloads";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { buildInstrumentList } from "@/sync/records/investor-snapshot";
@@ -14,17 +15,19 @@ import { buildFakeManualValuationRecord } from "@/sync/dev/fake-sync";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import { useProfile } from "@/features/profile/profile-store";
 import type { InstrumentRow } from "@/domain/models/investor-data";
+import { currencyLabel } from "@/lib/money";
+import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
+import { announce } from "@/components/feedback/status-announcer";
 import {
   groupTreasuryBondSeries,
   treasuryBondFamilyLabel,
   type GroupedTreasuryBondFamily,
 } from "@/domain/bonds/bond-series-groups";
+import { MetricTiles } from "@/components/layout/metric-tiles";
 import {
   V2,
   V2Badge,
   V2Button,
-  V2Card,
-  V2Kpi,
   V2ScreenHead,
   V2_TYPE,
   v2InputStyle,
@@ -43,7 +46,7 @@ const glassCard: CSSProperties = {
   background: V2.card,
   backdropFilter: "blur(30px) saturate(160%)",
   WebkitBackdropFilter: "blur(30px) saturate(160%)",
-  borderRadius: 16,
+  borderRadius: "var(--r-xl)",
   border: `0.5px solid ${V2.line}`,
   boxShadow: `0 1px 0 ${v2Mix(V2.ink, 0.03)}, 0 6px 20px ${v2Mix(V2.ink, 0.05)}`,
 };
@@ -306,6 +309,24 @@ export function InstrumentsPage() {
     ? editableInstruments.find((instrument) => instrument.id === editingInstrumentId) ?? null
     : null;
 
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; opis: string } | null>(null);
+
+  async function przywrocInstrument(id: string, baseUpdatedAt: string, operationId?: string) {
+    if (!userDataKey || !supabase) return;
+    try {
+      // Odłożone usunięcie (offline/nieudany zapis) nigdy nie dotarło na
+      // serwer — bez skasowania wpisu z kolejki wykonałoby się później, mimo
+      // że właśnie je cofnięto.
+      if (operationId) removePendingSyncOperation(operationId);
+      await restoreRecord(supabase, "asset", id, { baseUpdatedAt });
+      const { records: nextRecords, snapshot: nextSnapshot } = await refreshSyncStore(supabase, userDataKey);
+      setSync(nextRecords, nextSnapshot);
+      announce("Instrument przywrócony.");
+    } catch {
+      announce("Nie udało się cofnąć — instrument zmienił się na innym urządzeniu.");
+    }
+  }
+
   async function handleDeleteInstrument(id: string) {
     if (!userDataKey || !supabase || !records) {
       return;
@@ -328,13 +349,10 @@ export function InstrumentsPage() {
     }).length;
 
     if (linkedRecords > 0) {
-      window.alert("Nie można usunąć instrumentu, który ma wyceny albo transakcje.");
+      announce("Nie można usunąć instrumentu, który ma wyceny albo transakcje.");
       return;
     }
 
-    if (!window.confirm("Usunąć instrument?")) {
-      return;
-    }
 
     setDeletingId(id);
 
@@ -360,6 +378,13 @@ export function InstrumentsPage() {
         );
         setSync(nextRecords, nextSnapshot);
       }
+      // Usunięcie jest miękkie, więc cofnięcie czyści tylko znacznik.
+      const usunieteO = result.updatedAt;
+      const operationId = result.operationId;
+      announce(
+        "Instrument usunięty.",
+        usunieteO ? { label: "Cofnij", run: () => void przywrocInstrument(id, usunieteO, operationId) } : undefined,
+      );
     } finally {
       setDeletingId(null);
     }
@@ -513,17 +538,43 @@ export function InstrumentsPage() {
             }}
             disabled={!userDataKey}
           >
-            <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>Dodaj instrument
+            <span style={{ fontSize: 15, lineHeight: 1 }}>+</span>Dodaj instrument
           </V2Button>
         )}
       />
 
       {records && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14 }}>
-          <V2Card pad={20}><V2Kpi label="Wartość rynkowa" value={`${fmt(totalValue)} ${displayCurrency}`} sub={`${groupedHeldCount} aktywnych pozycji`} /></V2Card>
-          <V2Card pad={20}><V2Kpi label="Największa pozycja" value={best?.symbol ?? "—"} accent={V2.profit} sub={best ? `${fmt(best.marketValue)} ${displayCurrency}` : "Brak aktywów"} /></V2Card>
-          <V2Card pad={20}><V2Kpi label="Wyceny" value={`${pricedCount}/${allInstruments.length}`} accent={V2.bonds} sub="instrumenty z ceną" /></V2Card>
-        </div>
+        <MetricTiles
+          rows={[
+            {
+              key: "wartoscRynkowa",
+              source: "Wycena",
+              detail: "ostatnia cena × ilość",
+              label: "Wartość rynkowa",
+              value: `${fmt(totalValue)} ${currencyLabel(displayCurrency)}`,
+              sub: `${groupedHeldCount} aktywnych pozycji`,
+            },
+            {
+              // Symbol instrumentu to nazwa, nie kierunek — zieleń tu nic nie znaczyła.
+              key: "najwiekszaPozycja",
+              source: "Wycena",
+              detail: "wg wartości rynkowej",
+              label: "Największa pozycja",
+              value: best?.symbol ?? "—",
+              sub: best ? `${fmt(best.marketValue)} ${currencyLabel(displayCurrency)}` : "Brak aktywów",
+            },
+            {
+              // Bez accent={V2.bonds}: stosunek wycenionych instrumentów nie jest
+              // klasą aktywu ani kierunkiem, więc żadna barwa systemu tu nie pasuje.
+              key: "wyceny",
+              source: "Instrumenty",
+              detail: "stan cen",
+              label: "Wyceny",
+              value: `${pricedCount}/${allInstruments.length}`,
+              sub: "instrumenty z ceną",
+            },
+          ]}
+        />
       )}
 
       {/* Summary chips */}
@@ -539,17 +590,14 @@ export function InstrumentsPage() {
               onClick={() => setHeldFilter(value)}
               style={{
                 padding: "7px 14px",
-                borderRadius: 99,
+                borderRadius: "var(--r-pill)",
                 border: `0.5px solid ${heldFilter === value ? "transparent" : V2.line}`,
-                background: heldFilter === value ? V2.ink : V2.card,
-                color: heldFilter === value ? V2.card : V2.muted,
+                background: heldFilter === value ? V2.brand : V2.card,
+                color: heldFilter === value ? V2.onBrand : V2.muted,
                 fontSize: 12,
                 fontWeight: 600,
                 cursor: "pointer",
                 fontFamily: "inherit",
-                boxShadow: heldFilter === value
-                  ? `0 2px 8px ${v2Mix(V2.ink, 0.18)}`
-                  : "none",
                 transition: "all .15s",
               }}
             >
@@ -564,7 +612,7 @@ export function InstrumentsPage() {
           style={{
             padding: "13px 16px",
             background: V2.card,
-            borderRadius: 16,
+            borderRadius: "var(--r-xl)",
             border: `0.5px solid ${
               marketDataStatus?.providers.yahoo.configured === false
                 ? v2Mix(V2.bonds, 0.28)
@@ -579,12 +627,15 @@ export function InstrumentsPage() {
           }}
         >
           <div>
-            <div style={{ color: V2.ink, fontSize: 13.5, fontWeight: 800 }}>
+            <div style={{ color: V2.ink, fontSize: 13, fontWeight: 700 }}>
               Diagnostyka market data
             </div>
-            <div style={{ color: V2.muted, fontSize: 12, marginTop: 3, lineHeight: 1.45 }}>
+            <div title={marketDataStatusError ?? undefined} style={{ color: V2.muted, fontSize: 12, marginTop: 3, lineHeight: 1.45 }}>
               {marketDataStatusError
-                ? marketDataStatusError
+                ? /* Surowy komunikat z fetch („Failed to fetch") to nie jest tekst
+                     interfejsu — użytkownik dostaje zdanie po polsku, a treść
+                     techniczna zostaje w konsoli i w title dla diagnostyki. */
+                  "Nie udało się sprawdzić dostawców notowań. Sprawdź połączenie i odśwież stronę."
                 : marketDataStatus?.providers.yahoo.configured
                   ? "Yahoo Finance jest skonfigurowany."
                   : "Sprawdzam konfigurację providerów..."}
@@ -592,17 +643,13 @@ export function InstrumentsPage() {
           </div>
           <div
             style={{
-              borderRadius: 99,
-              background:
-                marketDataStatus?.providers.yahoo.configured === false
-                  ? v2Mix(V2.bonds, 0.12)
-                  : v2Mix(V2.profit, 0.12),
-              color:
-                marketDataStatus?.providers.yahoo.configured === false
-                  ? V2.bonds
-                  : V2.profit,
+              borderRadius: "var(--r-pill)",
+              // Cecha źródła należy do bursztynu — to jedno z jego czterech zadań.
+              // Wcześniej świeciła zielenią wzrostu, czyli kolorem kierunku.
+              background: v2Mix(V2.brand, 0.12),
+              color: V2.brand,
               fontSize: 11,
-              fontWeight: 800,
+              fontWeight: 700,
               padding: "6px 10px",
               whiteSpace: "nowrap",
             }}
@@ -643,7 +690,7 @@ export function InstrumentsPage() {
             </span>
             <input
               type="text"
-              placeholder="Szukaj nazwy, symbolu…"
+              aria-label="Szukaj instrumentu" placeholder="Szukaj nazwy, symbolu…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{
@@ -652,7 +699,7 @@ export function InstrumentsPage() {
             />
           </div>
 
-          <select value={kindFilter} onChange={(e) => setKindFilter(e.target.value)} style={selectStyle}>
+          <select aria-label="Filtr klasy aktywów" value={kindFilter} onChange={(e) => setKindFilter(e.target.value)} style={selectStyle}>
             <option value={KIND_ALL}>Wszystkie klasy</option>
             {kinds.map((k) => (
               <option key={k} value={k}>{KIND_LABELS[k] ?? k}</option>
@@ -664,7 +711,7 @@ export function InstrumentsPage() {
               onClick={() => { setSearch(""); setKindFilter(KIND_ALL); }}
               style={{
                 padding: "7px 12px",
-                borderRadius: 9,
+                borderRadius: "var(--r-lg)",
                 border: `0.5px solid ${V2.line}`,
                 background: "transparent",
                 color: V2.muted,
@@ -677,10 +724,10 @@ export function InstrumentsPage() {
             </button>
           )}
 
-          <div style={{ marginLeft: "auto", fontFamily: V2_TYPE.mono, fontSize: 11.5, color: V2.subtle }}>
+          <div style={{ marginLeft: "auto", fontFamily: V2_TYPE.mono, fontSize: 11, color: V2.subtle }}>
             {groupedFiltered.length} wyników
             {totalValue > 0 && (
-              <> · <strong style={{ color: V2.ink }}>{fmt(totalValue)} {displayCurrency}</strong></>
+              <> · <strong style={{ color: V2.ink }}>{fmt(totalValue)} {currencyLabel(displayCurrency)}</strong></>
             )}
           </div>
         </div>
@@ -691,9 +738,9 @@ export function InstrumentsPage() {
           style={{
             padding: "10px 14px",
             background: V2.card,
-            borderRadius: 14,
-            border: `0.5px solid ${quoteError ? v2Mix(V2.loss, 0.18) : v2Mix(V2.profit, 0.18)}`,
-            color: quoteError ? LOSS : PROFIT,
+            borderRadius: "var(--r-xl)",
+            border: `0.5px solid ${quoteError ? v2Mix(V2.loss, 0.18) : v2Mix(V2.brand, 0.18)}`,
+            color: quoteError ? LOSS : V2.brand,
             fontSize: 12,
             fontWeight: 700,
           }}
@@ -702,22 +749,26 @@ export function InstrumentsPage() {
         </div>
       )}
 
-      {/* Table */}
-      <div style={{ ...glassCard, padding: 0 }}>
+      {/* Lista instrumentów miała osierocone role="row" bez tabeli i bez komórek —
+          nieprawidłowe ARIA, przez które czytnik ekranu dostawał sam ticker i ani
+          jednej liczby. */}
+      <div role="table" aria-label="Instrumenty" style={{ ...glassCard, padding: 0 }}>
         {/* Header */}
         <div
+          role="row"
           style={{
             display: "grid",
             gridTemplateColumns: "minmax(0,2.5fr) 80px minmax(0,0.8fr) minmax(0,0.8fr) minmax(0,1.1fr) minmax(0,1fr) 220px",
             padding: "10px 22px",
             background: v2Mix(V2.ink, 0.022),
             borderBottom: `0.5px solid ${LINE_SOFT}`,
-            borderRadius: "16px 16px 0 0",
+            borderRadius: "var(--r-xl) var(--r-xl) 0 0",
           }}
         >
           {["Instrument", "Klasa", "Ilość", "Cena", "Wartość", "Portfele", "Akcje"].map((h, i) => (
             <div
               key={h}
+              role="columnheader"
               style={{
                 fontSize: 10,
                 fontWeight: 700,
@@ -734,8 +785,8 @@ export function InstrumentsPage() {
 
         {!records && (
           <div style={{ padding: "48px 22px", textAlign: "center" }}>
-            <div style={{ fontSize: 32, opacity: 0.12, marginBottom: 12 }}>◈</div>
-            <div style={{ fontSize: 14, color: SUBTLE }}>
+            <div style={{ fontSize: 31, opacity: 0.12, marginBottom: 12 }}>◈</div>
+            <div style={{ fontSize: 13, color: SUBTLE }}>
               Odblokuj dane w panelu synchronizacji
             </div>
           </div>
@@ -760,7 +811,6 @@ export function InstrumentsPage() {
             <div key={inst.id}>
               <div
                 role="row"
-                aria-label={`${inst.symbol} ${inst.name}`}
                 style={{
                   display: "grid",
                   gridTemplateColumns: "minmax(0,2.5fr) 80px minmax(0,0.8fr) minmax(0,0.8fr) minmax(0,1.1fr) minmax(0,1fr) 220px",
@@ -774,19 +824,19 @@ export function InstrumentsPage() {
                 onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
               >
                 {/* Name + symbol */}
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div role="cell" style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span
                     style={{
                       width: 34,
                       height: 34,
-                      borderRadius: 9,
+                      borderRadius: "var(--r-lg)",
                       background: `${color}14`,
                       border: `1.5px solid ${color}${isHeld ? "40" : "20"}`,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       fontSize: 10,
-                      fontWeight: 800,
+                      fontWeight: 700,
                       color: isHeld ? color : `${color}80`,
                       flexShrink: 0,
                       letterSpacing: "-0.03em",
@@ -795,7 +845,7 @@ export function InstrumentsPage() {
                     {inst.symbol.slice(0, 4).toUpperCase()}
                   </span>
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 700, color: V2.ink }}>{inst.name}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: V2.ink }}>{inst.name}</div>
                     <div style={{ fontFamily: V2_TYPE.mono, fontSize: 11, color: V2.subtle }}>{inst.symbol} · {inst.currency}</div>
                   </div>
                   {isGroup && (
@@ -812,24 +862,24 @@ export function InstrumentsPage() {
                 </div>
 
                 {/* Kind badge */}
-                <div>
+                <div role="cell">
                   <V2Badge label={kindLabel} color={color} />
                 </div>
 
                 {/* Quantity */}
-                <div style={{ textAlign: "right", fontFamily: V2_TYPE.mono, fontSize: 12.5, color: isHeld ? V2.ink : V2.subtle, fontVariantNumeric: "tabular-nums" }}>
+                <div role="cell" style={{ textAlign: "right", fontFamily: V2_TYPE.mono, fontSize: 12, color: isHeld ? V2.ink : V2.subtle, fontVariantNumeric: "tabular-nums" }}>
                   {fmtQty(inst.totalQuantity)}
                 </div>
 
                 {/* Last price */}
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontFamily: V2_TYPE.mono, fontSize: 12.5, color: V2.ink, fontVariantNumeric: "tabular-nums" }}>
+                <div role="cell" style={{ textAlign: "right" }}>
+                  <div style={{ fontFamily: V2_TYPE.mono, fontSize: 12, color: V2.ink, fontVariantNumeric: "tabular-nums" }}>
                     {inst.lastPrice > 0 ? fmt(inst.lastPrice, 2) : "—"}
                   </div>
                   <div
                     style={{
                       fontFamily: V2_TYPE.mono,
-                      fontSize: 10.5,
+                      fontSize: 10,
                       color: inst.valuationSource === "missing" ? LOSS : V2.subtle,
                       marginTop: 2,
                     }}
@@ -840,11 +890,11 @@ export function InstrumentsPage() {
                 </div>
 
                 {/* Market value */}
-                <div style={{ textAlign: "right" }}>
+                <div role="cell" style={{ textAlign: "right" }}>
                   {isHeld ? (
-                    <div style={{ fontFamily: V2_TYPE.serif, fontSize: 16, fontWeight: 500, color: V2.ink, fontVariantNumeric: "tabular-nums" }}>
+                    <div style={{ fontFamily: V2_TYPE.mono, fontSize: 13, fontWeight: 500, color: V2.ink, fontVariantNumeric: "tabular-nums", wordSpacing: "-.26em" }}>
                       {fmt(inst.marketValue)}{" "}
-                      <span style={{ fontSize: 10, opacity: 0.5 }}>{displayCurrency}</span>
+                      <span style={{ fontSize: 10, opacity: 0.5 }}>{currencyLabel(displayCurrency)}</span>
                     </div>
                   ) : (
                     <div style={{ fontSize: 13, color: V2.subtle }}>—</div>
@@ -852,7 +902,7 @@ export function InstrumentsPage() {
                 </div>
 
                 {/* Portfolios */}
-                <div style={{ textAlign: "right" }}>
+                <div role="cell" style={{ textAlign: "right" }}>
                   {inst.portfolios.length > 0 ? (
                     <div style={{ display: "flex", gap: 4, justifyContent: "flex-end", flexWrap: "wrap" }}>
                       {inst.portfolios.map((pf) => (
@@ -861,7 +911,7 @@ export function InstrumentsPage() {
                           style={{
                             fontSize: 10,
                             padding: "2px 7px",
-                            borderRadius: 5,
+                            borderRadius: "var(--r-md)",
                             background: v2Mix(V2.profit, 0.12),
                             color: PROFIT,
                             fontWeight: 600,
@@ -877,13 +927,13 @@ export function InstrumentsPage() {
                   )}
                 </div>
 
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, flexWrap: "wrap" }}>
+                <div role="cell" style={{ display: "flex", justifyContent: "flex-end", gap: 6, flexWrap: "wrap" }}>
                   {isGroup ? (
                     <button
                       type="button"
                       onClick={() => toggleFamily(family!)}
                       aria-expanded={expandedFamilies.has(family!)}
-                      style={{ padding: "6px 10px", borderRadius: 8, border: `0.5px solid ${V2.line}`, background: v2Mix(V2.card, 0.72), color: V2.muted, fontSize: 12, cursor: "pointer", fontFamily: V2_TYPE.ui }}
+                      style={{ padding: "6px 10px", borderRadius: "var(--r-lg)", border: `0.5px solid ${V2.line}`, background: v2Mix(V2.card, 0.72), color: V2.muted, fontSize: 12, cursor: "pointer", fontFamily: V2_TYPE.ui }}
                     >
                       {expandedFamilies.has(family!) ? "Zwiń serie" : "Pokaż serie"}
                     </button>
@@ -895,7 +945,7 @@ export function InstrumentsPage() {
                     title="Pobierz cenę Yahoo Finance"
                     style={{
                       padding: "6px 9px",
-                      borderRadius: 8,
+                      borderRadius: "var(--r-lg)",
                       border: `0.5px solid ${v2Mix(V2.profit, 0.2)}`,
                       background: isLoadingQuote ? v2Mix(V2.profit, 0.08) : v2Mix(V2.card, 0.72),
                       color: userDataKey ? PROFIT : SUBTLE,
@@ -917,7 +967,7 @@ export function InstrumentsPage() {
                     }}
                     style={{
                       padding: "6px 10px",
-                      borderRadius: 8,
+                      borderRadius: "var(--r-lg)",
                       border: `0.5px solid ${V2.line}`,
                       background: v2Mix(V2.card, 0.72),
                       color: V2.muted,
@@ -929,11 +979,13 @@ export function InstrumentsPage() {
                     Edytuj
                   </button>
                   <button
-                    onClick={() => void handleDeleteInstrument(inst.id)}
+                    onClick={() =>
+                      setConfirmDelete({ id: inst.id, opis: `${inst.name} · ${inst.symbol}` })
+                    }
                     disabled={!userDataKey || deletingId === inst.id}
                     style={{
                       padding: "6px 10px",
-                      borderRadius: 8,
+                      borderRadius: "var(--r-lg)",
                       border: `0.5px solid ${v2Mix(V2.loss, 0.18)}`,
                       background: deletingId === inst.id ? v2Mix(V2.loss, 0.08) : "transparent",
                       color: deletingId === inst.id ? V2.loss : V2.subtle,
@@ -959,11 +1011,11 @@ export function InstrumentsPage() {
                     flexWrap: "wrap",
                     padding: "12px 22px 14px 66px",
                     borderTop: `0.5px solid ${LINE_SOFT}`,
-                    background: "rgba(45,156,107,0.045)",
+                    background: v2Mix(PROFIT, 0.045),
                   }}
                 >
                   <div>
-                    <div style={{ color: INK, fontSize: 13, fontWeight: 800 }}>
+                    <div style={{ color: INK, fontSize: 13, fontWeight: 700 }}>
                       {fmt(preview.quote.close, 2)} {quoteCurrencyForInstrument(preview.quote, inst.currency)}
                     </div>
                     <div style={{ color: MUTED, fontSize: 11, marginTop: 2 }}>
@@ -976,12 +1028,12 @@ export function InstrumentsPage() {
                       disabled={isSavingQuote}
                       style={{
                         padding: "7px 11px",
-                        borderRadius: 8,
+                        borderRadius: "var(--r-lg)",
                         border: "none",
                         background: PROFIT,
-                        color: "#fff",
+                        color: V2.page,
                         fontSize: 12,
-                        fontWeight: 800,
+                        fontWeight: 700,
                         cursor: isSavingQuote ? "not-allowed" : "pointer",
                         fontFamily: "inherit",
                         display: "inline-flex",
@@ -1000,9 +1052,9 @@ export function InstrumentsPage() {
                       style={{
                         width: 30,
                         height: 30,
-                        borderRadius: 8,
-                        border: "0.5px solid rgba(28,49,68,0.12)",
-                        background: "rgba(255,255,255,0.7)",
+                        borderRadius: "var(--r-lg)",
+                        border: `0.5px solid ${V2.line}`,
+                        background: v2Mix(V2.card, 0.7),
                         color: MUTED,
                         cursor: isSavingQuote ? "not-allowed" : "pointer",
                         display: "inline-flex",
@@ -1028,6 +1080,19 @@ export function InstrumentsPage() {
           setEditingInstrumentId(null);
         }}
       />
+
+    <ConfirmDialog
+      open={confirmDelete !== null}
+      title="Usunąć instrument?"
+      body={confirmDelete ? `${confirmDelete.opis}. Cofniesz to zaraz po usunięciu.` : undefined}
+      onCancel={() => setConfirmDelete(null)}
+      onConfirm={() => {
+        const id = confirmDelete?.id;
+        setConfirmDelete(null);
+        if (id) void handleDeleteInstrument(id);
+      }}
+    />
+
     </div>
   );
 }

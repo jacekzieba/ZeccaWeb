@@ -42,3 +42,23 @@ export function formatPercent(value: number) {
     maximumFractionDigits: 1,
   }).format(value / 100);
 }
+
+/** Etykieta waluty przy kwocie.
+ *
+ * Złoty ma w polszczyźnie symbol i tak go pisze `Intl` na landingu
+ * („306 424 zł"). Aplikacja doklejała po liczbie kod ISO („301 765 PLN"),
+ * więc ta sama kwota miała dwa zapisy w zależności od tego, gdzie się na nią
+ * patrzyło. Kod zostaje tam, gdzie nazywa walutę — w kolumnie transakcji,
+ * przy kursie NBP, w wyborze waluty bazowej — bo tam identyfikuje, a nie mierzy. */
+export function currencyLabel(code: string) {
+  return code === "PLN" ? "zł" : code;
+}
+
+/** Procent po polsku — z przecinkiem.
+ *
+ * `toFixed` daje kropkę, więc udziały renderowały się jako `33.3%` w tym samym
+ * wierszu tabeli, co `0,1500` z przecinkiem. Trzy polityki separatora na jednym
+ * ekranie to nie różnica stylu, tylko dwa zapisy tej samej wielkości. */
+export function formatShare(value: number, decimals = 1): string {
+  return `${value.toFixed(decimals).replace(".", ",")}%`;
+}

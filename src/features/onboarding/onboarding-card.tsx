@@ -1,4 +1,4 @@
-import { V2, V2_TYPE } from "@/lib/v2-design";
+import { V2, V2_TYPE, v2Mix } from "@/lib/v2-design";
 import { OnboardingVisual } from "./onboarding-visual";
 
 /** Full-screen dimmed modal card used by the onboarding intro and finale. */
@@ -26,7 +26,7 @@ export function OnboardingCard({
       aria-label={title}
       style={{
         position: "fixed", inset: 0, zIndex: 900,
-        background: "rgba(20,26,21,.52)",
+        background: v2Mix(V2.page, 0.52),
         display: "flex", alignItems: "center", justifyContent: "center",
         padding: 16,
       }}
@@ -34,20 +34,20 @@ export function OnboardingCard({
       <div
         style={{
           width: "min(620px, 100%)", maxHeight: "92vh", overflowY: "auto",
-          background: V2.card, borderRadius: 20,
+          background: V2.card, borderRadius: "var(--r-xl)",
           border: `0.5px solid ${V2.line}`,
-          boxShadow: "0 18px 60px rgba(20,26,21,.35)",
+          boxShadow: `0 18px 60px ${v2Mix(V2.ink, 0.35)}`,
           padding: "34px 38px", textAlign: "center",
           fontFamily: V2_TYPE.ui, color: V2.ink,
         }}
       >
-        <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".2em", textTransform: "uppercase", color: V2.subtle }}>
+        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".2em", textTransform: "uppercase", color: V2.subtle }}>
           {eyebrow}
         </div>
-        <h2 style={{ fontFamily: V2_TYPE.serif, fontWeight: 400, fontSize: 30, lineHeight: 1.15, letterSpacing: "-.01em", marginTop: 12 }}>
+        <h2 style={{ fontFamily: V2_TYPE.serif, fontWeight: 400, fontSize: 31, lineHeight: 1.15, letterSpacing: "-.01em", marginTop: 12 }}>
           {title}
         </h2>
-        <p style={{ fontSize: 13.5, lineHeight: 1.65, color: V2.muted, marginTop: 12 }}>{body}</p>
+        <p style={{ fontSize: 13, lineHeight: 1.65, color: V2.muted, marginTop: 12 }}>{body}</p>
 
         {visual && <OnboardingVisual visual={visual} />}
 

@@ -19,7 +19,8 @@ const english: Record<string, string> = {
   "Ładowanie danych": "Loading data",
   "vs 30 dni temu": "vs 30 days ago",
   "Język interfejsu": "Interface language",
-  "Zmiana jest stosowana od razu i synchronizowana z aplikacjami Zecca.": "The change is applied immediately and synced with Zecca apps.",
+  "Na razie po angielsku jest menu boczne — reszta aplikacji pozostaje po polsku. Ustawienie synchronizuje się z aplikacjami Zecca.":
+    "For now only the sidebar is in English — the rest of the app stays in Polish. The setting syncs with Zecca apps.",
 };
 
 export function translate(language: "pl" | "en", text: string) {

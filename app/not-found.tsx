@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { COLORS, SHADOWS, SURFACES } from "@/lib/design-tokens";
+import { COLORS, SURFACES } from "@/lib/design-tokens";
+import { v2Mix } from "@/lib/v2-design";
 
 export default function NotFound() {
   return (
@@ -17,18 +18,17 @@ export default function NotFound() {
           width: "100%",
           maxWidth: 420,
           ...SURFACES.glassPanel,
-          borderRadius: 18,
-          boxShadow: SHADOWS.cardStrong,
+          borderRadius: "var(--r-xl)",
           padding: "36px 32px",
           textAlign: "center",
         }}
       >
-        <div style={{ fontSize: 40, fontWeight: 800, color: COLORS.subtle, letterSpacing: "-0.02em" }}>
+        <div style={{ fontSize: 31, fontWeight: 700, color: COLORS.subtle, letterSpacing: "-0.02em" }}>
           404
         </div>
         <h1
           style={{
-            fontSize: 22,
+            fontSize: 21,
             fontWeight: 700,
             color: COLORS.text,
             letterSpacing: "-0.01em",
@@ -46,14 +46,14 @@ export default function NotFound() {
             display: "inline-block",
             marginTop: 20,
             padding: "11px 16px",
-            borderRadius: 10,
+            borderRadius: "var(--r-xl)",
             border: "none",
             background: COLORS.text,
             color: COLORS.white,
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: 600,
             textDecoration: "none",
-            boxShadow: SHADOWS.button,
+            boxShadow: `0 3px 10px ${v2Mix(COLORS.text, 0.22)}, inset 0 0.5px 0 ${v2Mix(COLORS.text, 0.1)}`,
           }}
         >
           Wróć na stronę główną

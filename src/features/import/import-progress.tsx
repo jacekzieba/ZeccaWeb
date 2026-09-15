@@ -26,15 +26,15 @@ export function ImportProgressIndicator({
         flexDirection: "column",
         gap: 7,
         padding: "11px 12px",
-        borderRadius: 10,
+        borderRadius: "var(--r-xl)",
         background: v2Mix(V2.brand, 0.06),
         color: V2.ink,
         fontFamily: V2_TYPE.ui,
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12.5 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12 }}>
         <span>{label}</span>
-        <span style={{ color: V2.brand, fontFamily: V2_TYPE.mono, fontWeight: 700 }}>
+        <span style={{ color: V2.brand, fontFamily: V2_TYPE.mono, fontWeight: 500 }}>
           {progress}%
         </span>
       </div>
@@ -48,7 +48,7 @@ export function ImportProgressIndicator({
         style={{
           height: 6,
           overflow: "hidden",
-          borderRadius: 999,
+          borderRadius: "var(--r-pill)",
           background: v2Mix(V2.brand, 0.14),
         }}
       >

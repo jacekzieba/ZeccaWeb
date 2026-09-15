@@ -1,6 +1,7 @@
 "use client";
 
-import { COLORS, SHADOWS, SURFACES } from "@/lib/design-tokens";
+import { COLORS, SURFACES } from "@/lib/design-tokens";
+import { v2Mix } from "@/lib/v2-design";
 
 export default function GlobalError({
   error,
@@ -24,13 +25,12 @@ export default function GlobalError({
           width: "100%",
           maxWidth: 420,
           ...SURFACES.glassPanel,
-          borderRadius: 18,
-          boxShadow: SHADOWS.cardStrong,
+          borderRadius: "var(--r-xl)",
           padding: "36px 32px",
           textAlign: "center",
         }}
       >
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: COLORS.text, letterSpacing: "-0.01em" }}>
+        <h1 style={{ fontSize: 21, fontWeight: 700, color: COLORS.text, letterSpacing: "-0.01em" }}>
           Coś poszło nie tak
         </h1>
         <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 8, lineHeight: 1.5 }}>
@@ -48,14 +48,14 @@ export default function GlobalError({
             onClick={reset}
             style={{
               padding: "11px 16px",
-              borderRadius: 10,
+              borderRadius: "var(--r-xl)",
               border: "none",
               background: COLORS.text,
               color: COLORS.white,
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: 600,
               cursor: "pointer",
-              boxShadow: SHADOWS.button,
+              boxShadow: `0 3px 10px ${v2Mix(COLORS.text, 0.22)}, inset 0 0.5px 0 ${v2Mix(COLORS.text, 0.1)}`,
               fontFamily: "inherit",
             }}
           >
@@ -65,11 +65,11 @@ export default function GlobalError({
             href="/dashboard"
             style={{
               padding: "11px 16px",
-              borderRadius: 10,
+              borderRadius: "var(--r-xl)",
               border: `0.5px solid ${COLORS.border}`,
               background: COLORS.surface,
               color: COLORS.text,
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: 600,
               textDecoration: "none",
             }}

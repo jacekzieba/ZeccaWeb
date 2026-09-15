@@ -7,7 +7,7 @@ import { buildFakeSyncRecords } from "@/sync/dev/fake-sync";
 import { isFakeSyncEnabled } from "@/lib/env";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { useSyncStore } from "@/sync/store/sync-store";
-import { V2, V2_TYPE } from "@/lib/v2-design";
+import { V2, V2_TYPE, v2Mix } from "@/lib/v2-design";
 import { endDemoSession, startDemoSession } from "./demo-session";
 import { OnboardingCard } from "./onboarding-card";
 import { TourOverlay } from "./tour-overlay";
@@ -189,7 +189,7 @@ export function OnboardingController({
   };
 
   const btn = (primary: boolean): React.CSSProperties => ({
-    fontFamily: V2_TYPE.ui, fontWeight: 600, fontSize: 13, borderRadius: 9,
+    fontFamily: V2_TYPE.ui, fontWeight: 600, fontSize: 13, borderRadius: "var(--r-lg)",
     padding: "10px 18px", cursor: "pointer",
     border: primary ? "none" : `1px solid ${V2.line}`,
     background: primary ? V2.brand : "transparent",
@@ -254,11 +254,11 @@ export function OnboardingController({
               position: "fixed", right: 16, bottom: 16, zIndex: 902,
               fontFamily: V2_TYPE.ui, fontSize: 11, fontWeight: 700,
               letterSpacing: ".08em", textTransform: "uppercase",
-              color: V2.gold, background: "rgba(255,252,244,.82)",
-              padding: "6px 11px", borderRadius: 99,
-              border: "0.5px solid rgba(162,119,46,.35)",
+              color: V2.brand, background: v2Mix(V2.brand, 0.14),
+              padding: "6px 11px", borderRadius: "var(--r-pill)",
+              border: `0.5px solid ${v2Mix(V2.brand, 0.35)}`,
               backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
-              boxShadow: "0 4px 16px rgba(22,29,24,.14)",
+              boxShadow: `0 4px 16px ${v2Mix(V2.ink, 0.14)}`,
             }}
           >
             Dane przykładowe

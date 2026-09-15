@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { COLORS, SHADOWS, TYPOGRAPHY } from "@/lib/design-tokens";
-import { formatAxisValue } from "@/lib/money";
+import { COLORS, TYPOGRAPHY } from "@/lib/design-tokens";
+import { v2Mix } from "@/lib/v2-design";
+import { formatAxisValue, currencyLabel } from "@/lib/money";
 import type { ValuationPoint } from "@/domain/models/investor-data";
 
 // Wpłaty to linia odniesienia, nie wynik — dlatego neutralny grafit, a nie kolor
@@ -44,7 +45,6 @@ export function ValueVsDepositsChart({
   currency = "PLN",
   showPeriodControl = true,
   periodLabels,
-  animateOnView = false,
 }: {
   value: ValuationPoint[];
   deposits: ValuationPoint[];
@@ -52,8 +52,6 @@ export function ValueVsDepositsChart({
   currency?: string;
   showPeriodControl?: boolean;
   periodLabels?: Partial<Record<Period, string>>;
-  /** Draws the value line left-to-right once on mount (landing hero only). */
-  animateOnView?: boolean;
 }) {
   const [period, setPeriod] = useState<Period>("MAX");
   const { value, deposits } = cropByPeriod(valueProp, depositsProp, period);
@@ -61,10 +59,6 @@ export function ValueVsDepositsChart({
   const wrapRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(MIN_CHART_WIDTH);
   const [hover, setHover] = useState<number | null>(null);
-
-  const valueLineRef = useRef<SVGPolylineElement>(null);
-  const fadeRef = useRef<SVGGElement>(null);
-  const drawnRef = useRef(false);
 
   useEffect(() => {
     if (!wrapRef.current) return;
@@ -74,43 +68,6 @@ export function ValueVsDepositsChart({
     ro.observe(wrapRef.current);
     return () => ro.disconnect();
   }, []);
-
-  // Once, after the layout settles, trace the value line and fade the rest in.
-  useEffect(() => {
-    if (!animateOnView || drawnRef.current) return;
-    if (typeof window === "undefined") return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    const id = window.setTimeout(() => {
-      const line = valueLineRef.current;
-      if (!line || drawnRef.current) return;
-      let len = 0;
-      try {
-        len = line.getTotalLength();
-      } catch {
-        return;
-      }
-      if (!len) return;
-      drawnRef.current = true;
-
-      line.style.strokeDasharray = String(len);
-      line.style.strokeDashoffset = String(len);
-      const draw = line.animate(
-        [{ strokeDashoffset: len }, { strokeDashoffset: 0 }],
-        { duration: 1150, easing: "cubic-bezier(0.33, 1, 0.68, 1)" },
-      );
-      // Clear the inline dash once drawn so later resizes don't clip the line.
-      draw.onfinish = () => {
-        line.style.strokeDasharray = "";
-        line.style.strokeDashoffset = "";
-      };
-      fadeRef.current?.animate(
-        [{ opacity: 0 }, { opacity: 1 }],
-        { duration: 750, delay: 220, easing: "ease-out", fill: "backwards" },
-      );
-    }, 90);
-    return () => window.clearTimeout(id);
-  }, [animateOnView]);
 
   const n = Math.min(value.length, deposits.length);
   if (n < 2) return null;
@@ -157,7 +114,7 @@ export function ValueVsDepositsChart({
           <Legend color={DEPOSIT_COLOR} label="Wpłaty (skumulowane)" dashed />
         </div>
         {showPeriodControl && (
-          <div role="radiogroup" aria-label="Zakres wykresu wartość vs wpłaty" style={{ display: "inline-flex", background: "rgba(22,29,24,0.06)", borderRadius: 10, padding: 3 }}>
+          <div role="radiogroup" aria-label="Zakres wykresu wartość vs wpłaty" style={{ display: "inline-flex", background: v2Mix(COLORS.text, 0.06), borderRadius: "var(--r-xl)", padding: 3 }}>
             {PERIOD_OPTIONS.map((option) => (
               <button
                 key={option}
@@ -167,7 +124,7 @@ export function ValueVsDepositsChart({
                 onClick={() => setPeriod(option)}
                 style={{
                   padding: "4px 9px",
-                  borderRadius: 7,
+                  borderRadius: "var(--r-lg)",
                   border: "none",
                   cursor: "pointer",
                   fontFamily: TYPOGRAPHY.system,
@@ -206,7 +163,7 @@ export function ValueVsDepositsChart({
             />
             <text
               x={pl - 8} y={ty(v) + 4}
-              textAnchor="end" fontSize="10.5"
+              textAnchor="end" fontSize="10"
               fill={COLORS.subtle}
               fontFamily={TYPOGRAPHY.mono}
             >
@@ -215,7 +172,7 @@ export function ValueVsDepositsChart({
           </g>
         ))}
 
-        <g ref={fadeRef}>
+        <g>
           {/* Value area */}
           <path d={`M${pl},${pt + H} L${valuePts} L${pl + W},${pt + H} Z`} fill={`url(#${fillId})`} />
 
@@ -234,7 +191,7 @@ export function ValueVsDepositsChart({
                   x={tx(safeIdx)}
                   y={pt + H + 22}
                   textAnchor="middle"
-                  fontSize="10.5"
+                  fontSize="10"
                   fill={COLORS.subtle}
                   fontFamily={TYPOGRAPHY.system}
                 >
@@ -244,8 +201,8 @@ export function ValueVsDepositsChart({
             })}
         </g>
 
-        {/* Value line — drawn last so it traces on top of the area + deposits */}
-        <polyline ref={valueLineRef} points={valuePts} fill="none" stroke={VALUE_COLOR} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        {/* Value line — drawn last so it sits on top of the area + deposits */}
+        <polyline points={valuePts} fill="none" stroke={VALUE_COLOR} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
 
         {hover != null && (
           <g>
@@ -265,21 +222,21 @@ export function ValueVsDepositsChart({
             background: COLORS.surface,
             color: COLORS.text,
             padding: "7px 11px",
-            borderRadius: 8,
+            borderRadius: "var(--r-lg)",
             fontSize: 11,
             pointerEvents: "none",
             border: `0.5px solid ${COLORS.border}`,
-            boxShadow: SHADOWS.tooltip,
+            boxShadow: `0 8px 22px ${v2Mix(COLORS.text, 0.22)}`,
             minWidth: 138,
           }}
         >
           <div style={{ color: COLORS.textMuted, fontSize: 10, letterSpacing: ".04em", marginBottom: 2 }}>
             {value[hover].label}
           </div>
-          <Row color={VALUE_COLOR} label="Wartość" value={`${fmt(valueVals[hover])} ${currency}`} />
-          <Row color={DEPOSIT_COLOR} label="Wpłaty" value={`${fmt(depositVals[hover])} ${currency}`} />
+          <Row color={VALUE_COLOR} label="Wartość" value={`${fmt(valueVals[hover])} ${currencyLabel(currency)}`} />
+          <Row color={DEPOSIT_COLOR} label="Wpłaty" value={`${fmt(depositVals[hover])} ${currencyLabel(currency)}`} />
           <div style={{ marginTop: 3, paddingTop: 3, borderTop: `0.5px solid ${COLORS.border}`, fontWeight: 700, color: gain >= 0 ? COLORS.profit : COLORS.loss }}>
-            {gain >= 0 ? "+" : ""}{fmt(gain)} {currency}
+            {gain >= 0 ? "+" : ""}{fmt(gain)} {currencyLabel(currency)}
           </div>
         </div>
       )}
@@ -289,7 +246,7 @@ export function ValueVsDepositsChart({
 
 function Legend({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: TYPOGRAPHY.system, fontSize: 11.5, color: COLORS.muted }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: TYPOGRAPHY.system, fontSize: 11, color: COLORS.muted }}>
       <span
         style={{
           width: 16,
@@ -307,10 +264,10 @@ function Row({ color, label, value }: { color: string; label: string; value: str
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
       <span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: COLORS.textMuted }}>
-        <span style={{ width: 8, height: 8, borderRadius: 2, background: color }} />
+        <span style={{ width: 8, height: 8, borderRadius: "var(--r-xs)", background: color }} />
         {label}
       </span>
-      <span style={{ fontFamily: TYPOGRAPHY.mono, fontWeight: 600 }}>{value}</span>
+      <span style={{ fontFamily: TYPOGRAPHY.mono, fontWeight: 500 }}>{value}</span>
     </div>
   );
 }

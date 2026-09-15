@@ -52,6 +52,11 @@ export type PortfolioMetrics = {
   realReturnPct: number;
   /** Annualised money-weighted return (XIRR), percent, or null if unsolvable. */
   xirrPct: number | null;
+  /** Trailing xirrPct, resampled at up to 12 points across the available
+   * valuation history (most recent last) — same definition as xirrPct, not
+   * a separate metric. Used for the KPI sparkline; empty when there isn't
+   * enough history to sample more than one point. */
+  xirrHistory: number[];
   /** Maximum drawdown of the valuation series, non-positive percent. */
   maxDrawdownPct: number;
   /** Realised P&L from closed positions (FIFO proceeds − cost basis), base

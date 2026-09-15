@@ -1,19 +1,10 @@
 "use client";
 
-import type { CSSProperties } from "react";
-import { CircleHelp } from "lucide-react";
 import type { SectionSize } from "@/components/customize/section-customization";
 import type { CashflowSummary, PortfolioMetrics } from "@/domain/models/investor-data";
-import { V2, V2_TYPE, v2Mix } from "@/lib/v2-design";
-
-const cardStyle: CSSProperties = {
-  background: V2.card,
-  borderRadius: 14,
-  border: `0.5px solid ${V2.line}`,
-  boxShadow: `0 1px 0 ${v2Mix(V2.ink, 0.03)}, 0 6px 20px ${v2Mix(V2.ink, 0.05)}`,
-  padding: "15px 17px",
-  height: "auto",
-};
+import { V2 } from "@/lib/v2-design";
+import { currencyLabel } from "@/lib/money";
+import { MetricTiles } from "@/components/layout/metric-tiles";
 
 function fmt(n: number, d = 0) {
   return n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -23,86 +14,6 @@ function fmtSigned(n: number, d = 0) {
 }
 function fmtPct(n: number, d = 2) {
   return `${n >= 0 ? "+" : ""}${n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d })}%`;
-}
-
-/** A single KPI tile. Shared so Dashboard, Portfel and Raporty render identical
- * cards (parity with the macOS/iOS KPI tiles). */
-export function KpiCard({
-  label,
-  value,
-  sub,
-  color = V2.ink,
-  helpHref,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  color?: string;
-  helpHref?: string;
-}) {
-  return (
-    <div style={cardStyle}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 8,
-          marginBottom: 6,
-        }}
-      >
-        <span
-          style={{
-          fontFamily: V2_TYPE.ui,
-          fontSize: 10.5,
-          fontWeight: 700,
-          color: V2.subtle,
-          textTransform: "uppercase",
-          letterSpacing: ".10em",
-          }}
-        >
-          {label}
-        </span>
-        {helpHref && (
-          <a
-            href={helpHref}
-            aria-label={`Wyjaśnienie metryki: ${label}`}
-            title={`Wyjaśnienie metryki: ${label}`}
-            style={{
-              width: 20,
-              height: 20,
-              borderRadius: 6,
-              color: V2.subtle,
-              background: v2Mix(V2.ink, 0.05),
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-              textDecoration: "none",
-            }}
-          >
-            <CircleHelp size={13} strokeWidth={1.9} aria-hidden="true" />
-          </a>
-        )}
-      </div>
-      <div
-        style={{
-          fontFamily: V2_TYPE.serif,
-          fontSize: 22,
-          fontWeight: 500,
-          color,
-          fontVariantNumeric: "tabular-nums",
-        }}
-      >
-        {value}
-      </div>
-      {sub && (
-        <div style={{ fontFamily: V2_TYPE.ui, fontSize: 11.5, color: V2.muted, marginTop: 3 }}>
-          {sub}
-        </div>
-      )}
-    </div>
-  );
 }
 
 export type KpiTileId =
@@ -150,6 +61,10 @@ export type KpiTile = {
   sub?: string;
   color: string;
   helpHref?: string;
+  /** Jeden wyróżniony wskaźnik na rejestr — patrz komentarz w getKpiTiles. */
+  featured?: boolean;
+  /** Ślad wartości w czasie, tylko dla kafelka featured — patrz getKpiTiles. */
+  sparkline?: number[];
 };
 
 export type PortfolioKpiInput = {
@@ -165,18 +80,75 @@ export type PortfolioKpiInput = {
 export function getKpiTiles(input: PortfolioKpiInput): KpiTile[] {
   const { metrics, cashflows, openPositions, currency } = input;
   const xirr = metrics.xirrPct;
+  // Wcześniej każda liczba ≥0 była na zielono — osiem kafelków tym samym
+  // odcieniem obok siebie nie różniło się niczym poza treścią etykiety, a sam
+  // kolor przestawał cokolwiek wyróżniać (zob. dashboard: sync-status dot był
+  // tym samym zielonym tokenem z zupełnie innego powodu). Jeden wskaźnik —
+  // MWR/XIRR, "jak faktycznie pracowały Twoje pieniądze" — zostaje kolorowy
+  // i wyróżniony (featured); reszta przechodzi na neutralny ink, znak +/-
+  // w tekście nadal mówi, w którą stronę. Obsunięcie zostaje czerwone celowo:
+  // to sygnał ryzyka, nie rutynowy wynik, warto żeby się wybijał.
+  //
+  // Wyróżnienie samo nie jest ramką ani nowym kolorem (to była droga
+  // najmniejszego oporu) — większa liczba (co jest ważne) plus ślad XIRR
+  // z ostatnich 12 próbek w tle (dlaczego) niosą hierarchię razem.
   const tiles: KpiTile[] = [
-    { id: "kpiUnrealized", label: "Zysk niezrealizowany", value: `${fmtSigned(metrics.unrealizedPnl)} ${currency}`, sub: `${fmtPct(metrics.unrealizedPnlPct)} od zakupu`, color: metrics.unrealizedPnl >= 0 ? V2.profit : V2.loss },
-    { id: "kpiXirr", label: "MWR · XIRR", value: xirr == null ? "—" : fmtPct(xirr), sub: "rocznie", color: (xirr ?? 0) >= 0 ? V2.profit : V2.loss },
-    { id: "kpiTwr", label: "Zwrot (TWR)", value: fmtPct(metrics.totalReturnPct), sub: "bez wpłat", color: metrics.totalReturnPct >= 0 ? V2.profit : V2.loss },
-    { id: "kpiCagr", label: "CAGR", value: fmtPct(metrics.cagrPct), sub: "rocznie, TWR", color: metrics.cagrPct >= 0 ? V2.profit : V2.loss },
-    { id: "kpiRealReturn", label: "Wynik realny", value: fmtPct(metrics.realReturnPct), sub: "rocznie, po inflacji", color: metrics.realReturnPct >= 0 ? V2.profit : V2.loss },
+    { id: "kpiUnrealized", label: "Zysk niezrealizowany", value: `${fmtSigned(metrics.unrealizedPnl)} ${currencyLabel(currency)}`, sub: `${fmtPct(metrics.unrealizedPnlPct)} od zakupu`, color: V2.ink },
+    { id: "kpiXirr", label: "MWR · XIRR", value: xirr == null ? "—" : fmtPct(xirr), sub: "rocznie", color: (xirr ?? 0) >= 0 ? V2.profit : V2.loss, featured: true, sparkline: metrics.xirrHistory },
+    { id: "kpiTwr", label: "Zwrot (TWR)", value: fmtPct(metrics.totalReturnPct), sub: "bez wpłat", color: V2.ink },
+    { id: "kpiCagr", label: "CAGR", value: fmtPct(metrics.cagrPct), sub: "rocznie, TWR", color: V2.ink },
+    { id: "kpiRealReturn", label: "Wynik realny", value: fmtPct(metrics.realReturnPct), sub: "rocznie, po inflacji", color: V2.ink },
     { id: "kpiMaxDd", label: "Maks. obsunięcie", value: `${fmt(metrics.maxDrawdownPct, 2)}%`, sub: "od szczytu", color: V2.loss },
-    { id: "kpiRealized", label: "Zysk zrealizowany", value: `${fmtSigned(metrics.realizedPnl)} ${currency}`, sub: "zamknięte pozycje", color: metrics.realizedPnl >= 0 ? V2.profit : V2.loss },
-    { id: "kpiInvested", label: "Zainwestowany kapitał", value: `${fmt(metrics.netInvested)} ${currency}`, color: V2.ink },
-    { id: "kpiDividends", label: "Dywidendy", value: `+${fmt(cashflows.dividends)} ${currency}`, color: V2.profit },
+    { id: "kpiRealized", label: "Zysk zrealizowany", value: `${fmtSigned(metrics.realizedPnl)} ${currencyLabel(currency)}`, sub: "zamknięte pozycje", color: V2.ink },
+    { id: "kpiInvested", label: "Zainwestowany kapitał", value: `${fmt(metrics.netInvested)} ${currencyLabel(currency)}`, color: V2.ink },
+    { id: "kpiDividends", label: "Dywidendy", value: `+${fmt(cashflows.dividends)} ${currencyLabel(currency)}`, color: V2.ink },
     { id: "kpiOpenPositions", label: "Otwarte pozycje", value: String(openPositions), color: V2.ink },
   ];
 
   return tiles.map((tile) => ({ ...tile, helpHref: KPI_HELP_HREFS[tile.id] }));
+}
+
+/* ── Rejestr KPI na szynie ───────────────────────────────────────────────────
+   Kierunek „Próba": każda liczba ma źródło, jednostkę i moment sprawdzenia.
+   Na szynie stoją wyłącznie rzeczy weryfikowalne — nigdy hasło marketingowe.
+   Słownik cech jest ten sam co w rejestrze na landingu, żeby strona i produkt
+   mówiły o liczbach tym samym językiem.
+   Specyfikacja: docs/superpowers/specs/2026-08-05-design-system-proba-design.md */
+
+export const KPI_MARKS: Record<KpiTileId, { source: string; detail: string }> = {
+  kpiUnrealized: { source: "FIFO", detail: "wg kosztu nabycia" },
+  kpiXirr: { source: "Liczone lokalnie", detail: "na Twoim urządzeniu" },
+  kpiTwr: { source: "Liczone lokalnie", detail: "bez wpłat" },
+  kpiCagr: { source: "Liczone lokalnie", detail: "rocznie, TWR" },
+  kpiRealReturn: { source: "Inflacja GUS", detail: "wskaźnik CPI" },
+  kpiMaxDd: { source: "Seria wycen", detail: "od szczytu" },
+  kpiRealized: { source: "FIFO", detail: "zamknięte pozycje" },
+  kpiInvested: { source: "Transakcje", detail: "od pierwszej wpłaty" },
+  kpiDividends: { source: "Transakcje", detail: "wpływy z dywidend" },
+  kpiOpenPositions: { source: "Pozycje", detail: "liczba obserwacji" },
+};
+
+/** Wskaźniki jako kafelki z cechą źródła.
+ *
+ * Wcześniej stały w rejestrze wierszy na szynie — przy dziesięciu pozycjach
+ * czytało się to jak jedna bryła. Cecha przenosi się do kafelka i stoi nad nazwą
+ * wskaźnika: reguła „każda liczba ma źródło" zostaje, zmienia się nośnik. */
+export function KpiRegister({ tiles }: { tiles: KpiTile[] }) {
+  if (!tiles.length) return null;
+  return (
+    <MetricTiles
+      rows={tiles.map((tile) => ({
+        key: tile.id,
+        source: KPI_MARKS[tile.id].source,
+        detail: KPI_MARKS[tile.id].detail,
+        label: tile.label,
+        value: tile.value,
+        color: tile.color,
+        sub: tile.sub,
+        helpHref: tile.helpHref,
+        featured: tile.featured,
+        sparkline: tile.sparkline,
+      }))}
+    />
+  );
 }

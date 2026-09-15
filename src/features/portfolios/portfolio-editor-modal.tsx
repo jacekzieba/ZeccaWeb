@@ -1,6 +1,7 @@
 "use client";
 
 import { token } from "@/design/tokens";
+import { v2Mix } from "@/lib/v2-design";
 import { createPortal } from "react-dom";
 import {
   useEffect,
@@ -20,9 +21,9 @@ import {
 } from "@/features/portfolios/portfolio-types";
 
 const INK = token("ink");
-const MUTED = "rgba(28,49,68,0.58)";
-const SUBTLE = "rgba(28,49,68,0.38)";
-const LINE_SOFT = "rgba(28,49,68,0.06)";
+const MUTED = token("inkMuted");
+const SUBTLE = token("inkFaint");
+const LINE_SOFT = token("line2");
 const LOSS = token("down");
 const AMBER = token("accent");
 const PAPER = token("ground");
@@ -31,7 +32,7 @@ const CURRENCIES = ["PLN", "USD", "EUR", "GBP", "CHF", "CZK"];
 
 const labelStyle: CSSProperties = {
   display: "block",
-  fontSize: 10.5,
+  fontSize: 10,
   fontWeight: 700,
   color: SUBTLE,
   textTransform: "uppercase",
@@ -42,15 +43,15 @@ const labelStyle: CSSProperties = {
 const inputStyle: CSSProperties = {
   width: "100%",
   padding: "9px 12px",
-  borderRadius: 9,
-  border: "0.5px solid rgba(28,49,68,0.14)",
+  borderRadius: "var(--r-lg)",
+  border: `0.5px solid ${token("line")}`,
   background: PAPER,
   fontSize: 13,
   color: INK,
   fontFamily: "inherit",
   outline: "none",
   boxSizing: "border-box",
-  boxShadow: "inset 0 1px 3px rgba(28,49,68,0.05)",
+  boxShadow: `inset 0 1px 3px ${v2Mix(INK, 0.05)}`,
 };
 
 type PortfolioDraft = {
@@ -180,7 +181,7 @@ export function PortfolioEditorModal({
         style={{
           position: "absolute",
           inset: 0,
-          background: "rgba(28,49,68,0.45)",
+          background: v2Mix(PAPER, 0.45),
           backdropFilter: "blur(8px)",
           WebkitBackdropFilter: "blur(8px)",
         }}
@@ -192,9 +193,9 @@ export function PortfolioEditorModal({
           width: "100%",
           maxWidth: 460,
           background: PAPER,
-          borderRadius: 18,
-          boxShadow: "0 24px 64px rgba(28,49,68,0.22), inset 0 0.5px 0 rgba(255,255,255,0.8)",
-          border: "0.5px solid rgba(255,255,255,0.7)",
+          borderRadius: "var(--r-xl)",
+          boxShadow: `0 24px 64px ${v2Mix(INK, 0.22)}, inset 0 0.5px 0 ${v2Mix(INK, 0.08)}`,
+          border: `0.5px solid ${token("line")}`,
         }}
       >
         <div
@@ -206,7 +207,7 @@ export function PortfolioEditorModal({
             borderBottom: `0.5px solid ${LINE_SOFT}`,
           }}
         >
-          <div style={{ fontSize: 16, fontWeight: 700, color: INK }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: INK }}>
             {initialValue ? "Edytuj portfel" : "Dodaj portfel"}
           </div>
           <button
@@ -216,9 +217,9 @@ export function PortfolioEditorModal({
               height: 28,
               borderRadius: "50%",
               border: "none",
-              background: "rgba(28,49,68,0.07)",
+              background: v2Mix(INK, 0.07),
               color: MUTED,
-              fontSize: 16,
+              fontSize: 15,
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -302,7 +303,7 @@ export function PortfolioEditorModal({
                 fontSize: 12,
                 color: LOSS,
                 padding: "8px 12px",
-                borderRadius: 8,
+                borderRadius: "var(--r-lg)",
                 background: `${LOSS}10`,
               }}
             >
@@ -316,8 +317,8 @@ export function PortfolioEditorModal({
               onClick={onClose}
               style={{
                 padding: "9px 18px",
-                borderRadius: 9,
-                border: "0.5px solid rgba(28,49,68,0.14)",
+                borderRadius: "var(--r-lg)",
+                border: `0.5px solid ${token("line")}`,
                 background: "transparent",
                 color: MUTED,
                 fontSize: 13,
@@ -333,10 +334,10 @@ export function PortfolioEditorModal({
               disabled={saving || !userDataKey}
               style={{
                 padding: "9px 20px",
-                borderRadius: 9,
+                borderRadius: "var(--r-lg)",
                 border: "none",
-                background: saving || !userDataKey ? "rgba(28,49,68,0.12)" : INK,
-                color: saving || !userDataKey ? SUBTLE : "#fff",
+                background: saving || !userDataKey ? v2Mix(INK, 0.12) : INK,
+                color: saving || !userDataKey ? SUBTLE : PAPER,
                 fontSize: 13,
                 fontWeight: 700,
                 cursor: saving || !userDataKey ? "not-allowed" : "pointer",
