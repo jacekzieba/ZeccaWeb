@@ -110,8 +110,11 @@ export function AllocationRing({ slices }: { slices: Slice[] }) {
           <li
             key={arc.label}
             className={active === arc.index ? "is-active" : active === null ? "" : "is-dim"}
+            tabIndex={0}
             onMouseEnter={() => setActive(arc.index)}
             onMouseLeave={() => setActive(null)}
+            onFocus={() => setActive(arc.index)}
+            onBlur={() => setActive(null)}
           >
             <span className="alloc-swatch" style={{ background: arc.fill, boxShadow: `inset 0 0 0 1px ${arc.text}` }} />
             <span className="alloc-name">{arc.label}</span>

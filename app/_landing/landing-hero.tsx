@@ -7,8 +7,13 @@ import { bindOrphans } from "./typo";
 import { buildLandingDemoSnapshot } from "./landing-demo-data";
 import { StaticValueChart } from "./static-value-chart";
 
-// Kolory sparkline'ów portfeli — paleta landingu, nie tokeny aplikacji.
-const PORTFOLIO_COLORS = ["#4FC79A", "#F0A43C"];
+// Kolory sparkline'ów portfeli — rozróżniają konta, nie znaczą nic same z
+// siebie (mirror zasady z PORTFOLIO_SWATCHES w asset-colors.ts). Poprzednie
+// wartości były bajtowo tym samym zielonym co --up (kierunek) i tym samym
+// bursztynem co --amber (marka/CTA) — IKE wyglądało jak "wynik dodatni", a
+// IKZE kradło kolor przycisku "Załóż konto", mimo że oba konta mają dodatni
+// wynik. DARK.assetEquity/assetBonds są celowo inne niż --up/--amber.
+const PORTFOLIO_COLORS = ["#63A594", "#C9A24F"];
 
 type EditableHtmlProps = HTMLAttributes<HTMLElement> & {
   as: ElementType;

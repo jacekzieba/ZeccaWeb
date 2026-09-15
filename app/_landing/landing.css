@@ -1680,6 +1680,13 @@
   .zlanding .asset-classes-inner > :not(.alloc-ring) { grid-column: auto; grid-row: auto; }
   .zlanding .asset-classes-inner > .alloc-ring { order: 0; }
   .zlanding .hero-panel { max-width: 420px; }
+  /* .closing-head ma to samo jawne grid-column: span 6 z bazowej siatki
+     12-kolumnowej co powyższe — dziś nieszkodliwe, bo .closing > .wrap ma
+     tylko jedno dziecko (auto-placement trafia w kolumnę 1), ale zepsułoby
+     się identycznie, gdyby ktoś dodał tam drugie dziecko. Reset na zapas —
+     ten sam ciąg selektorów co reguła bazowa, żeby specyficzność faktycznie
+     wygrała (sam `.closing-head` przegrywał z `.closing > .wrap > .closing-head`). */
+  .zlanding .closing > .wrap > .closing-head { grid-column: auto; }
 }
 
 @media (max-width: 720px) {
