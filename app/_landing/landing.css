@@ -1118,14 +1118,93 @@
 }
 .zlanding .steps-shot-bar span { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); opacity: 0.5; }
 .zlanding .steps-shot-body { position: relative; flex: 1; }
-.zlanding .steps-figure-spark { position: absolute; inset: 0; width: 100%; height: 100%; }
-/* Trzy typy śladu — kropki, słupki, linia — nie trzy warianty tej samej
-   kreski. Linia bierze obrys (ruch), kropki i słupki wypełnienie (zdarzenia
-   dyskretne), wszystkie tym samym bursztynem — mocniejszym niż wcześniej,
-   bo to teraz treść "ekranu", nie cichy akcent w tle numeru. */
-.zlanding .steps-figure-line { fill: none; stroke: rgba(240, 164, 60, 0.55); stroke-width: 2; vector-effect: non-scaling-stroke; }
-.zlanding .steps-figure-dots circle,
-.zlanding .steps-figure-bars rect { fill: rgba(240, 164, 60, 0.6); }
+
+/* Miniatura interfejsu wewnątrz okna — te same tokeny i komponenty co
+   produkt (pigułka, pole, kafelek), wyreżyserowane pod jedną ideę na krok
+   zamiast pokazywać przypadkowy fragment prawdziwej strony. Kroki 02/03
+   dzielą motyw linii zbiegających N→1 (.mini-converge), żeby "wiele źródeł
+   składa się w jedno" czytało się tak samo w obu miejscach. */
+.zlanding .mini {
+  position: absolute;
+  inset: 0;
+  padding: 22px 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--text);
+}
+.zlanding .mini-field-label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 6px;
+}
+.zlanding .mini-row { display: flex; align-items: center; gap: 10px; }
+.zlanding .mini-pill {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--hair);
+  background: rgba(79, 199, 154, 0.12);
+  color: var(--up);
+}
+.zlanding .mini-hint { font-size: 11.5px; color: var(--ink-3); }
+.zlanding .mini-field {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--ink);
+  border: 1px solid var(--hair);
+  border-radius: 4px;
+  padding: 8px 11px;
+  background: var(--vault-2);
+}
+.zlanding .mini-chip-row { display: flex; gap: 8px; }
+.zlanding .mini-chip {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  padding: 4px 9px;
+  border-radius: 4px;
+  border: 1px solid var(--hair);
+  color: var(--ink-2);
+  background: var(--vault-2);
+}
+.zlanding .mini-converge { display: block; width: 100%; flex: 1; min-height: 28px; }
+.zlanding .mini-result { font-family: var(--mono); font-size: 22px; color: var(--up); font-weight: 500; }
+.zlanding .mini-result span { font-size: 11px; color: var(--ink-3); display: block; margin-top: 3px; font-family: var(--text); }
+.zlanding .mini-acct-list { display: flex; flex-direction: column; }
+.zlanding .mini-acct-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 0;
+  border-top: 0.5px solid var(--hair-2);
+}
+.zlanding .mini-acct-row:first-child { border-top: none; padding-top: 0; }
+.zlanding .mini-dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 7px; }
+.zlanding .mini-acct-name {
+  font-size: 12px;
+  color: var(--ink);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.zlanding .mini-acct-val { font-family: var(--mono); font-size: 12px; color: var(--ink-2); white-space: nowrap; }
+.zlanding .mini-sum {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-top: 4px;
+}
+.zlanding .mini-sum .mini-field-label { margin-bottom: 0; }
+.zlanding .mini-sum b { font-family: var(--mono); font-size: 16px; font-weight: 500; color: var(--ink); }
 .zlanding .steps-row-figure::after {
   content: "";
   position: absolute;
@@ -1253,6 +1332,21 @@
   .zlanding .closing-actions .btn { width: 100%; }
   .zlanding .foot-top { flex-direction: column; gap: 32px; }
   .zlanding .foot-bot { flex-direction: column; gap: 8px; }
+
+  /* Okno kroków przechodzi na 16∶9 (patrz reguła niżej) — miniatura wewnątrz
+     dostaje ciaśniejszy odstęp, a krok 01 traci drugie pole (Data): dwa pola
+     pełnej wysokości mieściły się w 16∶10 na desktopie, nie w niższym kadrze
+     tutaj. */
+  .zlanding .mini { padding: 14px 16px; gap: 8px; }
+  .zlanding .mini-entry-date { display: none; }
+  .zlanding .mini-field { padding: 6px 9px; font-size: 12.5px; }
+  .zlanding .mini-result { font-size: 18px; }
+  .zlanding .mini-converge { min-height: 14px; }
+  .zlanding .mini-acct-row { padding: 4px 0; }
+  .zlanding .mini-acct-name,
+  .zlanding .mini-acct-val { font-size: 11px; }
+  .zlanding .mini-sum { padding-top: 0; }
+  .zlanding .mini-sum b { font-size: 14px; }
 }
 
 /* ── Funkcje jako siatka kart ─────────────────────────────────────────────

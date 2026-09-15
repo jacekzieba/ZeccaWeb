@@ -39,10 +39,9 @@ import { bindOrphans as b } from "./typo";
    ilustracji (podgląd aplikacji w oknie / ikona liniowa / fotografia) —
    każda para różni się więc co najmniej dwoma wymiarami.
 
-   Figury w „Obraz Twojego majątku" to na razie placeholdery: ramka okna
-   aplikacji z tym samym wykresem-śladem co wcześniej w środku, zamiast
-   pustego widma. Docelowo `.steps-shot-body` przyjmie prawdziwy zrzut
-   ekranu (<img>) na miejsce SVG — patrz TODO przy STEP_MARKS. */
+   Figury w „Obraz Twojego majątku": ramka okna aplikacji z miniaturą
+   interfejsu w środku (patrz STEP_MINIATURES) zamiast zrzutu ekranu albo
+   abstrakcyjnego wykresu-śladu — patrz uzasadnienie przy STEP_MINIATURES. */
 
 function emFirstWord(text: string): string {
   const i = text.indexOf(" ");
@@ -92,7 +91,8 @@ const PLUS_SVG = `<svg class="pm" viewBox="0 0 24 24" fill="none" stroke="curren
 // ── Section builders ────────────────────────────────────────────────────────
 
 import { buildLandingDemoSnapshot } from "./landing-demo-data";
-import { formatPercent } from "@/lib/money";
+import { formatCurrency, formatPercent } from "@/lib/money";
+import { portfolioDotColor } from "@/lib/asset-colors";
 
 const c = landingCopy;
 const demo = buildLandingDemoSnapshot();
@@ -100,22 +100,58 @@ const demo = buildLandingDemoSnapshot();
 // Kotwica pod opisem karty: jedna konkretna wartość zamiast samej obietnicy.
 // Puste tam, gdzie nie ma liczby, której nie trzeba by zmyślić.
 // Znak przy wierszu — w kolejności copy.ts.
-// Zawartość okna-placeholdera: trzy różne TYPY wykresu, nie trzy warianty tej
-// samej kreski — rozrzucone punkty (wprowadzasz dane pojedynczo), słupki
-// (Zecca liczy), jedna gładka linia (wszystko złożone w jedno). Rysowane w
-// viewBox 300×140 — wysokość ciała okna po odjęciu paska tytułowego.
-// TODO(zrzuty ekranu): zamienić `.steps-figure-spark` na <img> z prawdziwym
-// zrzutem produktu, gdy powstaną — patrz notatka na górze pliku.
-const STEP_MARKS = [
-  '<g class="steps-figure-mark steps-figure-dots">' +
-    [40, 95, 150, 205, 260].map((x, i) => `<circle cx="${x}" cy="${((58 - i * 9 - (i % 2) * 6) * 1.75).toFixed(1)}" r="6" />`).join("") +
-    "</g>",
-  '<g class="steps-figure-mark steps-figure-bars">' +
-    [
-      [30, 22], [78, 34], [126, 18], [174, 44], [222, 30], [270, 52],
-    ].map(([x, h]) => `<rect x="${x}" y="${(140 - h * 1.75).toFixed(1)}" width="20" height="${(h * 1.75).toFixed(1)}" rx="1.5" />`).join("") +
-    "</g>",
-  '<polyline class="steps-figure-mark steps-figure-line" points="0,73.5 60,70 120,64.8 180,59.5 240,35 300,14" />',
+// Zawartość okna: miniatura interfejsu, nie zrzut ekranu ani abstrakcyjny
+// wykres. Trzy zrzuty trzech różnych stron obok siebie nie czytały się jak
+// jedna sekwencja (różne kadry, różne dane w tle); czysty diagram odchodził
+// za daleko od "to jest nasz produkt". Miniatura używa tych samych tokenów,
+// kroju i komponentów co appka (pigułka, pole, mono cyfry), wyreżyserowanych
+// pod jedną ideę na krok — a kroki 02/03 pożyczają z diagramu motyw linii
+// zbiegających N→1 (dane → wynik, konta → suma), żeby "wiele źródeł składa
+// się w jedno" czytało się tak samo w obu miejscach.
+const STEP_MINIATURES = [
+  `<div class="mini mini-entry">
+    <div class="mini-row">
+      <span class="mini-pill">Zakup</span>
+      <span class="mini-hint">lub import CSV</span>
+    </div>
+    <div class="mini-entry-date">
+      <span class="mini-field-label">Data</span>
+      <div class="mini-field">15.09.2026</div>
+    </div>
+    <div>
+      <span class="mini-field-label">Kwota (brutto)</span>
+      <div class="mini-field">1&nbsp;792,00 zł</div>
+    </div>
+  </div>`,
+  `<div class="mini mini-compute">
+    <div class="mini-chip-row">
+      <span class="mini-chip">NBP</span>
+      <span class="mini-chip">GUS</span>
+      <span class="mini-chip">FIFO</span>
+    </div>
+    <svg class="mini-converge" viewBox="0 0 220 28" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M20,0 L110,26 M110,0 L110,26 M200,0 L110,26" stroke="var(--hair)" stroke-width="1.5" fill="none" />
+    </svg>
+    <div class="mini-result">${demo.metrics.xirrPct === null ? "—" : formatPercent(demo.metrics.xirrPct)} <span>MWR · XIRR, rocznie</span></div>
+  </div>`,
+  `<div class="mini mini-together">
+    <div class="mini-acct-list">
+      ${demo.portfolios
+        .slice(0, 3)
+        .map(
+          (portfolio) => `<div class="mini-acct-row">
+        <span class="mini-dot" style="background:${portfolioDotColor(portfolio.id)}"></span>
+        <span class="mini-acct-name">${portfolio.name}</span>
+        <span class="mini-acct-val">${formatCurrency(portfolio.value, portfolio.baseCurrency)}</span>
+      </div>`,
+        )
+        .join("")}
+    </div>
+    <svg class="mini-converge" viewBox="0 0 220 16" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M20,0 L110,15 M110,0 L110,15 M200,0 L110,15" stroke="var(--hair)" stroke-width="1.5" fill="none" />
+    </svg>
+    <div class="mini-sum"><span class="mini-field-label">Razem</span><b>${formatCurrency(demo.totalValue, "PLN")}</b></div>
+  </div>`,
 ];
 const FEATURE_GLYPHS = [GLYPHS.portfele, GLYPHS.statystyki, GLYPHS.inflacja, GLYPHS.historia,
   GLYPHS.zarobki, GLYPHS.import, GLYPHS.eksport, GLYPHS.sync];
@@ -192,7 +228,7 @@ const howItWorksHtml = `
           <div class="steps-shot">
             <div class="steps-shot-bar"><span></span><span></span><span></span></div>
             <div class="steps-shot-body">
-              <svg class="steps-figure-spark" viewBox="0 0 300 140" preserveAspectRatio="none">${STEP_MARKS[index] ?? STEP_MARKS[0]}</svg>
+              ${STEP_MINIATURES[index] ?? STEP_MINIATURES[0]}
             </div>
           </div>
         </div>
