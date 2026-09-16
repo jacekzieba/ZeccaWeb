@@ -121,11 +121,35 @@ export default function PrivacyPolicyPage() {
           </p>
 
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
+            Ile czasu przechowujemy dane
+          </h2>
+
+          <p style={{ marginBottom: 16 }}>
+            Dane portfela na Twoim urządzeniu (lokalny tryb, iCloud) przechowujemy tak długo, jak korzystasz z aplikacji — usuwasz je sam, usuwając aplikację lub konkretne rekordy. Konto synchronizacji Zecca i powiązane z nim dane (e-mail, etykieta i identyfikator urządzenia, zaszyfrowane rekordy portfela, zaszyfrowana kopia klucza) przechowujemy do chwili usunięcia konta — usunięcie w aplikacji kasuje je trwale, bez okresu przejściowego. Kopie zapasowe infrastruktury (np. Supabase) mogą przechowywać usunięte dane przez ograniczony czas rotacji backupu, zanim zostaną nadpisane. Dane diagnostyczne (Sentry) i telemetria produktowa (TelemetryDeck) są przechowywane zgodnie z domyślną retencją tych dostawców i nie są powiązane z Twoim kontem ani tożsamością.
+          </p>
+
+          <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
+            Co się zmienia, gdy wyłączysz synchronizację lub telemetrię
+          </h2>
+
+          <p style={{ marginBottom: 16 }}>
+            Wyłączenie prywatnej synchronizacji Zecca lub iCloud nie usuwa danych już przesłanych — usuwasz je osobno, kasując konto lub konkretne rekordy. Po wyłączeniu nowe zmiany zostają wyłącznie lokalnie na urządzeniu, na którym je wprowadzasz, i przestają się pojawiać na pozostałych Twoich urządzeniach. Wyłączenie telemetrii produktowej zatrzymuje wysyłanie nowych zdarzeń natychmiast; nie wpływa to na działanie żadnej funkcji aplikacji.
+          </p>
+
+          <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
             Twoje prawa
           </h2>
 
           <p style={{ marginBottom: 16 }}>
             Masz prawo do dostępu do swoich danych, ich poprawienia oraz usunięcia. Konto i powiązane z nim dane synchronizacji możesz usunąć bezpośrednio w aplikacji (Ustawienia → Konto → Usuń konto) lub kontaktując się pod adresem kontakt@jacekzieba.pl.
+          </p>
+
+          <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
+            Zmiany w tej polityce
+          </h2>
+
+          <p style={{ marginBottom: 16 }}>
+            Jeśli zmienimy tę politykę w sposób, który wpływa na to, jakie dane zbieramy lub jak ich używamy, zaktualizujemy datę wejścia w życie na górze tej strony i — przy istotnych zmianach — poinformujemy Cię w aplikacji przed ich wejściem w życie.
           </p>
 
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
