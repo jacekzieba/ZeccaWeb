@@ -1297,6 +1297,14 @@ function getAsOf(
   return new Date(Math.max(...dates.map((date) => date.getTime())));
 }
 
+/** Sentinel id of the synthetic, never-persisted "Portfel" fallback account
+ * `getAccounts` returns below — never a real record. app-shell.tsx lazily
+ * creates a real one the moment it sees no account records; this constant
+ * lets UI that lists portfolios (e.g. the delete/edit actions in
+ * portfolio-list-page.tsx) recognize and disable actions on this stand-in
+ * for the brief window before that real record exists. */
+export const SYNTHETIC_FALLBACK_ACCOUNT_ID = "00000000-0000-4000-8000-000000000000";
+
 function getAccounts(dataset: ParsedDataset, baseCurrency: string) {
   if (dataset.accounts.length > 0) {
     return dataset.accounts;
@@ -1305,7 +1313,7 @@ function getAccounts(dataset: ParsedDataset, baseCurrency: string) {
   return [
     {
       recordType: "account" as const,
-      id: "00000000-0000-4000-8000-000000000000",
+      id: SYNTHETIC_FALLBACK_ACCOUNT_ID,
       name: "Portfel",
       baseCurrency,
     },

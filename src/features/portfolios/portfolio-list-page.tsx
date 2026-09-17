@@ -9,7 +9,7 @@ import { useMemo, useState, type CSSProperties } from "react";
 import { PortfolioEditorModal } from "@/features/portfolios/portfolio-editor-modal";
 import { deleteRecord,
   removePendingSyncOperation, restoreRecord, refreshSyncStore } from "@/sync/records/record-writer";
-import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
+import { buildInvestorDataSnapshot, SYNTHETIC_FALLBACK_ACCOUNT_ID } from "@/sync/records/investor-snapshot";
 import { isFakeSyncEnabled } from "@/lib/env";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
@@ -52,9 +52,18 @@ export function PortfolioListPage() {
   const [editingPortfolioId, setEditingPortfolioId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // Skip the synthetic "no account yet" stand-in everywhere portfolios are
+  // listed — a real one is created moments after this page loads (see
+  // app-shell.tsx). Without this, the table briefly shows a portfolio whose
+  // Edit/Usuń both silently no-op against a record that doesn't exist yet.
+  const realPortfolios = useMemo(
+    () => snapshot?.portfolios.filter((portfolio) => portfolio.id !== SYNTHETIC_FALLBACK_ACCOUNT_ID) ?? [],
+    [snapshot],
+  );
+
   const editablePortfolios = useMemo(
     () =>
-      snapshot?.portfolios.map((portfolio) => {
+      realPortfolios.map((portfolio) => {
         const sourceRecord = records?.find(
           (record) =>
             !record.deletedAt &&
@@ -77,8 +86,8 @@ export function PortfolioListPage() {
           targetAllocation: payload.targetAllocation,
           updatedAt: sourceRecord?.updatedAt ?? "",
         };
-      }) ?? [],
-    [records, snapshot],
+      }),
+    [records, realPortfolios],
   );
 
   const editingPortfolio = editingPortfolioId
@@ -174,7 +183,7 @@ export function PortfolioListPage() {
             Portfele
           </div>
           <div style={{ fontSize: 12, color: MUTED, marginTop: 2 }}>
-            {snapshot ? `${snapshot.portfolios.length} portfeli · dane na ${new Date(snapshot.asOf).toLocaleDateString("pl-PL")}` : "Odblokuj dane w panelu synchronizacji"}
+            {snapshot ? `${realPortfolios.length} portfeli · dane na ${new Date(snapshot.asOf).toLocaleDateString("pl-PL")}` : "Odblokuj dane w panelu synchronizacji"}
           </div>
         </div>
         <button
@@ -222,7 +231,7 @@ export function PortfolioListPage() {
               Portfeli
             </div>
             <div style={{ fontSize: 26, fontWeight: 700, color: INK }}>
-              {snapshot.portfolios.length}
+              {realPortfolios.length}
             </div>
           </div>
           <div style={{ ...glassCard, padding: "18px 20px" }}>
@@ -276,7 +285,7 @@ export function PortfolioListPage() {
           </div>
         )}
 
-        {snapshot && snapshot.portfolios.length === 0 && (
+        {snapshot && realPortfolios.length === 0 && (
           <div style={{ padding: "48px 22px", textAlign: "center" }}>
             <div style={{ fontSize: 31, opacity: 0.12, marginBottom: 12 }}>◎</div>
             <div style={{ fontSize: 13, color: SUBTLE }}>
@@ -285,7 +294,7 @@ export function PortfolioListPage() {
           </div>
         )}
 
-        {snapshot?.portfolios.map((pf) => {
+        {snapshot && realPortfolios.map((pf) => {
           const color = portfolioDotColor(pf.colorHex);
           const pct = snapshot.totalValue > 0 ? (pf.value / snapshot.totalValue) * 100 : 0;
 

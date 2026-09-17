@@ -52,6 +52,7 @@ import {
 import { useSyncStore } from "@/sync/store/sync-store";
 import { currencyLabel } from "@/lib/money";
 import { pluralPl } from "@/lib/plural-pl";
+import { Select } from "@/components/ui/select";
 import type {
   EarningsImportPreview,
 } from "@/features/earnings/earnings-import";
@@ -949,10 +950,16 @@ export function EarningsPage() {
               <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".13em", textTransform: "uppercase", color: V2.subtle }}>
                 Łącznie w PLN {selectedYear === "all" ? "ogółem" : selectedYear}
               </div>
-              <select aria-label="Filtr roku" value={selectedYear} onChange={(event) => setSelectedYear(event.target.value === "all" ? "all" : Number(event.target.value))} style={v2SelectStyle}>
-                <option value="all">Wszystkie lata</option>
-                {incomeLists.years.map((year) => <option key={year} value={year}>{year}</option>)}
-              </select>
+              <Select
+                ariaLabel="Filtr roku"
+                value={String(selectedYear)}
+                onChange={(v) => setSelectedYear(v === "all" ? "all" : Number(v))}
+                style={{ ...v2SelectStyle, width: "auto" }}
+                options={[
+                  { value: "all", label: "Wszystkie lata" },
+                  ...incomeLists.years.map((year) => ({ value: String(year), label: String(year) })),
+                ]}
+              />
             </div>
             <div style={{ fontFamily: V2_TYPE.mono, fontWeight: 500, fontSize: isMobile ? 44 : 58, lineHeight: 0.98, color: V2.profit, fontVariantNumeric: "tabular-nums" }}>
               {fmt(summariesForSelection.totals.totalPLN)}
@@ -1073,26 +1080,54 @@ export function EarningsPage() {
               <input value={searchText} onChange={(event) => setSearchText(event.target.value)} placeholder="Szukaj po źródle, notatce, kategorii..." style={{ ...v2InputStyle, paddingLeft: 32 }} />
             </div>
             <Filter size={15} color={V2.subtle} />
-            <select aria-label="Filtr roku w tabeli" value={selectedTableYear} onChange={(event) => setSelectedTableYear(event.target.value === "all" ? "all" : Number(event.target.value))} style={v2SelectStyle}>
-              <option value="all">Rok: wybór</option>
-              {incomeLists.years.map((year) => <option key={year} value={year}>{year}</option>)}
-            </select>
-            <select aria-label="Filtr miesiąca" value={selectedMonth} onChange={(event) => setSelectedMonth(event.target.value === "all" ? "all" : Number(event.target.value))} style={v2SelectStyle}>
-              <option value="all">Miesiąc: wszystkie</option>
-              {MONTH_LABELS_LONG.map((label, index) => <option key={label} value={index + 1}>{label}</option>)}
-            </select>
-            <select aria-label="Filtr formy zatrudnienia" value={selectedEmploymentType} onChange={(event) => setSelectedEmploymentType(event.target.value as EmploymentType | "all")} style={v2SelectStyle}>
-              <option value="all">Typ pracy: każdy</option>
-              {EMPLOYMENT_TYPES.map((type) => <option key={type} value={type}>{EMPLOYMENT_TYPE_LABEL[type]}</option>)}
-            </select>
-            <select value={selectedBurdenCategory} onChange={(event) => setSelectedBurdenCategory(event.target.value as EarningBurdenCategory | "all")} style={v2SelectStyle}>
-              <option value="all">Kategoria: każda</option>
-              {BURDEN_CATEGORIES.map((category) => <option key={category} value={category}>{BURDEN_CATEGORY_LABEL[category]}</option>)}
-            </select>
-            <select value={selectedCurrency} onChange={(event) => setSelectedCurrency(event.target.value)} style={v2SelectStyle}>
-              <option value="all">Waluta: wszystkie</option>
-              {incomeLists.currencies.map((currency) => <option key={currency} value={currency}>{currency}</option>)}
-            </select>
+            <Select
+              ariaLabel="Filtr roku w tabeli"
+              value={String(selectedTableYear)}
+              onChange={(v) => setSelectedTableYear(v === "all" ? "all" : Number(v))}
+              style={v2SelectStyle}
+              options={[
+                { value: "all", label: "Rok: wybór" },
+                ...incomeLists.years.map((year) => ({ value: String(year), label: String(year) })),
+              ]}
+            />
+            <Select
+              ariaLabel="Filtr miesiąca"
+              value={String(selectedMonth)}
+              onChange={(v) => setSelectedMonth(v === "all" ? "all" : Number(v))}
+              style={v2SelectStyle}
+              options={[
+                { value: "all", label: "Miesiąc: wszystkie" },
+                ...MONTH_LABELS_LONG.map((label, index) => ({ value: String(index + 1), label })),
+              ]}
+            />
+            <Select
+              ariaLabel="Filtr formy zatrudnienia"
+              value={selectedEmploymentType}
+              onChange={(v) => setSelectedEmploymentType(v as EmploymentType | "all")}
+              style={v2SelectStyle}
+              options={[
+                { value: "all", label: "Typ pracy: każdy" },
+                ...EMPLOYMENT_TYPES.map((type) => ({ value: type, label: EMPLOYMENT_TYPE_LABEL[type] })),
+              ]}
+            />
+            <Select
+              value={selectedBurdenCategory}
+              onChange={(v) => setSelectedBurdenCategory(v as EarningBurdenCategory | "all")}
+              style={v2SelectStyle}
+              options={[
+                { value: "all", label: "Kategoria: każda" },
+                ...BURDEN_CATEGORIES.map((category) => ({ value: category, label: BURDEN_CATEGORY_LABEL[category] })),
+              ]}
+            />
+            <Select
+              value={selectedCurrency}
+              onChange={setSelectedCurrency}
+              style={v2SelectStyle}
+              options={[
+                { value: "all", label: "Waluta: wszystkie" },
+                ...incomeLists.currencies.map((currency) => ({ value: currency, label: currency })),
+              ]}
+            />
           </div>
         </div>
 
@@ -1265,17 +1300,25 @@ function EarningModal({
       <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
           <Field label="Typ">
-            <select value={draft.employmentType} onChange={(event) => setDraft({ ...draft, employmentType: event.target.value as EmploymentType })} style={v2SelectStyle}>
-              {EMPLOYMENT_TYPES.map((type) => <option key={type} value={type}>{EMPLOYMENT_TYPE_LABEL[type]}</option>)}
-            </select>
+            <Select
+              ariaLabel="Typ"
+              value={draft.employmentType}
+              onChange={(v) => setDraft({ ...draft, employmentType: v as EmploymentType })}
+              style={v2SelectStyle}
+              options={EMPLOYMENT_TYPES.map((type) => ({ value: type, label: EMPLOYMENT_TYPE_LABEL[type] }))}
+            />
           </Field>
           <Field label="Rok">
             <input value={draft.year} onChange={(event) => setDraft({ ...draft, year: event.target.value })} style={{ ...v2InputStyle, paddingLeft: 12 }} />
           </Field>
           <Field label="Miesiąc">
-            <select value={draft.month} onChange={(event) => setDraft({ ...draft, month: event.target.value })} style={v2SelectStyle}>
-              {MONTH_LABELS_LONG.map((label, index) => <option key={label} value={index + 1}>{label}</option>)}
-            </select>
+            <Select
+              ariaLabel="Miesiąc"
+              value={draft.month}
+              onChange={(v) => setDraft({ ...draft, month: v })}
+              style={v2SelectStyle}
+              options={MONTH_LABELS_LONG.map((label, index) => ({ value: String(index + 1), label }))}
+            />
           </Field>
         </div>
 
@@ -1284,9 +1327,13 @@ function EarningModal({
             <input value={draft.enteredAmount} onChange={(event) => setDraft({ ...draft, enteredAmount: event.target.value, plnAmount: draft.currency === "PLN" ? event.target.value : draft.plnAmount })} style={{ ...v2InputStyle, paddingLeft: 12 }} inputMode="decimal" />
           </Field>
           <Field label="Waluta">
-            <select value={draft.currency} onChange={(event) => { setManualPLN(false); setDraft({ ...draft, currency: event.target.value }); }} style={v2SelectStyle}>
-              {CURRENCIES.map((currency) => <option key={currency} value={currency}>{currency}</option>)}
-            </select>
+            <Select
+              ariaLabel="Waluta"
+              value={draft.currency}
+              onChange={(v) => { setManualPLN(false); setDraft({ ...draft, currency: v }); }}
+              style={v2SelectStyle}
+              options={CURRENCIES.map((currency) => ({ value: currency, label: currency }))}
+            />
           </Field>
           <Field label="Kwota w PLN">
             <input value={draft.plnAmount} disabled={draft.currency === "PLN"} onChange={(event) => { setManualPLN(true); setDraft({ ...draft, plnAmount: event.target.value }); }} style={{ ...v2InputStyle, paddingLeft: 12 }} inputMode="decimal" />
@@ -1306,10 +1353,18 @@ function EarningModal({
         <Field label="Pracodawca / źródło">
           <div style={{ display: "flex", gap: 8 }}>
             {knownSources.length > 0 && (
-              <select value="" onChange={(event) => event.target.value && setDraft({ ...draft, source: event.target.value })} style={{ ...v2SelectStyle, width: 130 }}>
-                <option value="">Wybierz</option>
-                {knownSources.map((source) => <option key={source} value={source}>{source}</option>)}
-              </select>
+              <div style={{ width: 130 }}>
+                <Select
+                  ariaLabel="Wybierz znane źródło"
+                  value=""
+                  onChange={(v) => v && setDraft({ ...draft, source: v })}
+                  style={v2SelectStyle}
+                  options={[
+                    { value: "", label: "Wybierz" },
+                    ...knownSources.map((source) => ({ value: source, label: source })),
+                  ]}
+                />
+              </div>
             )}
             <input value={draft.source} onChange={(event) => setDraft({ ...draft, source: event.target.value })} style={{ ...v2InputStyle, paddingLeft: 12 }} placeholder="np. Wynagrodzenie, Faktura miesięczna" />
           </div>
@@ -1349,14 +1404,22 @@ function BurdenModal({
             <input value={draft.year} onChange={(event) => setDraft({ ...draft, year: event.target.value })} style={{ ...v2InputStyle, paddingLeft: 12 }} />
           </Field>
           <Field label="Miesiąc">
-            <select value={draft.month} onChange={(event) => setDraft({ ...draft, month: event.target.value })} style={v2SelectStyle}>
-              {MONTH_LABELS_LONG.map((label, index) => <option key={label} value={index + 1}>{label}</option>)}
-            </select>
+            <Select
+              ariaLabel="Miesiąc"
+              value={draft.month}
+              onChange={(v) => setDraft({ ...draft, month: v })}
+              style={v2SelectStyle}
+              options={MONTH_LABELS_LONG.map((label, index) => ({ value: String(index + 1), label }))}
+            />
           </Field>
           <Field label="Kategoria">
-            <select value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value as EarningBurdenCategory })} style={v2SelectStyle}>
-              {BURDEN_CATEGORIES.map((category) => <option key={category} value={category}>{BURDEN_CATEGORY_LABEL[category]}</option>)}
-            </select>
+            <Select
+              ariaLabel="Kategoria"
+              value={draft.category}
+              onChange={(v) => setDraft({ ...draft, category: v as EarningBurdenCategory })}
+              style={v2SelectStyle}
+              options={BURDEN_CATEGORIES.map((category) => ({ value: category, label: BURDEN_CATEGORY_LABEL[category] }))}
+            />
           </Field>
           <Field label="Kwota PLN">
             <input value={draft.amountPLN} onChange={(event) => setDraft({ ...draft, amountPLN: event.target.value })} style={{ ...v2InputStyle, paddingLeft: 12 }} inputMode="decimal" />

@@ -15,6 +15,7 @@ import { refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
 import { makeAccountPayload } from "@/sync/records/macos-payloads";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import { isFakeSyncEnabled } from "@/lib/env";
+import { Select } from "@/components/ui/select";
 import {
   NATIVE_PORTFOLIO_TYPES,
   normalizePortfolioType,
@@ -265,36 +266,27 @@ export function PortfolioEditorModal({
           </Field>
 
           <Field label="Typ portfela">
-            <select
-              aria-label="Typ portfela"
+            <Select
+              ariaLabel="Typ portfela"
               value={accountType}
-              onChange={(event) => setAccountType(event.target.value)}
+              onChange={setAccountType}
               style={{ ...inputStyle, appearance: "none", cursor: "pointer" }}
-            >
-              {!NATIVE_PORTFOLIO_TYPES.some((type) => type === accountType) && (
-                <option value={accountType}>{accountType}</option>
-              )}
-              {NATIVE_PORTFOLIO_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
+              options={
+                NATIVE_PORTFOLIO_TYPES.some((type) => type === accountType)
+                  ? NATIVE_PORTFOLIO_TYPES.map((type) => ({ value: type, label: type }))
+                  : [{ value: accountType, label: accountType }, ...NATIVE_PORTFOLIO_TYPES.map((type) => ({ value: type, label: type }))]
+              }
+            />
           </Field>
 
           <Field label="Waluta bazowa">
-            <select
-              aria-label="Waluta bazowa"
+            <Select
+              ariaLabel="Waluta bazowa"
               value={baseCurrency}
-              onChange={(event) => setBaseCurrency(event.target.value)}
+              onChange={setBaseCurrency}
               style={{ ...inputStyle, appearance: "none", cursor: "pointer" }}
-            >
-              {CURRENCIES.map((currency) => (
-                <option key={currency} value={currency}>
-                  {currency}
-                </option>
-              ))}
-            </select>
+              options={CURRENCIES.map((currency) => ({ value: currency, label: currency }))}
+            />
           </Field>
 
           {error && (

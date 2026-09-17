@@ -23,7 +23,10 @@ import {
 } from "lucide-react";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { buildParitySnapshot } from "@/sync/records/parity-snapshot";
-import { clearPendingSyncOperations } from "@/sync/records/record-writer";
+import { buildInvestorDataSnapshot, SYNTHETIC_FALLBACK_ACCOUNT_ID } from "@/sync/records/investor-snapshot";
+import { makeAccountPayload } from "@/sync/records/macos-payloads";
+import { clearPendingSyncOperations, refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
+import { isFakeSyncEnabled } from "@/lib/env";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
 import { AddTransactionModal } from "@/features/transactions/add-transaction-modal";
@@ -218,8 +221,13 @@ function SidebarContent({ onNav, publicDemo = false }: { onNav?: () => void; pub
   const changeSign = changePLN != null && changePLN >= 0 ? "+" : "";
 
   // Design + native iOS/macOS list each portfolio directly under "Portfele".
-  // Build those entries dynamically from the synced snapshot.
-  const portfolioItems: NavItem[] = (snapshot?.portfolios ?? []).map((portfolio) => ({
+  // Build those entries dynamically from the synced snapshot — skipping the
+  // synthetic "no account yet" stand-in a real one replaces moments after
+  // load (see the default-account effect above), which otherwise links to a
+  // /portfolios/:id page for an account that doesn't exist yet.
+  const portfolioItems: NavItem[] = (snapshot?.portfolios ?? [])
+    .filter((portfolio) => portfolio.id !== SYNTHETIC_FALLBACK_ACCOUNT_ID)
+    .map((portfolio) => ({
     id: `pf-${portfolio.id}`,
     label: portfolio.name,
     icon: FolderOpen,
@@ -409,6 +417,58 @@ export function AppShell({
   const records = useSyncStore((s) => s.records);
   const setSync = useSyncStore((s) => s.setSync);
   const clearSync = useSyncStore((s) => s.clearSync);
+  const userDataKey = useSyncStore((s) => s.userDataKey);
+  const supabase = useSyncStore((s) => s.supabase);
+  const ensuringDefaultAccountRef = useRef(false);
+
+  // The dashboard/add-transaction pickers only ever list real "account"
+  // records — a user who never explicitly created a portfolio had nothing to
+  // pick, so transactions (and the portfolio itself) couldn't be created at
+  // all. buildInvestorDataSnapshot used to paper over this with a synthetic,
+  // never-persisted "Portfel" placeholder, which is exactly what made both
+  // bugs invisible in the data layer while still blocking the user. Create
+  // one real, persisted account instead, the first time we see there isn't one.
+  useEffect(() => {
+    if (!records || !userDataKey || !supabase || ensuringDefaultAccountRef.current) {
+      return;
+    }
+    const hasRealAccount = records.some(
+      (record) => !record.deletedAt && record.envelope.type === "account",
+    );
+    if (hasRealAccount) return;
+
+    ensuringDefaultAccountRef.current = true;
+    void (async () => {
+      try {
+        const id = crypto.randomUUID();
+        const payload = makeAccountPayload({ id, name: "Główny", baseCurrency: "PLN", accountType: "Własny" });
+        if (isFakeSyncEnabled()) {
+          const now = new Date().toISOString();
+          const nextRecords = [
+            ...records,
+            { id, deviceId: "fake-sync-web", updatedAt: now, deletedAt: null, envelope: { type: "account" as const, payloadVersion: 1, schemaVersion: 1, payload } },
+          ];
+          setSync(nextRecords, buildInvestorDataSnapshot(nextRecords, { asOf: new Date(), historyGranularity: "daily", useLatestTransactionFxRate: true, useMarketQuotes: true }));
+        } else {
+          const result = await saveRecord(supabase, userDataKey, "account", payload);
+          if (!result.queued) {
+            const refreshed = await refreshSyncStore(supabase, userDataKey);
+            setSync(refreshed.records, refreshed.snapshot);
+          } else {
+            // Queued for later (offline) — local `records` still has no
+            // account, so allow this effect to check again (and retry if
+            // still needed) once anything else changes, instead of staying
+            // permanently blocked by the ref for this component's lifetime.
+            ensuringDefaultAccountRef.current = false;
+          }
+        }
+      } catch {
+        // Network hiccup or similar — try again next time this mounts with
+        // no real account rather than leaving the user permanently stuck.
+        ensuringDefaultAccountRef.current = false;
+      }
+    })();
+  }, [records, userDataKey, supabase, setSync]);
   const paritySnapshot = useMemo(
     () =>
       records
@@ -499,31 +559,46 @@ export function AppShell({
       >
         <div style={{ padding: "8px 16px", display: "flex", alignItems: "center", gap: 12 }}>
 
-          {/* Mobile: hamburger */}
+          {/* Mobile: hamburger, ze znakiem marki wystającym zza rogu — ten sam
+              transparentny znak co na landingu (zecca-mark-96.png), nie
+              nieprzezroczyste zecca-logo.png, inaczej zamiast rondla widać
+              jasny kwadrat na ciemnym tle. */}
           {!isDesktop && (
-            <button
-              ref={drawerTriggerRef}
-              onClick={() => setDrawerOpen(true)}
-              aria-label="Menu"
-              style={{
-                width: 44, height: 44, borderRadius: "var(--r-lg)", flexShrink: 0,
-                border: `0.5px solid ${COLORS.border}`,
-                background: v2Mix(V2.card, 0.5),
-                cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                flexDirection: "column", gap: 3,
-              }}
-            >
-              {[0, 1, 2].map((i) => (
-                <span key={i} style={{ width: 14, height: 1.5, background: COLORS.text, borderRadius: "var(--r-xs)", display: "block" }} />
-              ))}
-            </button>
+            <div style={{ position: "relative", flexShrink: 0, width: 44, height: 44 }}>
+              <Image
+                src="/zecca-mark-96.png"
+                alt=""
+                width={96}
+                height={96}
+                style={{
+                  position: "absolute", bottom: -5, right: -5,
+                  width: 22, height: 22, objectFit: "contain", zIndex: 0,
+                }}
+              />
+              <button
+                ref={drawerTriggerRef}
+                onClick={() => setDrawerOpen(true)}
+                aria-label="Menu"
+                style={{
+                  position: "relative", zIndex: 1,
+                  width: 44, height: 44, borderRadius: "var(--r-lg)",
+                  border: `0.5px solid ${COLORS.border}`,
+                  background: v2Mix(V2.card, 0.5),
+                  cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexDirection: "column", gap: 3,
+                }}
+              >
+                {[0, 1, 2].map((i) => (
+                  <span key={i} style={{ width: 14, height: 1.5, background: COLORS.text, borderRadius: "var(--r-xs)", display: "block" }} />
+                ))}
+              </button>
+            </div>
           )}
 
           {/* Mobile: brand text */}
           {!isDesktop && (
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, color: COLORS.text, letterSpacing: ".01em" }}>
-              <Image src="/zecca-logo.png" alt="" width={24} height={24} style={{ width: 24, height: 24, borderRadius: "var(--r-lg)", objectFit: "cover" }} />
+            <span style={{ display: "inline-flex", alignItems: "center", fontSize: 13, fontWeight: 700, color: COLORS.text, letterSpacing: ".01em" }}>
               Zecca
             </span>
           )}

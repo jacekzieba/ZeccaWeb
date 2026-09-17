@@ -18,6 +18,7 @@ import { makeAssetPayload } from "@/sync/records/macos-payloads";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import { isFakeSyncEnabled } from "@/lib/env";
 import type { InstrumentCandidate } from "@/market-data/types";
+import { Select } from "@/components/ui/select";
 
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -431,7 +432,7 @@ export function InstrumentEditorModal({
                 type="text"
                 value={symbol}
                 onChange={(event) => setSymbol(event.target.value)}
-                placeholder="np. VWCE, BTC, EDO1033"
+                placeholder={kind === "treasuryBond" ? "np. EDO0736, ROD0733" : kind === "listedBond" ? "np. PS0730" : "np. VWCE, BTC"}
                 style={inputStyle}
                 required
               />
@@ -441,12 +442,19 @@ export function InstrumentEditorModal({
                 type="text"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                placeholder="np. Vanguard FTSE All-World"
+                placeholder={kind === "treasuryBond" || kind === "listedBond" ? "np. Obligacje skarbowe EDO 10-letnie" : "np. Vanguard FTSE All-World"}
                 style={inputStyle}
                 required
               />
             </Field>
           </div>
+          {kind === "treasuryBond" && (
+            <div style={{ color: MUTED, fontSize: 11, lineHeight: 1.45 }}>
+              Symbol i seria (np. EDO0736) są na potwierdzeniu zakupu w serwisie
+              zakup.obligacjeskarbowe.pl albo w PKO — pierwsze litery to rodzaj obligacji
+              (EDO, ROD, ROS…), cyfry to miesiąc i rok wykupu.
+            </div>
+          )}
 
           {candidates.length > 1 && (
             <div
@@ -514,31 +522,23 @@ export function InstrumentEditorModal({
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 120px", gap: 12 }}>
             <Field label="Klasa aktywa">
-              <select
+              <Select
+                ariaLabel="Klasa aktywa"
                 value={kind}
-                onChange={(event) => setKind(event.target.value)}
+                onChange={setKind}
                 style={{ ...inputStyle, appearance: "none", cursor: "pointer" }}
-              >
-                {KIND_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                options={KIND_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
+              />
             </Field>
 
             <Field label="Waluta">
-              <select
+              <Select
+                ariaLabel="Waluta"
                 value={currency}
-                onChange={(event) => setCurrency(event.target.value)}
+                onChange={setCurrency}
                 style={{ ...inputStyle, appearance: "none", cursor: "pointer" }}
-              >
-                {CURRENCIES.map((currencyCode) => (
-                  <option key={currencyCode} value={currencyCode}>
-                    {currencyCode}
-                  </option>
-                ))}
-              </select>
+                options={CURRENCIES.map((currencyCode) => ({ value: currencyCode, label: currencyCode }))}
+              />
             </Field>
           </div>
 

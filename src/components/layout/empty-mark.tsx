@@ -7,7 +7,7 @@
 export function EmptyMark({ size = 96 }: { size?: number }) {
   return (
     <img
-      src="/app/rondel.webp"
+      src="/app/rondel-pas.webp"
       alt=""
       aria-hidden
       width={size}

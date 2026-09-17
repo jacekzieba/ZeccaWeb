@@ -47,6 +47,7 @@ import {
 import { useSyncStore } from "@/sync/store/sync-store";
 import { isFakeSyncEnabled } from "@/lib/env";
 import { V2, V2Card, V2ScreenHead, V2_TYPE, v2Mix } from "@/lib/v2-design";
+import { Select } from "@/components/ui/select";
 
 const UI = V2_TYPE.ui;
 const SERIF = V2_TYPE.serif;
@@ -739,19 +740,18 @@ export function ImportPage() {
             {(importFormat === "xtb" || importFormat === "pko") && references.portfolios.length > 0 && (
               <div style={{ marginTop: 14 }}>
                 <div style={{ ...SECTION_HEAD, marginBottom: 6 }}>Portfel docelowy</div>
-                <select
-                  value={selectedPortfolioId || firstPortfolioId}
-                  disabled={progress !== null}
-                  onChange={(e) => setSelectedPortfolioId(e.target.value)}
-                  style={{
-                    fontFamily: UI, fontSize: 13, padding: "8px 12px", borderRadius: "var(--r-lg)",
-                    border: `0.5px solid ${V2.line}`, background: V2.card, color: V2.ink, cursor: "pointer",
-                  }}
-                >
-                  {references.portfolios.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
+                <div style={{ width: 260 }}>
+                  <Select
+                    value={selectedPortfolioId || firstPortfolioId}
+                    disabled={progress !== null}
+                    onChange={setSelectedPortfolioId}
+                    style={{
+                      fontFamily: UI, fontSize: 13, padding: "8px 12px", borderRadius: "var(--r-lg)",
+                      border: `0.5px solid ${V2.line}`, background: V2.card, color: V2.ink,
+                    }}
+                    options={references.portfolios.map((p) => ({ value: p.id, label: p.name }))}
+                  />
+                </div>
               </div>
             )}
           </V2Card>

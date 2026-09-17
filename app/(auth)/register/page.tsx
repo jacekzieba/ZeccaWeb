@@ -66,8 +66,8 @@ export default function RegisterPage() {
             Załóż konto
           </h1>
           <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 6, lineHeight: 1.5 }}>
-            Po potwierdzeniu adresu email ustawisz osobne hasło szyfrujące — Twoje dane
-            są szyfrowane lokalnie i nigdy nie opuszczają przeglądarki w formie jawnej.
+            Twoje dane są szyfrowane tym samym hasłem lokalnie, w przeglądarce —
+            nigdy nie opuszczają jej w formie jawnej.
           </p>
         </div>
 

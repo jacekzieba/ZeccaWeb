@@ -50,6 +50,7 @@ import {
 import { fundingDepositForTrade } from "./funding-deposit";
 import { currencyLabel } from "@/lib/money";
 import { announce } from "@/components/feedback/status-announcer";
+import { Select } from "@/components/ui/select";
 
 // Fetches the NBP Table A mid rate (PLN per 1 unit of `code`) on `date`. The
 // API applies forward-fill server-side (latest published fixing on/before the
@@ -1360,26 +1361,34 @@ export function AddTransactionModal({
                   <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={inputStyle} required />
                 </Field>
                 <Field label="Portfel">
-                  <select value={portfolioId} onChange={(e) => setPortfolioId(e.target.value)} style={selectStyle} required>
-                    {portfolios.length === 0 && <option value="">—</option>}
-                    {portfolios.map((p) => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
+                  <Select
+                    value={portfolioId}
+                    onChange={setPortfolioId}
+                    style={selectStyle}
+                    required
+                    options={
+                      portfolios.length === 0
+                        ? [{ value: "", label: "—" }]
+                        : portfolios.map((p) => ({ value: p.id, label: p.name }))
+                    }
+                  />
                 </Field>
               </div>
 
               {txType === "accountTransferIn" && (
                 <div style={{ marginTop: 15 }}>
                   <Field label="Portfel źródłowy">
-                    <select value={sourcePortfolioId} onChange={(e) => setSourcePortfolioId(e.target.value)} style={selectStyle}>
-                      <option value="">— zewnętrzny / nieznany —</option>
-                      {portfolios
-                        .filter((p) => p.id !== portfolioId)
-                        .map((p) => (
-                          <option key={p.id} value={p.id}>{p.name}</option>
-                        ))}
-                    </select>
+                    <Select
+                      value={sourcePortfolioId}
+                      onChange={setSourcePortfolioId}
+                      style={selectStyle}
+                      options={[
+                        { value: "", label: "— zewnętrzny / nieznany —" },
+                        ...portfolios
+                          .filter((p) => p.id !== portfolioId)
+                          .map((p) => ({ value: p.id, label: p.name })),
+                      ]}
+                    />
                   </Field>
                   <label
                     style={{
@@ -1413,22 +1422,23 @@ export function AddTransactionModal({
                   <Field label="Instrument" htmlFor={instrumentFieldId}>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "center" }}>
                       <div style={{ position: "relative" }}>
-                        <Search size={16} strokeWidth={2.1} style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: MUTED, pointerEvents: "none" }} />
-                        <select
+                        <Search size={16} strokeWidth={2.1} style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: MUTED, pointerEvents: "none", zIndex: 1 }} />
+                        <Select
                           id={instrumentFieldId}
                           value={instrumentId}
-                          onChange={(e) => setInstrumentId(e.target.value)}
+                          onChange={setInstrumentId}
                           style={{ ...selectStyle, paddingLeft: 34 }}
-                        >
-                          <option value="">
-                            {availableInstruments.length === 0
-                              ? (txDef.heldOnly ? "— brak pozycji w tym portfelu —" : "— brak pasujących instrumentów —")
-                              : "— brak / gotówka —"}
-                          </option>
-                          {availableInstruments.map((inst) => (
-                            <option key={inst.id} value={inst.id}>{inst.symbol} · {inst.name}</option>
-                          ))}
-                        </select>
+                          options={[
+                            {
+                              value: "",
+                              label:
+                                availableInstruments.length === 0
+                                  ? (txDef.heldOnly ? "— brak pozycji w tym portfelu —" : "— brak pasujących instrumentów, dodaj przyciskiem „Nowy” →")
+                                  : "— brak / gotówka —",
+                            },
+                            ...availableInstruments.map((inst) => ({ value: inst.id, label: `${inst.symbol} · ${inst.name}` })),
+                          ]}
+                        />
                       </div>
                       <button
                         type="button"
@@ -1442,10 +1452,10 @@ export function AddTransactionModal({
                         style={{
                           height: 36,
                           padding: "0 13px",
-                          border: "none",
+                          border: txDef.heldOnly ? "none" : `1px solid ${v2Mix(txDef.tone, 0.4)}`,
                           borderRadius: "var(--r-xl)",
-                          background: txDef.heldOnly ? v2Mix(V2.ink, 0.04) : v2Mix(V2.ink, 0.07),
-                          color: txDef.heldOnly ? SUBTLE : INK,
+                          background: txDef.heldOnly ? v2Mix(V2.ink, 0.04) : v2Mix(txDef.tone, 0.12),
+                          color: txDef.heldOnly ? SUBTLE : txDef.tone,
                           display: "inline-flex",
                           alignItems: "center",
                           gap: 7,
@@ -1460,6 +1470,11 @@ export function AddTransactionModal({
                         Nowy
                       </button>
                     </div>
+                    {availableInstruments.length === 0 && !txDef.heldOnly && (
+                      <div style={{ marginTop: 6, fontSize: 12, color: MUTED }}>
+                        Nie masz jeszcze takiego instrumentu — kliknij „Nowy”, żeby go dodać.
+                      </div>
+                    )}
                   </Field>
                 </div>
               )}
@@ -1477,9 +1492,12 @@ export function AddTransactionModal({
                     />
                   </Field>
                   <Field label="Waluta docelowa">
-                    <select value={targetCurrency} onChange={(e) => setTargetCurrency(e.target.value)} style={selectStyle}>
-                      {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                    </select>
+                    <Select
+                      value={targetCurrency}
+                      onChange={setTargetCurrency}
+                      style={selectStyle}
+                      options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+                    />
                   </Field>
                 </div>
               )}
@@ -1496,9 +1514,12 @@ export function AddTransactionModal({
                     <input type="text" inputMode="decimal" placeholder="0,00" value={grossAmount} onChange={(e) => setGrossAmount(e.target.value)} style={inputStyle} required />
                   </Field>
                   <Field label="Waluta">
-                    <select value={currency} onChange={(e) => setCurrency(e.target.value)} style={selectStyle}>
-                      {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                    </select>
+                    <Select
+                      value={currency}
+                      onChange={setCurrency}
+                      style={selectStyle}
+                      options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+                    />
                   </Field>
                 </div>
               )}
@@ -1509,9 +1530,12 @@ export function AddTransactionModal({
                     <input type="text" inputMode="decimal" placeholder="0,00" value={grossAmount} onChange={(e) => setGrossAmount(e.target.value)} style={inputStyle} required />
                   </Field>
                   <Field label="Waluta">
-                    <select value={currency} onChange={(e) => setCurrency(e.target.value)} style={selectStyle}>
-                      {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                    </select>
+                    <Select
+                      value={currency}
+                      onChange={setCurrency}
+                      style={selectStyle}
+                      options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+                    />
                   </Field>
                 </div>
               )}

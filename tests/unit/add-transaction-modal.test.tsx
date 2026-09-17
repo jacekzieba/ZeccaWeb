@@ -37,6 +37,16 @@ vi.mock("@/lib/telemetry", () => ({
 const accountID = "11111111-1111-4111-8111-111111111111";
 const newAssetID = "22222222-2222-4222-8222-222222222229";
 
+// The Select component (src/components/ui/select.tsx) renders its own
+// listbox instead of a native <select>, so picking an option is "open, then
+// mousedown the option" rather than firing a "change" event. mousedown (not
+// click) matches the component's own commit handler — see its comment on why
+// a plain click there can retarget to the trigger button instead.
+function pickOption(labelText: string, optionText: string) {
+  fireEvent.click(screen.getByLabelText(labelText));
+  fireEvent.mouseDown(screen.getByText(optionText));
+}
+
 const record = (
   type: RecordType,
   id: string,
@@ -103,7 +113,7 @@ describe("AddTransactionModal inline instrument creation", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Dodaj instrument" })).toBeTruthy();
     });
-    fireEvent.change(screen.getByPlaceholderText("np. VWCE, BTC, EDO1033"), {
+    fireEvent.change(screen.getByPlaceholderText("np. VWCE, BTC"), {
       target: { value: "AAPL" },
     });
     fireEvent.change(screen.getByPlaceholderText("np. Vanguard FTSE All-World"), {
@@ -131,8 +141,7 @@ describe("AddTransactionModal inline instrument creation", () => {
     });
 
     await waitFor(() => {
-      const selected = screen.getByDisplayValue("AAPL · Apple Inc.") as HTMLSelectElement;
-      expect(selected.value).toBe(newAssetID);
+      expect(screen.getByLabelText("Instrument").textContent).toContain("AAPL · Apple Inc.");
     });
     expect(screen.getByRole("button", { name: "Anuluj" })).toBeTruthy();
   });
@@ -174,8 +183,8 @@ describe("AddTransactionModal funding deposit", () => {
   // + 12.5 fees — the 1012.5 the funding deposit has to cancel.
   const fillBuy = () => {
     render(<AddTransactionModal open initialValue={null} onClose={vi.fn()} />);
-    fireEvent.change(screen.getByLabelText("Portfel"), { target: { value: accountID } });
-    fireEvent.change(screen.getByLabelText("Instrument"), { target: { value: newAssetID } });
+    // The account record is the only portfolio, so it's already auto-selected.
+    pickOption("Instrument", "AAPL · Apple Inc.");
     fireEvent.change(screen.getByLabelText("Liczba"), { target: { value: "10" } });
     fireEvent.change(screen.getByLabelText("Kurs / cena"), { target: { value: "100" } });
     fireEvent.change(screen.getByLabelText("Prowizja"), { target: { value: "12.5" } });
@@ -277,7 +286,7 @@ describe("AddTransactionModal buy validation", () => {
 
   const openBuyForm = () => {
     render(<AddTransactionModal open initialValue={null} onClose={vi.fn()} />);
-    fireEvent.change(screen.getByLabelText("Portfel"), { target: { value: accountID } });
+    // The account record is the only portfolio, so it's already auto-selected.
   };
 
   const submit = () => fireEvent.click(screen.getByRole("button", { name: "Dodaj zakup" }));
@@ -297,7 +306,7 @@ describe("AddTransactionModal buy validation", () => {
 
   it("refuses a buy without a quantity", async () => {
     openBuyForm();
-    fireEvent.change(screen.getByLabelText("Instrument"), { target: { value: newAssetID } });
+    pickOption("Instrument", "AAPL · Apple Inc.");
     fireEvent.change(screen.getByLabelText("Kurs / cena"), { target: { value: "100" } });
     fireEvent.change(screen.getByLabelText("Kwota (brutto)"), { target: { value: "1000" } });
 
@@ -311,7 +320,7 @@ describe("AddTransactionModal buy validation", () => {
 
   it("refuses a buy without a price", async () => {
     openBuyForm();
-    fireEvent.change(screen.getByLabelText("Instrument"), { target: { value: newAssetID } });
+    pickOption("Instrument", "AAPL · Apple Inc.");
     fireEvent.change(screen.getByLabelText("Liczba"), { target: { value: "10" } });
     fireEvent.change(screen.getByLabelText("Kwota (brutto)"), { target: { value: "1000" } });
 
@@ -325,7 +334,7 @@ describe("AddTransactionModal buy validation", () => {
 
   it("saves a buy that carries all three", async () => {
     openBuyForm();
-    fireEvent.change(screen.getByLabelText("Instrument"), { target: { value: newAssetID } });
+    pickOption("Instrument", "AAPL · Apple Inc.");
     fireEvent.change(screen.getByLabelText("Liczba"), { target: { value: "10" } });
     fireEvent.change(screen.getByLabelText("Kurs / cena"), { target: { value: "100" } });
 
@@ -419,7 +428,7 @@ describe("AddTransactionModal sell validation", () => {
   const openSellForm = () => {
     render(<AddTransactionModal open initialValue={null} onClose={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: /Sprzedaż/ }));
-    fireEvent.change(screen.getByLabelText("Portfel"), { target: { value: accountID } });
+    // The account record is the only portfolio, so it's already auto-selected.
   };
 
   const submit = () => fireEvent.click(screen.getByRole("button", { name: "Dodaj sprzedaż" }));
@@ -439,7 +448,7 @@ describe("AddTransactionModal sell validation", () => {
 
   it("refuses a sell without a quantity", async () => {
     openSellForm();
-    fireEvent.change(screen.getByLabelText("Instrument"), { target: { value: newAssetID } });
+    pickOption("Instrument", "AAPL · Apple Inc.");
     fireEvent.change(screen.getByLabelText("Kurs / cena"), { target: { value: "300" } });
     fireEvent.change(screen.getByLabelText("Kwota (brutto)"), { target: { value: "1200" } });
 
@@ -453,7 +462,7 @@ describe("AddTransactionModal sell validation", () => {
 
   it("refuses a sell without a price", async () => {
     openSellForm();
-    fireEvent.change(screen.getByLabelText("Instrument"), { target: { value: newAssetID } });
+    pickOption("Instrument", "AAPL · Apple Inc.");
     fireEvent.change(screen.getByLabelText("Liczba"), { target: { value: "4" } });
     fireEvent.change(screen.getByLabelText("Kwota (brutto)"), { target: { value: "1200" } });
 
@@ -467,7 +476,7 @@ describe("AddTransactionModal sell validation", () => {
 
   it("saves a sell that carries all three", async () => {
     openSellForm();
-    fireEvent.change(screen.getByLabelText("Instrument"), { target: { value: newAssetID } });
+    pickOption("Instrument", "AAPL · Apple Inc.");
     fireEvent.change(screen.getByLabelText("Liczba"), { target: { value: "4" } });
     fireEvent.change(screen.getByLabelText("Kurs / cena"), { target: { value: "300" } });
 

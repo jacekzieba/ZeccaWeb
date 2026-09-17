@@ -88,7 +88,7 @@ export function StaticValueChart({
   // wspólnym 184 — inaczej domyślne preserveAspectRatio="meet" skaluje CAŁY
   // rysunek (obie osie równo) w dół do niższego pudełka i centruje go w
   // poziomie, zostawiając puste pasy po bokach zamiast wypełniać kartę.
-  const chartHeight = compact ? 132 : 184;
+  const chartHeight = compact ? 205 : 184;
   // Compact dostaje węższą, ale realną kolumnę na etykiety osi Y (34px, nie
   // 46 jak pełny wariant — mniejszy font na to pozwala) zamiast stawiać je
   // na samej linii: przy inline etykiety leżały dokładnie tam, gdzie

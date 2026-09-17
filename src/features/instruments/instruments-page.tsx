@@ -24,6 +24,7 @@ import {
   type GroupedTreasuryBondFamily,
 } from "@/domain/bonds/bond-series-groups";
 import { MetricTiles } from "@/components/layout/metric-tiles";
+import { Select } from "@/components/ui/select";
 import {
   V2,
   V2Badge,
@@ -699,12 +700,18 @@ export function InstrumentsPage() {
             />
           </div>
 
-          <select aria-label="Filtr klasy aktywów" value={kindFilter} onChange={(e) => setKindFilter(e.target.value)} style={selectStyle}>
-            <option value={KIND_ALL}>Wszystkie klasy</option>
-            {kinds.map((k) => (
-              <option key={k} value={k}>{KIND_LABELS[k] ?? k}</option>
-            ))}
-          </select>
+          <div style={{ width: 180 }}>
+            <Select
+              ariaLabel="Filtr klasy aktywów"
+              value={kindFilter}
+              onChange={setKindFilter}
+              style={selectStyle}
+              options={[
+                { value: KIND_ALL, label: "Wszystkie klasy" },
+                ...kinds.map((k) => ({ value: k, label: KIND_LABELS[k] ?? k })),
+              ]}
+            />
+          </div>
 
           {(search || kindFilter !== KIND_ALL) && (
             <button

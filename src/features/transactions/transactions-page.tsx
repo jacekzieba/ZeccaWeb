@@ -22,6 +22,7 @@ import { useProfile } from "@/features/profile/profile-store";
 import { currencyLabel } from "@/lib/money";
 import { announce } from "@/components/feedback/status-announcer";
 import { MetricTiles } from "@/components/layout/metric-tiles";
+import { Select } from "@/components/ui/select";
 import {
   V2,
   V2Badge,
@@ -612,28 +613,32 @@ export function TransactionsPage() {
           </div>
 
           {/* Portfolio filter */}
-          <select
-            aria-label="Filtr portfela" value={portfolioFilter}
-            onChange={(e) => setPortfolioFilter(e.target.value)}
-            style={selectStyle}
-          >
-            <option value="all">Wszystkie portfele</option>
-            {portfolios.map(([id, name]) => (
-              <option key={id} value={id}>{name}</option>
-            ))}
-          </select>
+          <div style={{ width: 180 }}>
+            <Select
+              ariaLabel="Filtr portfela"
+              value={portfolioFilter}
+              onChange={setPortfolioFilter}
+              style={selectStyle}
+              options={[
+                { value: "all", label: "Wszystkie portfele" },
+                ...portfolios.map(([id, name]) => ({ value: id, label: name })),
+              ]}
+            />
+          </div>
 
           {/* Type filter */}
-          <select
-            aria-label="Filtr typu transakcji" value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            style={selectStyle}
-          >
-            <option value="all">Wszystkie typy</option>
-            {txTypes.map((t) => (
-              <option key={t} value={t}>{TX_LABELS[t] ?? t}</option>
-            ))}
-          </select>
+          <div style={{ width: 180 }}>
+            <Select
+              ariaLabel="Filtr typu transakcji"
+              value={typeFilter}
+              onChange={setTypeFilter}
+              style={selectStyle}
+              options={[
+                { value: "all", label: "Wszystkie typy" },
+                ...txTypes.map((t) => ({ value: t, label: TX_LABELS[t] ?? t })),
+              ]}
+            />
+          </div>
 
           {/* Clear */}
           {(search || portfolioFilter !== "all" || typeFilter !== "all") && (

@@ -33,7 +33,7 @@ function searchResponse(data: InstrumentCandidate[]) {
 }
 
 function symbolInput() {
-  return screen.getByPlaceholderText("np. VWCE, BTC, EDO1033") as HTMLInputElement;
+  return screen.getByPlaceholderText("np. VWCE, BTC") as HTMLInputElement;
 }
 
 function nameInput() {
@@ -76,7 +76,7 @@ describe("InstrumentEditorModal Yahoo autocomplete", () => {
     expect(symbolInput().value).toBe("VWCE.L");
     expect(nameInput().value).toBe("Vanguard FTSE All-World UCITS ETF");
     // GBP is a known currency, so it is applied automatically.
-    expect(screen.getByDisplayValue("GBP")).toBeTruthy();
+    expect(screen.getByText("GBP")).toBeTruthy();
     expect((screen.getByLabelText("Ticker Yahoo") as HTMLInputElement).value).toBe("VWCE.L");
     expect((screen.getByLabelText("Giełda / listing") as HTMLInputElement).value).toBe("LSE");
   });
@@ -100,6 +100,6 @@ describe("InstrumentEditorModal Yahoo autocomplete", () => {
 
     await waitFor(() => expect(nameInput().value).toBe("Apple Inc."));
     expect(symbolInput().value).toBe("AAPL");
-    expect(screen.getByDisplayValue("USD")).toBeTruthy();
+    expect(screen.getByText("USD")).toBeTruthy();
   });
 });

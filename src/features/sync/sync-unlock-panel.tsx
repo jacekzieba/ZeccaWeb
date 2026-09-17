@@ -13,6 +13,10 @@ import {
   saveCachedUserDataKey,
 } from "@/sync/encryption/key-cache";
 import {
+  clearPendingAuthPassword,
+  peekPendingAuthPassword,
+} from "@/features/auth/pending-auth-password";
+import {
   createEncryptedKeyBackup,
   generateUserDataKeyBytes,
   unlockUserDataKey,
@@ -190,6 +194,9 @@ export function SyncUnlockPanel({
   const onSyncLoadedRef = useRef(onSyncLoaded);
   const unlockStatusRef = useRef(unlockStatus);
   const attemptedTrustedKeyUserRef = useRef<string | null>(null);
+  const attemptedPendingPasswordUserRef = useRef<string | null>(null);
+  const [pendingPasswordAttempt, setPendingPasswordAttempt] =
+    useState<"idle" | "trying">("idle");
 
   useEffect(() => {
     onSyncLoadedRef.current = onSyncLoaded;
@@ -271,6 +278,8 @@ export function SyncUnlockPanel({
     attemptedTrustedKeyUserRef.current = null;
     setTrustedKeyStatus("idle");
     setTrustedKeyMessage(null);
+    attemptedPendingPasswordUserRef.current = null;
+    setPendingPasswordAttempt("idle");
   }, [userId]);
 
   const keyBackupQuery = useQuery({
@@ -464,8 +473,87 @@ export function SyncUnlockPanel({
     userId,
   ]);
 
-  async function unlockSync() {
-    if (unlockStatus === "unlocking" || passphrase.length === 0) {
+  // There is no separate "encryption passphrase" anymore — the account
+  // password IS the passphrase. signup/login-form hand it off (see
+  // pending-auth-password.ts) so it can be tried here automatically,
+  // instead of asking the user to type a second secret. Failure is expected
+  // and silent for accounts that still carry a genuinely different, legacy
+  // passphrase (pre-dating this change) — those fall through to the manual
+  // form below unchanged, with nothing shown about this failed attempt.
+  useEffect(() => {
+    const hasBackupNow = Boolean(keyBackupQuery.data?.keyBackup);
+
+    if (
+      !supabase ||
+      !userId ||
+      sessionStatus !== "authenticated" ||
+      keyBackupQuery.isLoading ||
+      keyBackupQuery.isError ||
+      unlockStatusRef.current === "ready" ||
+      unlockStatusRef.current === "unlocking" ||
+      attemptedPendingPasswordUserRef.current === userId
+    ) {
+      return;
+    }
+
+    // If a backup exists, let the trusted-browser-key check resolve first —
+    // it might unlock without needing the password at all.
+    if (
+      hasBackupNow &&
+      !["missing", "cleared", "error"].includes(trustedKeyStatus)
+    ) {
+      return;
+    }
+
+    const pending = peekPendingAuthPassword();
+    if (!pending) return;
+
+    attemptedPendingPasswordUserRef.current = userId;
+    clearPendingAuthPassword();
+
+    let cancelled = false;
+    setPendingPasswordAttempt("trying");
+
+    async function attempt() {
+      try {
+        if (hasBackupNow) {
+          await unlockSync(pending!);
+        } else {
+          await createBackupAndUnlock(pending!);
+        }
+      } catch {
+        // Wrong/legacy password, or a transient error — fall through to the
+        // ordinary manual form silently, without surfacing this attempt.
+        if (!cancelled) {
+          setUnlockStatus("idle");
+          setUnlockError(null);
+          setCreateStatus("idle");
+          setCreateError(null);
+        }
+      } finally {
+        if (!cancelled) setPendingPasswordAttempt("idle");
+      }
+    }
+
+    void attempt();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    keyBackupQuery.data,
+    keyBackupQuery.isError,
+    keyBackupQuery.isLoading,
+    sessionStatus,
+    supabase,
+    trustedKeyStatus,
+    userId,
+  ]);
+
+  async function unlockSync(passwordOverride?: string) {
+    const activePassphrase = passwordOverride ?? passphrase;
+    if (unlockStatus === "unlocking" || activePassphrase.length === 0) {
       return;
     }
 
@@ -504,12 +592,12 @@ export function SyncUnlockPanel({
 
     let userDataKey: CryptoKey;
     try {
-      userDataKey = await unlockUserDataKey(keyBackup, passphrase);
+      userDataKey = await unlockUserDataKey(keyBackup, activePassphrase);
     } catch (error) {
       setUnlockStatus("error");
       setUnlockStep(null);
       setUnlockError(getUnlockErrorMessage(error));
-      return;
+      throw error;
     }
 
     try {
@@ -523,23 +611,28 @@ export function SyncUnlockPanel({
       setUnlockStatus("error");
       setUnlockStep(null);
       setUnlockError(getRecordDecryptErrorMessage(error));
+      throw error;
     }
   }
 
-  async function createBackupAndUnlock() {
+  async function createBackupAndUnlock(passwordOverride?: string) {
     if (createStatus === "creating") return;
+
+    const activePassphrase = passwordOverride ?? createPassphrase;
 
     if (!supabase || !userId) {
       setCreateStatus("error");
       setCreateError("Brak sesji użytkownika.");
       return;
     }
-    if (createPassphrase.length < 8) {
-      setCreateStatus("error");
-      setCreateError("Passphrase musi mieć co najmniej 8 znaków.");
+    if (activePassphrase.length < 8) {
+      if (!passwordOverride) {
+        setCreateStatus("error");
+        setCreateError("Passphrase musi mieć co najmniej 8 znaków.");
+      }
       return;
     }
-    if (createPassphrase !== createConfirm) {
+    if (!passwordOverride && createPassphrase !== createConfirm) {
       setCreateStatus("error");
       setCreateError("Passphrase i potwierdzenie różnią się.");
       return;
@@ -554,7 +647,7 @@ export function SyncUnlockPanel({
     const rawUserDataKey = generateUserDataKeyBytes();
     try {
       const backup = await withTimeout(
-        createEncryptedKeyBackup({ rawUserDataKey, passphrase: createPassphrase }),
+        createEncryptedKeyBackup({ rawUserDataKey, passphrase: activePassphrase }),
         "Tworzenie backupu klucza",
       );
       await withTimeout(
@@ -572,17 +665,18 @@ export function SyncUnlockPanel({
     } catch (error) {
       setCreateStatus("error");
       setCreateError(getUnlockErrorMessage(error));
+      throw error;
     }
   }
 
   function handleCreateBackup(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void createBackupAndUnlock();
+    createBackupAndUnlock().catch(() => undefined);
   }
 
   function handleUnlock(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void unlockSync();
+    unlockSync().catch(() => undefined);
   }
 
   async function handleSignOut() {
@@ -701,7 +795,8 @@ export function SyncUnlockPanel({
     unlockStatus !== "ready" &&
     !keyBackupQuery.isLoading &&
     trustedKeyStatus !== "checking" &&
-    !isPreparingTrustedKey;
+    !isPreparingTrustedKey &&
+    pendingPasswordAttempt !== "trying";
 
   return (
     <div style={{ padding: "20px 22px" }}>
@@ -779,6 +874,13 @@ export function SyncUnlockPanel({
         </div>
       )}
 
+      {pendingPasswordAttempt === "trying" && (
+        <div style={{ fontSize: 12, color: MUTED, display: "flex", alignItems: "center", gap: 8 }}>
+          <SpinnerDot />
+          Odblokowuję Twoim hasłem…
+        </div>
+      )}
+
       {keyBackupQuery.isError && (
         <div style={{ fontSize: 12, color: LOSS, marginTop: 4 }}>
           Nie udało się pobrać backupu klucza:{" "}
@@ -788,7 +890,10 @@ export function SyncUnlockPanel({
         </div>
       )}
 
-      {!keyBackupQuery.isLoading && !hasBackup && unlockStatus !== "ready" && (
+      {!keyBackupQuery.isLoading &&
+        !hasBackup &&
+        unlockStatus !== "ready" &&
+        pendingPasswordAttempt !== "trying" && (
         <div style={{ marginTop: 4 }}>
           <div style={{ fontSize: 12, color: AMBER, marginBottom: 10 }}>
             Konto nie ma jeszcze backupu klucza w <code>encrypted_key_backups</code>.
