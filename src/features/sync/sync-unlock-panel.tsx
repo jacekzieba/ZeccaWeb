@@ -204,6 +204,9 @@ export function SyncUnlockPanel({
 
   useEffect(() => {
     unlockStatusRef.current = unlockStatus;
+    // Odblokowane (np. kluczem z cache przeglądarki) — hasło z logowania nie
+    // jest już do niczego potrzebne, więc nie może leżeć w storage do końca karty.
+    if (unlockStatus === "ready") clearPendingAuthPassword();
   }, [unlockStatus]);
 
   useEffect(() => {
@@ -789,13 +792,19 @@ export function SyncUnlockPanel({
     unlockStatus === "idle" &&
     trustedKeyStatus === "idle" &&
     attemptedTrustedKeyUserRef.current !== userId;
+  // Hasło z logowania czeka w sessionStorage, a efekt cichej próby jeszcze nie
+  // ruszył (efekty odpalają się po commicie) — bez tego formularz mignąłby na
+  // jedną klatkę, zanim stan „trying" go zasłoni.
+  const passwordAttemptPending =
+    pendingPasswordAttempt === "trying" ||
+    (attemptedPendingPasswordUserRef.current !== userId && peekPendingAuthPassword() !== null);
   const showPassphraseForm =
     hasBackup &&
     unlockStatus !== "ready" &&
     !keyBackupQuery.isLoading &&
     trustedKeyStatus !== "checking" &&
     !isPreparingTrustedKey &&
-    pendingPasswordAttempt !== "trying";
+    !passwordAttemptPending;
 
   return (
     <div style={{ padding: "20px 22px" }}>
@@ -873,7 +882,7 @@ export function SyncUnlockPanel({
         </div>
       )}
 
-      {pendingPasswordAttempt === "trying" && (
+      {passwordAttemptPending && !isPreparingTrustedKey && (
         <div style={{ fontSize: 12, color: MUTED, display: "flex", alignItems: "center", gap: 8 }}>
           <SpinnerDot />
           Odblokowuję Twoim hasłem…
@@ -892,7 +901,7 @@ export function SyncUnlockPanel({
       {!keyBackupQuery.isLoading &&
         !hasBackup &&
         unlockStatus !== "ready" &&
-        pendingPasswordAttempt !== "trying" && (
+        !passwordAttemptPending && (
         <div style={{ marginTop: 4 }}>
           <div style={{ fontSize: 12, color: AMBER, marginBottom: 10 }}>
             Konto nie ma jeszcze backupu klucza w <code>encrypted_key_backups</code>.
