@@ -156,9 +156,7 @@
   border: 1px solid var(--hair);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.34),
-    0 22px 54px rgba(0, 0, 0, 0.5),
-    0 2px 8px rgba(0, 0, 0, 0.34);
+    inset 0 -1px 0 rgba(0, 0, 0, 0.34);
 }
 
 /* ── Przyciski — bursztyn zatopiony w szkle, świeci od spodu ─────────────── */
@@ -615,7 +613,7 @@
   backdrop-filter: blur(26px) saturate(126%);
   -webkit-backdrop-filter: blur(26px) saturate(126%);
   border: 1px solid var(--hair);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 22px 54px rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 .zlanding .product-kicker { font-family: var(--text); font-weight: 500; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
 .zlanding .static-allocation { display: flex; align-items: center; gap: 20px; margin-top: 14px; flex-wrap: wrap; }
@@ -668,7 +666,7 @@
   backdrop-filter: blur(26px) saturate(126%);
   -webkit-backdrop-filter: blur(26px) saturate(126%);
   border: 1px solid var(--hair);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 22px 54px rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 .zlanding .field label { display: block; font-family: var(--text); font-weight: 500; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
 .zlanding .field input {
@@ -680,13 +678,13 @@
   border-radius: 3px;
   background: rgba(2, 10, 11, 0.5);
   border: 1px solid var(--hair);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.5);
   color: var(--ink);
   font-family: var(--text);
   font-size: 14px;
 }
 .zlanding .field input::placeholder { color: var(--ink-3); }
-.zlanding .field input:focus-visible { border-color: rgba(240, 164, 60, 0.5); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5), 0 0 0 3px rgba(240, 164, 60, 0.12); outline: none; }
+.zlanding .field input:focus-visible { border-color: rgba(240, 164, 60, 0.5); box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.5), 0 0 0 3px rgba(240, 164, 60, 0.12); outline: none; }
 .zlanding .hp-field { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 .zlanding .beta-consent { display: flex; align-items: center; gap: 11px; margin-top: 16px; font-size: 14px; color: var(--ink-2); cursor: pointer; }
 .zlanding .beta-waitlist-form .btn { width: 100%; margin-top: 20px; }
@@ -793,7 +791,7 @@
   border-radius: 4px;
   background: linear-gradient(158deg, rgba(196, 232, 222, 0.075), rgba(196, 232, 222, 0.028));
   border: 1px solid var(--hair);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 22px 54px rgba(0, 0, 0, 0.55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 .zlanding .platform-stage-main figure[hidden] { display: none; }
 .zlanding .platform-stage-main figure img { display: block; width: 100%; height: auto; border-radius: 2px; }
@@ -1107,7 +1105,6 @@
   border-radius: 6px;
   border: 1px solid var(--hair);
   background: var(--vault-3);
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
   overflow: hidden;
 }
 .zlanding .steps-shot-bar {
@@ -1356,7 +1353,6 @@
     gap: 0;
     padding: 8px 28px 20px;
     background: #020A0B;
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6);
     border-bottom: 1px solid var(--hair);
   }
   .zlanding .nav-links.is-open { display: flex; }
