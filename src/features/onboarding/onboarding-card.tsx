@@ -36,7 +36,6 @@ export function OnboardingCard({
           width: "min(620px, 100%)", maxHeight: "92vh", overflowY: "auto",
           background: V2.card, borderRadius: "var(--r-xl)",
           border: `0.5px solid ${V2.line}`,
-          boxShadow: `0 18px 60px ${v2Mix(V2.ink, 0.35)}`,
           padding: "34px 38px", textAlign: "center",
           fontFamily: V2_TYPE.ui, color: V2.ink,
         }}

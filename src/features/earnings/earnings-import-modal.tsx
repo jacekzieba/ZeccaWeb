@@ -132,7 +132,6 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
           borderRadius: "var(--r-xl)",
           background: V2.card,
           border: `0.5px solid ${V2.line}`,
-          boxShadow: `0 24px 70px ${v2Mix(V2.ink, 0.28)}`,
           color: V2.ink,
           fontFamily: V2_TYPE.ui,
         }}

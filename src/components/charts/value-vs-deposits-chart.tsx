@@ -226,7 +226,6 @@ export function ValueVsDepositsChart({
             fontSize: 11,
             pointerEvents: "none",
             border: `0.5px solid ${COLORS.border}`,
-            boxShadow: `0 8px 22px ${v2Mix(COLORS.text, 0.22)}`,
             minWidth: 138,
           }}
         >

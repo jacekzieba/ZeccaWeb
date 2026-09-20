@@ -307,7 +307,6 @@ export function TourOverlay({
           background: V2.card,
           borderRadius: "var(--r-xl)",
           border: `0.5px solid ${V2.line}`,
-          boxShadow: `0 12px 40px ${v2Mix(V2.ink, 0.28)}`,
           padding: "18px 20px",
           fontFamily: V2_TYPE.ui,
           color: V2.ink,

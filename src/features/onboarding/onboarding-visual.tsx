@@ -75,13 +75,13 @@ function PrivacyVisual() {
     >
       <div style={{ position: "absolute", width: 310, height: 1, background: V2.line, top: "50%" }} />
       <div style={{ display: "flex", alignItems: "center", gap: 54, position: "relative" }}>
-        <div style={{ width: 88, height: 74, display: "grid", placeItems: "center", color: V2.brand, background: V2.card, border: `1px solid ${V2.line}`, borderRadius: "var(--r-xl)", boxShadow: `0 8px 24px ${V2.line2}` }}>
+        <div style={{ width: 88, height: 74, display: "grid", placeItems: "center", color: V2.brand, background: V2.card, border: `1px solid ${V2.line}`, borderRadius: "var(--r-xl)", }}>
           <Laptop size={43} strokeWidth={1.5} aria-hidden="true" />
         </div>
-        <div style={{ width: 76, height: 76, display: "grid", placeItems: "center", color: V2.onBrand, background: V2.brand, borderRadius: "50%", boxShadow: `0 10px 28px ${V2.line}` }}>
+        <div style={{ width: 76, height: 76, display: "grid", placeItems: "center", color: V2.onBrand, background: V2.brand, borderRadius: "50%", }}>
           <LockKeyhole size={31} strokeWidth={1.7} aria-hidden="true" />
         </div>
-        <div style={{ width: 88, height: 74, display: "flex", alignItems: "center", justifyContent: "center", gap: 4, color: V2.brand, background: V2.card, border: `1px solid ${V2.line}`, borderRadius: "var(--r-xl)", boxShadow: `0 8px 24px ${V2.line2}` }}>
+        <div style={{ width: 88, height: 74, display: "flex", alignItems: "center", justifyContent: "center", gap: 4, color: V2.brand, background: V2.card, border: `1px solid ${V2.line}`, borderRadius: "var(--r-xl)", }}>
           <Tablet size={37} strokeWidth={1.5} aria-hidden="true" />
           <Smartphone size={30} strokeWidth={1.5} aria-hidden="true" />
         </div>

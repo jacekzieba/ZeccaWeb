@@ -45,6 +45,7 @@ import { V2, v2Mix } from "@/lib/v2-design";
 import { clearCachedUserDataKey } from "@/sync/encryption/key-cache";
 import { initials, useProfile } from "@/features/profile/profile-store";
 import { AppLock } from "@/features/auth/app-lock";
+import { AuthBrand, authTitleStyle } from "@/features/auth/auth-brand";
 import { useTranslation } from "@/features/i18n/translate";
 import { currencyLabel } from "@/lib/money";
 import { StatusAnnouncer } from "@/components/feedback/status-announcer";
@@ -606,7 +607,7 @@ export function AppShell({
           {/* Desktop: brand */}
           {isDesktop && (
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <Image src="/zecca-logo.png" alt="" width={24} height={24} style={{ width: 24, height: 24, borderRadius: "var(--r-lg)", objectFit: "cover" }} />
+              <Image src="/zecca-mark-96.png" alt="" width={24} height={24} style={{ width: 24, height: 24, objectFit: "contain" }} />
               <span style={{ fontSize: 13, fontWeight: 700, color: COLORS.text, letterSpacing: ".02em" }}>Zecca</span>
               <span
                 style={{
@@ -862,51 +863,12 @@ function SyncUnlockGate({
       >
         {/* Brand + heading */}
         <div style={{ padding: "28px 24px 0" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
-            <div
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: "var(--r-md)",
-                background: COLORS.text,
-                color: COLORS.white,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontFamily: TYPOGRAPHY.serif,
-                fontSize: 18,
-                fontWeight: 600,
-              }}
-            >
-              <Image
-                src="/zecca-logo.png"
-                alt=""
-                width={32}
-                height={32}
-                style={{ width: "100%", height: "100%", display: "block", objectFit: "cover", borderRadius: "inherit" }}
-              />
-            </div>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.text }}>Zecca</div>
-              <div
-                style={{
-                  fontFamily: TYPOGRAPHY.mono,
-                  fontSize: 10,
-                  color: COLORS.subtle,
-                  textTransform: "uppercase",
-                  letterSpacing: ".10em",
-                  marginTop: 1,
-                }}
-              >
-                Web · v2
-              </div>
-            </div>
-          </div>
-          <h1 style={{ fontSize: 21, fontWeight: 700, color: COLORS.text, letterSpacing: "-0.01em" }}>
+          <AuthBrand tag="Web · v2" />
+          <h1 style={authTitleStyle}>
             Odblokuj swoje dane
           </h1>
           <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 6, lineHeight: 1.5 }}>
-            Wprowadź passphrase, aby odszyfrować portfel lokalnie w przeglądarce.
+            Wpisz hasło konta (albo frazę synchronizacji, jeśli ustawiłeś ją osobno), aby odszyfrować portfel lokalnie w przeglądarce.
           </p>
         </div>
 

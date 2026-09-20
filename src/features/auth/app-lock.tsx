@@ -134,7 +134,6 @@ function btnStyle(bg: string): React.CSSProperties {
     height: 56, borderRadius: "var(--r-xl)", border: `0.5px solid ${V2.line}`,
     background: bg, color: V2.ink,
     fontFamily: MONO, fontSize: 21, fontWeight: 500, cursor: "pointer",
-    boxShadow: `0 1px 3px ${v2Mix(V2.ink, 0.08)}`,
     transition: "background .1s",
   };
 }

@@ -90,7 +90,6 @@ function Switch({ on, onChange, label }: { on: boolean; onChange: (value: boolea
           height: 19,
           borderRadius: "50%",
           background: "#fff",
-          boxShadow: `0 1px 3px ${v2Mix(V2.ink, 0.3)}`,
           transition: "left .18s",
         }}
       />
@@ -133,7 +132,6 @@ function Segmented({
             fontWeight: value === option.value ? 700 : 500,
             background: value === option.value ? V2.card : "transparent",
             color: value === option.value ? V2.ink : V2.muted,
-            boxShadow: value === option.value ? `0 1px 4px ${v2Mix(V2.ink, 0.1)}` : "none",
             whiteSpace: "nowrap",
           }}
         >

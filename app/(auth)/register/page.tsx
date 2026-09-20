@@ -1,7 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import { SignupForm } from "@/features/auth/signup-form";
 import { COLORS, SURFACES } from "@/lib/design-tokens";
+import { AuthBrand, authTitleStyle } from "@/features/auth/auth-brand";
 
 export default function RegisterPage() {
   return (
@@ -25,44 +25,8 @@ export default function RegisterPage() {
       >
         {/* Brand */}
         <div style={{ marginBottom: 28 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-            <div
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: "var(--r-lg)",
-                background: COLORS.text,
-                color: COLORS.white,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 15,
-                fontWeight: 700,
-              }}
-            >
-              <Image
-                src="/zecca-logo.png"
-                alt=""
-                width={32}
-                height={32}
-                style={{ width: "100%", height: "100%", display: "block", objectFit: "cover", borderRadius: "inherit" }}
-              />
-            </div>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.text }}>Zecca</div>
-              <div
-                style={{
-                  fontSize: 10,
-                  color: COLORS.subtle,
-                  textTransform: "uppercase",
-                  letterSpacing: ".08em",
-                }}
-              >
-                Web · v0.1
-              </div>
-            </div>
-          </div>
-          <h1 style={{ fontSize: 21, fontWeight: 700, color: COLORS.text, letterSpacing: "-0.01em" }}>
+          <AuthBrand />
+          <h1 style={authTitleStyle}>
             Załóż konto
           </h1>
           <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 6, lineHeight: 1.5 }}>

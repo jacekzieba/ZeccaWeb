@@ -258,7 +258,6 @@ export function OnboardingController({
               padding: "6px 11px", borderRadius: "var(--r-pill)",
               border: `0.5px solid ${v2Mix(V2.brand, 0.35)}`,
               backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
-              boxShadow: `0 4px 16px ${v2Mix(V2.ink, 0.14)}`,
             }}
           >
             Dane przykładowe

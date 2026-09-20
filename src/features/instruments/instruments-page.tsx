@@ -49,7 +49,6 @@ const glassCard: CSSProperties = {
   WebkitBackdropFilter: "blur(30px) saturate(160%)",
   borderRadius: "var(--r-xl)",
   border: `0.5px solid ${V2.line}`,
-  boxShadow: `0 1px 0 ${v2Mix(V2.ink, 0.03)}, 0 6px 20px ${v2Mix(V2.ink, 0.05)}`,
 };
 
 const KIND_LABELS: Record<string, string> = {
@@ -619,7 +618,6 @@ export function InstrumentsPage() {
                 ? v2Mix(V2.bonds, 0.28)
                 : V2.line
             }`,
-            boxShadow: `0 1px 0 ${v2Mix(V2.ink, 0.03)}, 0 6px 20px ${v2Mix(V2.ink, 0.05)}`,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",

@@ -511,7 +511,6 @@ function YearlyAverageChart({
             borderRadius: "var(--r-lg)",
             border: `0.5px solid ${V2.line}`,
             background: V2.card,
-            boxShadow: `0 8px 22px ${v2Mix(V2.ink, 0.12)}`,
             pointerEvents: "none",
             zIndex: 2,
           }}
@@ -554,7 +553,7 @@ function ModalShell({
         onClick={onClose}
         style={{ position: "absolute", inset: 0, border: "none", background: v2Mix(V2.page, 0.36), cursor: "default" }}
       />
-      <div role="dialog" aria-modal="true" aria-label={title} style={{ position: "relative", width: "min(720px, 100%)", maxHeight: "calc(100vh - 32px)", overflow: "auto", borderRadius: "var(--r-xl)", background: V2.card, border: `0.5px solid ${V2.line}`, boxShadow: `0 24px 70px ${v2Mix(V2.ink, 0.28)}` }}>
+      <div role="dialog" aria-modal="true" aria-label={title} style={{ position: "relative", width: "min(720px, 100%)", maxHeight: "calc(100vh - 32px)", overflow: "auto", borderRadius: "var(--r-xl)", background: V2.card, border: `0.5px solid ${V2.line}`, }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "18px 20px", borderBottom: `0.5px solid ${V2.line2}` }}>
           <div style={{ fontFamily: V2_TYPE.serif, fontSize: 21, fontWeight: 500 }}>{title}</div>
           <IconButton label="Zamknij" onClick={onClose}><X size={16} /></IconButton>

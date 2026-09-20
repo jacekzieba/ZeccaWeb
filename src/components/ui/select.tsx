@@ -151,7 +151,6 @@ export function Select({
             borderRadius: "var(--r-lg)",
             border: `0.5px solid ${token("line")}`,
             background: token("surface"),
-            boxShadow: `0 8px 24px ${v2Mix(token("ink"), 0.18)}`,
             maxHeight: 260,
             overflowY: "auto",
           }}

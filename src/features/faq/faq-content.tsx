@@ -34,7 +34,7 @@ const faqs: FAQItem[] = [
   {
     question: "Jak przenieść dane na nowe urządzenie?",
     answer:
-      "Włącz synchronizację i zaloguj się tym samym kontem na nowym urządzeniu, a następnie podaj swoją frazę synchronizacji (passphrase) — tę samą, którą ustalono przy włączaniu prywatnej synchronizacji Zecca. Odblokowuje ona zaszyfrowany klucz, dzięki czemu Twoje dane stają się dostępne na nowym sprzęcie. Fraza synchronizacji nie jest tym samym co hasło konta i nie jest przechowywana na serwerze.",
+      "Włącz synchronizację i zaloguj się tym samym kontem na nowym urządzeniu. Dane odblokujesz hasłem konta — albo osobną frazą synchronizacji (passphrase), jeśli ustawiłeś ją wcześniej lub w aplikacji na iOS/macOS. Odblokowuje ona zaszyfrowany klucz, dzięki czemu Twoje dane stają się dostępne na nowym sprzęcie. Ani hasło, ani fraza nie są przechowywane na serwerze w postaci jawnej.",
   },
   {
     question: "Czy mogę korzystać bez konta?",

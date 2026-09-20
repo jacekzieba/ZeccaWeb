@@ -179,7 +179,6 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
           background: V2.card,
           borderRadius: "var(--r-xl)",
           border: `0.5px solid ${V2.spec}`,
-          boxShadow: `0 24px 60px ${v2Mix(V2.ink, 0.28)}`,
           overflow: "hidden",
         }}
       >

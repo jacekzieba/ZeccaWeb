@@ -63,7 +63,6 @@ const inputStyle: CSSProperties = {
   fontFamily: "inherit",
   outline: "none",
   boxSizing: "border-box",
-  boxShadow: `inset 0 1px 3px ${v2Mix(INK, 0.05)}`,
 };
 
 type InstrumentDraft = {
@@ -362,7 +361,6 @@ export function InstrumentEditorModal({
           maxWidth: 520,
           background: PAPER,
           borderRadius: "var(--r-xl)",
-          boxShadow: `0 24px 64px ${v2Mix(INK, 0.22)}, inset 0 0.5px 0 ${v2Mix(INK, 0.08)}`,
           border: `0.5px solid ${token("line")}`,
         }}
       >

@@ -216,7 +216,6 @@ function HistoryCard({
                 fontWeight: period === option ? 700 : 500,
                 background: period === option ? token("surface") : "transparent",
                 color: period === option ? INK : MUTED,
-                boxShadow: period === option ? `0 1px 4px ${v2Mix(INK, 0.12)}` : "none",
                 transition: "all .15s",
               }}
             >

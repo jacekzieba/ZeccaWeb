@@ -25,7 +25,6 @@ const feedbackStyle: CSSProperties = {
   borderRadius: "var(--r-lg)",
   border: `0.5px solid ${COLORS.border}`,
   background: COLORS.surface,
-  boxShadow: `0 14px 36px ${v2Mix(V2.ink, 0.2)}`,
   fontSize: 11,
   lineHeight: 1.4,
 };

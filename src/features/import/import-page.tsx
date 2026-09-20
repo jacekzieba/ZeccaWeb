@@ -98,7 +98,6 @@ function PrimaryButton({ children, onClick, disabled }: { children: React.ReactN
         cursor: disabled ? "not-allowed" : "pointer", whiteSpace: "nowrap",
         background: disabled ? v2Mix(V2.ink, 0.12) : V2.ink,
         color: disabled ? V2.subtle : V2.card,
-        boxShadow: disabled ? "none" : `0 3px 10px ${v2Mix(V2.ink, 0.2)}`,
       }}
     >
       {children}
@@ -669,7 +668,6 @@ export function ImportPage() {
               padding: "7px 18px", borderRadius: "var(--r-lg)", border: "none", cursor: "pointer",
               fontFamily: UI, fontSize: 12, fontWeight: tab === id ? 700 : 500,
               background: tab === id ? V2.card : "transparent", color: tab === id ? V2.ink : V2.muted,
-              boxShadow: tab === id ? `0 1px 4px ${v2Mix(V2.ink, 0.1)}` : "none",
             }}
           >
             {label}

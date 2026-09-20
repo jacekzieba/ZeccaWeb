@@ -25,7 +25,6 @@ const panelStyle: CSSProperties = {
   borderRadius: "var(--r-xl)",
   background: COLORS.surface,
   border: `0.5px solid ${COLORS.border}`,
-  boxShadow: `0 14px 36px ${v2Mix(V2.ink, 0.2)}`,
   padding: 12,
   zIndex: 120,
 };

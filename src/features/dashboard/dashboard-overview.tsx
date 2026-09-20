@@ -321,9 +321,7 @@ function Card({
         border: `0.5px solid ${glass ? PALETTE.spec : PALETTE.line}`,
         borderRadius: "var(--r-xl)",
         padding: pad,
-        boxShadow: glass
-          ? `inset 0 1px 0 ${PALETTE.spec}, 0 8px 28px ${v2Mix(PALETTE.ink, 0.07)}`
-          : `0 1px 0 ${v2Mix(PALETTE.ink, 0.03)}, 0 6px 20px ${v2Mix(PALETTE.ink, 0.05)}`,
+        boxShadow: glass ? `inset 0 1px 0 ${PALETTE.spec}` : "none",
         boxSizing: "border-box",
         height: "100%",
         minHeight: 0,
@@ -419,7 +417,6 @@ function PeriodBar({ value, onChange }: { value: Period; onChange: (period: Peri
             fontWeight: value === option ? 700 : 500,
             background: value === option ? PALETTE.card : "transparent",
             color: value === option ? PALETTE.ink : PALETTE.muted,
-            boxShadow: value === option ? `0 1px 4px ${v2Mix(PALETTE.ink, 0.1)}` : "none",
             transition: "all .15s",
           }}
         >
@@ -551,7 +548,6 @@ function V2Area({ data, height = 240 }: { data: ValuationPoint[]; height?: numbe
             padding: "7px 11px",
             borderRadius: "var(--r-lg)",
             pointerEvents: "none",
-            boxShadow: `0 8px 22px ${v2Mix(PALETTE.ink, 0.22)}`,
             minWidth: 116,
           }}
         >
@@ -1024,7 +1020,6 @@ export function DashboardOverview() {
             fontSize: 12,
             fontWeight: 700,
             padding: "8px 13px",
-            boxShadow: `0 1px 4px ${v2Mix(PALETTE.ink, 0.06)}`,
           }}
         >
           Dostosuj

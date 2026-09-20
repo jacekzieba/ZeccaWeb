@@ -169,7 +169,6 @@ const inputStyle: CSSProperties = {
   color: INK,
   fontFamily: "inherit",
   boxSizing: "border-box",
-  boxShadow: `inset 0 1px 3px ${v2Mix(INK, 0.05)}`,
 };
 
 const selectStyle: CSSProperties = {
@@ -1132,7 +1131,6 @@ export function AddTransactionModal({
           overflow: "hidden",
           background: PAPER,
           borderRadius: "var(--r-xl)",
-          boxShadow: `0 24px 64px ${v2Mix(INK, 0.22)}, inset 0 0.5px 0 ${v2Mix(INK, 0.08)}`,
           border: `0.5px solid ${V2.line}`,
           display: "grid",
           gridTemplateColumns: "248px minmax(0, 1fr)",
@@ -1573,7 +1571,6 @@ export function AddTransactionModal({
                             cursor: "pointer",
                             color: selected ? INK : MUTED,
                             background: selected ? PAPER : "transparent",
-                            boxShadow: selected ? `0 1px 3px ${v2Mix(INK, 0.12)}` : "none",
                           }}
                         >
                           {option.label}
@@ -1764,7 +1761,6 @@ export function AddTransactionModal({
                     fontWeight: 700,
                     cursor: saving || !userDataKey ? "not-allowed" : "pointer",
                     fontFamily: "inherit",
-                    boxShadow: saving || !userDataKey ? "none" : `0 6px 16px ${v2Mix(txDef.tone, 0.22)}`,
                     transition: "all .15s",
                     whiteSpace: "nowrap",
                   }}

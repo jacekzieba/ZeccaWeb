@@ -212,8 +212,6 @@ export function AllocationEditorModal({
           maxWidth: 480,
           background: PAPER,
           borderRadius: "var(--r-xl)",
-          boxShadow:
-            `0 24px 64px ${v2Mix(V2.ink, 0.22)}, inset 0 0.5px 0 ${v2Mix(V2.ink, 0.08)}`,
           border: `0.5px solid ${V2.line}`,
           fontFamily: V2_TYPE.ui,
         }}

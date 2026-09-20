@@ -107,7 +107,7 @@ function withTimeout<T>(promise: Promise<T>, label: string, timeoutMs = 20_000) 
 function getUnlockErrorMessage(error: unknown) {
   if (error instanceof DOMException) {
     if (error.name === "OperationError") {
-      return "Nie udało się odszyfrować backupu klucza. Sprawdź passphrase.";
+      return "Nie udało się odszyfrować backupu klucza. Sprawdź hasło lub passphrase.";
     }
 
     return error.message || `Nie udało się odblokować danych (${error.name}).`;
@@ -771,7 +771,6 @@ export function SyncUnlockPanel({
               fontSize: 13,
               fontWeight: 600,
               textDecoration: "none",
-              boxShadow: `0 3px 10px ${v2Mix(INK, 0.22)}, inset 0 0.5px 0 ${v2Mix(INK, 0.1)}`,
               whiteSpace: "nowrap",
             }}
           >
@@ -916,7 +915,6 @@ export function SyncUnlockPanel({
                 fontSize: 13,
                 color: INK,
                 outline: "none",
-                boxShadow: `inset 0 1px 3px ${v2Mix(INK, 0.06)}`,
               }}
             />
             <input
@@ -935,7 +933,6 @@ export function SyncUnlockPanel({
                 fontSize: 13,
                 color: INK,
                 outline: "none",
-                boxShadow: `inset 0 1px 3px ${v2Mix(INK, 0.06)}`,
               }}
             />
             <button
@@ -1005,7 +1002,7 @@ export function SyncUnlockPanel({
                 marginBottom: 6,
               }}
             >
-              Passphrase backupu klucza
+              Hasło lub passphrase backupu klucza
             </label>
             <input
               id={passphraseId}
@@ -1014,7 +1011,7 @@ export function SyncUnlockPanel({
               onChange={(e) => setPassphrase(e.target.value)}
               autoComplete="current-password"
               required
-              placeholder="Wprowadź passphrase…"
+              placeholder="Wpisz hasło lub passphrase…"
               style={{
                 width: "100%",
                 padding: "9px 12px",
@@ -1024,7 +1021,6 @@ export function SyncUnlockPanel({
                 fontSize: 13,
                 color: INK,
                 outline: "none",
-                boxShadow: `inset 0 1px 3px ${v2Mix(INK, 0.06)}`,
               }}
             />
           </div>
@@ -1044,10 +1040,6 @@ export function SyncUnlockPanel({
               display: "flex",
               alignItems: "center",
               gap: 6,
-              boxShadow:
-                isBusy || passphrase.length === 0
-                  ? "none"
-                  : `0 3px 10px ${v2Mix(INK, 0.18)}, inset 0 0.5px 0 ${v2Mix(INK, 0.1)}`,
               transition: "background .15s",
             }}
           >
