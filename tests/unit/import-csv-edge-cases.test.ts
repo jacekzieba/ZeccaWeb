@@ -326,14 +326,56 @@ describe("import CSV: odporność", () => {
   });
 });
 
-describe("import CSV: kontrola sprzedaży ponad stan (zgodność z natywnym ADR-0002)", () => {
-  // Natywnie sprzedaż ponad dostępną pozycję jest odrzucana jeszcze przed zapisem
-  // (FinancialRecordAdmission). Web nie ma żadnego odpowiednika: parser importu nie zna
-  // pozycji, a zapis nie sprawdza księgi. `it.fails` dokumentuje lukę — gdy web dostanie
-  // kontrolę, ten test zacznie przechodzić i trzeba zdjąć `.fails`.
-  it.fails("odrzuca sprzedaż, gdy w pliku i w danych nie ma wcześniejszego kupna", () => {
-    const row = only(line({ type: "sell", instrument: "AAPL", qty: "10", price: "190", gross: "1900", currency: "USD" }));
-    expect(row.errors.length).toBeGreaterThan(0);
+describe("import CSV: ostrzeżenie o sprzedaży ponad stan (parytet z natywnym ADR-0002)", () => {
+  // Natywnie taki zapis jest odrzucany. Na webie to OSTRZEŻENIE (decyzja produktowa):
+  // wiersz zostaje poprawny i da się go zapisać, ale użytkownik wie, że silnik odetnie
+  // nadwyżkę i policzy wpływ tylko za posiadane sztuki.
+  const buy = (qty: string) => line({ type: "buy", instrument: "AAPL", qty, price: "190", gross: String(Number(qty) * 190), currency: "USD" });
+  const sell = (qty: string) => line({ type: "sell", instrument: "AAPL", qty, price: "200", gross: String(Number(qty) * 200), currency: "USD", date: "2026-06-01" });
+
+  it("sprzedaż bez żadnego kupna: ostrzeżenie z liczbami, wiersz nadal poprawny", () => {
+    const row = only(sell("10"));
+    expect(row.errors).toEqual([]);
+    expect(row.payload).not.toBeNull();
+    expect(row.warnings.join(" ")).toContain("Sprzedaż 10 szt., a dostępne 0");
+  });
+
+  it("kupno w tym samym pliku pokrywa późniejszą sprzedaż (bez ostrzeżenia)", () => {
+    const preview = parse(buy("10"), sell("10"));
+    expect(preview.rows[1].warnings.join(" ")).not.toContain("Sprzedaż");
+  });
+
+  it("częściowe pokrycie: ostrzeżenie pokazuje ile jest dostępne", () => {
+    const preview = parse(buy("4"), sell("10"));
+    expect(preview.rows[1].warnings.join(" ")).toContain("Sprzedaż 10 szt., a dostępne 4");
+  });
+
+  it("kupno DOPIERO po sprzedaży (późniejsza data) nie pokrywa jej", () => {
+    const laterBuy = line({ type: "buy", instrument: "AAPL", qty: "10", price: "190", gross: "1900", currency: "USD", date: "2026-07-01" });
+    const preview = parse(laterBuy, sell("10"));
+    expect(preview.rows[1].warnings.join(" ")).toContain("Sprzedaż 10 szt., a dostępne 0");
+  });
+
+  it("istniejące transakcje z danych pokrywają sprzedaż z pliku", () => {
+    const existing = buildImportReferenceData([
+      makeRecord("account", PORTFOLIO_ID, { id: PORTFOLIO_ID, name: "Portfel główny" }),
+      makeRecord("asset", AAPL_ID, { id: AAPL_ID, symbol: "AAPL", name: "Apple Inc", currency: "USD" }),
+      makeRecord("transaction", "44444444-4444-4444-8444-444444444444", {
+        date: "2026-01-10T00:00:00.000Z", portfolioID: PORTFOLIO_ID, instrumentID: AAPL_ID,
+        transactionType: "buy", quantity: 10, price: 100, grossAmount: 1000, currency: "USD",
+      }),
+    ]);
+    const covered = parseTransactionCsvImport([HEADER, sell("10")].join("\n"), existing);
+    expect(covered.rows[0].warnings.join(" ")).not.toContain("Sprzedaż");
+    const over = parseTransactionCsvImport([HEADER, sell("11")].join("\n"), existing);
+    expect(over.rows[0].warnings.join(" ")).toContain("Sprzedaż 11 szt., a dostępne 10");
+  });
+
+  it("wiersz z błędem nie liczy się do stanu i nie dostaje ostrzeżenia", () => {
+    const badBuy = line({ type: "buy", instrument: "AAPL", qty: "10", price: "-1", gross: "10", currency: "USD" });
+    const preview = parse(badBuy, sell("10"));
+    expect(preview.rows[0].warnings.join(" ")).not.toContain("Sprzedaż");
+    expect(preview.rows[1].warnings.join(" ")).toContain("Sprzedaż 10 szt., a dostępne 0");
   });
 });
 

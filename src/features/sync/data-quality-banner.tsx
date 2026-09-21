@@ -25,6 +25,7 @@ export function DataQualityBanner({
   const bondMissing = join("bond-missing-macro");
   const recordSkipped = join("record-skipped");
   const incomplete = join("transaction-incomplete");
+  const oversold = join("oversell");
 
   const lines: string[] = [];
   if (priceMissing) lines.push(`Brak aktualnej ceny (pominięte w wartości): ${priceMissing}.`);
@@ -32,6 +33,8 @@ export function DataQualityBanner({
   if (bondMissing) lines.push(`Niepełne dane makro do wyceny obligacji (wynik przybliżony): ${bondMissing}.`);
   if (recordSkipped) lines.push(`Pominięto nieczytelne rekordy (${recordSkipped}) — zaktualizuj aplikację lub zgłoś problem.`);
   if (incomplete) lines.push(`Transakcje bez instrumentu, liczby jednostek lub ceny (${incomplete}) nie są wliczane do wyników — uzupełnij dane.`);
+
+  if (oversold) lines.push(`Sprzedaż ponad stan (nadwyżka pominięta w wycenie, wpływ policzony tylko za posiadane sztuki): ${oversold}. Sprawdź, czy brakuje transakcji kupna.`);
 
   return (
     <div

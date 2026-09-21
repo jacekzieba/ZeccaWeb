@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { AMOUNT_MAGNITUDE_CAP } from "@/lib/parse-amount";
 import { utcDateOrNull } from "@/lib/calendar-date";
+import type { OversellInput } from "@/domain/ledger/oversell";
+import { toOversellInput, type TransactionLike } from "@/sync/records/oversell-check";
+import { annotateOversellWarnings } from "./oversell-warnings";
 import { nowSwiftReferenceSeconds } from "@/sync/records/macos-payloads";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
 import type { WriteRecordPayload } from "@/sync/records/record-writer";
@@ -97,6 +100,8 @@ export type ImportReferenceData = {
   existingTransactionIds: Set<string>;
   existingManualValuationIds: Set<string>;
   existingExternalImportIds?: Set<string>;
+  /** Istniejące transakcje — do ostrzeżenia o sprzedaży ponad stan w podglądzie importu. */
+  existingTransactions?: OversellInput[];
 };
 
 export type TransactionImportRow = {
@@ -159,6 +164,7 @@ export function buildImportReferenceData(
   const existingTransactionIds = new Set<string>();
   const existingManualValuationIds = new Set<string>();
   const existingExternalImportIds = new Set<string>();
+  const existingTransactions: OversellInput[] = [];
 
   for (const record of records ?? []) {
     if (record.deletedAt) continue;
@@ -189,6 +195,8 @@ export function buildImportReferenceData(
 
     if (record.envelope.type === "transaction") {
       existingTransactionIds.add(record.id);
+      const existing = toOversellInput(record.envelope.payload as TransactionLike, record.id);
+      if (existing) existingTransactions.push(existing);
       const txPayload = record.envelope.payload as { externalImportID?: string | null };
       if (txPayload.externalImportID) existingExternalImportIds.add(txPayload.externalImportID);
     }
@@ -208,6 +216,7 @@ export function buildImportReferenceData(
     existingTransactionIds,
     existingManualValuationIds,
     existingExternalImportIds,
+    existingTransactions,
   };
 }
 
@@ -263,12 +272,15 @@ export function parseTransactionTable(
     )
     .filter((row) => Object.values(row.values).some(Boolean));
 
-  return {
-    kind: "transaction",
-    rows,
-    validRows: rows.filter((row) => row.payload && row.errors.length === 0),
-    errorRows: rows.filter((row) => row.errors.length > 0),
-  };
+  return annotateOversellWarnings(
+    {
+      kind: "transaction",
+      rows,
+      validRows: rows.filter((row) => row.payload && row.errors.length === 0),
+      errorRows: rows.filter((row) => row.errors.length > 0),
+    },
+    references,
+  );
 }
 
 export function parseManualValuationTable(

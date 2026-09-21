@@ -114,7 +114,8 @@ export type SnapshotDiagnosticCode =
   | "fx-missing"
   | "bond-missing-macro"
   | "record-skipped"
-  | "transaction-incomplete";
+  | "transaction-incomplete"
+  | "oversell";
 
 /** A single data-quality warning. `context` names the affected subject (an
  * instrument symbol or currency code) and never includes amounts. */

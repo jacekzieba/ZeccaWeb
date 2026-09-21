@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { findOversells } from "@/domain/ledger/oversell";
+import { toOversellInput } from "./oversell-check";
 import type {
   AllocationSlice,
   CashBalance,
@@ -466,6 +468,23 @@ function collectDiagnostics(
       .map((transaction) => transaction.transactionType),
   )) {
     diagnostics.push({ code: "transaction-incomplete", severity: "warning", context: type });
+  }
+
+  // Sprzedaż ponad stan: silnik odcina ją do posiadanych sztuk i księguje wpływ tylko za
+  // nie (natywnie taki zapis jest odrzucany). Bez tego wpis siedziałby w danych, a gotówka
+  // różniłaby się od wyciągu brokera bez śladu przyczyny.
+  const oversoldInstruments = new Set(
+    findOversells(
+      dataset.transactions.flatMap((transaction) => {
+        const input = toOversellInput(transaction, transaction.id);
+        return input && input.dateMs <= asOf.getTime() ? [input] : [];
+      }),
+    ).map((issue) => issue.instrumentID),
+  );
+  for (const instrumentID of oversoldInstruments) {
+    const asset = assetsByID.get(instrumentID);
+    const label = asset?.symbol?.trim() || asset?.name?.trim() || instrumentID.slice(0, 8);
+    diagnostics.push({ code: "oversell", severity: "warning", context: label });
   }
 
   const checkFx = (currency: string) => {

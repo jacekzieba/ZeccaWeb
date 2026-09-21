@@ -474,6 +474,35 @@ describe("AddTransactionModal sell validation", () => {
     expect(saveRecord).not.toHaveBeenCalled();
   });
 
+  it("nie ostrzega, gdy sprzedaż mieści się w posiadanym stanie", () => {
+    openSellForm();
+    pickOption("Instrument", "AAPL · Apple Inc.");
+    fireEvent.change(screen.getByLabelText("Liczba"), { target: { value: "10" } });
+    expect(screen.queryByTestId("oversell-warning")).toBeNull();
+  });
+
+  it("ostrzega przy sprzedaży ponad stan, ale pozwala zapisać", async () => {
+    openSellForm();
+    pickOption("Instrument", "AAPL · Apple Inc.");
+    fireEvent.change(screen.getByLabelText("Liczba"), { target: { value: "15" } });
+    fireEvent.change(screen.getByLabelText("Kurs / cena"), { target: { value: "300" } });
+
+    const warning = screen.getByTestId("oversell-warning");
+    expect(warning.textContent).toContain("Sprzedaż 15 szt., a dostępne 10");
+    expect(warning.textContent).toContain("Możesz zapisać mimo to");
+
+    submit();
+    await waitFor(() => {
+      expect(saveRecord).toHaveBeenCalledWith(
+        store.state.supabase,
+        store.state.userDataKey,
+        "transaction",
+        expect.objectContaining({ transactionType: "sell", quantity: 15, price: 300 }),
+        { baseUpdatedAt: null },
+      );
+    });
+  });
+
   it("saves a sell that carries all three", async () => {
     openSellForm();
     pickOption("Instrument", "AAPL · Apple Inc.");

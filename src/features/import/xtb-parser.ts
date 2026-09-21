@@ -10,6 +10,7 @@
 
 import type { ImportReferenceData, TransactionImportPreview, TransactionImportRow } from "./import-parser";
 import { parseSpreadsheetNumber } from "@/lib/parse-amount";
+import { annotateOversellWarnings } from "./oversell-warnings";
 import type { WriteRecordPayload } from "@/sync/records/record-writer";
 import type { EtfCatalog } from "./etf-catalog";
 import {
@@ -512,15 +513,18 @@ export function parseXtbXlsx(
     }
   }
 
-  return {
-    kind: "transaction",
-    rows: txRows,
-    validRows: txRows.filter((row) => row.errors.length === 0 && row.payload),
-    errorRows: txRows.filter((row) => row.errors.length > 0),
-    newInstrumentPayloads,
-    warnings,
-    fxObservations: [...fxObservations.entries()].map(([symbol, o]) => ({ symbol, ...o })),
-  };
+  return annotateOversellWarnings(
+    {
+      kind: "transaction",
+      rows: txRows,
+      validRows: txRows.filter((row) => row.errors.length === 0 && row.payload),
+      errorRows: txRows.filter((row) => row.errors.length > 0),
+      newInstrumentPayloads,
+      warnings,
+      fxObservations: [...fxObservations.entries()].map(([symbol, o]) => ({ symbol, ...o })),
+    },
+    references,
+  );
 }
 
 function rowValues(r: CashRow): Record<string, string> {

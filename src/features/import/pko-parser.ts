@@ -12,6 +12,7 @@ import type { WriteRecordPayload } from "@/sync/records/record-writer";
 import { knownTreasuryBondIssue } from "@/domain/valuation/treasury-bond-issues";
 import { utcDateOrNull } from "@/lib/calendar-date";
 import { parseSpreadsheetNumber } from "@/lib/parse-amount";
+import { annotateOversellWarnings } from "./oversell-warnings";
 
 const APPLE_REFERENCE_DATE_UNIX_MS = Date.UTC(2001, 0, 1);
 
@@ -472,14 +473,17 @@ export function parsePkoBondsXls(
     }
   }
 
-  return {
-    kind: "transaction",
-    rows: txRows,
-    validRows: txRows.filter((row) => row.errors.length === 0 && row.payload !== null),
-    errorRows: txRows.filter((row) => row.errors.length > 0),
-    newInstrumentPayloads,
-    warnings,
-  };
+  return annotateOversellWarnings(
+    {
+      kind: "transaction",
+      rows: txRows,
+      validRows: txRows.filter((row) => row.errors.length === 0 && row.payload !== null),
+      errorRows: txRows.filter((row) => row.errors.length > 0),
+      newInstrumentPayloads,
+      warnings,
+    },
+    references,
+  );
 }
 
 function makeValues(r: ParsedRow, txType: string): Record<string, string> {
