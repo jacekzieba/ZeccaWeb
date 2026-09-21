@@ -253,6 +253,40 @@ describe("niezmienniki: księga i wycena", () => {
   });
 });
 
+describe("niezmienniki: niezależny rachunek TWR", () => {
+  // indeks_t = indeks_{t-1} · V_t / (V_{t-1} + przepływ_t); przepływ = wpłata/wypłata
+  // przeliczona kursem NBP z tego dnia. Wartości dzienne bierzemy z serii silnika,
+  // ale przepływy i wzór liczymy tutaj — błąd przeliczenia przepływów rozjeżdża wynik.
+  it("TWR z serii dziennej i przepływów = totalReturnPct silnika (księgi wielowalutowe)", () => {
+    forEachBook({ foreign: true, costs: true, dividends: true }, (scenario) => {
+      const { snapshot } = run(scenario);
+      const rates = new Map(scenario.fxHistory.USD.map((r) => [r.date, r.rate]));
+      // Dzień liczymy w czasie lokalnym — tak jak silnik (transakcja o 00:00 UTC bywa
+      // poprzednim dniem lokalnym).
+      const dayOf = (iso: string) => {
+        const d = new Date(iso);
+        const pad = (n: number) => String(n).padStart(2, "0");
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      };
+      const flowByDay = new Map<string, number>();
+      for (const t of scenario.transactions) {
+        if (t.type !== "cashDeposit" && t.type !== "cashWithdrawal") continue;
+        const rate = t.currency === "PLN" ? 1 : rates.get(t.date)!;
+        const sign = t.type === "cashDeposit" ? 1 : -1;
+        const key = dayOf(`${t.date}T00:00:00.000Z`);
+        flowByDay.set(key, (flowByDay.get(key) ?? 0) + sign * t.grossAmount * rate);
+      }
+      let index = 1;
+      const series = snapshot.valuationSeries;
+      for (let i = 1; i < series.length; i += 1) {
+        const flow = flowByDay.get(dayOf(series[i].date)) ?? 0;
+        index *= series[i].value / (series[i - 1].value + flow);
+      }
+      expect(snapshot.metrics.totalReturnPct).toBeCloseTo((index - 1) * 100, 4);
+    });
+  });
+});
+
 describe("niezmienniki: metryki wydajności w postaci zamkniętej", () => {
   // Jedna wpłata, jeden zakup „za całość”, brak innych przepływów:
   //   TWR  = V/D − 1                       (V — wartość końcowa, D — wpłata)
