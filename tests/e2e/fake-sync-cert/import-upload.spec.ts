@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { chooseOption } from "../support/select";
 
 // Uploads the real certification fixtures through the import UI, exercising the
 // full browser read path (read-excel-file + SheetJS fallback + parsers).
@@ -16,7 +17,7 @@ test("PKO Obligacje .xls (BIFF8) imports and previews the bonds", async ({ page 
   await page.goto("/import");
 
   await page.getByRole("button", { name: /PKO Obligacje XLS/ }).click();
-  await page.locator("select").selectOption({ label: "IKZE Obligacje" });
+  await chooseOption(page.getByRole("combobox").first(), "IKZE Obligacje");
   await page.locator('input[type="file"]').setInputFiles(`${FIXTURES}/pko_cert_scenario.xls`);
 
   await expect(page.getByText(/Podgląd importu/)).toBeVisible();
@@ -34,7 +35,7 @@ test("XTB .xlsx imports and previews the trades", async ({ page }) => {
   await page.goto("/import");
 
   await page.getByRole("button", { name: /XTB XLSX/ }).click();
-  await page.locator("select").selectOption({ label: "IKE ETF" });
+  await chooseOption(page.getByRole("combobox").first(), "IKE ETF");
   await page.locator('input[type="file"]').setInputFiles(`${FIXTURES}/xtb_cert_scenario.xlsx`);
 
   await expect(page.getByText(/Podgląd importu/)).toBeVisible();

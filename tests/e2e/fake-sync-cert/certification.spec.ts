@@ -43,7 +43,7 @@ test("converts EUR, USD and GBP holdings and the display currency", async ({ pag
   const value = page.getByTestId("portfolio-detail-section-kpiValue");
   const holdings = page.getByTestId("portfolio-detail-section-holdings");
 
-  await expect(value).toContainText(/108[\s\u00a0\u202f]037 PLN/);
+  await expect(value).toContainText(/108[\s\u00a0\u202f]037\s?zł/);
   await expect(holdings).toContainText(/VWCE\.DE[\s\S]*30[\s\u00a0\u202f]360/);
   await expect(holdings).toContainText(/CSPX\.UK[\s\S]*43[\s\u00a0\u202f]680/);
   await expect(holdings).toContainText(/IEML\.UK[\s\S]*5[\s\u00a0\u202f]?830/);
@@ -53,7 +53,7 @@ test("converts EUR, USD and GBP holdings and the display currency", async ({ pag
   await page.goto(`/portfolios/${IKE_ID}`);
 
   await expect(page.getByTestId("portfolio-detail-section-kpiValue")).toContainText(
-    /23[\s\u00a0\u202f]486 EUR/,
+    /23[\s\u00a0\u202f]486\s?€/,
   );
 });
 
@@ -64,7 +64,7 @@ test("values an inflation-indexed EDO bond through the UI", async ({ page }) => 
   await holdings.getByRole("button", { name: /EDO/ }).click();
 
   await expect(page.getByTestId("portfolio-detail-section-kpiValue")).toContainText(
-    /8[\s\u00a0\u202f]?706 PLN/,
+    /8[\s\u00a0\u202f]?706\s?zł/,
   );
   await expect(holdings).toContainText(/EDO0432[\s\S]*113,96[\s\S]*4[\s\u00a0\u202f]?558/);
   await expect(holdings).toContainText("Obligacja skarbowa");
@@ -77,7 +77,7 @@ test("keeps the full representative portfolio total stable", async ({ page }) =>
   const summary = page.getByTestId("dashboard-section-summary");
   const portfolios = page.getByTestId("dashboard-section-portfolios");
 
-  await expect(summary).toContainText(/179[\s\u00a0\u202f]689[\s\S]*PLN/);
+  await expect(summary).toContainText(/179[\s\u00a0\u202f]689\s?zł/);
   await expect(portfolios).toContainText(/IKE ETF[\s\S]*108[\s\u00a0\u202f]037/);
   await expect(portfolios).toContainText(/IKZE Obligacje[\s\S]*8[\s\u00a0\u202f]?706/);
   await expect(portfolios).toContainText(/Portfel zwykły[\s\S]*62[\s\u00a0\u202f]945/);
