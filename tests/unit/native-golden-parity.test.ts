@@ -102,11 +102,9 @@ describe("złoty scenariusz: wszystkie typy transakcji (natywny all_transaction_
     expect(snapshot.cashflows.taxes).toBeCloseTo(expected.totalTaxes + standalone("tax"), 2);
   });
 
-  // Znany rozjazd: natywne `dividendsInterest` (330) wlicza zysk z zamkniętej
-  // lokaty (2100 − 2000 = 100), web (230) — tylko dywidendy, odsetki i kupony.
-  // `it.fails` zmieni się w błąd, gdy web zacznie liczyć odsetki od lokat — wtedy
-  // usuń `.fails`.
-  it.fails("dywidendy + odsetki wliczają zysk z lokaty (jak natywnie)", () => {
+  // Natywne `dividendsInterest` (330) wlicza zysk z zamkniętej lokaty (2100 − 2000 = 100);
+  // web pomijał go (230). Od tej zmiany oba liczą tak samo.
+  it("dywidendy + odsetki wliczają zysk z lokaty (jak natywnie)", () => {
     expect(snapshot.cashflows.dividends + snapshot.cashflows.interest).toBeCloseTo(
       expected.dividendsInterest,
       2,

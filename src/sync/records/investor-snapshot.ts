@@ -662,6 +662,9 @@ function buildCashflowSummary(
   let interest = 0;
   let fees = 0;
   let taxes = 0;
+  // Otwarte lokaty (FIFO per portfel i instrument), koszt w walucie prezentacji po kursie
+  // z dnia otwarcia — do wyliczenia odsetek przy zamknięciu.
+  const openDeposits = new Map<string, { quantity: number; unitCost: number }[]>();
 
   for (const transaction of dataset.transactions) {
     if (!accountIds.has(transaction.portfolioID)) continue;
@@ -686,6 +689,31 @@ function buildCashflowSummary(
       case "bondCoupon":
         interest += gross;
         break;
+      // Odsetki od lokaty to nie osobna transakcja, tylko różnica między kwotą przy
+      // zamknięciu a wpłaconą przy otwarciu — tak liczy je natywny LedgerEngine
+      // (`dividendsInterest += max(0, kwota − koszt)`); web pomijał je w „odsetkach”.
+      case "depositOpen": {
+        const key = `${transaction.portfolioID}|${transaction.instrumentID ?? ""}`;
+        const lots = openDeposits.get(key) ?? [];
+        lots.push({ quantity: 1, unitCost: gross });
+        openDeposits.set(key, lots);
+        break;
+      }
+      case "depositClose": {
+        const key = `${transaction.portfolioID}|${transaction.instrumentID ?? ""}`;
+        const lots = openDeposits.get(key) ?? [];
+        let remaining = (transaction.quantity ?? 0) > EPSILON ? transaction.quantity! : 1;
+        let cost = 0;
+        while (remaining > EPSILON && lots.length > 0) {
+          const take = Math.min(lots[0].quantity, remaining);
+          cost += take * lots[0].unitCost;
+          lots[0].quantity -= take;
+          remaining -= take;
+          if (lots[0].quantity <= EPSILON) lots.shift();
+        }
+        interest += Math.max(0, gross - cost);
+        break;
+      }
       case "fee":
         fees += gross;
         break;
