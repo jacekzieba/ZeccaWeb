@@ -44,6 +44,8 @@ export type GoldenScenario = {
   priceHistory: Record<string, { date: string; close: number }[]>;
   fxHistory: Record<string, { date: string; rate: number }[]>;
   cpiHistory: { date: string; yoyRate: number }[];
+  // Oczekiwane liczby mają różne kształty (liczby, słowniki, tablice) — testy je rzutują.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   expected: Record<string, any>;
   invalidTransactions: GoldenTransaction[];
 };

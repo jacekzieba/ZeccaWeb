@@ -206,7 +206,8 @@ describe("niezmienniki: księga i wycena", () => {
         ...scenario,
         transactions: scenario.transactions.map((t) => {
           if (t.type !== "cashDeposit" || t.currency !== "USD") return t;
-          const { fxRateToBase: _omit, ...rest } = t;
+          const rest = { ...t };
+          delete rest.fxRateToBase;
           return rest;
         }),
       };
