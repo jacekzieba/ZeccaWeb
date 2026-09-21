@@ -11,6 +11,7 @@ import type { ImportReferenceData, TransactionImportPreview, TransactionImportRo
 import type { WriteRecordPayload } from "@/sync/records/record-writer";
 import { knownTreasuryBondIssue } from "@/domain/valuation/treasury-bond-issues";
 import { utcDateOrNull } from "@/lib/calendar-date";
+import { parseSpreadsheetNumber } from "@/lib/parse-amount";
 
 const APPLE_REFERENCE_DATE_UNIX_MS = Date.UTC(2001, 0, 1);
 
@@ -40,10 +41,7 @@ function normalizeHeader(h: string) {
 }
 
 function parseNumber(v: unknown): number | null {
-  if (typeof v === "number") return v;
-  const s = String(v ?? "").replace(",", ".").trim();
-  const n = parseFloat(s);
-  return isFinite(n) ? n : null;
+  return parseSpreadsheetNumber(v);
 }
 
 function parseString(v: unknown): string {

@@ -9,6 +9,7 @@
  */
 
 import type { ImportReferenceData, TransactionImportPreview, TransactionImportRow } from "./import-parser";
+import { parseSpreadsheetNumber } from "@/lib/parse-amount";
 import type { WriteRecordPayload } from "@/sync/records/record-writer";
 import type { EtfCatalog } from "./etf-catalog";
 import {
@@ -167,8 +168,8 @@ export function parseXtbXlsx(
     if (!typeRaw) continue;
     if (typeRaw.toLowerCase() === "total") {
       const totalRaw = cells[amountCol];
-      const total = typeof totalRaw === "number" ? totalRaw : parseFloat(String(totalRaw ?? "").replace(",", "."));
-      if (isFinite(total)) reportedTotal = total;
+      const total = parseSpreadsheetNumber(totalRaw);
+      if (total !== null) reportedTotal = total;
       continue;
     }
 
@@ -185,13 +186,14 @@ export function parseXtbXlsx(
     }
 
     const amountRaw = cells[amountCol];
-    const amount = typeof amountRaw === "number" ? amountRaw : parseFloat(String(amountRaw ?? "").replace(",", "."));
-    if (!isFinite(amount)) {
+    const parsedAmount = parseSpreadsheetNumber(amountRaw);
+    if (parsedAmount === null) {
       // Cichy `continue` gubił wiersz kasowy bez śladu; suma kontrolna „Total” łapała to
       // tylko wtedy, gdy plik ją zawierał.
       warnings.push(`Wiersz ${i + 1}: brak poprawnej kwoty — pominięto`);
       continue;
     }
+    const amount = parsedAmount;
     coveredAmountSum += amount;
 
     const rawId = idCol >= 0 ? String(cells[idCol] ?? "").trim() : "";

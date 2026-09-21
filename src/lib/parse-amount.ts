@@ -51,3 +51,19 @@ export function parsePositiveAmount(value: string | null | undefined): number | 
 export function formatAmountInput(value: number, decimals = 2): string {
   return value.toFixed(decimals).replace(".", ",");
 }
+
+/**
+ * Liczba z komórki arkusza (XLS/XLSX): liczby przechodzą bez zmian, tekst tylko w zwykłym
+ * zapisie dziesiętnym — z przecinkiem lub kropką, ze spacjami (także twardymi) w tysiącach.
+ * `parseFloat` brał „1 000,50” za 1, a „12abc” za 12, więc kwota z tekstu zmieniała się
+ * po cichu; tu takie wartości dają `null` i wiersz trafia do ostrzeżeń.
+ */
+export function parseSpreadsheetNumber(value: unknown): number | null {
+  if (typeof value === "number") {
+    return Number.isFinite(value) && Math.abs(value) <= AMOUNT_MAGNITUDE_CAP ? value : null;
+  }
+  const normalized = String(value ?? "").replace(/\s/g, "").replace(",", ".");
+  if (!/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(normalized)) return null;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) && Math.abs(parsed) <= AMOUNT_MAGNITUDE_CAP ? parsed : null;
+}
