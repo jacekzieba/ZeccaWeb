@@ -1,0 +1,65 @@
+name: CI
+
+# Bramka dla web: typy, testy jednostkowe z progami pokrycia i e2e w przeglądarce.
+# Wcześniej nic tego nie uruchamiało — 14 z 38 specyfikacji e2e było czerwonych po
+# zmianach UI (własny Select, ConfirmDialog, nowy modal), a nikt się o tym nie dowiedział.
+#
+# Lint (`npm run lint`) celowo NIE jest bramką: ma kilkaset błędów sprzed tego workflow.
+# Włącz go, gdy zejdzie do zera, żeby nowy błąd nie ginął w starym szumie.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Tryb fake-sync nie łączy się z backendem, ale middleware wymaga, by adres i klucz
+  # Supabase istniały. Wartości zastępcze — żadnych sekretów w CI.
+  NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-dummy-anon-key
+
+jobs:
+  unit:
+    name: Typy i testy jednostkowe (z progami pokrycia)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Testy jednostkowe + progi pokrycia
+        run: npm run test:coverage
+
+  e2e:
+    name: e2e (fake-sync i scenariusz certyfikacyjny)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Przeglądarka
+        run: npx playwright install --with-deps chromium
+      - name: e2e fake-sync
+        run: npm run test:e2e:fake-sync
+      - name: e2e certyfikacyjne
+        run: npx playwright test --config playwright.fake-sync-cert.config.ts
+      - name: Ślady przy porażce
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7
