@@ -186,7 +186,12 @@ export function parseXtbXlsx(
 
     const amountRaw = cells[amountCol];
     const amount = typeof amountRaw === "number" ? amountRaw : parseFloat(String(amountRaw ?? "").replace(",", "."));
-    if (!isFinite(amount)) continue;
+    if (!isFinite(amount)) {
+      // Cichy `continue` gubił wiersz kasowy bez śladu; suma kontrolna „Total” łapała to
+      // tylko wtedy, gdy plik ją zawierał.
+      warnings.push(`Wiersz ${i + 1}: brak poprawnej kwoty — pominięto`);
+      continue;
+    }
     coveredAmountSum += amount;
 
     const rawId = idCol >= 0 ? String(cells[idCol] ?? "").trim() : "";
