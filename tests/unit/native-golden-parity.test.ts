@@ -109,7 +109,7 @@ describe("złoty scenariusz: wszystkie typy transakcji (natywny all_transaction_
 });
 
 describe("złoty scenariusz: portfel wielowalutowy (natywny diversified_portfolio)", () => {
-  const { scenario, snapshot, detail, expected } = evaluate(diversified);
+  const { snapshot, detail, expected } = evaluate(diversified);
 
   it("wartość portfela, pozycje i gotówka po kursach z dnia wyceny", () => {
     expect(snapshot.totalValue).toBeCloseTo(expected.totalValue, 2);
@@ -118,17 +118,14 @@ describe("złoty scenariusz: portfel wielowalutowy (natywny diversified_portfoli
     expect(holdings).toBeCloseTo(expected.holdingsValue, 2);
   });
 
-  // Różnica definicji, nie błąd: koszt pozycji w walucie obcej web przelicza kursem
-  // z dnia zakupu (USD 4,0, EUR 4,5 → 5125 zł, więc P/L 1180 zawiera zysk kursowy),
-  // natywny `ValuationEngine` — kursem bieżącym (4,2 i 4,6 → 5350 zł, P/L 955 bez
-  // efektu kursu). Web jest tu spójny z serią wyniku (`pnlSeriesLastValue` = 1180).
-  it("niezrealizowany P/L: koszt po kursie z dnia zakupu (natywnie: po bieżącym)", () => {
-    const costAtPurchaseFx = scenario.transactions
-      .filter((t) => t.type === "buy")
-      .reduce((sum, t) => sum + t.grossAmount * (t.fxRateToBase ?? 1), 0);
-    expect(snapshot.metrics.unrealizedPnl).toBeCloseTo(expected.holdingsValue - costAtPurchaseFx, 2);
+  // Koszt pozycji w walucie obcej po kursie z dnia zakupu (USD 4,0, EUR 4,5 → 5125 zł), więc
+  // zysk 1180 zawiera efekt kursu: 955 (instrumenty po dzisiejszym kursie) + 225 (kurs).
+  // Web liczył tak od początku; natywnie było 955 (koszt po kursie bieżącym) i rozjeżdżało się
+  // z serią wyniku (`pnlSeriesLastValue` = 1180). Teraz oba silniki dają to samo.
+  it("niezrealizowany P/L: koszt po kursie z dnia zakupu, razem z efektem kursu", () => {
+    expect(snapshot.metrics.unrealizedPnl).toBeCloseTo(expected.unrealizedPnL, 2);
     expect(snapshot.metrics.unrealizedPnl).toBeCloseTo(expected.pnlSeriesLastValue, 2);
-    expect(snapshot.metrics.unrealizedPnl).not.toBeCloseTo(expected.unrealizedPnL, 2);
+    expect(expected.unrealizedInstrumentPnL + expected.unrealizedFXEffect).toBeCloseTo(expected.unrealizedPnL, 2);
   });
 
   it("seria wartości: początek i koniec", () => {

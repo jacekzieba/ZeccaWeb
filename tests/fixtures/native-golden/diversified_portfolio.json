@@ -93,8 +93,10 @@
     "totalValue": 11180,
     "holdingsValue": 6305,
     "cashValue": 4875,
-    "costBasis": 5350,
-    "unrealizedPnL": 955,
+    "costBasis": 5125,
+    "unrealizedPnL": 1180,
+    "unrealizedInstrumentPnL": 955,
+    "unrealizedFXEffect": 225,
     "change30d": 443,
     "change30dPct": 4.125,
     "nativePrices": {
