@@ -90,16 +90,12 @@ describe("złoty scenariusz: wszystkie typy transakcji (natywny all_transaction_
     expect(snapshot.metrics.realReturnPct).toBeCloseTo(expected.realReturn, 2);
   });
 
-  // Różnica definicji, nie błąd: natywne `ledger.totalFees/totalTaxes` sumują tylko
-  // pola `fees`/`taxes` transakcji, web dolicza także osobne transakcje „opłata”
-  // i „podatek”. Test przypina definicję webową, żeby zmiana była świadoma.
-  it("opłaty i podatki: web liczy też osobne transakcje fee/tax", () => {
-    const standalone = (type: string) =>
-      scenario.transactions
-        .filter((t) => t.type === type)
-        .reduce((sum, t) => sum + t.grossAmount, 0);
-    expect(snapshot.cashflows.fees).toBeCloseTo(expected.totalFees + standalone("fee"), 2);
-    expect(snapshot.cashflows.taxes).toBeCloseTo(expected.totalTaxes + standalone("tax"), 2);
+  // Sumy widoczne dla użytkownika: pola prowizji/podatku transakcji PLUS osobne transakcje
+  // „opłata” i „podatek” (12 + 25 = 37, 54 + 30 = 84). Natywnie tak liczy `ExtendedStats`,
+  // a od niedawna także migawki historii i eksport CSV.
+  it("opłaty i podatki razem (z osobnymi transakcjami fee/tax)", () => {
+    expect(snapshot.cashflows.fees).toBeCloseTo(expected.feesTotal, 2);
+    expect(snapshot.cashflows.taxes).toBeCloseTo(expected.taxesTotal, 2);
   });
 
   // Natywne `dividendsInterest` (330) wlicza zysk z zamkniętej lokaty (2100 − 2000 = 100);

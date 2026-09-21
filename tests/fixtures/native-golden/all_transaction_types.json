@@ -286,6 +286,8 @@
     "realizedPnL": 420,
     "totalFees": 12,
     "totalTaxes": 54,
+    "feesTotal": 37,
+    "taxesTotal": 84,
     "dividendsInterest": 330,
     "totalValue": 11555,
     "holdingsValue": 1846,
