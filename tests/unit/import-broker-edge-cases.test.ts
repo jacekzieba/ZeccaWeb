@@ -32,13 +32,24 @@ describe("parseSpreadsheetNumber", () => {
     ["-45", -45],
     ["1e3", 1000],
     ["  7  ", 7],
+    [".5", 0.5],
+    ["5.", 5],
+    ["1.5e2", 150],
+    ["1e+3", 1000],
+    ["1E-2", 0.01],
+    ["+2,5", 2.5],
+    [1e12, 1e12], // dokładnie na limicie — jeszcze dozwolone
+    ["1000000000000", 1e12],
+    [-1e12, -1e12],
+    [0, 0],
   ])("%s → %d", (input, expected) => {
     expect(parseSpreadsheetNumber(input)).toBeCloseTo(expected, 6);
   });
 
   it.each([
     "12abc", "abc", "", "  ", "1,234.50", "0x10", "Infinity", "1e999", "--3", null, undefined,
-    Number.NaN, Number.POSITIVE_INFINITY, 1e13, "1000000000001",
+    Number.NaN, Number.POSITIVE_INFINITY, 1e13, "1000000000001", 1e12 + 1, -1e12 - 1,
+    ".", "+", "-", "e5", "1e", "1e+", "5.5.5", "1.2e3.4", "1,2,3", "٣", "１２", {}, true,
   ])("odrzuca %s", (input) => {
     expect(parseSpreadsheetNumber(input)).toBeNull();
   });
