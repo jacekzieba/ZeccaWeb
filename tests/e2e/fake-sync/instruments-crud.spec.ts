@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { confirmDialog } from "../support/confirm";
 
 test("adds, edits and removes an unheld instrument in fake sync", async ({ page }) => {
   await page.goto("/instruments");
@@ -20,7 +21,7 @@ test("adds, edits and removes an unheld instrument in fake sync", async ({ page 
 
   const editedRow = main.getByRole("row", { name: "E2E1 E2E Instrument edytowany" });
   await expect(editedRow).toBeVisible();
-  page.once("dialog", (dialog) => dialog.accept());
   await editedRow.getByRole("button", { name: "Usuń" }).click();
+  await confirmDialog(page);
   await expect(editedRow).toBeHidden();
 });

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { confirmDialog } from "../support/confirm";
 
 test("shows a queued sync conflict and lets the user discard it", async ({ page }) => {
   await page.addInitScript(() => {
@@ -19,7 +20,7 @@ test("shows a queued sync conflict and lets the user discard it", async ({ page 
   await expect(page.getByText("Oczekujące zmiany")).toBeVisible();
   await expect(page.getByText("Rekord zmienił się na innym urządzeniu.")).toBeVisible();
 
-  page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Odrzuć" }).click();
+  await confirmDialog(page, "Odrzuć");
   await expect(page.getByRole("button", { name: /Konflikt 1/ })).toHaveCount(0);
 });

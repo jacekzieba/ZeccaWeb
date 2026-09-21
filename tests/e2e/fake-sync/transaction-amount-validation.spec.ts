@@ -13,11 +13,13 @@ test("add-transaction blocks amounts over the 1e12 cap", async ({ page }) => {
 
   await page.getByRole("main").getByRole("button", { name: "Dodaj transakcję" }).click();
 
-  const cancel = page.getByRole("button", { name: "Anuluj" });
+  const modal = page.locator(".transaction-modal-panel");
+  await modal.getByRole("button", { name: "Wpłata gotówki", exact: true }).click();
+  const cancel = modal.getByRole("button", { name: "Anuluj" });
   await expect(cancel).toBeVisible();
 
-  const amount = page.locator('label:has-text("Kwota (brutto)") + input');
-  const submit = page.locator(".transaction-modal-submit");
+  const amount = modal.getByRole("textbox", { name: "Kwota (brutto)" });
+  const submit = modal.getByRole("button", { name: /^Dodaj/ });
   const amountError = page.getByText("Podaj poprawną kwotę.");
 
   // 9e99 — finite but far above the 1e12 cap → rejected, modal stays open.
