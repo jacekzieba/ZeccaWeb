@@ -4,11 +4,11 @@ test("command palette searches pages and navigates with the keyboard", async ({ 
   await page.goto("/dashboard");
 
   await page.keyboard.press("Meta+k");
-  const search = page.getByPlaceholder("Szukaj instrumentu, transakcji, portfela…");
+  const search = page.getByPlaceholder(/Szukaj instrumentu, transakcji/);
   await expect(search).toBeFocused();
 
   await search.fill("porównanie");
-  await expect(page.getByRole("button", { name: /Porównanie/ })).toBeVisible();
+  await expect(page.getByRole("option", { name: /Porównanie/ })).toBeVisible();
   await search.press("Enter");
 
   await expect(page).toHaveURL(/\/benchmark$/);

@@ -37,6 +37,7 @@ import { buildInvestorDataSnapshot, buildPortfolioDetail } from "@/sync/records/
 import { isFakeSyncEnabled } from "@/lib/env";
 import { TYPOGRAPHY } from "@/lib/design-tokens";
 import { formatAmountInput, parseAmount } from "@/lib/parse-amount";
+import { oversellInputsFromRecords, oversellWarningForCandidate } from "@/sync/records/oversell-check";
 import { V2, v2Mix } from "@/lib/v2-design";
 import {
   InstrumentEditorModal,
@@ -653,6 +654,28 @@ export function AddTransactionModal({
     }
     setError(null);
   }
+
+  // Ostrzeżenie (nie blokada): sprzedaż większa niż stan na dzień transakcji. Silnik web
+  // odcina ją do posiadanych sztuk i księguje wpływ tylko za nie, więc lepiej powiedzieć
+  // o tym teraz niż zostawić gotówkę różną od wyciągu brokera. Edytowana transakcja jest
+  // wyłączona z istniejących, żeby nie liczyła się dwa razy.
+  const oversellWarning = useMemo(() => {
+    if (!records || !portfolioId || !instrumentId) return null;
+    if (txType !== "sell" && txType !== "bondRedemption") return null;
+    const qty = parseAmount(quantity);
+    const dateMs = Date.parse(date);
+    if (qty == null || !(qty > 0) || Number.isNaN(dateMs)) return null;
+    const existing = oversellInputsFromRecords(records, new Set(initialValue ? [initialValue.id] : []));
+    return oversellWarningForCandidate(existing, {
+      id: "__draft__",
+      portfolioID: portfolioId,
+      instrumentID: instrumentId,
+      transactionType: txType,
+      quantity: qty,
+      price: parseAmount(price) ?? 0,
+      dateMs,
+    });
+  }, [records, portfolioId, instrumentId, txType, quantity, price, date, initialValue]);
 
   // Auto-compute grossAmount from qty * price for buy/sell
   useEffect(() => {
@@ -1519,6 +1542,26 @@ export function AddTransactionModal({
                       options={CURRENCIES.map((c) => ({ value: c, label: c }))}
                     />
                   </Field>
+                </div>
+              )}
+
+              {oversellWarning && (
+                <div
+                  role="status"
+                  data-testid="oversell-warning"
+                  style={{
+                    marginTop: 12,
+                    padding: "9px 12px",
+                    borderRadius: "var(--r-md)",
+                    border: `0.5px solid ${v2Mix(AMBER, 0.5)}`,
+                    background: v2Mix(AMBER, 0.08),
+                    color: V2.ink,
+                    fontFamily: TYPOGRAPHY.system,
+                    fontSize: 12,
+                    lineHeight: 1.45,
+                  }}
+                >
+                  {oversellWarning} Możesz zapisać mimo to.
                 </div>
               )}
 

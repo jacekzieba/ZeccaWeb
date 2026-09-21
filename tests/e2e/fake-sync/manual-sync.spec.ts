@@ -7,6 +7,8 @@ test("manually refreshes the web snapshot from the global topbar", async ({ page
   await expect(syncButton).toBeVisible();
   await syncButton.click();
 
-  await expect(page.getByRole("status")).toHaveText("Dane zsynchronizowane.");
+  // Na stronie jest kilka regionów role=status (baner jakości danych, ukryty komunikat
+  // powłoki) — sprawdzamy ten z komunikatem, nie pierwszy z brzegu.
+  await expect(page.getByRole("status").filter({ hasText: "Dane zsynchronizowane." })).toBeVisible();
   await expect(syncButton).toBeEnabled();
 });

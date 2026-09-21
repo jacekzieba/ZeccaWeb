@@ -77,6 +77,7 @@ export const sampleSnapshot: InvestorDataSnapshot = {
     netInvested: 372_000,
     unrealizedPnl: 56_930,
     unrealizedPnlPct: 15.31,
+    unrealizedFxEffect: 0,
     totalReturnPct: 15.31,
     cagrPct: 7.21,
     realReturnPct: 11.42,

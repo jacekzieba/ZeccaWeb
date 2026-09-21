@@ -1,0 +1,119 @@
+{
+  "asOf": "2026-05-12",
+  "portfolio": {
+    "name": "IKE fixture",
+    "type": "ike"
+  },
+  "instruments": [
+    {
+      "symbol": "USSTK",
+      "kind": "stock",
+      "name": "US Stock",
+      "currency": "USD",
+      "category": "equityForeign"
+    },
+    {
+      "symbol": "EURETF",
+      "kind": "etf",
+      "name": "Euro ETF",
+      "currency": "EUR",
+      "category": "equityForeign"
+    }
+  ],
+  "transactions": [
+    {
+      "date": "2026-04-01",
+      "type": "cashDeposit",
+      "grossAmount": 10000,
+      "currency": "PLN"
+    },
+    {
+      "date": "2026-04-02",
+      "instrumentSymbol": "USSTK",
+      "type": "buy",
+      "quantity": 10,
+      "price": 100,
+      "grossAmount": 1000,
+      "currency": "USD",
+      "fxRateToBase": 4.0
+    },
+    {
+      "date": "2026-04-03",
+      "instrumentSymbol": "EURETF",
+      "type": "buy",
+      "quantity": 5,
+      "price": 50,
+      "grossAmount": 250,
+      "currency": "EUR",
+      "fxRateToBase": 4.5
+    }
+  ],
+  "latestPrices": {
+    "USSTK": 120,
+    "EURETF": 55
+  },
+  "previousPrices30d": {
+    "USSTK": 110,
+    "EURETF": 54
+  },
+  "latestFX": {
+    "PLN": 1,
+    "USD": 4.2,
+    "EUR": 4.6
+  },
+  "priceHistory": {
+    "USSTK": [
+      { "date": "2026-04-02", "close": 100 },
+      { "date": "2026-04-12", "close": 110 },
+      { "date": "2026-05-12", "close": 120 }
+    ],
+    "EURETF": [
+      { "date": "2026-04-03", "close": 50 },
+      { "date": "2026-04-12", "close": 54 },
+      { "date": "2026-05-12", "close": 55 }
+    ]
+  },
+  "fxHistory": {
+    "USD": [
+      { "date": "2026-04-02", "rate": 4.0 },
+      { "date": "2026-04-12", "rate": 4.1 },
+      { "date": "2026-05-12", "rate": 4.2 }
+    ],
+    "EUR": [
+      { "date": "2026-04-03", "rate": 4.5 },
+      { "date": "2026-04-12", "rate": 4.55 },
+      { "date": "2026-05-12", "rate": 4.6 }
+    ]
+  },
+  "cpiHistory": [
+    { "date": "2026-04-01", "yoyRate": 3.0 },
+    { "date": "2026-05-01", "yoyRate": 3.2 }
+  ],
+  "expected": {
+    "totalValue": 11180,
+    "holdingsValue": 6305,
+    "cashValue": 4875,
+    "costBasis": 5125,
+    "unrealizedPnL": 1180,
+    "unrealizedInstrumentPnL": 955,
+    "unrealizedFXEffect": 225,
+    "change30d": 443,
+    "change30dPct": 4.125,
+    "nativePrices": {
+      "USSTK": 120,
+      "EURETF": 55
+    },
+    "currencyBreakdown": {
+      "PLN": 4875,
+      "USD": 5040,
+      "EUR": 1265
+    },
+    "assetClassValues": {
+      "equity": 6305
+    },
+    "firstSnapshotValue": 10000,
+    "lastSnapshotValue": 11180,
+    "pnlSeriesLastValue": 1180,
+    "benchmarkInflationLastValue": 3.2
+  }
+}

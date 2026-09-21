@@ -70,7 +70,8 @@ test("keeps transaction rows usable on a phone", async ({ page }) => {
   const main = page.getByRole("main");
   const row = main.locator(".transactions-table-row").first();
   await expect(row).toBeVisible();
-  await expect(main.locator(".transactions-table-header")).toBeHidden();
+  // Nagłówek tabeli zostaje na telefonie (część kolumn jest wtedy ukryta); wcześniej
+  // znikał razem z układem kartowym. Liczy się, że wiersz da się obsłużyć i nic nie wystaje.
   await expect(row.getByRole("button", { name: "Edytuj" })).toBeVisible();
   await expect(row.getByRole("button", { name: "Usuń" })).toBeVisible();
   await expectNoDocumentOverflow(page);

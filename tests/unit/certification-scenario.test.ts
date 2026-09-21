@@ -45,6 +45,12 @@ describe("certification scenario — web parity", () => {
     expect(detail.cashflows.fees).toBeCloseTo(91, 2);
     expect(detail.cashflows.taxes).toBeCloseTo(1.9, 2);
 
+    // Zysk niezrealizowany i zrealizowany (natywna kotwica ADR-0008: koszt po kursie z dnia
+    // zakupu → 5 670 i 2 240). Nie były sprawdzane, więc rozjazd 4 970 vs 5 670 był niewidoczny.
+    expect(detail.metrics.unrealizedPnl).toBeCloseTo(5_670, 2);
+    expect(detail.metrics.realizedPnl).toBeCloseTo(2_240, 2);
+    // Rozbicie z natywnego testu: kurs VWCE 4,5→4,6 i IEML 5,2→5,3 daje 600 + 100 = 700 zł.
+    expect(detail.metrics.unrealizedFxEffect).toBeCloseTo(700, 2);
     expect(holding(IKE_ID, "VWCE.DE").marketValue).toBeCloseTo(30_360, 2);
     expect(holding(IKE_ID, "CSPX.UK").marketValue).toBeCloseTo(43_680, 2);
     expect(holding(IKE_ID, "IEML.UK").marketValue).toBeCloseTo(5_830, 2);

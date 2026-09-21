@@ -93,7 +93,7 @@ export function getKpiTiles(input: PortfolioKpiInput): KpiTile[] {
   // najmniejszego oporu) — większa liczba (co jest ważne) plus ślad XIRR
   // z ostatnich 12 próbek w tle (dlaczego) niosą hierarchię razem.
   const tiles: KpiTile[] = [
-    { id: "kpiUnrealized", label: "Zysk niezrealizowany", value: `${fmtSigned(metrics.unrealizedPnl)} ${currencyLabel(currency)}`, sub: `${fmtPct(metrics.unrealizedPnlPct)} od zakupu`, color: V2.ink },
+    { id: "kpiUnrealized", label: "Zysk niezrealizowany", value: `${fmtSigned(metrics.unrealizedPnl)} ${currencyLabel(currency)}`, sub: unrealizedSub(metrics, currency), color: V2.ink },
     { id: "kpiXirr", label: "MWR · XIRR", value: xirr == null ? "—" : fmtPct(xirr), sub: "rocznie", color: (xirr ?? 0) >= 0 ? V2.profit : V2.loss, featured: true, sparkline: metrics.xirrHistory },
     { id: "kpiTwr", label: "Zwrot (TWR)", value: fmtPct(metrics.totalReturnPct), sub: "bez wpłat", color: V2.ink },
     { id: "kpiCagr", label: "CAGR", value: fmtPct(metrics.cagrPct), sub: "rocznie, TWR", color: V2.ink },
@@ -151,4 +151,14 @@ export function KpiRegister({ tiles }: { tiles: KpiTile[] }) {
       }))}
     />
   );
+}
+
+
+/** „+19,68% od zakupu” z dopiskiem o efekcie kursowym, gdy pozycje w walutach obcych zmieniły
+ * kurs od zakupu (koszt liczony kursem z dnia zakupu). Główna liczba zawiera ten efekt. */
+function unrealizedSub(metrics: PortfolioMetrics, currency: string): string {
+  const base = `${fmtPct(metrics.unrealizedPnlPct)} od zakupu`;
+  return Math.abs(metrics.unrealizedFxEffect) < 0.5
+    ? base
+    : `${base} · kursowy ${fmtSigned(metrics.unrealizedFxEffect)} ${currencyLabel(currency)}`;
 }

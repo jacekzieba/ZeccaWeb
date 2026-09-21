@@ -48,6 +48,9 @@ export type PortfolioMetrics = {
   unrealizedPnl: number;
   /** Open-position unrealized P&L relative to FIFO cost basis, percent. */
   unrealizedPnlPct: number;
+  /** Ile z `unrealizedPnl` wynika ze zmiany kursu waluty od zakupu (reszta to zysk instrumentów).
+   * Tylko partie z zapisanym kursem zakupu; bez niego brak informacji ≠ zmiana kursu. */
+  unrealizedFxEffect: number;
   /** Time-weighted total return, percent, neutral to deposits/withdrawals. */
   totalReturnPct: number;
   /** Annualised time-weighted return (CAGR) over the valuation span, percent. */
@@ -114,7 +117,8 @@ export type SnapshotDiagnosticCode =
   | "fx-missing"
   | "bond-missing-macro"
   | "record-skipped"
-  | "transaction-incomplete";
+  | "transaction-incomplete"
+  | "oversell";
 
 /** A single data-quality warning. `context` names the affected subject (an
  * instrument symbol or currency code) and never includes amounts. */

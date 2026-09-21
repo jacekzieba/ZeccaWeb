@@ -9,6 +9,8 @@
  */
 
 import type { ImportReferenceData, TransactionImportPreview, TransactionImportRow } from "./import-parser";
+import { parseSpreadsheetNumber } from "@/lib/parse-amount";
+import { annotateOversellWarnings } from "./oversell-warnings";
 import type { WriteRecordPayload } from "@/sync/records/record-writer";
 import type { EtfCatalog } from "./etf-catalog";
 import {
@@ -167,8 +169,8 @@ export function parseXtbXlsx(
     if (!typeRaw) continue;
     if (typeRaw.toLowerCase() === "total") {
       const totalRaw = cells[amountCol];
-      const total = typeof totalRaw === "number" ? totalRaw : parseFloat(String(totalRaw ?? "").replace(",", "."));
-      if (isFinite(total)) reportedTotal = total;
+      const total = parseSpreadsheetNumber(totalRaw);
+      if (total !== null) reportedTotal = total;
       continue;
     }
 
@@ -185,8 +187,14 @@ export function parseXtbXlsx(
     }
 
     const amountRaw = cells[amountCol];
-    const amount = typeof amountRaw === "number" ? amountRaw : parseFloat(String(amountRaw ?? "").replace(",", "."));
-    if (!isFinite(amount)) continue;
+    const parsedAmount = parseSpreadsheetNumber(amountRaw);
+    if (parsedAmount === null) {
+      // Cichy `continue` gubił wiersz kasowy bez śladu; suma kontrolna „Total” łapała to
+      // tylko wtedy, gdy plik ją zawierał.
+      warnings.push(`Wiersz ${i + 1}: brak poprawnej kwoty — pominięto`);
+      continue;
+    }
+    const amount = parsedAmount;
     coveredAmountSum += amount;
 
     const rawId = idCol >= 0 ? String(cells[idCol] ?? "").trim() : "";
@@ -505,15 +513,18 @@ export function parseXtbXlsx(
     }
   }
 
-  return {
-    kind: "transaction",
-    rows: txRows,
-    validRows: txRows.filter((row) => row.errors.length === 0 && row.payload),
-    errorRows: txRows.filter((row) => row.errors.length > 0),
-    newInstrumentPayloads,
-    warnings,
-    fxObservations: [...fxObservations.entries()].map(([symbol, o]) => ({ symbol, ...o })),
-  };
+  return annotateOversellWarnings(
+    {
+      kind: "transaction",
+      rows: txRows,
+      validRows: txRows.filter((row) => row.errors.length === 0 && row.payload),
+      errorRows: txRows.filter((row) => row.errors.length > 0),
+      newInstrumentPayloads,
+      warnings,
+      fxObservations: [...fxObservations.entries()].map(([symbol, o]) => ({ symbol, ...o })),
+    },
+    references,
+  );
 }
 
 function rowValues(r: CashRow): Record<string, string> {

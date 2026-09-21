@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { findOversells } from "@/domain/ledger/oversell";
+import { toOversellInput } from "./oversell-check";
 import type {
   AllocationSlice,
   CashBalance,
@@ -238,7 +240,13 @@ const settingsPayloadSchema = z.object({
 
 type AccountPayload = z.infer<typeof accountPayloadSchema>;
 type AssetPayload = z.infer<typeof assetPayloadSchema>;
-type TransactionPayload = z.infer<typeof transactionPayloadSchema>;
+type TransactionPayload = z.infer<typeof transactionPayloadSchema> & {
+  /** Kurs do PLN z historii NBP z dnia transakcji, wyliczony przy wczytaniu dla
+   * transakcji w walucie obcej BEZ własnego `fxRateToBase`. Nie pochodzi z
+   * synchronizacji. Używany wyłącznie do przepływów (wpłaty/wypłaty, XIRR, TWR)
+   * i podsumowania dywidend/opłat — koszt partii i wycena go nie czytają. */
+  historicalFxRateToBase?: number;
+};
 type ManualValuationPayload = z.infer<typeof manualValuationPayloadSchema>;
 type MarketQuotePayload = z.infer<typeof marketQuotePayloadSchema>;
 type IncomePayload = z.infer<typeof incomePayloadSchema>;
@@ -337,6 +345,8 @@ type PortfolioValuation = {
   holdingsValue: number;
   cashValue: number;
   costBasis: number;
+  /** Efekt kursowy w zysku niezrealizowanym (PLN): koszt po kursie bieżącym − po kursie zakupu. */
+  fxEffect: number;
   positionCount: number;
   allocationValues: Map<string, number>;
 };
@@ -460,6 +470,23 @@ function collectDiagnostics(
       .map((transaction) => transaction.transactionType),
   )) {
     diagnostics.push({ code: "transaction-incomplete", severity: "warning", context: type });
+  }
+
+  // Sprzedaż ponad stan: silnik odcina ją do posiadanych sztuk i księguje wpływ tylko za
+  // nie (natywnie taki zapis jest odrzucany). Bez tego wpis siedziałby w danych, a gotówka
+  // różniłaby się od wyciągu brokera bez śladu przyczyny.
+  const oversoldInstruments = new Set(
+    findOversells(
+      dataset.transactions.flatMap((transaction) => {
+        const input = toOversellInput(transaction, transaction.id);
+        return input && input.dateMs <= asOf.getTime() ? [input] : [];
+      }),
+    ).map((issue) => issue.instrumentID),
+  );
+  for (const instrumentID of oversoldInstruments) {
+    const asset = assetsByID.get(instrumentID);
+    const label = asset?.symbol?.trim() || asset?.name?.trim() || instrumentID.slice(0, 8);
+    diagnostics.push({ code: "oversell", severity: "warning", context: label });
   }
 
   const checkFx = (currency: string) => {
@@ -637,6 +664,9 @@ function buildCashflowSummary(
   let interest = 0;
   let fees = 0;
   let taxes = 0;
+  // Otwarte lokaty (FIFO per portfel i instrument), koszt w walucie prezentacji po kursie
+  // z dnia otwarcia — do wyliczenia odsetek przy zamknięciu.
+  const openDeposits = new Map<string, { quantity: number; unitCost: number }[]>();
 
   for (const transaction of dataset.transactions) {
     if (!accountIds.has(transaction.portfolioID)) continue;
@@ -644,12 +674,9 @@ function buildCashflowSummary(
 
     // Convert PLN booked amounts into the display currency at the rate on the
     // transaction's own date, so a lifetime dividend total reflects FX history.
+    const ownRate = transaction.fxRateToBase || transaction.historicalFxRateToBase;
     const transactionRate =
-      transaction.currency === "PLN" ||
-      !transaction.fxRateToBase ||
-      transaction.fxRateToBase <= 0
-        ? 1
-        : transaction.fxRateToBase;
+      transaction.currency === "PLN" || !ownRate || ownRate <= 0 ? 1 : ownRate;
     const fxRate = transactionRate / baseToPln(toDate(transaction.date));
     const gross = transaction.grossAmount * fxRate;
 
@@ -664,6 +691,31 @@ function buildCashflowSummary(
       case "bondCoupon":
         interest += gross;
         break;
+      // Odsetki od lokaty to nie osobna transakcja, tylko różnica między kwotą przy
+      // zamknięciu a wpłaconą przy otwarciu — tak liczy je natywny LedgerEngine
+      // (`dividendsInterest += max(0, kwota − koszt)`); web pomijał je w „odsetkach”.
+      case "depositOpen": {
+        const key = `${transaction.portfolioID}|${transaction.instrumentID ?? ""}`;
+        const lots = openDeposits.get(key) ?? [];
+        lots.push({ quantity: 1, unitCost: gross });
+        openDeposits.set(key, lots);
+        break;
+      }
+      case "depositClose": {
+        const key = `${transaction.portfolioID}|${transaction.instrumentID ?? ""}`;
+        const lots = openDeposits.get(key) ?? [];
+        let remaining = (transaction.quantity ?? 0) > EPSILON ? transaction.quantity! : 1;
+        let cost = 0;
+        while (remaining > EPSILON && lots.length > 0) {
+          const take = Math.min(lots[0].quantity, remaining);
+          cost += take * lots[0].unitCost;
+          lots[0].quantity -= take;
+          remaining -= take;
+          if (lots[0].quantity <= EPSILON) lots.shift();
+        }
+        interest += Math.max(0, gross - cost);
+        break;
+      }
       case "fee":
         fees += gross;
         break;
@@ -738,10 +790,32 @@ function contributionBaseAmount(
 }
 
 function transactionBaseAmount(transaction: TransactionPayload): number {
-  if (transaction.currency === "PLN" || !transaction.fxRateToBase) {
-    return transaction.grossAmount;
+  if (transaction.currency === "PLN") return transaction.grossAmount;
+  const rate = transaction.fxRateToBase || transaction.historicalFxRateToBase;
+  return rate ? transaction.grossAmount * rate : transaction.grossAmount;
+}
+
+/** Wpłata w USD bez `fxRateToBase` wchodzi do wyceny po kursie NBP z tego dnia,
+ * więc przepływ też musi — inaczej różnica (tu 300 zł na wpłacie 100 USD) jest
+ * liczona jako zysk i zawyża TWR/XIRR. Bez żadnego kursu z historii zostaje 1:1
+ * (jak dotąd); przed pierwszym punktem historii bierzemy najnowszy znany kurs,
+ * tak jak natywny HistoryEngine. */
+function withHistoricalFxRate(
+  transaction: TransactionPayload,
+  history: FxRateInput[],
+): TransactionPayload {
+  if (transaction.currency === "PLN" || (transaction.fxRateToBase ?? 0) > 0) {
+    return transaction;
   }
-  return transaction.grossAmount * transaction.fxRateToBase;
+  const atDate = resolveFxRate(transaction.currency, [], toDate(transaction.date), history);
+  const rate =
+    atDate.source === "history"
+      ? atDate.rate
+      : history
+          .filter((entry) => entry.currency === transaction.currency && entry.rate > 0)
+          .sort((a, b) => a.date.getTime() - b.date.getTime())
+          .at(-1)?.rate;
+  return rate ? { ...transaction, historicalFxRateToBase: rate } : transaction;
 }
 
 function lotBaseCost(lot: OpenLot): number {
@@ -755,9 +829,10 @@ function buildOpenPositionStats(
   asOf: Date,
   baseToPln: BaseToPln,
   precomputed: PrecomputedValuation,
-): { unrealizedPnl: number; unrealizedPnlPct: number } {
+): { unrealizedPnl: number; unrealizedPnlPct: number; unrealizedFxEffect: number } {
   let holdingsValue = 0;
   let costBasis = 0;
+  let fxEffect = 0;
 
   for (const account of accounts) {
     const ledger = computeLedger(
@@ -767,6 +842,7 @@ function buildOpenPositionStats(
     const valuation = valuePortfolio(ledger, dataset, asOf, { precomputed });
     holdingsValue += valuation.holdingsValue;
     costBasis += valuation.costBasis;
+    fxEffect += valuation.fxEffect;
   }
 
   const asOfRate = baseToPln(asOf);
@@ -774,6 +850,7 @@ function buildOpenPositionStats(
   return {
     unrealizedPnl: unrealizedPnlBase / asOfRate,
     unrealizedPnlPct: costBasis > EPSILON ? (unrealizedPnlBase / costBasis) * 100 : 0,
+    unrealizedFxEffect: fxEffect / asOfRate,
   };
 }
 
@@ -889,7 +966,7 @@ function buildMetrics(
   performanceSeries: InvestorDataSnapshot["performanceSeries"],
   valuationSeries: InvestorDataSnapshot["valuationSeries"],
   baseToPln: BaseToPln,
-  openPositionStats: { unrealizedPnl: number; unrealizedPnlPct: number },
+  openPositionStats: { unrealizedPnl: number; unrealizedPnlPct: number; unrealizedFxEffect: number },
 ): PortfolioMetrics {
   const accountIds = new Set(accounts.map((account) => account.id));
   let netInvested = 0;
@@ -938,6 +1015,7 @@ function buildMetrics(
     netInvested: Math.max(netInvested, 0),
     unrealizedPnl: openPositionStats.unrealizedPnl,
     unrealizedPnlPct: openPositionStats.unrealizedPnlPct,
+    unrealizedFxEffect: openPositionStats.unrealizedFxEffect,
     totalReturnPct,
     cagrPct,
     realReturnPct,
@@ -1226,6 +1304,9 @@ function parseDataset(
   dataset.marketQuotes.sort(
     (left, right) =>
       toDate(left.date).getTime() - toDate(right.date).getTime(),
+  );
+  dataset.transactions = dataset.transactions.map((transaction) =>
+    withHistoricalFxRate(transaction, dataset.fxRates),
   );
 
   return dataset;
@@ -1754,7 +1835,20 @@ function valuePortfolio(
   const allocationValues = new Map<string, number>();
   let holdingsValue = 0;
   let costBasis = 0;
+  let fxEffect = 0;
   let positionCount = 0;
+  const currentRates = new Map<string, number>();
+  const currentRate = (currency: string): number => {
+    if (currency === "PLN") return 1;
+    const cached = currentRates.get(currency);
+    if (cached !== undefined) return cached;
+    const resolved = resolveFxRate(currency, valuationDataset.transactions, asOf, dataset.fxRates, {
+      latestTransactionRate: dataset.useLatestTransactionFxRate,
+    });
+    const rate = resolved.source === "missing" ? 0 : resolved.rate;
+    currentRates.set(currency, rate);
+    return rate;
+  };
 
   for (const [instrumentID, quantity] of ledger.positions) {
     if (quantity <= EPSILON) {
@@ -1780,10 +1874,15 @@ function valuePortfolio(
     }
 
     holdingsValue += marketValue;
-    costBasis += (ledger.openLots.get(instrumentID) ?? []).reduce(
-      (sum, lot) => sum + lotBaseCost(lot),
-      0,
-    );
+    const lots = ledger.openLots.get(instrumentID) ?? [];
+    costBasis += lots.reduce((sum, lot) => sum + lotBaseCost(lot), 0);
+    // Efekt kursu: tylko partie z zapisanym kursem zakupu (bez niego nie wiadomo, czy kurs się
+    // ruszył — tak samo jak natywnie, gdzie koszt bez kursu zostaje po bieżącym).
+    fxEffect += lots.reduce((sum, lot) => {
+      if (lot.currency === "PLN" || !(lot.fxRateToBase && lot.fxRateToBase > 0)) return sum;
+      const now = currentRate(lot.currency);
+      return now > 0 ? sum + lot.quantity * lot.costPerUnit * (now - lot.fxRateToBase) : sum;
+    }, 0);
     positionCount += 1;
     const assetClass = assetClassLabel(asset?.kind);
     allocationValues.set(
@@ -1806,6 +1905,7 @@ function valuePortfolio(
     holdingsValue,
     cashValue,
     costBasis,
+    fxEffect,
     positionCount,
     allocationValues,
   };

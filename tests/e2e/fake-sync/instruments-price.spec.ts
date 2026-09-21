@@ -22,6 +22,7 @@ test("fetches a fake quote preview and saves it as a manual valuation", async ({
 
   await expect(main.getByText("Cena została zapisana lokalnie w fake sync.")).toBeVisible();
   await expect(main.getByText("140,00")).toBeVisible();
-  await expect(main.getByText(/\d+ PLN/).first()).toBeVisible();
+  // Kwota w PLN idzie teraz symbolem waluty („zł”), nie kodem — parytet z natywnym formatterem.
+  await expect(main.getByText(/\d+\s*zł/).first()).toBeVisible();
   await expect(main.getByText("zapisze jako wycenę manualną")).toBeHidden();
 });

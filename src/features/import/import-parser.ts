@@ -1,5 +1,9 @@
 import { z } from "zod";
 import { AMOUNT_MAGNITUDE_CAP } from "@/lib/parse-amount";
+import { utcDateOrNull } from "@/lib/calendar-date";
+import type { OversellInput } from "@/domain/ledger/oversell";
+import { toOversellInput, type TransactionLike } from "@/sync/records/oversell-check";
+import { annotateOversellWarnings } from "./oversell-warnings";
 import { nowSwiftReferenceSeconds } from "@/sync/records/macos-payloads";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
 import type { WriteRecordPayload } from "@/sync/records/record-writer";
@@ -96,6 +100,8 @@ export type ImportReferenceData = {
   existingTransactionIds: Set<string>;
   existingManualValuationIds: Set<string>;
   existingExternalImportIds?: Set<string>;
+  /** Istniejące transakcje — do ostrzeżenia o sprzedaży ponad stan w podglądzie importu. */
+  existingTransactions?: OversellInput[];
 };
 
 export type TransactionImportRow = {
@@ -158,6 +164,7 @@ export function buildImportReferenceData(
   const existingTransactionIds = new Set<string>();
   const existingManualValuationIds = new Set<string>();
   const existingExternalImportIds = new Set<string>();
+  const existingTransactions: OversellInput[] = [];
 
   for (const record of records ?? []) {
     if (record.deletedAt) continue;
@@ -188,6 +195,8 @@ export function buildImportReferenceData(
 
     if (record.envelope.type === "transaction") {
       existingTransactionIds.add(record.id);
+      const existing = toOversellInput(record.envelope.payload as TransactionLike, record.id);
+      if (existing) existingTransactions.push(existing);
       const txPayload = record.envelope.payload as { externalImportID?: string | null };
       if (txPayload.externalImportID) existingExternalImportIds.add(txPayload.externalImportID);
     }
@@ -207,6 +216,7 @@ export function buildImportReferenceData(
     existingTransactionIds,
     existingManualValuationIds,
     existingExternalImportIds,
+    existingTransactions,
   };
 }
 
@@ -262,12 +272,15 @@ export function parseTransactionTable(
     )
     .filter((row) => Object.values(row.values).some(Boolean));
 
-  return {
-    kind: "transaction",
-    rows,
-    validRows: rows.filter((row) => row.payload && row.errors.length === 0),
-    errorRows: rows.filter((row) => row.errors.length > 0),
-  };
+  return annotateOversellWarnings(
+    {
+      kind: "transaction",
+      rows,
+      validRows: rows.filter((row) => row.payload && row.errors.length === 0),
+      errorRows: rows.filter((row) => row.errors.length > 0),
+    },
+    references,
+  );
 }
 
 export function parseManualValuationTable(
@@ -341,8 +354,10 @@ function parseTransactionRow(
   const quantity = parseOptionalNumber(values.quantity ?? "");
   const price = parseOptionalNumber(values.price ?? "");
   const grossAmount = parseRequiredNumber(values.grossamount ?? "");
-  const fees = parseOptionalNumber(values.fees ?? "") ?? 0;
-  const taxes = parseOptionalNumber(values.taxes ?? "") ?? 0;
+  const parsedFees = parseOptionalNumber(values.fees ?? "");
+  const parsedTaxes = parseOptionalNumber(values.taxes ?? "");
+  const fees = parsedFees ?? 0;
+  const taxes = parsedTaxes ?? 0;
   const currency = (values.currency ?? "").toUpperCase();
 
   if (!values.date || date == null) errors.push("Nieprawidłowa data.");
@@ -375,8 +390,23 @@ function parseTransactionRow(
   }
   if (values.quantity && quantity == null) errors.push("Nieprawidłowa ilość.");
   if (values.price && price == null) errors.push("Nieprawidłowa cena.");
-  if (values.fees && fees == null) errors.push("Nieprawidłowe opłaty.");
-  if (values.taxes && taxes == null) errors.push("Nieprawidłowy podatek.");
+  // Reguły znaków jak w natywnym TransactionValidator: prowizja i podatek nie są
+  // ujemne, ilość i cena zakupu/sprzedaży są dodatnie, kwota (poza korektą) też.
+  if (values.fees && parsedFees == null) errors.push("Nieprawidłowe opłaty.");
+  else if (fees < 0) errors.push("Prowizja nie może być ujemna.");
+  if (values.taxes && parsedTaxes == null) errors.push("Nieprawidłowy podatek.");
+  else if (taxes < 0) errors.push("Podatek nie może być ujemny.");
+  if (quantity != null && quantity <= 0) errors.push("Ilość musi być dodatnia.");
+  if ((transactionType === "buy" || transactionType === "sell") && price != null && price <= 0) {
+    errors.push("Cena musi być dodatnia.");
+  }
+  if (grossAmount != null) {
+    if (transactionType === "correction") {
+      if (grossAmount === 0) errors.push("Korekta musi mieć niezerową kwotę.");
+    } else if (grossAmount <= 0) {
+      errors.push("Kwota brutto musi być dodatnia.");
+    }
+  }
   if (price == null && TYPES_USING_QUANTITY.has(transactionType)) {
     // Both engines skip an instrument transaction with no unit price, so it is
     // stored but contributes nothing until the price is filled in. The snapshot
@@ -543,6 +573,11 @@ function normalizeHeader(header: string) {
   return headerAliases[compact] ?? compact;
 }
 
+// Pełna data z godziną (eksport Excela: „2026-05-17 10:00:00”, ISO z „T” i strefą).
+// Goły `new Date("2026")` czy `new Date("May 17")` zależy od silnika JS i daje np.
+// 1 stycznia zamiast błędu, więc nic poza tym wzorcem nie jest zgadywane.
+const DATE_TIME = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?$/;
+
 function parseDateToSwiftSeconds(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return null;
@@ -550,12 +585,14 @@ function parseDateToSwiftSeconds(value: string) {
   const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
   const dotted = /^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/.exec(trimmed);
   const date = iso
-    ? new Date(Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3])))
+    ? utcDateOrNull(Number(iso[1]), Number(iso[2]), Number(iso[3]))
     : dotted
-      ? new Date(Date.UTC(Number(dotted[3]), Number(dotted[2]) - 1, Number(dotted[1])))
-      : new Date(trimmed);
+      ? utcDateOrNull(Number(dotted[3]), Number(dotted[2]), Number(dotted[1]))
+      : DATE_TIME.test(trimmed)
+        ? new Date(trimmed)
+        : null;
 
-  if (Number.isNaN(date.getTime())) return null;
+  if (!date || Number.isNaN(date.getTime())) return null;
   return (date.getTime() - APPLE_REFERENCE_DATE_UNIX_MS) / 1000;
 }
 
@@ -570,6 +607,10 @@ function parseOptionalNumber(value: string) {
     .replace(/,(?=\d{1,6}$)/, ".");
 
   if (!normalized) return null;
+  // `Number()` przyjmuje też „0x1A”, „0b11” i „Infinity” — w kolumnie kwoty to śmieci,
+  // które nie mogą wejść jako liczba. Zostaje zwykły zapis dziesiętny (z wykładnikiem,
+  // bo tak Excel eksportuje duże liczby).
+  if (!/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(normalized)) return null;
   const parsed = Number(normalized);
   if (!Number.isFinite(parsed)) return null;
   if (Math.abs(parsed) > AMOUNT_MAGNITUDE_CAP) return null;

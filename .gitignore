@@ -15,3 +15,5 @@ tools/swift-fixture-generator/.build/
 .vercel
 .env*
 .superpowers/
+.stryker-tmp/
+reports/mutation/

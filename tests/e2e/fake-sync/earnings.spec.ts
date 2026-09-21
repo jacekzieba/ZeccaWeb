@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { chooseOption } from "../support/select";
 
 test("shows macOS-style income records and supports fake-sync CRUD", async ({ page }) => {
   await page.goto("/earnings");
@@ -21,7 +22,7 @@ test("shows macOS-style income records and supports fake-sync CRUD", async ({ pa
   const addDialog = page.getByRole("dialog", { name: "Nowy wpis zarobku" });
   await expect(addDialog).toBeVisible();
   await addDialog.getByLabel("Rok").fill("2026");
-  await addDialog.getByLabel("Miesiąc").selectOption("6");
+  await chooseOption(addDialog.getByRole("combobox", { name: "Miesiąc" }), /czerwiec/i);
   await addDialog.getByLabel("Dochód").fill("12345");
   await addDialog.getByPlaceholder("np. Wynagrodzenie, Faktura miesięczna").fill("E2E Salary");
   await addDialog.getByRole("button", { name: "Zapisz" }).click();
@@ -82,9 +83,9 @@ test("keeps separate earnings with the same month, type and source", async ({ pa
   for (const amount of ["11111", "22222"]) {
     await main.getByRole("button", { name: "Dodaj wynagrodzenie" }).click();
     const dialog = page.getByRole("dialog", { name: "Nowy wpis zarobku" });
-    await dialog.getByLabel("Typ").selectOption("business");
+    await chooseOption(dialog.getByRole("combobox", { name: "Typ" }), /działalno|business|firm/i);
     await dialog.getByLabel("Rok").fill("2026");
-    await dialog.getByLabel("Miesiąc").selectOption("3");
+    await chooseOption(dialog.getByRole("combobox", { name: "Miesiąc" }), /marzec/i);
     await dialog.getByLabel("Przychód").fill(amount);
     await dialog
       .getByPlaceholder("np. Wynagrodzenie, Faktura miesięczna")

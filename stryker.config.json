@@ -1,0 +1,41 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "testRunner": "vitest",
+  "plugins": [
+    "@stryker-mutator/vitest-runner"
+  ],
+  "vitest": {
+    "configFile": "vitest.config.ts"
+  },
+  "coverageAnalysis": "perTest",
+  "mutate": [
+    "src/domain/metrics/portfolio-metrics.ts",
+    "src/domain/valuation/price-resolver.ts",
+    "src/lib/parse-amount.ts",
+    "src/lib/calendar-date.ts"
+  ],
+  "reporters": [
+    "clear-text",
+    "progress"
+  ],
+  "thresholds": {
+    "high": 85,
+    "low": 70,
+    "break": null
+  },
+  "tempDirName": ".stryker-tmp",
+  "cleanTempDir": true,
+  "ignorePatterns": [
+    "tools",
+    ".next",
+    "test-results",
+    "playwright-report",
+    "coverage",
+    "public",
+    "docs",
+    "tests/e2e",
+    ".git",
+    ".vercel",
+    "reports"
+  ]
+}

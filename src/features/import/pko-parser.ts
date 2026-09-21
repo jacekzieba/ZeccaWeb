@@ -10,6 +10,9 @@
 import type { ImportReferenceData, TransactionImportPreview, TransactionImportRow } from "./import-parser";
 import type { WriteRecordPayload } from "@/sync/records/record-writer";
 import { knownTreasuryBondIssue } from "@/domain/valuation/treasury-bond-issues";
+import { utcDateOrNull } from "@/lib/calendar-date";
+import { parseSpreadsheetNumber } from "@/lib/parse-amount";
+import { annotateOversellWarnings } from "./oversell-warnings";
 
 const APPLE_REFERENCE_DATE_UNIX_MS = Date.UTC(2001, 0, 1);
 
@@ -22,12 +25,12 @@ function parsePolishDate(s: string): Date | null {
   if (!trimmed) return null;
   // "2024-03-15" or "15.03.2024"
   const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
-  if (iso) return new Date(Date.UTC(+iso[1], +iso[2] - 1, +iso[3]));
+  if (iso) return utcDateOrNull(+iso[1], +iso[2], +iso[3]);
   const dotted = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(trimmed);
-  if (dotted) return new Date(Date.UTC(+dotted[3], +dotted[2] - 1, +dotted[1]));
-  // Excel serial date
-  const serial = parseFloat(trimmed);
-  if (!isNaN(serial)) {
+  if (dotted) return utcDateOrNull(+dotted[3], +dotted[2], +dotted[1]);
+  // Excel serial date — tylko czysta liczba (parseFloat brał „2024abc” za numer dnia)
+  if (/^\d+(\.\d+)?$/.test(trimmed)) {
+    const serial = Number(trimmed);
     const epoch = Date.UTC(1899, 11, 30);
     return new Date(epoch + serial * 86_400_000);
   }
@@ -39,10 +42,7 @@ function normalizeHeader(h: string) {
 }
 
 function parseNumber(v: unknown): number | null {
-  if (typeof v === "number") return v;
-  const s = String(v ?? "").replace(",", ".").trim();
-  const n = parseFloat(s);
-  return isFinite(n) ? n : null;
+  return parseSpreadsheetNumber(v);
 }
 
 function parseString(v: unknown): string {
@@ -473,14 +473,17 @@ export function parsePkoBondsXls(
     }
   }
 
-  return {
-    kind: "transaction",
-    rows: txRows,
-    validRows: txRows.filter((row) => row.errors.length === 0 && row.payload !== null),
-    errorRows: txRows.filter((row) => row.errors.length > 0),
-    newInstrumentPayloads,
-    warnings,
-  };
+  return annotateOversellWarnings(
+    {
+      kind: "transaction",
+      rows: txRows,
+      validRows: txRows.filter((row) => row.errors.length === 0 && row.payload !== null),
+      errorRows: txRows.filter((row) => row.errors.length > 0),
+      newInstrumentPayloads,
+      warnings,
+    },
+    references,
+  );
 }
 
 function makeValues(r: ParsedRow, txType: string): Record<string, string> {
