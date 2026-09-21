@@ -126,6 +126,9 @@ describe("złoty scenariusz: portfel wielowalutowy (natywny diversified_portfoli
     expect(snapshot.metrics.unrealizedPnl).toBeCloseTo(expected.unrealizedPnL, 2);
     expect(snapshot.metrics.unrealizedPnl).toBeCloseTo(expected.pnlSeriesLastValue, 2);
     expect(expected.unrealizedInstrumentPnL + expected.unrealizedFXEffect).toBeCloseTo(expected.unrealizedPnL, 2);
+    // Rozbicie: efekt kursu (koszt po kursie bieżącym − po kursie zakupu) i zysk samych instrumentów.
+    expect(snapshot.metrics.unrealizedFxEffect).toBeCloseTo(expected.unrealizedFXEffect, 2);
+    expect(snapshot.metrics.unrealizedPnl - snapshot.metrics.unrealizedFxEffect).toBeCloseTo(expected.unrealizedInstrumentPnL, 2);
   });
 
   it("seria wartości: początek i koniec", () => {

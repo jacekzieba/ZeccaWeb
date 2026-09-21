@@ -345,6 +345,8 @@ type PortfolioValuation = {
   holdingsValue: number;
   cashValue: number;
   costBasis: number;
+  /** Efekt kursowy w zysku niezrealizowanym (PLN): koszt po kursie bieżącym − po kursie zakupu. */
+  fxEffect: number;
   positionCount: number;
   allocationValues: Map<string, number>;
 };
@@ -827,9 +829,10 @@ function buildOpenPositionStats(
   asOf: Date,
   baseToPln: BaseToPln,
   precomputed: PrecomputedValuation,
-): { unrealizedPnl: number; unrealizedPnlPct: number } {
+): { unrealizedPnl: number; unrealizedPnlPct: number; unrealizedFxEffect: number } {
   let holdingsValue = 0;
   let costBasis = 0;
+  let fxEffect = 0;
 
   for (const account of accounts) {
     const ledger = computeLedger(
@@ -839,6 +842,7 @@ function buildOpenPositionStats(
     const valuation = valuePortfolio(ledger, dataset, asOf, { precomputed });
     holdingsValue += valuation.holdingsValue;
     costBasis += valuation.costBasis;
+    fxEffect += valuation.fxEffect;
   }
 
   const asOfRate = baseToPln(asOf);
@@ -846,6 +850,7 @@ function buildOpenPositionStats(
   return {
     unrealizedPnl: unrealizedPnlBase / asOfRate,
     unrealizedPnlPct: costBasis > EPSILON ? (unrealizedPnlBase / costBasis) * 100 : 0,
+    unrealizedFxEffect: fxEffect / asOfRate,
   };
 }
 
@@ -961,7 +966,7 @@ function buildMetrics(
   performanceSeries: InvestorDataSnapshot["performanceSeries"],
   valuationSeries: InvestorDataSnapshot["valuationSeries"],
   baseToPln: BaseToPln,
-  openPositionStats: { unrealizedPnl: number; unrealizedPnlPct: number },
+  openPositionStats: { unrealizedPnl: number; unrealizedPnlPct: number; unrealizedFxEffect: number },
 ): PortfolioMetrics {
   const accountIds = new Set(accounts.map((account) => account.id));
   let netInvested = 0;
@@ -1010,6 +1015,7 @@ function buildMetrics(
     netInvested: Math.max(netInvested, 0),
     unrealizedPnl: openPositionStats.unrealizedPnl,
     unrealizedPnlPct: openPositionStats.unrealizedPnlPct,
+    unrealizedFxEffect: openPositionStats.unrealizedFxEffect,
     totalReturnPct,
     cagrPct,
     realReturnPct,
@@ -1829,7 +1835,20 @@ function valuePortfolio(
   const allocationValues = new Map<string, number>();
   let holdingsValue = 0;
   let costBasis = 0;
+  let fxEffect = 0;
   let positionCount = 0;
+  const currentRates = new Map<string, number>();
+  const currentRate = (currency: string): number => {
+    if (currency === "PLN") return 1;
+    const cached = currentRates.get(currency);
+    if (cached !== undefined) return cached;
+    const resolved = resolveFxRate(currency, valuationDataset.transactions, asOf, dataset.fxRates, {
+      latestTransactionRate: dataset.useLatestTransactionFxRate,
+    });
+    const rate = resolved.source === "missing" ? 0 : resolved.rate;
+    currentRates.set(currency, rate);
+    return rate;
+  };
 
   for (const [instrumentID, quantity] of ledger.positions) {
     if (quantity <= EPSILON) {
@@ -1855,10 +1874,15 @@ function valuePortfolio(
     }
 
     holdingsValue += marketValue;
-    costBasis += (ledger.openLots.get(instrumentID) ?? []).reduce(
-      (sum, lot) => sum + lotBaseCost(lot),
-      0,
-    );
+    const lots = ledger.openLots.get(instrumentID) ?? [];
+    costBasis += lots.reduce((sum, lot) => sum + lotBaseCost(lot), 0);
+    // Efekt kursu: tylko partie z zapisanym kursem zakupu (bez niego nie wiadomo, czy kurs się
+    // ruszył — tak samo jak natywnie, gdzie koszt bez kursu zostaje po bieżącym).
+    fxEffect += lots.reduce((sum, lot) => {
+      if (lot.currency === "PLN" || !(lot.fxRateToBase && lot.fxRateToBase > 0)) return sum;
+      const now = currentRate(lot.currency);
+      return now > 0 ? sum + lot.quantity * lot.costPerUnit * (now - lot.fxRateToBase) : sum;
+    }, 0);
     positionCount += 1;
     const assetClass = assetClassLabel(asset?.kind);
     allocationValues.set(
@@ -1881,6 +1905,7 @@ function valuePortfolio(
     holdingsValue,
     cashValue,
     costBasis,
+    fxEffect,
     positionCount,
     allocationValues,
   };
