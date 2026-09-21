@@ -13,7 +13,9 @@ export type CashflowPoint = {
   amount: number;
 };
 
-const MS_PER_YEAR = 365 * 24 * 60 * 60 * 1000;
+// Rok = 365,25 dnia: ta sama konwencja co natywny PerformanceEngine i co CAGR w
+// investor-snapshot.ts. Rok 365-dniowy dawał XIRR niższy o ok. 0,1 pp przy stopie 90%.
+const MS_PER_YEAR = 365.25 * 24 * 60 * 60 * 1000;
 
 /**
  * Money-weighted (internal) rate of return, annualised. Returns the rate as a

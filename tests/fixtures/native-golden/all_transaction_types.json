@@ -1,0 +1,350 @@
+{
+  "asOf": "2026-02-21",
+  "certifiedTransactionTypes": [
+    "buy",
+    "sell",
+    "dividend",
+    "interest",
+    "bondCoupon",
+    "bondRedemption",
+    "depositOpen",
+    "depositClose",
+    "cashDeposit",
+    "cashWithdrawal",
+    "fee",
+    "tax",
+    "fxConversion",
+    "transferIn",
+    "transferOut",
+    "accountTransferIn",
+    "correction"
+  ],
+  "certifiedBrokers": ["xtb", "pkoBonds"],
+  "portfolio": {
+    "name": "Certyfikacja transakcji",
+    "type": "custom"
+  },
+  "instruments": [
+    {
+      "symbol": "EQA",
+      "kind": "stock",
+      "name": "Equity A",
+      "currency": "PLN",
+      "category": "equityPL"
+    },
+    {
+      "symbol": "BND",
+      "kind": "listedBond",
+      "name": "Bond B",
+      "currency": "PLN",
+      "category": "corpBondPL"
+    },
+    {
+      "symbol": "TRF",
+      "kind": "stock",
+      "name": "Transferred Stock",
+      "currency": "PLN",
+      "category": "equityPL"
+    },
+    {
+      "symbol": "DEP",
+      "kind": "deposit",
+      "name": "Deposit",
+      "currency": "PLN",
+      "category": "currency"
+    }
+  ],
+  "transactions": [
+    {
+      "date": "2025-12-31",
+      "type": "cashDeposit",
+      "grossAmount": 10000,
+      "currency": "PLN"
+    },
+    {
+      "date": "2026-01-02",
+      "instrumentSymbol": "EQA",
+      "type": "buy",
+      "quantity": 100,
+      "price": 10,
+      "grossAmount": 1000,
+      "currency": "PLN",
+      "fees": 5
+    },
+    {
+      "date": "2026-01-03",
+      "instrumentSymbol": "EQA",
+      "type": "buy",
+      "quantity": 50,
+      "price": 12,
+      "grossAmount": 600,
+      "currency": "PLN",
+      "fees": 3
+    },
+    {
+      "date": "2026-01-04",
+      "instrumentSymbol": "EQA",
+      "type": "sell",
+      "quantity": 80,
+      "price": 15,
+      "grossAmount": 1200,
+      "currency": "PLN",
+      "fees": 4,
+      "taxes": 10
+    },
+    {
+      "date": "2026-01-05",
+      "instrumentSymbol": "EQA",
+      "type": "dividend",
+      "grossAmount": 100,
+      "currency": "PLN",
+      "taxes": 19
+    },
+    {
+      "date": "2026-01-06",
+      "type": "interest",
+      "grossAmount": 50,
+      "currency": "PLN",
+      "taxes": 10
+    },
+    {
+      "date": "2026-01-07",
+      "instrumentSymbol": "BND",
+      "type": "bondCoupon",
+      "grossAmount": 80,
+      "currency": "PLN",
+      "taxes": 15
+    },
+    {
+      "date": "2026-01-08",
+      "instrumentSymbol": "BND",
+      "type": "buy",
+      "quantity": 10,
+      "price": 100,
+      "grossAmount": 1000,
+      "currency": "PLN"
+    },
+    {
+      "date": "2026-01-09",
+      "instrumentSymbol": "BND",
+      "type": "bondRedemption",
+      "quantity": 4,
+      "price": 105,
+      "grossAmount": 420,
+      "currency": "PLN"
+    },
+    {
+      "date": "2026-01-10",
+      "instrumentSymbol": "DEP",
+      "type": "depositOpen",
+      "grossAmount": 2000,
+      "currency": "PLN"
+    },
+    {
+      "date": "2026-01-11",
+      "instrumentSymbol": "DEP",
+      "type": "depositClose",
+      "grossAmount": 2100,
+      "currency": "PLN"
+    },
+    {
+      "date": "2026-01-12",
+      "type": "cashWithdrawal",
+      "grossAmount": 500,
+      "currency": "PLN"
+    },
+    {
+      "date": "2026-01-13",
+      "type": "fee",
+      "grossAmount": 25,
+      "currency": "PLN"
+    },
+    {
+      "date": "2026-01-14",
+      "type": "tax",
+      "grossAmount": 30,
+      "currency": "PLN"
+    },
+    {
+      "date": "2026-01-15",
+      "type": "transferIn",
+      "grossAmount": 300,
+      "currency": "PLN"
+    },
+    {
+      "date": "2026-01-16",
+      "type": "transferOut",
+      "grossAmount": 100,
+      "currency": "PLN"
+    },
+    {
+      "date": "2026-01-17",
+      "type": "accountTransferIn",
+      "grossAmount": 400,
+      "currency": "PLN",
+      "transferKind": "cash",
+      "contributionTreatment": "countAsContribution"
+    },
+    {
+      "date": "2026-01-18",
+      "instrumentSymbol": "TRF",
+      "type": "accountTransferIn",
+      "quantity": 2,
+      "price": 50,
+      "grossAmount": 100,
+      "currency": "PLN",
+      "transferKind": "asset",
+      "transferSourceKind": "externalBroker",
+      "transferCostBasisMode": "carryHistoricalCost",
+      "transferLots": [
+        {
+          "acquisitionDate": "2025-06-01",
+          "quantity": 2,
+          "unitCost": 50,
+          "currency": "PLN"
+        }
+      ]
+    },
+    {
+      "date": "2026-01-19",
+      "type": "correction",
+      "grossAmount": -20,
+      "currency": "PLN"
+    },
+    {
+      "date": "2026-01-20",
+      "type": "cashDeposit",
+      "grossAmount": 100,
+      "currency": "USD"
+    },
+    {
+      "date": "2026-01-21",
+      "type": "fxConversion",
+      "grossAmount": 50,
+      "currency": "USD",
+      "fxRateToBase": 4,
+      "targetCurrency": "PLN",
+      "targetGrossAmount": 200
+    }
+  ],
+  "latestPrices": {
+    "EQA": 16,
+    "BND": 101,
+    "TRF": 60,
+    "DEP": 0
+  },
+  "previousPrices30d": {
+    "EQA": 14,
+    "BND": 100,
+    "TRF": 55
+  },
+  "latestFX": {
+    "PLN": 1,
+    "USD": 4
+  },
+  "priceHistory": {
+    "EQA": [
+      { "date": "2026-01-02", "close": 10 },
+      { "date": "2026-01-04", "close": 15 },
+      { "date": "2026-02-21", "close": 16 }
+    ],
+    "BND": [
+      { "date": "2026-01-08", "close": 100 },
+      { "date": "2026-02-21", "close": 101 }
+    ],
+    "TRF": [
+      { "date": "2026-01-18", "close": 55 },
+      { "date": "2026-02-21", "close": 60 }
+    ]
+  },
+  "fxHistory": {
+    "USD": [
+      { "date": "2026-01-20", "rate": 4 },
+      { "date": "2026-02-21", "rate": 4 }
+    ]
+  },
+  "cpiHistory": [
+    { "date": "2025-12-01", "yoyRate": 3.0 },
+    { "date": "2026-02-01", "yoyRate": 3.2 }
+  ],
+  "expected": {
+    "cashBalances": {
+      "PLN": 9509,
+      "USD": 50
+    },
+    "positions": {
+      "EQA": 70,
+      "BND": 6,
+      "TRF": 2,
+      "DEP": 0
+    },
+    "openLotQuantities": {
+      "EQA": [20, 50],
+      "BND": [6],
+      "TRF": [2]
+    },
+    "realizedPnL": 420,
+    "totalFees": 12,
+    "totalTaxes": 54,
+    "dividendsInterest": 330,
+    "totalValue": 11555,
+    "holdingsValue": 1846,
+    "cashValue": 9709,
+    "costBasis": 1500,
+    "unrealizedPnL": 346,
+    "change30d": 156,
+    "nativePrices": {
+      "EQA": 16,
+      "BND": 101,
+      "TRF": 60
+    },
+    "currencyBreakdown": {
+      "PLN": 11355,
+      "USD": 200
+    },
+    "assetClassValues": {
+      "equity": 1240,
+      "bonds": 606
+    },
+    "firstSnapshotValue": 10000,
+    "lastSnapshotValue": 11555,
+    "pnlSeriesLastValue": 1075,
+    "benchmarkInflationLastValue": 3.2,
+    "maxDrawdown": -18.4604024368,
+    "xirr": 88.5244574758,
+    "twr": 9.6781123546,
+    "cagr": 91.3393055512,
+    "realReturn": 85.4063038286,
+    "annualReturns": [
+      {
+        "year": 2026,
+        "nominalReturn": 9.6781123546,
+        "realReturn": 9.1967884911,
+        "isPartial": true
+      }
+    ]
+  },
+  "invalidTransactions": [
+    {
+      "date": "2026-02-01",
+      "type": "buy",
+      "grossAmount": 100,
+      "currency": "PLN"
+    },
+    {
+      "date": "2026-02-02",
+      "type": "fxConversion",
+      "grossAmount": 50,
+      "currency": "USD"
+    },
+    {
+      "date": "2026-02-03",
+      "instrumentSymbol": "EQA",
+      "type": "buy",
+      "quantity": 1,
+      "price": 10,
+      "grossAmount": 10,
+      "currency": "USD"
+    }
+  ]
+}

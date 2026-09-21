@@ -238,7 +238,13 @@ const settingsPayloadSchema = z.object({
 
 type AccountPayload = z.infer<typeof accountPayloadSchema>;
 type AssetPayload = z.infer<typeof assetPayloadSchema>;
-type TransactionPayload = z.infer<typeof transactionPayloadSchema>;
+type TransactionPayload = z.infer<typeof transactionPayloadSchema> & {
+  /** Kurs do PLN z historii NBP z dnia transakcji, wyliczony przy wczytaniu dla
+   * transakcji w walucie obcej BEZ własnego `fxRateToBase`. Nie pochodzi z
+   * synchronizacji. Używany wyłącznie do przepływów (wpłaty/wypłaty, XIRR, TWR)
+   * i podsumowania dywidend/opłat — koszt partii i wycena go nie czytają. */
+  historicalFxRateToBase?: number;
+};
 type ManualValuationPayload = z.infer<typeof manualValuationPayloadSchema>;
 type MarketQuotePayload = z.infer<typeof marketQuotePayloadSchema>;
 type IncomePayload = z.infer<typeof incomePayloadSchema>;
@@ -644,12 +650,9 @@ function buildCashflowSummary(
 
     // Convert PLN booked amounts into the display currency at the rate on the
     // transaction's own date, so a lifetime dividend total reflects FX history.
+    const ownRate = transaction.fxRateToBase || transaction.historicalFxRateToBase;
     const transactionRate =
-      transaction.currency === "PLN" ||
-      !transaction.fxRateToBase ||
-      transaction.fxRateToBase <= 0
-        ? 1
-        : transaction.fxRateToBase;
+      transaction.currency === "PLN" || !ownRate || ownRate <= 0 ? 1 : ownRate;
     const fxRate = transactionRate / baseToPln(toDate(transaction.date));
     const gross = transaction.grossAmount * fxRate;
 
@@ -738,10 +741,32 @@ function contributionBaseAmount(
 }
 
 function transactionBaseAmount(transaction: TransactionPayload): number {
-  if (transaction.currency === "PLN" || !transaction.fxRateToBase) {
-    return transaction.grossAmount;
+  if (transaction.currency === "PLN") return transaction.grossAmount;
+  const rate = transaction.fxRateToBase || transaction.historicalFxRateToBase;
+  return rate ? transaction.grossAmount * rate : transaction.grossAmount;
+}
+
+/** Wpłata w USD bez `fxRateToBase` wchodzi do wyceny po kursie NBP z tego dnia,
+ * więc przepływ też musi — inaczej różnica (tu 300 zł na wpłacie 100 USD) jest
+ * liczona jako zysk i zawyża TWR/XIRR. Bez żadnego kursu z historii zostaje 1:1
+ * (jak dotąd); przed pierwszym punktem historii bierzemy najnowszy znany kurs,
+ * tak jak natywny HistoryEngine. */
+function withHistoricalFxRate(
+  transaction: TransactionPayload,
+  history: FxRateInput[],
+): TransactionPayload {
+  if (transaction.currency === "PLN" || (transaction.fxRateToBase ?? 0) > 0) {
+    return transaction;
   }
-  return transaction.grossAmount * transaction.fxRateToBase;
+  const atDate = resolveFxRate(transaction.currency, [], toDate(transaction.date), history);
+  const rate =
+    atDate.source === "history"
+      ? atDate.rate
+      : history
+          .filter((entry) => entry.currency === transaction.currency && entry.rate > 0)
+          .sort((a, b) => a.date.getTime() - b.date.getTime())
+          .at(-1)?.rate;
+  return rate ? { ...transaction, historicalFxRateToBase: rate } : transaction;
 }
 
 function lotBaseCost(lot: OpenLot): number {
@@ -1226,6 +1251,9 @@ function parseDataset(
   dataset.marketQuotes.sort(
     (left, right) =>
       toDate(left.date).getTime() - toDate(right.date).getTime(),
+  );
+  dataset.transactions = dataset.transactions.map((transaction) =>
+    withHistoricalFxRate(transaction, dataset.fxRates),
   );
 
   return dataset;
