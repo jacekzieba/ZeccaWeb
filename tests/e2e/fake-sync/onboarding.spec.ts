@@ -13,7 +13,7 @@ test("tour replay walks intro → all steps → finale and does not auto-reopen"
   await expect(page.getByRole("heading", { name: "Monitoruj swoje inwestycje" })).toBeVisible();
   await expect(page.getByRole("img", { name: "Animowany podgląd wyniku i struktury portfela" })).toBeVisible();
   await next.click(); // card 2
-  await expect(page.getByRole("heading", { name: "Dostęp do Twojego portfela masz tylko Ty" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ty decydujesz, gdzie są Twoje dane" })).toBeVisible();
   await expect(page.getByRole("img", { name: "Szyfrowane dane dostępne tylko na Twoich urządzeniach" })).toBeVisible();
   await next.click(); // "Zacznij tour po aplikacji"
 
