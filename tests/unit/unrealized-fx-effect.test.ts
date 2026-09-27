@@ -25,6 +25,13 @@ const metrics = (sc: GoldenScenario) => {
   return buildInvestorDataSnapshot(b.records, { asOf: b.asOf, fxRates: b.fxRates, cpi: b.cpi, useMarketQuotes: true, historyGranularity: "daily" }).metrics;
 };
 
+const metricsIn = (sc: GoldenScenario, displayCurrency: string) => {
+  const b = buildGoldenRecords(sc);
+  return buildInvestorDataSnapshot(b.records, {
+    asOf: b.asOf, fxRates: b.fxRates, cpi: b.cpi, useMarketQuotes: true, historyGranularity: "daily", displayCurrency,
+  }).metrics;
+};
+
 const buy = (rate?: number): GoldenTransaction => ({
   date: "2026-01-02", instrumentSymbol: "U", type: "buy", quantity: 10, price: 100, grossAmount: 1_000, currency: "USD",
   ...(rate ? { fxRateToBase: rate } : {}),
@@ -61,5 +68,31 @@ describe("efekt kursowy w zysku niezrealizowanym", () => {
       const foreign = metrics(randomBook(seed, { foreign: true, costs: true, dividends: true }));
       expect(Number.isFinite(foreign.unrealizedFxEffect), `USD seed ${seed}`).toBe(true);
     }
+  });
+});
+
+// ADR-0009 (bliźniak DisplayCurrencyCostBasisTests.swift): w walucie prezentacji koszt partii
+// liczony jest kursem tej waluty z dnia zakupu, a efekt kursowy względem niej, nie PLN.
+describe("zysk niezrealizowany w walucie prezentacji", () => {
+  const flat = () => scenario([buy(4.0)], usd([["2026-01-02", 4.0], ["2026-03-01", 3.6]]), 100);
+
+  it("pozycja stojąca w USD nie ma w widoku USD ani zysku, ani efektu kursowego", () => {
+    const m = metricsIn(flat(), "USD");
+    expect(m.unrealizedPnl).toBeCloseTo(0, 6);
+    expect(m.unrealizedFxEffect).toBeCloseTo(0, 6);
+    expect(m.unrealizedPnlPct).toBeCloseTo(0, 6);
+  });
+
+  it("widok PLN bez zmian: strata i efekt kursowy −400 zł", () => {
+    const m = metricsIn(flat(), "PLN");
+    expect(m.unrealizedPnl).toBeCloseTo(-400, 6);
+    expect(m.unrealizedFxEffect).toBeCloseTo(-400, 6);
+  });
+
+  it("zysk instrumentu w USD: 10 × (120 − 100) USD, bez efektu kursowego", () => {
+    const m = metricsIn(scenario([buy(4.0)], usd([["2026-01-02", 4.0], ["2026-03-01", 3.6]])), "USD");
+    expect(m.unrealizedPnl).toBeCloseTo(200, 6);
+    expect(m.unrealizedFxEffect).toBeCloseTo(0, 6);
+    expect(m.unrealizedPnlPct).toBeCloseTo(20, 6);
   });
 });

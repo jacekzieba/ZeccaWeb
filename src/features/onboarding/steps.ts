@@ -31,11 +31,11 @@ export const INTRO_CARDS: IntroCard[] = [
   {
     id: "intro-privacy",
     eyebrow: "Twoje dane, Twój klucz",
-    title: "Dostęp do Twojego portfela masz tylko Ty",
+    title: "Ty decydujesz, gdzie są Twoje dane",
     body:
       "Zecca jest obecnie dostępna przez przeglądarkę internetową oraz aplikację na iPhone'a, iPada i Maca. Możesz wybrać " +
       "synchronizację przez iCloud (wspiera tylko urządzenia Apple), przez nasze serwery lub trzymać swoje dane wyłącznie " +
-      "lokalnie. Twoja prywatność jest dla nas szczególnie ważna, dlatego wszystkie dane szyfrujemy end-to-end.",
+      "lokalnie. Synchronizację przez nasze serwery szyfrujemy end-to-end kluczem, który znasz tylko Ty.",
     visual: "privacy",
   },
 ];
