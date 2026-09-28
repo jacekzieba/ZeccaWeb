@@ -32,7 +32,7 @@ const holdingValue = (detail: ReturnType<typeof evaluate>["detail"], symbol: str
   detail.holdings.find((h) => h.symbol === symbol);
 
 describe("złoty scenariusz: wszystkie typy transakcji (natywny all_transaction_types)", () => {
-  const { scenario, snapshot, detail, expected } = evaluate(allTypes);
+  const { snapshot, detail, expected } = evaluate(allTypes);
 
   it("wartość portfela i gotówka", () => {
     expect(snapshot.totalValue).toBeCloseTo(expected.totalValue, 2);

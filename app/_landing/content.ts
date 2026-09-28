@@ -84,8 +84,6 @@ const SHOWCASE_MEDIA = {
   },
 } as const;
 
-const DISCORD_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19.3 5.3A16 16 0 0015.4 4l-.2.4a12 12 0 014 .9 13 13 0 00-14.6 0c1.2-.5 2.6-.8 4-.9L8.6 4a16 16 0 00-3.9 1.3C2.2 9 1.5 12.6 1.8 16.2a16 16 0 004.9 2.5l.6-1c-.5-.2-1-.4-1.5-.7l.4-.3a11.5 11.5 0 009.8 0l.4.3c-.5.3-1 .5-1.5.7l.6 1a16 16 0 004.9-2.5c.4-4.2-.7-7.8-3-11zM8.9 14.3c-1 0-1.7-.9-1.7-1.9s.8-1.9 1.7-1.9 1.8.9 1.7 1.9c0 1-.8 1.9-1.7 1.9zm6.2 0c-1 0-1.7-.9-1.7-1.9s.8-1.9 1.7-1.9 1.8.9 1.7 1.9c0 1-.8 1.9-1.7 1.9z"/></svg>`;
-const APPLE_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="20" height="20"><path d="M16.365 1.43c0 1.14-.493 2.27-1.177 3.08-.744.9-1.99 1.57-2.987 1.57-.12 0-.23-.02-.3-.03-.01-.06-.04-.22-.04-.39 0-1.15.572-2.27 1.206-2.98.804-.94 2.142-1.64 3.248-1.68.03.13.05.28.05.43zm4.565 15.71c-.03.07-.463 1.58-1.518 3.12-.945 1.34-1.94 2.71-3.43 2.71-1.517 0-1.9-.88-3.63-.88-1.698 0-2.302.91-3.67.91-1.377 0-2.332-1.26-3.428-2.8-1.287-1.82-2.323-4.63-2.323-7.28 0-4.28 2.797-6.55 5.552-6.55 1.448 0 2.675.95 3.6.95.865 0 2.222-1.01 3.902-1.01.613 0 2.886.06 4.374 2.19-.13.09-2.383 1.37-2.383 4.19 0 3.26 2.854 4.42 2.955 4.45z"/></svg>`;
 const PLUS_SVG = `<svg class="pm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`;
 
 // ── Section builders ────────────────────────────────────────────────────────
@@ -293,7 +291,6 @@ const INVESTOR_ANCHORS: readonly string[] = [
   "19% podatku",
   "PLN / EUR / USD",
 ];
-const waitlistEnabled = process.env.NEXT_PUBLIC_BETA_WAITLIST_ENABLED === "1";
 const showcasePlatforms = [...c.showcase.desktop, c.showcase.ios];
 
 const navHtml = `
@@ -490,7 +487,7 @@ const closingHtml = `
       <h2 class="sec-title">${b(c.privacy.title)}</h2>
       <p class="sec-desc">${b(c.privacy.desc)}</p>
       <ul class="privacy-marks">
-        ${c.privacy.marks.map((m, i) => `<li class="src">${m}</li>`).join("\n        ")}
+        ${c.privacy.marks.map((m) => `<li class="src">${m}</li>`).join("\n        ")}
       </ul>
       <div class="closing-actions">
         <a class="btn btn-accent" href="${c.closing.ctaPrimaryHref}">${c.closing.ctaPrimary}</a>
@@ -501,7 +498,6 @@ const closingHtml = `
   </div>
 </section>`;
 
-const fb = c.feedback;
 
 const footerHtml = `
 <footer>
