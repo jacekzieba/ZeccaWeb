@@ -65,7 +65,7 @@ export default function PrivacyPolicyPage() {
           </ul>
 
           <p style={{ marginBottom: 16 }}>
-            Zaszyfrowaną kopię klucza synchronizacji odblokowuje na nowym urządzeniu klucz wyprowadzany lokalnie z <strong>hasła Twojego konta</strong> (dla kont założonych hasłem) albo z <strong>osobnej frazy synchronizacji (passphrase)</strong> — jeśli ustawiłeś ją wcześniej lub w aplikacji na iOS/macOS. Zecca nie przechowuje ani hasła, ani frazy w postaci jawnej i nie używa ich po stronie serwera do odszyfrowywania danych; hasło logowania trafia do usługi uwierzytelniania wyłącznie po to, żeby Cię zalogować. Bez hasła lub frazy zaszyfrowanych danych nie da się odczytać, a jeśli je utracisz, nie jesteśmy w stanie ich odzyskać.
+            Zaszyfrowaną kopię klucza synchronizacji odblokowuje na nowym urządzeniu klucz wyprowadzany lokalnie z <strong>hasła Twojego konta</strong> (dla kont założonych hasłem) albo z <strong>osobnej frazy synchronizacji (passphrase)</strong> — jeśli ustawiłeś ją wcześniej lub w aplikacji na iOS/macOS. Zecca nie przechowuje ani hasła, ani frazy w postaci jawnej i nie używa ich po stronie serwera do odszyfrowywania danych; samo hasło nie opuszcza Twojego urządzenia — do usługi uwierzytelniania trafia wyłącznie sekret logowania wyprowadzony z hasła funkcją jednokierunkową (PBKDF2), inny niż klucz, którym szyfrowana jest kopia klucza synchronizacji. Konta założone przed tą zmianą przesyłają hasło jeden raz, przy pierwszym logowaniu po aktualizacji, po czym zostają przestawione na sekret. Bez hasła lub frazy zaszyfrowanych danych nie da się odczytać, a jeśli je utracisz, nie jesteśmy w stanie ich odzyskać.
           </p>
 
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>

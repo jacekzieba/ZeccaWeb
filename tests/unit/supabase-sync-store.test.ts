@@ -3,6 +3,7 @@ import {
   fetchActiveEncryptedRecords,
   fetchEncryptedKeyBackup,
   registerWebDevice,
+  restoreEncryptedRecord,
 } from "@/sync/records/supabase-sync-store";
 import type { BrowserSupabaseClient } from "@/supabase/client";
 
@@ -147,5 +148,26 @@ describe("supabase sync store", () => {
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
     );
     expect(mock.builders[0]?.upserts).toEqual([[payload]]);
+  });
+});
+
+describe("restoreEncryptedRecord", () => {
+  function restoreClient(rows: unknown[] | null, error: Error | null = null) {
+    const chain = {
+      update: () => chain,
+      eq: () => chain,
+      select: () => Promise.resolve({ data: rows, error }),
+    };
+    return { from: () => chain } as unknown as BrowserSupabaseClient;
+  }
+
+  const payload = { id: "r1", user_id: "u1", record_type: "transaction", updated_at: "2026-09-24T10:00:00Z" };
+
+  it("przechodzi, gdy wiersz został przywrócony", async () => {
+    await expect(restoreEncryptedRecord(restoreClient([{ id: "r1" }]), payload)).resolves.toBeUndefined();
+  });
+
+  it("zgłasza błąd, gdy żaden wiersz się nie zmienił (UI nie może udawać przywrócenia)", async () => {
+    await expect(restoreEncryptedRecord(restoreClient([]), payload)).rejects.toThrow(/Nie udało się przywrócić/);
   });
 });

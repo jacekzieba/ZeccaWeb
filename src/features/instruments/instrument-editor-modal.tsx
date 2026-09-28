@@ -6,7 +6,6 @@ import { createPortal } from "react-dom";
 import {
   useCallback,
   useEffect,
-  useRef,
   useState,
   type CSSProperties,
   type FormEvent,

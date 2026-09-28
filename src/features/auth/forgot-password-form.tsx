@@ -103,6 +103,10 @@ export function ForgotPasswordForm() {
 
   return (
     <form style={{ display: "flex", flexDirection: "column", gap: 16 }} onSubmit={handleSubmit}>
+      <p style={{ fontSize: 12, color: COLORS.textMuted, lineHeight: 1.5 }}>
+        Pamiętasz hasło i chcesz je tylko zmienić? Zaloguj się i zrób to w Ustawieniach — tam
+        zaszyfrowane dane przechodzą na nowe hasło bez utraty dostępu.
+      </p>
       <div>
         <label htmlFor={emailId} style={labelStyle}>E-mail</label>
         <input

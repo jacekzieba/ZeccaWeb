@@ -20,6 +20,19 @@ describe("parseAmount", () => {
     expect(parseAmount("1,5")).toBe(1.5);
   });
 
+  it("accepts space thousands separators like the native parser (incl. NBSP from formatted values)", () => {
+    expect(parseAmount("1 234,56")).toBe(1234.56);
+    expect(parseAmount("12 345")).toBe(12345);
+    expect(parseAmount("1\u00a0234,56")).toBe(1234.56);
+    expect(parseAmount("1\u202f234,56")).toBe(1234.56);
+  });
+
+  it("rejects ambiguous comma/dot mixes instead of misreading them", () => {
+    expect(parseAmount("1,234,567")).toBeNull();
+    expect(parseAmount("1.234,56")).toBeNull();
+    expect(parseAmount("1,234.56")).toBeNull();
+  });
+
   it("rejects empty / whitespace-only input", () => {
     expect(parseAmount("")).toBeNull();
     expect(parseAmount("   ")).toBeNull();

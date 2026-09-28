@@ -6,6 +6,7 @@ import { authRedirectBase } from "@/lib/auth-redirect";
 import { COLORS } from "@/lib/design-tokens";
 import { OAuthButtons, type OAuthStatus } from "@/features/auth/oauth-buttons";
 import { setPendingAuthPassword } from "@/features/auth/pending-auth-password";
+import { signInWithAccountPassword } from "@/features/auth/auth-secret";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -31,10 +32,7 @@ export function LoginForm() {
       return;
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
+    const { error } = await signInWithAccountPassword(supabase, email, password);
 
     if (error) {
       setStatus("error");

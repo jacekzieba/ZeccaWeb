@@ -121,3 +121,36 @@ export async function unlockUserDataKey(
 
   return importAesGcmKey(userDataKey);
 }
+
+/**
+ * Re-wrap the same user data key under a new passphrase (password change).
+ * Throws when `currentPassphrase` doesn't open the backup — e.g. the account
+ * still uses a separate, legacy sync passphrase; the caller then leaves the
+ * backup untouched. The raw key bytes are wiped before returning.
+ */
+export async function rewrapKeyBackup(
+  backup: EncryptedKeyBackup,
+  currentPassphrase: string,
+  newPassphrase: string,
+): Promise<EncryptedKeyBackup> {
+  if (!SUPPORTED_KDFS.has(backup.kdf)) {
+    throw new Error(`Unsupported key backup KDF: ${backup.kdf}`);
+  }
+
+  const keyEncryptionKey = await deriveKeyEncryptionKey(
+    currentPassphrase,
+    backup.salt,
+    backup.kdf_iterations,
+  );
+  const rawUserDataKey = await decryptBytes(
+    keyEncryptionKey,
+    backup.encrypted_user_data_key,
+    backup.nonce,
+  );
+
+  try {
+    return await createEncryptedKeyBackup({ rawUserDataKey, passphrase: newPassphrase });
+  } finally {
+    rawUserDataKey.fill(0);
+  }
+}

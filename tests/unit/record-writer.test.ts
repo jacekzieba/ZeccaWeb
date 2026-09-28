@@ -62,6 +62,11 @@ function createSupabaseStore(options: StoreOptions = {}) {
           const updateBuilder = {
             error: store.updateError,
             eq: vi.fn(() => updateBuilder),
+            // restoreEncryptedRecord checks that a row actually changed.
+            select: vi.fn(async () => ({
+              data: store.updateError ? null : [{ id: options.metadata?.id }],
+              error: store.updateError,
+            })),
           };
           return updateBuilder;
         }),

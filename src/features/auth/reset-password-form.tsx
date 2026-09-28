@@ -4,15 +4,20 @@ import { useEffect, useId, useState } from "react";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { COLORS } from "@/lib/design-tokens";
 import { setPendingAuthPassword } from "@/features/auth/pending-auth-password";
+import { deriveAuthSecret } from "@/features/auth/auth-secret";
 import { MIN_PASSWORD_LENGTH, passwordRequirementError } from "@/features/auth/password-requirements";
 import {
   createEncryptedKeyBackup,
   generateUserDataKeyBytes,
 } from "@/sync/encryption/key-backup";
-import { fetchEncryptedKeyBackup, upsertEncryptedKeyBackup } from "@/sync/records/supabase-sync-store";
+import {
+  deleteAllEncryptedRecords,
+  fetchEncryptedKeyBackup,
+  upsertEncryptedKeyBackup,
+} from "@/sync/records/supabase-sync-store";
 
 type Status = "checking" | "idle" | "loading" | "error" | "no-session" | "done";
-type ResetStartFreshStatus = "idle" | "checking" | "needed" | "resetting" | "resetDone" | "notNeeded" | "unknown";
+type ResetStartFreshStatus = "idle" | "checking" | "needed" | "confirming" | "resetting" | "resetDone" | "notNeeded" | "unknown";
 
 export function ResetPasswordForm() {
   const [password, setPassword] = useState("");
@@ -22,6 +27,7 @@ export function ResetPasswordForm() {
   const [startFresh, setStartFresh] = useState<ResetStartFreshStatus>("idle");
   const [startFreshError, setStartFreshError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
   const passwordId = useId();
   const confirmId = useId();
 
@@ -35,6 +41,7 @@ export function ResetPasswordForm() {
     }
     supabase.auth.getUser().then(({ data }) => {
       setUserId(data.user?.id ?? null);
+      setEmail(data.user?.email ?? null);
       setStatus(data.user ? "idle" : "no-session");
     });
   }, []);
@@ -64,7 +71,14 @@ export function ResetPasswordForm() {
       return;
     }
 
-    const { error } = await supabase.auth.updateUser({ password });
+    if (!email) {
+      setStatus("error");
+      setErrorMessage("Brak adresu e-mail konta — otwórz link resetujący ponownie.");
+      return;
+    }
+    const { error } = await supabase.auth.updateUser({
+      password: await deriveAuthSecret(email, password),
+    });
 
     if (error) {
       setStatus("error");
@@ -102,6 +116,10 @@ export function ResetPasswordForm() {
     setStartFreshError(null);
 
     try {
+      // Najpierw rekordy, potem backup: rekordy zaszyfrowane starym kluczem
+      // obok nowego backupu blokują każde odblokowanie na stałe. Jeśli
+      // usuwanie się nie uda, stary backup zostaje i nadal pasuje do danych.
+      await deleteAllEncryptedRecords(supabase, userId);
       const rawUserDataKey = generateUserDataKeyBytes();
       const backup = await createEncryptedKeyBackup({ rawUserDataKey, passphrase: password });
       await upsertEncryptedKeyBackup(supabase, userId, backup);
@@ -191,7 +209,7 @@ export function ResetPasswordForm() {
       );
     }
 
-    if (startFresh === "needed" || startFresh === "resetting") {
+    if (startFresh === "needed" || startFresh === "confirming" || startFresh === "resetting") {
       return (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={panelStyle}>
@@ -214,20 +232,54 @@ export function ResetPasswordForm() {
           {startFreshError && (
             <div style={{ fontSize: 12, color: COLORS.loss }}>{startFreshError}</div>
           )}
-          <button
-            type="button"
-            onClick={handleStartFresh}
-            disabled={startFresh === "resetting"}
-            style={{
-              ...linkBtnStyle,
-              border: "none",
-              background: "transparent",
-              color: COLORS.loss,
-              cursor: startFresh === "resetting" ? "not-allowed" : "pointer",
-            }}
-          >
-            {startFresh === "resetting" ? "Resetuję…" : "To nie zadziałało — zacznij od nowa"}
-          </button>
+          {startFresh === "needed" ? (
+            <button
+              type="button"
+              onClick={() => setStartFresh("confirming")}
+              style={{
+                ...linkBtnStyle,
+                border: "none",
+                background: "transparent",
+                color: COLORS.loss,
+                cursor: "pointer",
+              }}
+            >
+              To nie zadziałało — zacznij od nowa
+            </button>
+          ) : (
+            <div style={{ ...panelStyle, display: "flex", flexDirection: "column", gap: 10 }}>
+              <p style={{ fontSize: 13, color: COLORS.text, lineHeight: 1.5 }}>
+                Wszystkie zsynchronizowane dane tego konta (portfele, instrumenty, transakcje)
+                zostaną trwale usunięte z serwera. Tej operacji nie da się cofnąć. Dane zapisane
+                lokalnie w aplikacji na iOS/macOS zostają na urządzeniu.
+              </p>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={handleStartFresh}
+                  disabled={startFresh === "resetting"}
+                  style={{
+                    ...linkBtnStyle,
+                    flex: 1,
+                    border: "none",
+                    background: COLORS.loss,
+                    color: COLORS.white,
+                    cursor: startFresh === "resetting" ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {startFresh === "resetting" ? "Usuwam…" : "Tak, usuń dane i zacznij od nowa"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStartFresh("needed")}
+                  disabled={startFresh === "resetting"}
+                  style={{ ...linkBtnStyle, flex: 1 }}
+                >
+                  Anuluj
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       );
     }

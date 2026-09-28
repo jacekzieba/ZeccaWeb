@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { passwordRequirementError } from "@/features/auth/password-requirements";
 import {
   clearPendingAuthPassword,
@@ -6,7 +6,10 @@ import {
   setPendingAuthPassword,
 } from "@/features/auth/pending-auth-password";
 
-afterEach(() => sessionStorage.clear());
+afterEach(() => {
+  sessionStorage.clear();
+  vi.useRealTimers();
+});
 
 describe("passwordRequirementError", () => {
   it.each([
@@ -32,6 +35,23 @@ describe("pending-auth-password", () => {
     expect(peekPendingAuthPassword()).toBe("Haslo-Konta1");
     clearPendingAuthPassword();
     expect(peekPendingAuthPassword()).toBeNull();
+  });
+
+  it("wygasa po 2 minutach i wtedy znika ze storage", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-24T10:00:00Z"));
+    setPendingAuthPassword("Haslo-Konta1");
+    vi.setSystemTime(new Date("2026-09-24T10:01:59Z"));
+    expect(peekPendingAuthPassword()).toBe("Haslo-Konta1");
+    vi.setSystemTime(new Date("2026-09-24T10:02:01Z"));
+    expect(peekPendingAuthPassword()).toBeNull();
+    expect(sessionStorage.length).toBe(0);
+  });
+
+  it("uszkodzony wpis jest traktowany jak brak hasła i usuwany", () => {
+    sessionStorage.setItem("zecca:pending-auth-password", "{nie-json");
+    expect(peekPendingAuthPassword()).toBeNull();
+    expect(sessionStorage.length).toBe(0);
   });
 
   it("gdy sessionStorage rzuca (tryb prywatny), nic się nie wywraca", () => {

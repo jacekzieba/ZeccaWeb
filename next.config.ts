@@ -10,6 +10,11 @@ const securityHeaders = [
   // Clickjacking protection — the app is never meant to be framed.
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
+  // Isolate the browsing context and keep other sites from pulling our
+  // responses cross-origin. OAuth uses full-page redirects, not popups, so
+  // COOP doesn't break sign-in.
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+  { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   // Disable browser features the app does not use.
   {

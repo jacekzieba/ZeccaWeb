@@ -26,6 +26,7 @@ import { buildParitySnapshot } from "@/sync/records/parity-snapshot";
 import { buildInvestorDataSnapshot, SYNTHETIC_FALLBACK_ACCOUNT_ID } from "@/sync/records/investor-snapshot";
 import { makeAccountPayload } from "@/sync/records/macos-payloads";
 import { clearPendingSyncOperations, refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
+import { clearPendingAuthPassword } from "@/features/auth/pending-auth-password";
 import { isFakeSyncEnabled } from "@/lib/env";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
@@ -172,6 +173,7 @@ export async function handleLogout() {
     }
 
     clearPendingSyncOperations();
+    clearPendingAuthPassword();
     await supabase.auth.signOut();
   }
   window.location.assign("/login");

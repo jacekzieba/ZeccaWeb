@@ -61,7 +61,7 @@ export const landingCopy = {
     note: "Synchronizuj dane między urządzeniami lub korzystaj z trybu offline.",
     imageAlt: "Zecca na macOS — raporty i statystyki",
     trust: [
-      { title: "Synchronizacja szyfrowana end-to-end", desc: "Włącz ją, gdy chcesz — klucz znasz wyłącznie Ty" },
+      { title: "Synchronizacja szyfrowana end-to-end", desc: "Włącz ją, gdy chcesz — dane szyfrujesz na swoim urządzeniu, zanim trafią na serwer" },
       { title: "Wybierz wersję offline lub synchronizację online", desc: "Decyduj, czy i jak synchronizować dane między urządzeniami" },
       { title: "Aktualne kursy walut, akcji, ETF i obligacji.", desc: "Kursy walut z tabel NBP, także historyczne" },
       { title: "Inflacja CPI z GUS", desc: "Oficjalne dane o inflacji prosto z GUS, aby policzyć realny wynik inwestycji" },
@@ -171,8 +171,8 @@ export const landingCopy = {
   privacy: {
     eyebrow: "Prywatność",
     title: "Wynik liczy się u&nbsp;Ciebie<br>i&nbsp;u Ciebie <em>zostaje.</em>",
-    desc: "Zecca przelicza portfel na Twoim urządzeniu. Jeśli włączysz synchronizację, na serwer trafia wyłącznie szyfrogram, a klucz znasz tylko Ty. Nie widzimy Twoich pozycji, wartości ani transakcji.",
-    marks: ["Szyfrowanie end-to-end", "Klucz wyłącznie u Ciebie", "Na serwerze tylko szyfrogram"],
+    desc: "Zecca przelicza portfel na Twoim urządzeniu. Jeśli włączysz synchronizację, na serwer trafia wyłącznie szyfrogram, a klucz do niego powstaje z Twojego hasła na Twoim urządzeniu i nigdzie go nie przechowujemy. Nie widzimy Twoich pozycji, wartości ani transakcji.",
+    marks: ["Szyfrowanie end-to-end", "Klucz tworzony na urządzeniu", "Na serwerze tylko szyfrogram"],
   },
 
   // ── Showcase platform ─────────────────────────────────────────────────────
@@ -279,7 +279,7 @@ export const landingCopy = {
       },
       {
         q: "To beta. Czy moje dane są bezpieczne?",
-        a: "Domyślnie dane zostają wyłącznie na Twoim urządzeniu. Jeśli włączysz synchronizację, są szyfrowane <b>end-to-end</b> przed wysłaniem — klucz znasz tylko Ty. Pamiętaj jednak, że to wczesna wersja, mogą zdarzyć się błędy. Zalecamy regularny <b>eksport / kopię</b> danych i ostrożność przy traktowaniu Zecci jako jedynego źródła prawdy.",
+        a: "Domyślnie dane zostają wyłącznie na Twoim urządzeniu. Jeśli włączysz synchronizację, są szyfrowane <b>end-to-end</b> przed wysłaniem — kluczem wyprowadzanym z Twojego hasła na Twoim urządzeniu. Pamiętaj jednak, że to wczesna wersja, mogą zdarzyć się błędy. Zalecamy regularny <b>eksport / kopię</b> danych i ostrożność przy traktowaniu Zecci jako jedynego źródła prawdy.",
       },
       {
         q: "Czy moje dane trafiają na Wasz serwer?",

@@ -1543,7 +1543,7 @@ function PortfoliosCard({
         <div style={{ padding: "20px 0", color: PALETTE.subtle, fontSize: 13 }}>Brak portfeli do pokazania.</div>
       ) : (
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        {portfolios.map((portfolio, index) => {
+        {portfolios.map((portfolio) => {
           // Kolor kropki wynika z zapisanego colorHex konta (dane z kontraktu
           // synchronizacji), nie z miejsca w tablicy ani z haszu id — inaczej
           // ten sam portfel rysuje się innym kolorem na Macu, iPhonie i tu.

@@ -1,4 +1,4 @@
-import type { CSSProperties, ElementType, HTMLAttributes, ReactNode } from "react";
+import type { ElementType, HTMLAttributes, ReactNode } from "react";
 import { formatCurrency, formatPercent } from "@/lib/money";
 import { AnimatedCurrencyMetric, AnimatedPercentMetric } from "./animated-metric";
 import { AllocationRing } from "./allocation-ring";

@@ -6,6 +6,7 @@ import { authRedirectBase } from "@/lib/auth-redirect";
 import { COLORS } from "@/lib/design-tokens";
 import { OAuthButtons, type OAuthStatus } from "@/features/auth/oauth-buttons";
 import { setPendingAuthPassword } from "@/features/auth/pending-auth-password";
+import { deriveAuthSecret, normalizeAuthEmail } from "@/features/auth/auth-secret";
 import { MIN_PASSWORD_LENGTH, passwordRequirementError } from "@/features/auth/password-requirements";
 
 type Status = "idle" | "loading" | "error" | "confirm-sent";
@@ -58,9 +59,11 @@ export function SignupForm() {
       return;
     }
 
+    // Supabase dostaje wyłącznie sekret wyprowadzony z hasła — samo hasło
+    // odblokowuje backup klucza i nie opuszcza urządzenia (auth-secret.ts).
     const { data, error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
+      email: normalizeAuthEmail(email),
+      password: await deriveAuthSecret(email, password),
       options: {
         emailRedirectTo: `${authRedirectBase()}/auth/callback`,
       },

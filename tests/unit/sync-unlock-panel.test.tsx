@@ -8,6 +8,7 @@ import {
   type EncryptedKeyBackup,
 } from "@/sync/encryption/key-backup";
 import { SyncUnlockPanel } from "@/features/sync/sync-unlock-panel";
+import { setPendingAuthPassword } from "@/features/auth/pending-auth-password";
 
 // Hasło konta jest teraz zarazem passphrase, z której wyprowadzany jest klucz
 // danych (pending-auth-password.ts przenosi je przez przeładowanie strony).
@@ -27,7 +28,9 @@ const net = vi.hoisted(() => ({
 }));
 
 vi.mock("@/supabase/client", () => ({
-  createBrowserSupabaseClientOrNull: () => ({}),
+  createBrowserSupabaseClientOrNull: () => ({
+    auth: { signOut: vi.fn(async () => ({ error: null })) },
+  }),
 }));
 
 vi.mock("@/sync/encryption/key-cache", () => ({
@@ -44,8 +47,11 @@ vi.mock("@/sync/records/supabase-sync-store", () => ({
   upsertEncryptedKeyBackup: (...args: unknown[]) => net.upsert(...args),
 }));
 
+const writer = vi.hoisted(() => ({ clearQueue: vi.fn() }));
+
 vi.mock("@/sync/records/record-writer", () => ({
   flushPendingSyncOperations: vi.fn(async () => undefined),
+  clearPendingSyncOperations: () => writer.clearQueue(),
 }));
 
 async function backupWrappedWith(passphrase: string): Promise<EncryptedKeyBackup> {
@@ -92,7 +98,7 @@ afterEach(() => {
 describe("SyncUnlockPanel — hasło jako klucz", () => {
   it("odblokowuje hasłem z logowania bez pokazywania formularza i sprząta hasło", async () => {
     net.bootstrap.keyBackup = await backupWrappedWith("Haslo-Konta1");
-    sessionStorage.setItem(PENDING_KEY, "Haslo-Konta1");
+    setPendingAuthPassword("Haslo-Konta1");
 
     const onSyncLoaded = renderPanel();
 
@@ -103,7 +109,7 @@ describe("SyncUnlockPanel — hasło jako klucz", () => {
 
   it("konto ze starą, osobną passphrase: cicho spada do formularza, bez komunikatu o błędzie", async () => {
     net.bootstrap.keyBackup = await backupWrappedWith("stara-osobna-fraza");
-    sessionStorage.setItem(PENDING_KEY, "Haslo-Konta1"); // inne niż fraza
+    setPendingAuthPassword("Haslo-Konta1"); // inne niż fraza
 
     const onSyncLoaded = renderPanel();
 
@@ -117,7 +123,7 @@ describe("SyncUnlockPanel — hasło jako klucz", () => {
 
   it("po cichej porażce działa ręczne wpisanie starej passphrase", async () => {
     net.bootstrap.keyBackup = await backupWrappedWith("stara-osobna-fraza");
-    sessionStorage.setItem(PENDING_KEY, "Haslo-Konta1");
+    setPendingAuthPassword("Haslo-Konta1");
 
     const onSyncLoaded = renderPanel();
     const input = await screen.findByLabelText(LABEL);
@@ -125,6 +131,19 @@ describe("SyncUnlockPanel — hasło jako klucz", () => {
     fireEvent.click(screen.getByRole("button", { name: /Odblokuj/ }));
 
     await waitFor(() => expect(onSyncLoaded).toHaveBeenCalledTimes(1));
+  });
+
+  it("„Wyloguj” czyści kolejkę sync i niewykorzystane hasło z logowania", async () => {
+    writer.clearQueue.mockReset();
+    net.bootstrap.keyBackup = await backupWrappedWith("stara-osobna-fraza");
+    renderPanel();
+    await screen.findByLabelText(LABEL);
+    setPendingAuthPassword("Haslo-Konta1");
+
+    fireEvent.click(screen.getByRole("button", { name: "Wyloguj" }));
+
+    await waitFor(() => expect(writer.clearQueue).toHaveBeenCalledTimes(1));
+    expect(sessionStorage.getItem(PENDING_KEY)).toBeNull();
   });
 
   it("bez hasła w sessionStorage od razu pokazuje formularz (brak próby automatycznej)", async () => {
@@ -137,7 +156,7 @@ describe("SyncUnlockPanel — hasło jako klucz", () => {
   });
 
   it("konto bez backupu: sam tworzy backup z hasła, który da się odblokować tym hasłem", async () => {
-    sessionStorage.setItem(PENDING_KEY, "Haslo-Konta1");
+    setPendingAuthPassword("Haslo-Konta1");
 
     const onSyncLoaded = renderPanel();
 
@@ -163,7 +182,7 @@ describe("SyncUnlockPanel — hasło jako klucz", () => {
   it("zaufana przeglądarka odblokowuje kluczem z cache i nie zostawia hasła w sessionStorage", async () => {
     net.bootstrap.keyBackup = await backupWrappedWith("Haslo-Konta1");
     net.cachedKey = await unlockUserDataKey(net.bootstrap.keyBackup as EncryptedKeyBackup, "Haslo-Konta1");
-    sessionStorage.setItem(PENDING_KEY, "Haslo-Konta1");
+    setPendingAuthPassword("Haslo-Konta1");
 
     const onSyncLoaded = renderPanel();
 

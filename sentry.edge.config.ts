@@ -1,5 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
-import { SENTRY_DSN, SENTRY_ENABLED, scrubSentryEvent } from "@/lib/sentry-options";
+import { SENTRY_DSN, SENTRY_ENABLED, scrubSentryBreadcrumb, scrubSentryEvent } from "@/lib/sentry-options";
 
 Sentry.init({
   dsn: SENTRY_DSN,
@@ -7,4 +7,6 @@ Sentry.init({
   tracesSampleRate: 0.1,
   sendDefaultPii: false,
   beforeSend: (event) => scrubSentryEvent(event),
+  beforeSendTransaction: (event) => scrubSentryEvent(event),
+  beforeBreadcrumb: (breadcrumb) => scrubSentryBreadcrumb(breadcrumb),
 });

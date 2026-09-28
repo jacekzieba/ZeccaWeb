@@ -21,7 +21,10 @@ export const AMOUNT_MAGNITUDE_CAP = 1e12;
 export function parseAmount(value: string | null | undefined): number | null {
   if (value == null) return null;
 
-  const normalized = value.trim().replace(",", ".");
+  // Same normalization as native `parseNumber`: every comma becomes a dot and
+  // spaces (here also NBSP / narrow NBSP from pasted formatted values) are
+  // dropped, so "1 234,56" parses; mixed "1.234,56" stays invalid (NaN).
+  const normalized = value.replace(/\s/g, "").replace(/,/g, ".");
   if (!normalized) return null;
 
   const parsed = Number(normalized);

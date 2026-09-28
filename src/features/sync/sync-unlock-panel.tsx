@@ -33,7 +33,7 @@ import {
   refreshEncryptedKeyBackup,
   upsertEncryptedKeyBackup,
 } from "@/sync/records/supabase-sync-store";
-import { flushPendingSyncOperations } from "@/sync/records/record-writer";
+import { clearPendingSyncOperations, flushPendingSyncOperations } from "@/sync/records/record-writer";
 import {
   summarizeDecryptedRecords,
   type SyncRecordSummary,
@@ -689,6 +689,8 @@ export function SyncUnlockPanel({
       setTrustedKeyStatus("cleared");
       setTrustedKeyMessage("Lokalny klucz tej przeglądarki został usunięty.");
     }
+    clearPendingSyncOperations();
+    clearPendingAuthPassword();
     await supabase.auth.signOut();
     window.location.assign("/login");
   }

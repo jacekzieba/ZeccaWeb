@@ -1,6 +1,5 @@
 "use client";
 
-import { token } from "@/design/tokens";
 import { useMemo, useState } from "react";
 import type { ValuationPoint } from "@/domain/models/investor-data";
 

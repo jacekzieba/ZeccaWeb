@@ -180,7 +180,7 @@ export async function restoreEncryptedRecord(
   supabase: BrowserSupabaseClient,
   payload: Pick<UpsertPayload, "id" | "user_id" | "record_type" | "updated_at">,
 ): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("encrypted_records")
     .update({
       deleted_at: null,
@@ -188,9 +188,15 @@ export async function restoreEncryptedRecord(
     } as never)
     .eq("id", payload.id)
     .eq("user_id", payload.user_id)
-    .eq("record_type", payload.record_type);
+    .eq("record_type", payload.record_type)
+    .select("id");
 
   if (error) throw error;
+  // Zero wierszy (np. rekord skasowany twardo w międzyczasie) nie jest błędem
+  // PostgREST — bez tej kontroli UI pokazałoby przywrócenie, którego nie było.
+  if (!data || data.length === 0) {
+    throw new Error("Nie udało się przywrócić rekordu — nie ma go już na serwerze.");
+  }
 }
 
 export async function softDeleteEncryptedRecord(
@@ -206,6 +212,22 @@ export async function softDeleteEncryptedRecord(
     .eq("id", payload.id)
     .eq("user_id", payload.user_id)
     .eq("record_type", payload.record_type);
+
+  if (error) throw error;
+}
+
+/** Twarde usunięcie wszystkich rekordów konta — wyłącznie dla „zacznij od
+ *  nowa" po utracie klucza. Miękkie usunięcie tu nie wystarcza: szyfrogram
+ *  starym kluczem zostałby w wierszu, a aplikacja natywna odszyfrowuje także
+ *  usunięte wiersze i przerywa sync przy pierwszym, którego nie umie odczytać. */
+export async function deleteAllEncryptedRecords(
+  supabase: BrowserSupabaseClient,
+  userId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("encrypted_records")
+    .delete()
+    .eq("user_id", userId);
 
   if (error) throw error;
 }

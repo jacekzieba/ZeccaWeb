@@ -28,6 +28,7 @@ import {
 import { readAllocation, sumAllocation } from "@/features/portfolios/asset-classes";
 import type { PortfolioSummary } from "@/domain/models/investor-data";
 import { AppLockSettingsRow } from "@/features/auth/app-lock";
+import { ChangePasswordForm } from "@/features/auth/change-password-form";
 import { useTelemetryConsent } from "@/features/telemetry/use-telemetry-consent";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { clearCachedUserDataKey } from "@/sync/encryption/key-cache";
@@ -301,6 +302,14 @@ export function SettingsPage() {
 
       <MarketDataSection />
       <DisplaySection />
+      {!publicDemo && (
+        <Section eyebrow="Konto" title="Hasło">
+          <div style={{ padding: "15px 24px" }}>
+            <ChangePasswordForm />
+          </div>
+        </Section>
+      )}
+
       <PrivacySection />
 
       <Section eyebrow="Pomoc" title="Wprowadzenie i kontakt">
