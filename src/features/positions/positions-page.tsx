@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { buildInstrumentList, buildTransactionList } from "@/sync/records/investor-snapshot";
 import { useSyncStore } from "@/sync/store/sync-store";
-import { useProfile } from "@/features/profile/profile-store";
+import { useDisplayCurrency } from "@/features/sync/use-display-currency";
 import type { InstrumentRow, TransactionRow } from "@/domain/models/investor-data";
 import { V2, V2Card, V2ScreenHead, V2_TYPE, v2Mix } from "@/lib/v2-design";
 import { currencyLabel, formatShare } from "@/lib/money";
@@ -197,7 +197,7 @@ export function PositionsPage() {
   const marketQuotes = useSyncStore((s) => s.marketQuotes);
   const marketCpi = useSyncStore((s) => s.marketCpi);
   const marketReferenceRates = useSyncStore((s) => s.marketReferenceRates);
-  const { displayCurrency } = useProfile();
+  const { currency: displayCurrency } = useDisplayCurrency();
 
   const instruments = useMemo(
     () =>

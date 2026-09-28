@@ -50,6 +50,7 @@ import { useSyncStore } from "@/sync/store/sync-store";
 import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
 import { DataQualityBanner } from "@/features/sync/data-quality-banner";
 import { firstName, useProfile } from "@/features/profile/profile-store";
+import { useDisplayCurrency } from "@/features/sync/use-display-currency";
 import {
   groupTreasuryBondSeries,
   treasuryBondFamilyLabel,
@@ -354,7 +355,7 @@ function Eyebrow({ children, style }: { children: React.ReactNode; style?: CSSPr
 
 function Pnl({ value, pct, size = 13 }: { value: number; pct?: number | null; size?: number }) {
   const color = value >= 0 ? PALETTE.profit : PALETTE.loss;
-  const { displayCurrency } = useProfile();
+  const { currency: displayCurrency } = useDisplayCurrency();
 
   return (
     <span
@@ -439,7 +440,7 @@ function niceAxisStep(raw: number) {
 
 function V2Area({ data, height = 240 }: { data: ValuationPoint[]; height?: number }) {
   const wrapRef = useRef<HTMLDivElement>(null);
-  const { displayCurrency } = useProfile();
+  const { currency: displayCurrency } = useDisplayCurrency();
   const [width, setWidth] = useState(820);
   const [hover, setHover] = useState<number | null>(null);
   const gradId = useId().replace(/:/g, "");
@@ -853,6 +854,7 @@ export function DashboardOverview() {
   const lastSyncedAt = useSyncStore((state) => state.lastSyncedAt);
   const snapshot = useDisplaySnapshot();
   const profile = useProfile();
+  const { currency: displayCurrency } = useDisplayCurrency();
   const [period, setPeriod] = useState<Period>("1Y");
   const { config: dashboardConfig, toggle, reorder, reorderTo, resize, reset } = useSectionCustomization(DASHBOARD_REGISTRY);
   const [showCustomize, setShowCustomize] = useState(false);
@@ -885,10 +887,10 @@ export function DashboardOverview() {
             referenceRates: marketReferenceRates,
             useLatestTransactionFxRate: true,
             useMarketQuotes: true,
-            displayCurrency: profile.displayCurrency,
+            displayCurrency: displayCurrency,
           })
         : [],
-    [marketFxRates, marketQuotes, marketCpi, marketReferenceRates, records, profile.displayCurrency],
+    [marketFxRates, marketQuotes, marketCpi, marketReferenceRates, records, displayCurrency],
   );
   const transactions = useMemo(
     () => (records ? buildTransactionList(records) : []),
@@ -917,7 +919,7 @@ export function DashboardOverview() {
       cashflows,
       totalValue,
       openPositions: holdings.length,
-      currency: profile.displayCurrency,
+      currency: displayCurrency,
     }).map((tile) => [tile.id, tile]),
   );
   const visibleSections = new Set(dashboardConfig.visibleSections);
@@ -949,7 +951,7 @@ export function DashboardOverview() {
           lastSyncedAt={lastSyncedAt}
           lastSyncLabel={lastSyncLabel}
           totalValue={totalValue}
-          displayCurrency={profile.displayCurrency}
+          displayCurrency={displayCurrency}
           deltaPLN={deltaPLN}
           monthlyChange={monthlyChange}
           metrics={metrics}
@@ -975,7 +977,7 @@ export function DashboardOverview() {
         <ValueVsDepositsCard
           value={historySource}
           deposits={snapshot.netInvestedSeries}
-          currency={profile.displayCurrency}
+          currency={displayCurrency}
         />
       );
     }
@@ -1226,7 +1228,7 @@ function SummaryCard({
 }
 
 function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobile: boolean }) {
-  const { displayCurrency } = useProfile();
+  const { currency: displayCurrency } = useDisplayCurrency();
   const [expandedFamilies, setExpandedFamilies] = useState<Set<GroupedTreasuryBondFamily>>(() => new Set());
   const groupedHoldings = useMemo(() => groupTreasuryBondSeries(holdings).slice(0, 6), [holdings]);
   const rows = groupedHoldings.flatMap((entry) => {
@@ -1523,7 +1525,7 @@ function PortfoliosCard({
   interest: number;
   fees: number;
 }) {
-  const { displayCurrency } = useProfile();
+  const { currency: displayCurrency } = useDisplayCurrency();
   const asOfLabel = fmtDate(asOf);
   const cashflowPeriod = `Narastająco do ${asOfLabel}`;
   const cashflowRows = [

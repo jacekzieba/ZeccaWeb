@@ -13,7 +13,7 @@ import { buildInvestorDataSnapshot, SYNTHETIC_FALLBACK_ACCOUNT_ID } from "@/sync
 import { isFakeSyncEnabled } from "@/lib/env";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
-import { useProfile } from "@/features/profile/profile-store";
+import { useDisplayCurrency } from "@/features/sync/use-display-currency";
 import { currencyLabel } from "@/lib/money";
 import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 import { announce } from "@/components/feedback/status-announcer";
@@ -44,7 +44,7 @@ function fmtPct(n: number) {
 export function PortfolioListPage() {
   const records = useSyncStore((s) => s.records);
   const snapshot = useDisplaySnapshot();
-  const { displayCurrency } = useProfile();
+  const { currency: displayCurrency } = useDisplayCurrency();
   const userDataKey = useSyncStore((s) => s.userDataKey);
   const supabase = useSyncStore((s) => s.supabase);
   const setSync = useSyncStore((s) => s.setSync);
