@@ -97,6 +97,9 @@ describe("AddTransactionModal inline instrument creation", () => {
 
   afterEach(() => {
     cleanup();
+    // Vitest 4: restoreAllMocks przywraca już tylko spyOn — historię
+    // i implementacje vi.fn() czyści resetAllMocks.
+    vi.resetAllMocks();
     vi.restoreAllMocks();
   });
 
@@ -176,6 +179,9 @@ describe("AddTransactionModal funding deposit", () => {
 
   afterEach(() => {
     cleanup();
+    // Vitest 4: restoreAllMocks przywraca już tylko spyOn — historię
+    // i implementacje vi.fn() czyści resetAllMocks.
+    vi.resetAllMocks();
     vi.restoreAllMocks();
   });
 
@@ -281,6 +287,9 @@ describe("AddTransactionModal buy validation", () => {
 
   afterEach(() => {
     cleanup();
+    // Vitest 4: restoreAllMocks przywraca już tylko spyOn — historię
+    // i implementacje vi.fn() czyści resetAllMocks.
+    vi.resetAllMocks();
     vi.restoreAllMocks();
   });
 
@@ -422,6 +431,9 @@ describe("AddTransactionModal sell validation", () => {
 
   afterEach(() => {
     cleanup();
+    // Vitest 4: restoreAllMocks przywraca już tylko spyOn — historię
+    // i implementacje vi.fn() czyści resetAllMocks.
+    vi.resetAllMocks();
     vi.restoreAllMocks();
   });
 

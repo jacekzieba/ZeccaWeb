@@ -45,6 +45,9 @@ function request(url: string) {
 }
 
 afterEach(() => {
+  // Vitest 4: restoreAllMocks przywraca już tylko spyOn — historię
+  // i implementacje vi.fn() czyści resetAllMocks.
+  vi.resetAllMocks();
   vi.restoreAllMocks();
   clearMarketDataCache();
   clearRateLimitState();
