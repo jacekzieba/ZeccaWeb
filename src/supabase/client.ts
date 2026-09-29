@@ -2,6 +2,7 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 import { publicEnv } from "@/lib/env";
+import { syncProtocolHeaders } from "@/sync/records/sync-protocol";
 import type { Database } from "./types";
 
 export function hasBrowserSupabaseConfig() {
@@ -22,6 +23,7 @@ export function createBrowserSupabaseClient() {
   return createBrowserClient<Database>(
     supabaseUrl,
     supabaseAnonKey,
+    { global: { headers: syncProtocolHeaders } },
   );
 }
 
