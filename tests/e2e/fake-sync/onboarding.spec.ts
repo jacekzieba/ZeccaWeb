@@ -74,33 +74,39 @@ test("settings exposes Discord and e-mail support links", async ({ page }) => {
   );
 });
 
+// /demo seeds and values the whole sample dataset before the intro opens and on
+// every tour step: ~1 s on a laptop, 10–15 s on a CI runner (reproduced locally
+// with 6× CPU throttling), so the default 5 s expect timeout failed the demo
+// specs on CI without any regression.
+const demoExpect = expect.configure({ timeout: 30_000 });
+
 test("public demo stays on /demo and ends with login or registration", async ({ page }) => {
   test.slow();
   await page.goto("/demo");
 
   const introNext = page.getByTestId("onboarding-next");
-  await expect(introNext).toBeVisible();
+  await demoExpect(introNext).toBeVisible();
   await introNext.click();
   await introNext.click();
 
   const tourNext = page.getByTestId("tour-next");
   for (let step = 1; step <= 5; step++) {
-    await expect(page.getByText(`TOUR · KROK ${step} / 5`)).toBeVisible({ timeout: 10_000 });
-    await expect(page).toHaveURL(/\/demo$/);
+    await demoExpect(page.getByText(`TOUR · KROK ${step} / 5`)).toBeVisible();
+    await demoExpect(page).toHaveURL(/\/demo$/);
     await tourNext.click();
   }
 
-  await expect(
+  await demoExpect(
     page.getByText("Możesz teraz swobodnie zwiedzać całą aplikację", { exact: false }),
   ).toBeVisible();
-  await expect(page.getByTestId("onboarding-public-login")).toBeVisible();
-  await expect(page.getByTestId("onboarding-public-explore")).toBeVisible();
+  await demoExpect(page.getByTestId("onboarding-public-login")).toBeVisible();
+  await demoExpect(page.getByTestId("onboarding-public-explore")).toBeVisible();
   await page.getByTestId("onboarding-public-register").click();
-  await expect(page).toHaveURL(/\/register$/);
+  await demoExpect(page).toHaveURL(/\/register$/);
 
   // Public demo is always available again, independently of the account flag.
   await page.goto("/demo");
-  await expect(page.getByRole("heading", { name: "Monitoruj swoje inwestycje" })).toBeVisible();
+  await demoExpect(page.getByRole("heading", { name: "Monitoruj swoje inwestycje" })).toBeVisible();
 });
 
 // Late market data used to re-render the section under the current anchor.
@@ -130,6 +136,7 @@ test("tour recovers when its anchor briefly disappears mid-measurement", async (
 });
 
 test("skipping the public demo intro keeps the visitor in the app", async ({ page }) => {
+  test.slow();
   await page.goto("/demo");
 
   await page.getByTestId("onboarding-skip").click();
@@ -137,23 +144,24 @@ test("skipping the public demo intro keeps the visitor in the app", async ({ pag
   // Skipping is not leaving — no bounce to the login page. (The demo chrome
   // itself is asserted in demo-mode.spec.ts; fake sync short-circuits the
   // authenticated layout before it can read the demo cookie.)
-  await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByTestId("onboarding-next")).toHaveCount(0);
+  await demoExpect(page).toHaveURL(/\/dashboard$/);
+  await demoExpect(page.getByTestId("onboarding-next")).toHaveCount(0);
 });
 
 test("Esc during the public demo tour keeps the visitor in the app", async ({ page }) => {
+  test.slow();
   await page.goto("/demo");
 
   const introNext = page.getByTestId("onboarding-next");
-  await expect(introNext).toBeVisible();
+  await demoExpect(introNext).toBeVisible();
   await introNext.click();
   await introNext.click();
 
-  await expect(page.getByText("TOUR · KROK 1 / 5")).toBeVisible({ timeout: 10_000 });
+  await demoExpect(page.getByText("TOUR · KROK 1 / 5")).toBeVisible();
   await page.keyboard.press("Escape");
 
-  await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByTestId("tour-next")).toHaveCount(0);
+  await demoExpect(page).toHaveURL(/\/dashboard$/);
+  await demoExpect(page.getByTestId("tour-next")).toHaveCount(0);
 });
 
 test("public demo finale can hand over to free exploration", async ({ page }) => {
@@ -161,20 +169,20 @@ test("public demo finale can hand over to free exploration", async ({ page }) =>
   await page.goto("/demo");
 
   const introNext = page.getByTestId("onboarding-next");
-  await expect(introNext).toBeVisible();
+  await demoExpect(introNext).toBeVisible();
   await introNext.click();
   await introNext.click();
 
   const tourNext = page.getByTestId("tour-next");
   for (let step = 1; step <= 5; step++) {
-    await expect(page.getByText(`TOUR · KROK ${step} / 5`)).toBeVisible({ timeout: 10_000 });
+    await demoExpect(page.getByText(`TOUR · KROK ${step} / 5`)).toBeVisible();
     await tourNext.click();
   }
 
   // "Zwiedzaj aplikację" closes the onboarding and keeps the sample dataset.
   await page.getByTestId("onboarding-public-explore").click();
-  await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByTestId("dashboard-grid")).toBeVisible();
-  await expect(page.getByTestId("tour-next")).toHaveCount(0);
-  await expect(page.getByTestId("onboarding-next")).toHaveCount(0);
+  await demoExpect(page).toHaveURL(/\/dashboard$/);
+  await demoExpect(page.getByTestId("dashboard-grid")).toBeVisible();
+  await demoExpect(page.getByTestId("tour-next")).toHaveCount(0);
+  await demoExpect(page.getByTestId("onboarding-next")).toHaveCount(0);
 });
