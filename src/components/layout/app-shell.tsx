@@ -47,7 +47,7 @@ import { clearCachedUserDataKey } from "@/sync/encryption/key-cache";
 import { initials, useProfile } from "@/features/profile/profile-store";
 import { useDisplayCurrency } from "@/features/sync/use-display-currency";
 import { AppLock } from "@/features/auth/app-lock";
-import { AuthBrand, authTitleStyle } from "@/features/auth/auth-brand";
+import { AuthBrand } from "@/features/auth/auth-brand";
 import { useTranslation } from "@/features/i18n/translate";
 import { currencyLabel } from "@/lib/money";
 import { StatusAnnouncer } from "@/components/feedback/status-announcer";
@@ -864,15 +864,9 @@ function SyncUnlockGate({
           overflow: "hidden",
         }}
       >
-        {/* Brand + heading */}
+        {/* Brand; nagłówek zależy od stanu odblokowania, więc renderuje go panel */}
         <div style={{ padding: "28px 24px 0" }}>
           <AuthBrand tag="Web · v2" />
-          <h1 style={authTitleStyle}>
-            Odblokuj swoje dane
-          </h1>
-          <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 6, lineHeight: 1.5 }}>
-            Wpisz hasło konta (albo frazę synchronizacji, jeśli ustawiłeś ją osobno), aby odszyfrować portfel lokalnie w przeglądarce.
-          </p>
         </div>
 
         <SyncUnlockPanel initialUser={initialUser} onSyncLoaded={onSyncLoaded} />

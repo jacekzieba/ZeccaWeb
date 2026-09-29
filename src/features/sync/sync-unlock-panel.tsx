@@ -1,6 +1,8 @@
 "use client";
 
 import { token } from "@/design/tokens";
+import { authTitleStyle } from "@/features/auth/auth-brand";
+import { COLORS } from "@/lib/design-tokens";
 import { v2Mix } from "@/lib/v2-design";
 import type { Session } from "@supabase/supabase-js";
 import { useQuery } from "@tanstack/react-query";
@@ -807,8 +809,27 @@ export function SyncUnlockPanel({
     trustedKeyStatus !== "checking" &&
     !isPreparingTrustedKey &&
     !passwordAttemptPending;
+  // Zaufana przeglądarka przechodzi przez ten ekran przy każdym wejściu —
+  // dopóki trwa wczytywanie, nie prosimy o hasło, którego nikt nie wpisze.
+  const isLoadingPortfolio =
+    unlockStatus === "ready" ||
+    keyBackupQuery.isLoading ||
+    trustedKeyStatus === "checking" ||
+    isPreparingTrustedKey ||
+    passwordAttemptPending;
 
   return (
+    <>
+    <div style={{ padding: "0 24px" }}>
+      <h1 style={authTitleStyle}>
+        {isLoadingPortfolio ? "Wczytuję portfel" : "Odblokuj swoje dane"}
+      </h1>
+      {!isLoadingPortfolio && (
+        <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 6, lineHeight: 1.5 }}>
+          Wpisz hasło konta (albo frazę synchronizacji, jeśli ustawiłeś ją osobno), aby odszyfrować portfel lokalnie w przeglądarce.
+        </p>
+      )}
+    </div>
     <div style={{ padding: "20px 22px" }}>
       {/* User row */}
       <div
@@ -1072,6 +1093,7 @@ export function SyncUnlockPanel({
         </div>
       )}
     </div>
+    </>
   );
 }
 
