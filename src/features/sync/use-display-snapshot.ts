@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import type { InvestorDataSnapshot } from "@/domain/models/investor-data";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
-import { useProfile } from "@/features/profile/profile-store";
+import { useDisplayCurrency } from "@/features/sync/use-display-currency";
 import { useSyncStore } from "@/sync/store/sync-store";
 
 /**
@@ -25,7 +25,7 @@ export function useDisplaySnapshot(): InvestorDataSnapshot | null {
   const marketMetricsCpi = useSyncStore((s) => s.marketMetricsCpi);
   const marketReferenceRates = useSyncStore((s) => s.marketReferenceRates);
   const storeSnapshot = useSyncStore((s) => s.snapshot);
-  const { displayCurrency } = useProfile();
+  const { currency: displayCurrency } = useDisplayCurrency();
 
   return useMemo(() => {
     if (!records) return storeSnapshot;

@@ -4,7 +4,7 @@ import { useMemo, useState, type CSSProperties } from "react";
 import { CircleHelp } from "lucide-react";
 import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
 import { DataQualityBanner } from "@/features/sync/data-quality-banner";
-import { useProfile } from "@/features/profile/profile-store";
+import { useDisplayCurrency } from "@/features/sync/use-display-currency";
 import { useSampleDataSignal } from "@/features/telemetry/use-sample-data-signal";
 import { sampleSnapshot } from "@/features/dashboard/sample-data";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
@@ -175,7 +175,7 @@ export function ReportsPage() {
   const storeSnapshot = useDisplaySnapshot();
   const isDemo = !storeSnapshot;
   const snapshot = storeSnapshot ?? sampleSnapshot;
-  const { displayCurrency } = useProfile();
+  const { currency: displayCurrency } = useDisplayCurrency();
   // Demo/sample numbers are illustrative PLN, so only label real data in the
   // chosen currency.
   // Symbol przy kwocie, kod tylko tam, gdzie nazywa walutę. Ten plik omijał
