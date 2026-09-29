@@ -12,6 +12,10 @@ import { chooseOption } from "../support/select";
 // Before the fixes the PKO upload showed "Nie udało się odczytać pliku."
 
 const FIXTURES = "tests/e2e/fixtures/certification";
+// Reading the workbook in the browser (SheetJS chunk, first compile of /import on
+// the dev server) takes well over 5 s on a CI runner: the 2026-09-29 main run
+// failed at "Odczytywanie arkusza PKO… 22%" with no error.
+const FILE_READ = { timeout: 30_000 };
 
 test("PKO Obligacje .xls (BIFF8) imports and previews the bonds", async ({ page }) => {
   await page.goto("/import");
@@ -20,7 +24,7 @@ test("PKO Obligacje .xls (BIFF8) imports and previews the bonds", async ({ page 
   await chooseOption(page.getByRole("combobox").first(), "IKZE Obligacje");
   await page.locator('input[type="file"]').setInputFiles(`${FIXTURES}/pko_cert_scenario.xls`);
 
-  await expect(page.getByText(/Podgląd importu/)).toBeVisible();
+  await expect(page.getByText(/Podgląd importu/)).toBeVisible(FILE_READ);
   await expect(page.getByText("EDO0432").first()).toBeVisible();
   await expect(page.getByText("Gotowe").first()).toBeVisible();
   await expect(page.getByRole("checkbox", { name: "Zaznacz wszystko" })).toBeChecked();
@@ -38,7 +42,7 @@ test("XTB .xlsx imports and previews the trades", async ({ page }) => {
   await chooseOption(page.getByRole("combobox").first(), "IKE ETF");
   await page.locator('input[type="file"]').setInputFiles(`${FIXTURES}/xtb_cert_scenario.xlsx`);
 
-  await expect(page.getByText(/Podgląd importu/)).toBeVisible();
+  await expect(page.getByText(/Podgląd importu/)).toBeVisible(FILE_READ);
   await expect(page.getByText("VWCE.DE").first()).toBeVisible();
   await expect(page.getByText("Gotowe").first()).toBeVisible();
   await expect(page.getByRole("checkbox", { name: "Zaznacz wszystko" })).toBeChecked();

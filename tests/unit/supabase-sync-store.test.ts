@@ -29,8 +29,16 @@ class QueryBuilder<T> {
     return this;
   }
 
+  ranges: [number, number][] = [];
+
   order() {
-    return Promise.resolve(this.result);
+    return this;
+  }
+
+  range(from: number, to: number) {
+    this.ranges.push([from, to]);
+    const data = Array.isArray(this.result.data) ? this.result.data.slice(from, to + 1) : this.result.data;
+    return Promise.resolve({ data, error: this.result.error });
   }
 
   upsert(payload: unknown) {
@@ -129,6 +137,28 @@ describe("supabase sync store", () => {
     await expect(
       fetchActiveEncryptedRecords(asSupabaseClient({ data: [record], error: null })),
     ).resolves.toEqual([record]);
+  });
+
+  it("pages past the 1000-row PostgREST cap (SYNC-004)", async () => {
+    const records = Array.from({ length: 2_500 }, (_, index) => ({
+      id: `b8805a78-b5a5-4fe7-a83f-${String(index).padStart(12, "0")}`,
+      user_id: "11111111-1111-4111-8111-111111111111",
+      record_type: "transaction",
+      encrypted_payload: "ciphertext",
+      nonce: "nonce",
+      payload_version: 1,
+      schema_version: 1,
+      device_id: "web",
+      created_at: "2026-05-15T00:00:00.000Z",
+      updated_at: "2026-05-15T00:00:00.000Z",
+      deleted_at: null,
+    }));
+    const mock = createSupabaseMock({ data: records, error: null });
+
+    const fetched = await fetchActiveEncryptedRecords(mock as unknown as BrowserSupabaseClient);
+
+    expect(fetched).toHaveLength(2_500);
+    expect(mock.builders.flatMap((builder) => builder.ranges)).toEqual([[0, 999], [1_000, 1_999], [2_000, 2_999]]);
   });
 
   it("upserts a web device heartbeat compatible with macOS user_devices", async () => {

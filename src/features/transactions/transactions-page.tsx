@@ -18,7 +18,7 @@ import { isFakeSyncEnabled } from "@/lib/env";
 import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 import { pluralPl } from "@/lib/plural-pl";
 import { TRANSACTION_LABELS } from "@/lib/transaction-labels";
-import { useProfile } from "@/features/profile/profile-store";
+import { useDisplayCurrency } from "@/features/sync/use-display-currency";
 import { currencyLabel } from "@/lib/money";
 import { announce } from "@/components/feedback/status-announcer";
 import { MetricTiles } from "@/components/layout/metric-tiles";
@@ -92,7 +92,7 @@ export function TransactionsPage() {
   const openAddTransaction = useSyncStore((s) => s.openAddTransaction);
   const publicDemo = useSyncStore((s) => s.publicDemo);
   const snapshot = useSyncStore((s) => s.snapshot);
-  const { displayCurrency } = useProfile();
+  const { currency: displayCurrency } = useDisplayCurrency();
 
   const allTransactions = useMemo(
     () => (records ? buildTransactionList(records) : []),

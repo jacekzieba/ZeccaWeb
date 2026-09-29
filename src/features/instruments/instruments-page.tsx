@@ -13,7 +13,7 @@ import { marketDataSymbolForInstrument } from "@/market-data/symbols";
 import { isFakeSyncEnabled } from "@/lib/env";
 import { buildFakeManualValuationRecord } from "@/sync/dev/fake-sync";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
-import { useProfile } from "@/features/profile/profile-store";
+import { useDisplayCurrency } from "@/features/sync/use-display-currency";
 import type { InstrumentRow } from "@/domain/models/investor-data";
 import { currencyLabel } from "@/lib/money";
 import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
@@ -132,7 +132,7 @@ export function InstrumentsPage() {
   const userDataKey = useSyncStore((s) => s.userDataKey);
   const supabase = useSyncStore((s) => s.supabase);
   const setSync = useSyncStore((s) => s.setSync);
-  const { displayCurrency } = useProfile();
+  const { currency: displayCurrency } = useDisplayCurrency();
 
   const allInstruments = useMemo(
     () =>

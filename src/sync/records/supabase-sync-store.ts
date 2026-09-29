@@ -7,6 +7,7 @@ import {
   getWebDeviceName,
   getWebDevicePlatform,
 } from "@/sync/records/web-device";
+import { fetchAllPages } from "./paged-fetch";
 
 export type UpsertPayload = {
   id: string;
@@ -112,31 +113,31 @@ export async function upsertEncryptedKeyBackup(
 export async function fetchActiveEncryptedRecords(
   supabase: BrowserSupabaseClient,
 ): Promise<EncryptedRecord[]> {
-  const { data, error } = await supabase
-    .from("encrypted_records")
-    .select(
-      [
-        "id",
-        "user_id",
-        "record_type",
-        "encrypted_payload",
-        "nonce",
-        "payload_version",
-        "schema_version",
-        "device_id",
-        "created_at",
-        "updated_at",
-        "deleted_at",
-      ].join(", "),
-    )
-    .is("deleted_at", null)
-    .order("updated_at", { ascending: true });
+  const rows = await fetchAllPages((from, to) =>
+    supabase
+      .from("encrypted_records")
+      .select(
+        [
+          "id",
+          "user_id",
+          "record_type",
+          "encrypted_payload",
+          "nonce",
+          "payload_version",
+          "schema_version",
+          "device_id",
+          "created_at",
+          "updated_at",
+          "deleted_at",
+        ].join(", "),
+      )
+      .is("deleted_at", null)
+      .order("updated_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, to),
+  );
 
-  if (error) {
-    throw error;
-  }
-
-  return (data ?? []).map((record) => encryptedRecordSchema.parse(record));
+  return rows.map((record) => encryptedRecordSchema.parse(record));
 }
 
 export async function fetchEncryptedRecordMetadata(

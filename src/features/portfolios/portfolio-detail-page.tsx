@@ -6,7 +6,7 @@ import { v2Mix } from "@/lib/v2-design";
 import Link from "next/link";
 import { use, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useSyncStore } from "@/sync/store/sync-store";
-import { useProfile } from "@/features/profile/profile-store";
+import { useDisplayCurrency } from "@/features/sync/use-display-currency";
 import { buildPortfolioDetail } from "@/sync/records/investor-snapshot";
 import { AreaChart } from "@/components/charts/area-chart";
 import type { CashBalance, HoldingRow, ValuationPoint } from "@/domain/models/investor-data";
@@ -463,7 +463,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
   const marketCpi = useSyncStore((s) => s.marketCpi);
   const marketMetricsCpi = useSyncStore((s) => s.marketMetricsCpi);
   const marketReferenceRates = useSyncStore((s) => s.marketReferenceRates);
-  const { displayCurrency } = useProfile();
+  const { currency: displayCurrency } = useDisplayCurrency();
 
   const detail = useMemo(
     () =>

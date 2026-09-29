@@ -46,6 +46,7 @@ import {
 } from "@/domain/valuation/bond-rates";
 import {
   resolveFxRate,
+  type FxTransactionInput,
   type MarketQuoteInput,
 } from "@/domain/valuation/price-resolver";
 import {
@@ -68,28 +69,60 @@ function makeBaseToPln(
   if (displayCurrency === "PLN") {
     return () => 1;
   }
+  const transactions = fxTransactionInputs(dataset);
   return (date) => {
     const resolved = resolveFxRate(
       displayCurrency,
-      dataset.transactions.map((transaction) => ({
-        transactionType: transaction.transactionType,
-        currency: transaction.currency,
-        grossAmount: transaction.grossAmount,
-        fxRateToBase: transaction.fxRateToBase,
-        targetCurrency: transaction.targetCurrency,
-        targetGrossAmount: transaction.targetGrossAmount,
-        date: toDate(transaction.date),
-      })),
+      transactions,
       date,
       dataset.fxRates,
       { latestTransactionRate: dataset.useLatestTransactionFxRate },
     );
     // Missing/zero rate → fall back to 1 (no conversion) rather than divide by
-    // zero; the UI keeps the display currency on PLN until rates have loaded.
+    // zero. The UI never gets here for the as-of date: `useDisplayCurrency`
+    // switches to PLN while `hasDisplayCurrencyRate` is false (DATA-002).
     return resolved.source !== "missing" && resolved.rate > EPSILON
       ? resolved.rate
       : 1;
   };
+}
+
+function fxTransactionInputs(dataset: ParsedDataset): FxTransactionInput[] {
+  return dataset.transactions.map((transaction) => ({
+    transactionType: transaction.transactionType,
+    currency: transaction.currency,
+    grossAmount: transaction.grossAmount,
+    fxRateToBase: transaction.fxRateToBase,
+    targetCurrency: transaction.targetCurrency,
+    targetGrossAmount: transaction.targetGrossAmount,
+    date: toDate(transaction.date),
+  }));
+}
+
+const fxTransactionsByRecords = new WeakMap<DecryptedRecord[], FxTransactionInput[]>();
+
+/** Whether `currency` has a real rate on `asOf` (NBP series, then the user's own
+ * transactions — the same resolution the snapshot uses). Without one the snapshot
+ * would divide by 1 and label PLN amounts as USD/EUR (DATA-002). Parsed
+ * transactions are cached per records array, since every page asks. */
+export function hasDisplayCurrencyRate(
+  records: DecryptedRecord[] | null,
+  currency: string,
+  fxRates: FxRateInput[],
+  asOf: Date,
+  options: { useLatestTransactionFxRate?: boolean } = {},
+): boolean {
+  if (currency.toUpperCase() === "PLN") return true;
+  let transactions: FxTransactionInput[] = [];
+  if (records) {
+    const cached = fxTransactionsByRecords.get(records);
+    transactions = cached ?? fxTransactionInputs(parseDataset(records, {}));
+    if (!cached) fxTransactionsByRecords.set(records, transactions);
+  }
+  const resolved = resolveFxRate(currency.toUpperCase(), transactions, asOf, fxRates, {
+    latestTransactionRate: options.useLatestTransactionFxRate ?? true,
+  });
+  return resolved.source !== "missing" && resolved.rate > EPSILON;
 }
 
 const APPLE_REFERENCE_DATE_UNIX_MS = Date.UTC(2001, 0, 1);

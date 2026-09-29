@@ -21,6 +21,7 @@ import {
   type NotificationPrefs,
   type Profile,
 } from "@/features/profile/profile-store";
+import { useDisplayCurrency } from "@/features/sync/use-display-currency";
 import {
   AllocationEditorModal,
   type AllocationDraft,
@@ -198,6 +199,7 @@ function zapiszProfil(patch: Parameters<typeof updateProfile>[0], opis?: string)
 
 export function SettingsPage() {
   const profile = useProfile();
+  const displayCurrencyState = useDisplayCurrency();
   const snapshot = useSyncStore((s) => s.snapshot);
   const records = useSyncStore((s) => s.records);
   const userDataKey = useSyncStore((s) => s.userDataKey);
@@ -258,7 +260,7 @@ export function SettingsPage() {
       <ProfileCard profile={profile} portfolioCount={accounts.length} />
 
       <Section eyebrow="Regionalne" title="Waluta i format">
-        <Row label="Waluta bazowa" desc="Przeliczenia portfela i raportów wg kursów NBP z danego dnia" control={<Segmented label="Waluta bazowa" options={[{ value: "PLN", label: "PLN" }, { value: "EUR", label: "EUR" }, { value: "USD", label: "USD" }]} value={profile.displayCurrency} onChange={(v) => zapiszProfil({ displayCurrency: v as Profile["displayCurrency"] }, `waluta bazowa ${v}`)} />} />
+        <Row label="Waluta bazowa" desc={displayCurrencyState.missingRate ? `Brak kursu ${displayCurrencyState.requested}/PLN — kwoty są w PLN, dopóki kurs się nie pobierze.` : "Przeliczenia portfela i raportów wg kursów NBP z danego dnia"} control={<Segmented label="Waluta bazowa" options={[{ value: "PLN", label: "PLN" }, { value: "EUR", label: "EUR" }, { value: "USD", label: "USD" }]} value={profile.displayCurrency} onChange={(v) => zapiszProfil({ displayCurrency: v as Profile["displayCurrency"] }, `waluta bazowa ${v}`)} />} />
         <Row label={t("Język interfejsu")} desc={t("Na razie po angielsku jest menu boczne — reszta aplikacji pozostaje po polsku. Ustawienie synchronizuje się z aplikacjami Zecca.")} control={<Segmented label="Język interfejsu" options={[{ value: "pl", label: languageName("pl") }, { value: "en", label: languageName("en") }]} value={language} onChange={(value) => changeLanguage(value as AppLanguage)} />} last />
       </Section>
 

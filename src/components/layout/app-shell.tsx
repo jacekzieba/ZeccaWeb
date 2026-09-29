@@ -45,6 +45,7 @@ import { COLORS, SURFACES, TYPOGRAPHY } from "@/lib/design-tokens";
 import { V2, v2Mix } from "@/lib/v2-design";
 import { clearCachedUserDataKey } from "@/sync/encryption/key-cache";
 import { initials, useProfile } from "@/features/profile/profile-store";
+import { useDisplayCurrency } from "@/features/sync/use-display-currency";
 import { AppLock } from "@/features/auth/app-lock";
 import { AuthBrand, authTitleStyle } from "@/features/auth/auth-brand";
 import { useTranslation } from "@/features/i18n/translate";
@@ -214,7 +215,7 @@ function SidebarContent({ onNav, publicDemo = false }: { onNav?: () => void; pub
   const { language, t } = useTranslation();
   const numberLocale = language === "en" ? "en-US" : "pl-PL";
   const snapshot = useDisplaySnapshot();
-  const { displayCurrency } = useProfile();
+  const { currency: displayCurrency } = useDisplayCurrency();
   const totalValue = snapshot?.totalValue ?? null;
   const changePct = snapshot?.monthlyChange ?? null;
   const changePLN =

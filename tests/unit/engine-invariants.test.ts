@@ -108,7 +108,9 @@ function reference(scenario: GoldenScenario) {
   return { cash, quantity, realized, dividends };
 }
 
-describe("niezmienniki: księga i wycena", () => {
+// Każdy test przelicza dziesiątki losowych ksiąg: lokalnie ~1 s, a na runnerze CI
+// z instrumentacją pokrycia przekraczał domyślne 5 s bez żadnej regresji.
+describe("niezmienniki: księga i wycena", { timeout: 30_000 }, () => {
   it("gotówka, ilości i zrealizowany P/L zgadzają się z prostym modelem referencyjnym", () => {
     forEachBook({ dividends: true, costs: true }, (scenario) => {
       const { detail, snapshot } = run(scenario);
@@ -254,7 +256,7 @@ describe("niezmienniki: księga i wycena", () => {
   });
 });
 
-describe("niezmienniki: niezależny rachunek TWR", () => {
+describe("niezmienniki: niezależny rachunek TWR", { timeout: 30_000 }, () => {
   // indeks_t = indeks_{t-1} · V_t / (V_{t-1} + przepływ_t); przepływ = wpłata/wypłata
   // przeliczona kursem NBP z tego dnia. Wartości dzienne bierzemy z serii silnika,
   // ale przepływy i wzór liczymy tutaj — błąd przeliczenia przepływów rozjeżdża wynik.
