@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import type { CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { publicEnv } from "@/lib/env";
+import { syncProtocolHeaders } from "@/sync/records/sync-protocol";
 import type { Database } from "./types";
 
 export async function createServerSupabaseClient() {
@@ -18,6 +19,7 @@ export async function createServerSupabaseClient() {
     publicEnv.NEXT_PUBLIC_SUPABASE_URL,
     publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
+      global: { headers: syncProtocolHeaders },
       cookies: {
         getAll() {
           return cookieStore.getAll();

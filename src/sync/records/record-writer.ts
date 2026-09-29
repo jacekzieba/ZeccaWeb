@@ -12,6 +12,7 @@ import {
 import { summarizeDecryptedRecords } from "@/sync/records/sync-summary";
 import { getWebDeviceId } from "@/sync/records/web-device";
 import type { BrowserSupabaseClient } from "@/supabase/client";
+import { assertSyncProtocolSupported } from "./sync-protocol";
 
 const PENDING_SYNC_KEY = "investor-web-pending-sync-v1";
 export const PENDING_SYNC_CHANGED_EVENT = "investor-web-pending-sync-changed";
@@ -486,6 +487,7 @@ export async function refreshSyncStore(
   supabase: BrowserSupabaseClient,
   userDataKey: CryptoKey,
 ) {
+  await assertSyncProtocolSupported(supabase);
   const encryptedRecords = await fetchActiveEncryptedRecords(supabase);
   const decryptedRecords = await decryptEncryptedRecords(userDataKey, encryptedRecords);
   const summary = summarizeDecryptedRecords(decryptedRecords);
