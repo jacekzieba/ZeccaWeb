@@ -190,4 +190,41 @@ describe("SyncUnlockPanel — hasło jako klucz", () => {
     // hasło nie jest już potrzebne — nie może leżeć w storage do końca karty
     await waitFor(() => expect(sessionStorage.getItem(PENDING_KEY)).toBeNull());
   });
+
+  it("w trakcie wczytywania nie prosi o hasło — nagłówek mówi, że wczytuje portfel", async () => {
+    net.bootstrap.keyBackup = await backupWrappedWith("Haslo-Konta1");
+    net.cachedKey = await unlockUserDataKey(net.bootstrap.keyBackup as EncryptedKeyBackup, "Haslo-Konta1");
+    let respond: (() => void) | undefined;
+    vi.mocked(globalThis.fetch).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          respond = () =>
+            resolve(new Response(JSON.stringify(net.bootstrap), {
+              status: 200,
+              headers: { "content-type": "application/json" },
+            }));
+        }),
+    );
+
+    const onSyncLoaded = renderPanel();
+
+    expect(screen.getByRole("heading", { name: /Wczytuję portfel/ })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: /Odblokuj swoje dane/ })).toBeNull();
+    expect(screen.queryByText(/Wpisz hasło konta/)).toBeNull();
+
+    await waitFor(() => expect(respond).toBeDefined());
+    respond?.();
+    await waitFor(() => expect(onSyncLoaded).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText(/Wpisz hasło konta/)).toBeNull();
+  });
+
+  it("gdy potrzebne jest hasło, nagłówek o nie prosi", async () => {
+    net.bootstrap.keyBackup = await backupWrappedWith("stara-osobna-fraza");
+
+    renderPanel();
+
+    await screen.findByLabelText(LABEL);
+    expect(screen.getByRole("heading", { name: /Odblokuj swoje dane/ })).toBeTruthy();
+    expect(screen.getByText(/Wpisz hasło konta/)).toBeTruthy();
+  });
 });
