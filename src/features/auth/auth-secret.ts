@@ -73,6 +73,7 @@ export async function signInWithAccountPassword(
   const legacy = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
   if (legacy.error) return { error: first.error };
 
-  await supabase.auth.updateUser({ password: secret }).catch(() => undefined);
+  // Produkcja wymaga obecnego hasła przy jego zmianie (poza odzyskiwaniem).
+  await supabase.auth.updateUser({ password: secret, current_password: password }).catch(() => undefined);
   return { error: null };
 }

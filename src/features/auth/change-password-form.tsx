@@ -87,8 +87,11 @@ export function ChangePasswordForm() {
       return fail("Nie udało się zapisać klucza pod nowym hasłem. Hasło się nie zmieniło.");
     }
 
+    // Produkcja wymaga obecnego hasła; po signInWithAccountPassword w Auth jest
+    // już sekret obecnego hasła.
     const { error: updateError } = await supabase.auth.updateUser({
       password: await deriveAuthSecret(account.email, next),
+      current_password: await deriveAuthSecret(account.email, current),
     });
     if (updateError) {
       if (rewrapped && previousBackup) {

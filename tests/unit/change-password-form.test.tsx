@@ -82,7 +82,11 @@ describe("ChangePasswordForm", () => {
     await screen.findByText(/Hasło zmienione/, undefined, { timeout: 10_000 });
     // Do Auth idą tylko sekrety wyprowadzone z haseł, nigdy same hasła.
     expect(backend.signIn).toHaveBeenCalledWith({ email: "a@b.pl", password: await deriveAuthSecret("a@b.pl", OLD) });
-    expect(backend.updateUser).toHaveBeenCalledWith({ password: await deriveAuthSecret("a@b.pl", NEW) });
+    // Produkcja wymaga obecnego hasła (current_password) przy jego zmianie.
+    expect(backend.updateUser).toHaveBeenCalledWith({
+      password: await deriveAuthSecret("a@b.pl", NEW),
+      current_password: await deriveAuthSecret("a@b.pl", OLD),
+    });
     expect(backend.calls).toEqual(["upsert", "updateUser"]);
     const [, userId, next] = backend.upsert.mock.calls[0] as [unknown, string, EncryptedKeyBackup];
     expect(userId).toBe("user-1");

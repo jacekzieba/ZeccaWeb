@@ -29,11 +29,21 @@ describe("deriveAuthSecret", () => {
 });
 
 describe("signInWithAccountPassword", () => {
+  // Zachowuje się jak produkcyjne Supabase Auth: zmiana hasła poza sesją
+  // odzyskiwania wymaga poprawnego `current_password`
+  // (GOTRUE_SECURITY_UPDATE_PASSWORD_REQUIRE_CURRENT_PASSWORD).
   function client(accepts: string[]) {
+    let stored = [...accepts];
     const signInWithPassword = vi.fn(async ({ password }: { email: string; password: string }) =>
-      accepts.includes(password) ? { error: null } : { error: { message: "Invalid login credentials" } },
+      stored.includes(password) ? { error: null } : { error: { message: "Invalid login credentials" } },
     );
-    const updateUser = vi.fn(async () => ({ error: null }));
+    const updateUser = vi.fn(async ({ password, current_password }: { password?: string; current_password?: string }) => {
+      if (!current_password || !stored.includes(current_password)) {
+        return { error: { message: "Current password required when setting new password." } };
+      }
+      stored = password ? [password] : stored;
+      return { error: null };
+    });
     return { auth: { signInWithPassword, updateUser } };
   }
 
@@ -53,7 +63,12 @@ describe("signInWithAccountPassword", () => {
 
     expect(result.error).toBeNull();
     expect(c.auth.signInWithPassword).toHaveBeenCalledTimes(2);
-    expect(c.auth.updateUser).toHaveBeenCalledWith({ password: VECTORS[0][2] });
+
+    // Po migracji konto przyjmuje już tylko sekret.
+    c.auth.signInWithPassword.mockClear();
+    await expect(signInWithAccountPassword(c as never, VECTORS[0][0], VECTORS[0][1])).resolves.toEqual({ error: null });
+    expect(c.auth.signInWithPassword).toHaveBeenCalledTimes(1);
+    expect(c.auth.signInWithPassword).toHaveBeenCalledWith({ email: "jan.kowalski@example.pl", password: VECTORS[0][2] });
   });
 
   it("złe hasło: zwraca błąd, niczego nie migruje", async () => {
