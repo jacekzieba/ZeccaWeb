@@ -131,6 +131,27 @@ describe("SyncUnlockPanel — hasło jako klucz", () => {
     fireEvent.click(screen.getByRole("button", { name: /Odblokuj/ }));
 
     await waitFor(() => expect(onSyncLoaded).toHaveBeenCalledTimes(1));
+    // przepakowanie pod hasło konta kończy się w tym teście, nie w następnym
+    await waitFor(() => expect(net.upsert).toHaveBeenCalledTimes(1));
+  });
+
+  it("po odblokowaniu starą passphrase backup przechodzi na hasło konta", async () => {
+    net.bootstrap.keyBackup = await backupWrappedWith("stara-osobna-fraza");
+    setPendingAuthPassword("Haslo-Konta1");
+
+    const onSyncLoaded = renderPanel();
+    const input = await screen.findByLabelText(LABEL);
+    fireEvent.change(input, { target: { value: "stara-osobna-fraza" } });
+    fireEvent.click(screen.getByRole("button", { name: /Odblokuj/ }));
+
+    await waitFor(() => expect(onSyncLoaded).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(net.upsert).toHaveBeenCalledTimes(1));
+    const [, userId, rewrapped] = net.upsert.mock.calls[0] as [unknown, string, EncryptedKeyBackup];
+    expect(userId).toBe("user-1");
+    // Od teraz odblokowuje samo hasło konta.
+    await expect(unlockUserDataKey(rewrapped, "Haslo-Konta1")).resolves.toBeTruthy();
+    // Hasło nie zostaje w sessionStorage.
+    expect(sessionStorage.getItem(PENDING_KEY)).toBeNull();
   });
 
   it("„Wyloguj” czyści kolejkę sync i niewykorzystane hasło z logowania", async () => {

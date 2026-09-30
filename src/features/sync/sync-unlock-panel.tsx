@@ -21,6 +21,7 @@ import {
 import {
   createEncryptedKeyBackup,
   generateUserDataKeyBytes,
+  rewrapKeyBackup,
   unlockUserDataKey,
   type EncryptedKeyBackup,
 } from "@/sync/encryption/key-backup";
@@ -197,6 +198,10 @@ export function SyncUnlockPanel({
   const unlockStatusRef = useRef(unlockStatus);
   const attemptedTrustedKeyUserRef = useRef<string | null>(null);
   const attemptedPendingPasswordUserRef = useRef<string | null>(null);
+  // Hasło z logowania, które nie odblokowało backupu (stara, osobna fraza).
+  // Tylko w pamięci — po ręcznym odblokowaniu frazą przepakowujemy backup pod
+  // hasło konta, żeby kolejne logowania nie pytały o frazę.
+  const accountPasswordForRewrapRef = useRef<string | null>(null);
   const [pendingPasswordAttempt, setPendingPasswordAttempt] =
     useState<"idle" | "trying">("idle");
 
@@ -529,6 +534,7 @@ export function SyncUnlockPanel({
       } catch {
         // Wrong/legacy password, or a transient error — fall through to the
         // ordinary manual form silently, without surfacing this attempt.
+        if (hasBackupNow) accountPasswordForRewrapRef.current = pending;
         if (!cancelled) {
           setUnlockStatus("idle");
           setUnlockError(null);
@@ -681,7 +687,30 @@ export function SyncUnlockPanel({
 
   function handleUnlock(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    unlockSync().catch(() => undefined);
+    const legacyPhrase = passphrase;
+    const backup = keyBackupQuery.data?.keyBackup;
+    unlockSync()
+      .then(() => rewrapLegacyPhraseToAccountPassword(backup, legacyPhrase))
+      .catch(() => undefined);
+  }
+
+  // Jednorazowo: backup chroniony starą frazą przechodzi na hasło konta.
+  // Porażka nie przeszkadza — dane są już odblokowane, spróbujemy przy
+  // następnym logowaniu.
+  async function rewrapLegacyPhraseToAccountPassword(
+    backup: EncryptedKeyBackup | null | undefined,
+    legacyPhrase: string,
+  ) {
+    const accountPassword = accountPasswordForRewrapRef.current;
+    accountPasswordForRewrapRef.current = null;
+    if (!supabase || !userId || !backup || !accountPassword || accountPassword === legacyPhrase) return;
+    try {
+      const rewrapped = await rewrapKeyBackup(backup, legacyPhrase, accountPassword);
+      await upsertEncryptedKeyBackup(supabase, userId, rewrapped);
+      await keyBackupQuery.refetch();
+    } catch {
+      // zob. wyżej
+    }
   }
 
   async function handleSignOut() {
