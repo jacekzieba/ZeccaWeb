@@ -56,7 +56,9 @@ test.describe("responsive application", () => {
       }
 
       await page.locator("aside").getByRole("link", { name: "Transakcje", exact: true }).click();
-      await expect(page).toHaveURL(/\/transactions$/);
+      // `next dev` kompiluje /transactions przy pierwszym wejściu — na wolnym
+      // runnerze CI zajmuje to więcej niż domyślne 5 s.
+      await expect(page).toHaveURL(/\/transactions$/, { timeout: 30_000 });
       await expect(page.getByRole("main").getByText("Transakcje", { exact: true }).first()).toBeVisible();
       await expectNoDocumentOverflow(page);
     });
