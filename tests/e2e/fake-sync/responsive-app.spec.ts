@@ -49,7 +49,7 @@ test.describe("responsive application", () => {
         await expect(menuButton).toBeVisible();
         await expect(menuButton).toHaveCSS("width", "44px");
         await expect(page.getByRole("button", { name: "Szukaj" })).toHaveCSS("width", "44px");
-        await expect(page.getByRole("link", { name: "Profil" })).toHaveCSS("width", "44px");
+        await expect(page.getByRole("button", { name: "Profil" })).toHaveCSS("width", "44px");
         await menuButton.click();
       } else {
         await expect(menuButton).toBeHidden();

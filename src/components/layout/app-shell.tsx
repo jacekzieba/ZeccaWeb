@@ -48,6 +48,7 @@ import { initials, useProfile } from "@/features/profile/profile-store";
 import { useDisplayCurrency } from "@/features/sync/use-display-currency";
 import { AppLock } from "@/features/auth/app-lock";
 import { AuthBrand } from "@/features/auth/auth-brand";
+import { ProfileMenu } from "@/components/layout/profile-menu";
 import { useTranslation } from "@/features/i18n/translate";
 import { currencyLabel } from "@/lib/money";
 import { StatusAnnouncer } from "@/components/feedback/status-announcer";
@@ -697,12 +698,13 @@ export function AppShell({
             {isDesktop && "Dodaj transakcję"}
           </button>
 
-          {/* Avatar */}
-          <Link
-            href={"/settings" as Route}
-            aria-label="Profil"
-            style={{
-              width: isDesktop ? 34 : 44, height: isDesktop ? 34 : 44, borderRadius: "50%", flexShrink: 0, overflow: "hidden",
+          {/* Avatar z menu: ustawienia i wylogowanie */}
+          <ProfileMenu
+            size={isDesktop ? 34 : 44}
+            logoutLabel={publicDemo ? "Zakończ demo" : "Wyloguj się"}
+            onLogout={publicDemo ? exitPublicDemo : handleLogout}
+            triggerStyle={{
+              borderRadius: "50%", overflow: "hidden",
               // Tożsamość nie jest na liście zadań bursztynu (cecha źródła,
               // odsyłacz, akcja główna, stan wybrania), a stała tuż obok
               // bursztynowego „Dodaj transakcję" — dwie plamy akcentu w jednym
@@ -711,7 +713,7 @@ export function AppShell({
               border: `0.5px solid ${V2.line}`,
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 12, fontWeight: 700,
-              cursor: "pointer", textDecoration: "none",
+              cursor: "pointer",
             }}
           >
             {profile.avatar ? (
@@ -720,7 +722,7 @@ export function AppShell({
             ) : (
               initials(profile.name)
             )}
-          </Link>
+          </ProfileMenu>
         </div>
       </header>
 
