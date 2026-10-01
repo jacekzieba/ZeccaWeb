@@ -687,9 +687,12 @@ export function SyncUnlockPanel({
 
   function handleUnlock(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const legacyPhrase = passphrase;
+    // Bierzemy to, co faktycznie jest w polu: autouzupełnianie Safari potrafi
+    // wpisać hasło bez zdarzenia zmiany, a wtedy stan Reacta trzyma starą wartość.
+    const fieldValue = new FormData(event.currentTarget).get("passphrase");
+    const legacyPhrase = typeof fieldValue === "string" ? fieldValue : passphrase;
     const backup = keyBackupQuery.data?.keyBackup;
-    unlockSync()
+    unlockSync(legacyPhrase)
       .then(() => rewrapLegacyPhraseToAccountPassword(backup, legacyPhrase))
       .catch(() => undefined);
   }
@@ -1067,6 +1070,7 @@ export function SyncUnlockPanel({
             </label>
             <input
               id={passphraseId}
+              name="passphrase"
               type="password"
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
