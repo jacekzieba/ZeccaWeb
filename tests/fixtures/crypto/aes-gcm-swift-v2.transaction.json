@@ -1,0 +1,17 @@
+{
+  "description" : "Swift CryptoKit v2 (AAD) transaction envelope — EncryptionService.encrypt(_:context:using:)",
+  "keyBase64" : "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
+  "record" : {
+    "created_at" : "2026-05-15T00:00:00.000Z",
+    "deleted_at" : null,
+    "device_id" : "swift-fixture",
+    "encrypted_payload" : "v2.WcUODua26fOHnI16pZ6F6UzzUwtaourwZSGzcIO5zravtp+KYW1i3D5dE844D2s6YuN80PEU7IbIr7Q3vAlqRh6OoAkSBa\/nt1m6GASz+LeEU3QdziZSzfaYzilpmoRVfUUqlV2pqm9VWAfZMxAAUmds4046qMJIOOvlwp3oI3MbNO4UbMgEJIoDPpcMVaRIOdS9E9\/Gx8t0SrVTqaaiuG6th3ecBwdVA8JjxgwNUodnB4lWTSipNfB+sLlI4P\/7e22RWtLfRNj2iZk1NCs\/yHR8X2RLH4TdbkGY\/dQnsyrjHL3IvnzWhbE2hDVazjSObj4y23yD8dsSl3dP+FE4OYaDKhFNX22XYBvkygVtkVDDDsjuC+NBi1isQSlPgc56sDBWCILYHOATpnGurBesEaySS5FeFtUaNo45T38s\/RBumBydCjQmUDr3hIH27izVK\/bHdKv54oqgFMx4JMPdqMvDiG6t\/\/FdDiO3CN8HJWjR7RIX\/7IolooiLw1b1U5j",
+    "id" : "b8805a78-b5a5-4fe7-a83f-716117184d25",
+    "nonce" : "6iXwCU+00\/Z9qT9e",
+    "payload_version" : 1,
+    "record_type" : "transaction",
+    "schema_version" : 1,
+    "updated_at" : "2026-05-15T00:00:00.000Z",
+    "user_id" : "11111111-1111-4111-8111-111111111111"
+  }
+}

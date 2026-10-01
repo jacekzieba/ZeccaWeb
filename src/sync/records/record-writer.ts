@@ -1,5 +1,5 @@
-import { encryptJsonPayload } from "@/sync/encryption/aes-gcm";
-import { decryptEncryptedRecords } from "@/sync/records/encrypted-records";
+import { encryptJsonPayloadV2 } from "@/sync/encryption/aes-gcm";
+import { decryptEncryptedRecords, recordAdditionalData } from "@/sync/records/encrypted-records";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import {
   fetchActiveEncryptedRecords,
@@ -249,7 +249,13 @@ export async function saveRecord(
   options: SaveRecordOptions = {},
 ): Promise<WriteRecordResult> {
   const userId = await getCurrentUserId(supabase);
-  const { encryptedPayload, nonce } = await encryptJsonPayload(userDataKey, payload);
+  // v2 jak w iOS: rekord raz zapisany w v2 nie może wrócić do formatu bez AAD
+  // (iOS odrzuca taki „downgrade”), więc web też zapisuje v2.
+  const { encryptedPayload, nonce } = await encryptJsonPayloadV2(
+    userDataKey,
+    payload,
+    recordAdditionalData({ userId, id: payload.id, recordType, schemaVersion: 1, deleted: false }),
+  );
   const updatedAt = new Date().toISOString();
   const encryptedRecord: UpsertPayload = {
     id: payload.id,
