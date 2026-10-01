@@ -359,6 +359,8 @@ export const landingCopy = {
     ],
     copyright: "© 2026 Zecca · Zbudowane dla polskiego inwestora",
     betaNote: "Wersja beta. W aplikacji mogą występować błędy.",
+    disclaimer:
+      "Zecca służy do śledzenia własnego portfela. Dane i wyliczenia mają charakter wyłącznie informacyjny i nie stanowią porady inwestycyjnej, podatkowej ani rekomendacji dotyczącej instrumentów finansowych.",
   },
 } as const;
 
