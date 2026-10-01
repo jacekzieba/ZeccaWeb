@@ -135,6 +135,18 @@ describe("SyncUnlockPanel — hasło jako klucz", () => {
     await waitFor(() => expect(net.upsert).toHaveBeenCalledTimes(1));
   });
 
+  it("odblokowuje tym, co faktycznie jest w polu, nawet gdy Safari wpisało hasło bez zdarzenia zmiany", async () => {
+    net.bootstrap.keyBackup = await backupWrappedWith("Haslo-Konta1");
+
+    const onSyncLoaded = renderPanel();
+    const input = (await screen.findByLabelText(LABEL)) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "Haslo-Konta" } }); // stan strony: niedopisane hasło
+    input.value = "Haslo-Konta1"; // autouzupełnianie zmienia pole bez powiadomienia Reacta
+    fireEvent.click(screen.getByRole("button", { name: /Odblokuj/ }));
+
+    await waitFor(() => expect(onSyncLoaded).toHaveBeenCalledTimes(1));
+  });
+
   it("po odblokowaniu starą passphrase backup przechodzi na hasło konta", async () => {
     net.bootstrap.keyBackup = await backupWrappedWith("stara-osobna-fraza");
     setPendingAuthPassword("Haslo-Konta1");
