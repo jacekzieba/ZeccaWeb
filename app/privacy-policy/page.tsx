@@ -25,7 +25,7 @@ export default function PrivacyPolicyPage() {
           </h1>
 
           <p style={{ fontSize: 13, color: COLORS.textMuted, marginBottom: 24 }}>
-            <strong>Data wejścia w życie:</strong> 12 lipca 2026
+            <strong>Data wejścia w życie:</strong> 1 października 2026
           </p>
 
           <div style={{ marginBottom: 24 }}>
@@ -65,7 +65,23 @@ export default function PrivacyPolicyPage() {
           </ul>
 
           <p style={{ marginBottom: 16 }}>
-            Zaszyfrowaną kopię klucza synchronizacji odblokowuje na nowym urządzeniu klucz wyprowadzany lokalnie z <strong>hasła Twojego konta</strong> (dla kont założonych hasłem) albo z <strong>osobnej frazy synchronizacji (passphrase)</strong> — jeśli ustawiłeś ją wcześniej lub w aplikacji na iOS/macOS. Zecca nie przechowuje ani hasła, ani frazy w postaci jawnej i nie używa ich po stronie serwera do odszyfrowywania danych; samo hasło nie opuszcza Twojego urządzenia — do usługi uwierzytelniania trafia wyłącznie sekret logowania wyprowadzony z hasła funkcją jednokierunkową (PBKDF2), inny niż klucz, którym szyfrowana jest kopia klucza synchronizacji. Konta założone przed tą zmianą przesyłają hasło jeden raz, przy pierwszym logowaniu po aktualizacji, po czym zostają przestawione na sekret. Bez hasła lub frazy zaszyfrowanych danych nie da się odczytać, a jeśli je utracisz, nie jesteśmy w stanie ich odzyskać.
+            Zaszyfrowaną kopię klucza synchronizacji odblokowuje na nowym urządzeniu klucz wyprowadzany lokalnie z <strong>hasła Twojego konta</strong>. Zecca nie przechowuje hasła w postaci jawnej i nie używa go po stronie serwera do odszyfrowywania danych; samo hasło nie opuszcza Twojego urządzenia — do usługi uwierzytelniania trafia wyłącznie sekret logowania wyprowadzony z hasła funkcją jednokierunkową (PBKDF2), inny niż klucz, którym szyfrowana jest kopia klucza synchronizacji. Konta założone przed tą zmianą przesyłają hasło jeden raz, przy pierwszym logowaniu po aktualizacji, po czym zostają przestawione na sekret. Jeśli wcześniej ustawiłeś osobną frazę synchronizacji (passphrase), przy najbliższym logowaniu kopia klucza zostaje przepięta na hasło konta, a fraza przestaje być potrzebna. Bez hasła zaszyfrowanych danych nie da się odczytać, a jeśli je utracisz, nie jesteśmy w stanie ich odzyskać.
+          </p>
+
+          <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
+            Logowanie przez Apple lub Google
+          </h2>
+
+          <p style={{ marginBottom: 16 }}>
+            Jeśli logujesz się przez Apple lub Google, otrzymujemy od tego dostawcy adres e-mail (w przypadku Apple może to być adres przekierowujący „Ukryj mój e-mail”) i techniczny identyfikator konta. Nie otrzymujemy Twojego hasła do Apple ani Google ani dostępu do innych danych z tych kont.
+          </p>
+
+          <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
+            Notowania i dane rynkowe
+          </h2>
+
+          <p style={{ marginBottom: 16 }}>
+            Żeby pokazać aktualne ceny, kursy walut, inflację i parametry obligacji, Zecca pobiera dane od publicznych dostawców: Yahoo Finance, CoinGecko, NBP, GUS, Bankier.pl, BiznesRadar, obligacjeskarbowe.pl oraz Finwire. Zapytanie zawiera wyłącznie symbol instrumentu lub serię obligacji — nigdy liczbę jednostek, kwoty, nazwy portfeli ani dane konta. W aplikacjach na iOS i macOS zapytania idą bezpośrednio z Twojego urządzenia, więc dostawca widzi Twój adres IP. W wersji web zapytania przechodzą przez serwer Zecca, a dostawca widzi adres serwera.
           </p>
 
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
@@ -113,6 +129,52 @@ export default function PrivacyPolicyPage() {
           </p>
 
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
+            Podstawy prawne
+          </h2>
+
+          <ul style={{ marginBottom: 16, paddingLeft: 20 }}>
+            <li style={{ marginBottom: 8 }}>
+              <strong>Konto i synchronizacja</strong> — wykonanie usługi, o którą prosisz (art. 6 ust. 1 lit. b RODO).
+            </li>
+            <li style={{ marginBottom: 8 }}>
+              <strong>Telemetria produktowa</strong> — w aplikacjach na iOS i macOS Twoja zgoda, o którą pytamy przy pierwszym uruchomieniu (art. 6 ust. 1 lit. a RODO); w wersji web nasz prawnie uzasadniony interes w ulepszaniu aplikacji (art. 6 ust. 1 lit. f RODO). W obu przypadkach możesz ją w każdej chwili wyłączyć w ustawieniach.
+            </li>
+            <li>
+              <strong>Diagnostyka błędów i pomiar wydajności strony</strong> — prawnie uzasadniony interes w utrzymaniu działającej i bezpiecznej usługi (art. 6 ust. 1 lit. f RODO).
+            </li>
+          </ul>
+
+          <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
+            Komu powierzamy dane
+          </h2>
+
+          <p style={{ marginBottom: 16 }}>
+            Dane przetwarzają w naszym imieniu wyłącznie dostawcy infrastruktury:
+          </p>
+
+          <ul style={{ marginBottom: 16, paddingLeft: 20 }}>
+            <li style={{ marginBottom: 8 }}>
+              <strong>Supabase Inc.</strong> — konto, zaszyfrowane rekordy portfela i zaszyfrowana kopia klucza; dane przechowywane w Zurychu (Szwajcaria — kraj, wobec którego Komisja Europejska stwierdziła odpowiedni stopień ochrony danych).
+            </li>
+            <li style={{ marginBottom: 8 }}>
+              <strong>Vercel Inc.</strong> — hosting wersji web i pośredniczenie w zapytaniach o dane rynkowe; funkcje serwerowe działają w regionie UE (Frankfurt).
+            </li>
+            <li style={{ marginBottom: 8 }}>
+              <strong>TelemetryDeck GmbH</strong> (Niemcy) — telemetria produktowa.
+            </li>
+            <li style={{ marginBottom: 8 }}>
+              <strong>Functional Software, Inc. (Sentry)</strong> — diagnostyka błędów wersji web, dane w UE.
+            </li>
+            <li>
+              <strong>Apple</strong> — jeśli wybierzesz synchronizację iCloud, dane trafiają do Twojego prywatnego kontenera iCloud na zasadach Twojego konta Apple; Zecca nie ma do nich dostępu.
+            </li>
+          </ul>
+
+          <p style={{ marginBottom: 16 }}>
+            Supabase, Vercel i Sentry to firmy z USA. Jeśli dane trafiają poza Europejski Obszar Gospodarczy, odbywa się to na podstawie standardowych klauzul umownych zatwierdzonych przez Komisję Europejską lub decyzji o odpowiednim stopniu ochrony (EU-US Data Privacy Framework).
+          </p>
+
+          <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
             Śledzenie
           </h2>
 
@@ -141,7 +203,7 @@ export default function PrivacyPolicyPage() {
           </h2>
 
           <p style={{ marginBottom: 16 }}>
-            Masz prawo do dostępu do swoich danych, ich poprawienia oraz usunięcia. Konto i powiązane z nim dane synchronizacji możesz usunąć bezpośrednio w aplikacji (Ustawienia → Konto → Usuń konto) lub kontaktując się pod adresem kontakt@jacekzieba.pl.
+            Masz prawo dostępu do swoich danych, ich sprostowania, usunięcia, ograniczenia przetwarzania i przeniesienia (eksport danych jest dostępny w aplikacji), a także prawo sprzeciwu wobec przetwarzania opartego na prawnie uzasadnionym interesie i prawo wycofania zgody w dowolnym momencie — bez wpływu na zgodność z prawem przetwarzania sprzed jej wycofania. Konto i powiązane z nim dane synchronizacji usuniesz bezpośrednio w aplikacji (na iOS i macOS: Ustawienia → Konto i synchronizacja → Usuń konto Zecca; w wersji web: Ustawienia → Usuń konto) lub pisząc na adres kontakt@jacekzieba.pl. Masz też prawo wnieść skargę do Prezesa Urzędu Ochrony Danych Osobowych (ul. Stawki 2, 00-193 Warszawa).
           </p>
 
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>

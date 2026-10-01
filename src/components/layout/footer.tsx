@@ -35,6 +35,18 @@ export function Footer() {
           </Link>
         </div>
       </div>
+      <p
+        style={{
+          maxWidth: "1240px",
+          marginInline: "auto",
+          marginTop: 12,
+          fontSize: 12,
+          lineHeight: 1.5,
+          color: COLORS.textMuted,
+        }}
+      >
+        Zecca służy do śledzenia własnego portfela. Dane i wyliczenia mają charakter wyłącznie informacyjny i nie stanowią porady inwestycyjnej, podatkowej ani rekomendacji dotyczącej instrumentów finansowych.
+      </p>
     </footer>
   );
 }

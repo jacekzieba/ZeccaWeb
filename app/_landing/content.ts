@@ -530,6 +530,7 @@ const footerHtml = `
       <span>${c.footer.copyright}</span>
       <span>${c.footer.betaNote}</span>
     </div>
+    <p class="foot-disclaimer">${c.footer.disclaimer}</p>
   </div>
 </footer>`;
 
