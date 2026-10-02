@@ -59,6 +59,8 @@ export default function PrivacyPolicyPage() {
 
           <ul style={{ marginBottom: 16, paddingLeft: 20 }}>
             <li>adres e-mail konta,</li>
+            <li>dane logowania prowadzone przez usługę uwierzytelniania Supabase: czas założenia konta i ostatniego logowania oraz — przy logowaniu przez Apple lub Google — dane tożsamości przekazane przez dostawcę,</li>
+            <li>datę ukończenia wprowadzenia do aplikacji,</li>
             <li>neutralną etykietę urządzenia,</li>
             <li>identyfikator urządzenia wygenerowany przez aplikację,</li>
             <li>zaszyfrowane rekordy portfela,</li>
@@ -70,11 +72,15 @@ export default function PrivacyPolicyPage() {
           </p>
 
           <p style={{ marginBottom: 16 }}>
-            Zaszyfrowaną kopię klucza synchronizacji odblokowuje na nowym urządzeniu klucz wyprowadzany lokalnie: przy koncie z hasłem — z <strong>hasła Twojego konta</strong>, a przy logowaniu przez Apple lub Google (konto bez hasła) — z osobnej <strong>frazy synchronizacji</strong> (passphrase), którą ustawiasz w aplikacji. Zecca nie przechowuje hasła ani frazy w postaci jawnej i nie używa ich po stronie serwera do odszyfrowywania danych. Fraza nie opuszcza Twojego urządzenia. Przy logowaniu hasłem do usługi uwierzytelniania trafia sekret logowania wyprowadzony z hasła funkcją jednokierunkową (PBKDF2), inny niż klucz, którym szyfrowana jest kopia klucza synchronizacji. Wyjątek: jeśli logowanie sekretem się nie powiedzie — np. przy koncie założonym w starszej wersji aplikacji, która wysyłała samo hasło, albo przy błędnie wpisanym haśle — aplikacja ponawia próbę, wysyłając samo hasło szyfrowanym połączeniem. Gdy takie logowanie się uda, hasło w usłudze uwierzytelniania zostaje od razu zastąpione sekretem.
+            Supabase i Vercel (hosting wersji web) zapisują w technicznych dziennikach żądań m.in. adres IP i identyfikator przeglądarki lub aplikacji (User-Agent). W dziennikach Vercel znajdują się też adresy zapytań wersji web o dane rynkowe, które zawierają symbole instrumentów.
           </p>
 
           <p style={{ marginBottom: 16 }}>
-            Jeśli kopia klucza jest chroniona starszą, osobną frazą synchronizacji, a logujesz się hasłem konta, wystarczy raz podać tę frazę — kopia klucza zostaje wtedy ponownie zaszyfrowana hasłem konta i fraza przestaje być potrzebna. W aplikacjach na iOS i macOS dzieje się to bez pytania o frazę, jeśli urządzenie ma już klucz zapisany lokalnie. Bez hasła konta (albo frazy synchronizacji) zaszyfrowanych danych nie da się odczytać, a jeśli je utracisz, nie jesteśmy w stanie ich odzyskać.
+            Zaszyfrowaną kopię klucza synchronizacji odblokowuje na nowym urządzeniu klucz wyprowadzany lokalnie: przy koncie z hasłem — z <strong>hasła Twojego konta</strong>, a przy logowaniu przez Apple lub Google (konto bez hasła) — z osobnej <strong>frazy synchronizacji</strong> (passphrase), którą ustawiasz w aplikacji. Zecca nie przechowuje hasła ani frazy na serwerze i nie używa ich po stronie serwera do odszyfrowywania danych. Fraza nie opuszcza Twojego urządzenia. Przy logowaniu hasłem do usługi uwierzytelniania trafia sekret logowania wyprowadzony z hasła funkcją jednokierunkową (PBKDF2), inny niż klucz, którym szyfrowana jest kopia klucza synchronizacji. Wyjątek: jeśli logowanie sekretem się nie powiedzie — np. przy koncie założonym w starszej wersji aplikacji, która wysyłała samo hasło, albo przy błędnie wpisanym haśle — aplikacja ponawia próbę, wysyłając samo hasło szyfrowanym połączeniem. Gdy takie logowanie się uda, aplikacja od razu próbuje zastąpić hasło w usłudze uwierzytelniania sekretem (do potwierdzenia zmiany wysyła wtedy ponownie samo hasło); jeśli się to nie uda, ponowi próbę przy kolejnym logowaniu.
+          </p>
+
+          <p style={{ marginBottom: 16 }}>
+            Jeśli kopia klucza jest chroniona starszą, osobną frazą synchronizacji, a logujesz się hasłem konta, wystarczy raz podać tę frazę — kopia klucza zostaje wtedy ponownie zaszyfrowana hasłem konta i fraza przestaje być potrzebna. W aplikacjach na iOS i macOS dzieje się to przy logowaniu hasłem bez pytania o frazę, jeśli urządzenie ma już lokalnie klucz, którym da się odczytać dane zapisane na serwerze. Bez hasła konta (albo frazy synchronizacji) zaszyfrowanych danych nie da się odczytać — jeśli utracisz hasło lub frazę, nie odzyskamy danych.
           </p>
 
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
@@ -98,7 +104,7 @@ export default function PrivacyPolicyPage() {
           </h2>
 
           <p style={{ marginBottom: 16 }}>
-            W przeglądarce Zecca zapisuje ustawienia interfejsu, preferencje profilu, identyfikator urządzenia web, lokalną kolejkę synchronizacji oraz — jeśli włączysz blokadę aplikacji — jej ustawienia i skrót kodu PIN. Opcjonalnie w IndexedDB może zostać zapamiętany klucz odszyfrowywania, jeśli wybierzesz zaufanie tej przeglądarce. Klucz jest usuwany przy wylogowaniu.
+            W przeglądarce Zecca zapisuje ustawienia interfejsu, profil wyświetlany w aplikacji (nazwa i zdjęcie, jeśli je ustawisz) wraz z preferencjami powiadomień, identyfikator urządzenia web, lokalną kolejkę synchronizacji oraz — jeśli włączysz blokadę aplikacji — jej ustawienia i skrót kodu PIN. Po odblokowaniu danych klucz odszyfrowywania jest zapamiętywany w IndexedDB tej przeglądarki, aby nie trzeba było go odblokowywać przy każdej wizycie. Klucz jest usuwany przy wylogowaniu.
           </p>
 
           <p style={{ marginBottom: 16 }}>
@@ -114,7 +120,7 @@ export default function PrivacyPolicyPage() {
           </h2>
 
           <p style={{ marginBottom: 16 }}>
-            Zecca może zbierać <strong>pseudonimową</strong> telemetrię produktową przez TelemetryDeck GmbH (Augsburg, Niemcy): użycie ekranów, importy (nazwa brokera i przybliżona liczba wierszy w przedziale), typ dodanej transakcji (np. kupno, wpłata) lub formę zatrudnienia przy dodanym zarobku (etat lub działalność), akcje synchronizacji, wersję i numer kompilacji aplikacji, platformę oraz wybrany tryb synchronizacji. W aplikacjach na iOS i macOS TelemetryDeck otrzymuje też zahaszowany, stały identyfikator urządzenia oraz model urządzenia, wersję systemu, język, region i strefę czasową.
+            Zecca może zbierać <strong>pseudonimową</strong> telemetrię produktową przez TelemetryDeck GmbH (Augsburg, Niemcy): użycie ekranów, importy (nazwa brokera i liczba wierszy podana w przedziale, np. 6–20), typ dodanej transakcji (np. kupno, wpłata) lub formę zatrudnienia przy dodanym zarobku (etat lub działalność), akcje synchronizacji, wersję i numer kompilacji aplikacji, platformę oraz wybrany tryb synchronizacji. W aplikacjach na iOS i macOS TelemetryDeck otrzymuje też zahaszowany, stały identyfikator urządzenia oraz parametry urządzenia i systemu, m.in. model urządzenia, wersję systemu, architekturę procesora, rozdzielczość i orientację ekranu, język, region, strefę czasową, ustawienia dostępności, sposób instalacji aplikacji (np. App Store, TestFlight) oraz statystyki sesji (liczba i długość sesji, liczba dni użycia, data pierwszego uruchomienia).
           </p>
 
           <p style={{ marginBottom: 16 }}>
@@ -138,7 +144,7 @@ export default function PrivacyPolicyPage() {
           </p>
 
           <p style={{ marginBottom: 16 }}>
-            Dlatego nie wyświetlamy baneru cookies dla TelemetryDeck. Pozostałe lokalne magazyny przeglądarki służą wyłącznie działaniu funkcji wybranych przez użytkownika: ustawieniom interfejsu, kolejce zaszyfrowanej synchronizacji, blokadzie aplikacji, krótkiemu przekazaniu hasła po zalogowaniu i — gdy to wybierzesz — lokalnie zapamiętanemu kluczowi odszyfrowywania. Nie służą reklamie ani śledzeniu między witrynami. Jeżeli w przyszłości dodamy opcjonalne technologie wymagające zgody, poprosimy o nią przed ich użyciem.
+            Dlatego nie wyświetlamy banera cookies dla TelemetryDeck. Pozostałe lokalne magazyny przeglądarki służą wyłącznie działaniu funkcji wybranych przez użytkownika: ustawieniom interfejsu, kolejce zaszyfrowanej synchronizacji, blokadzie aplikacji, krótkiemu przekazaniu hasła po zalogowaniu i lokalnie zapamiętanemu kluczowi odszyfrowywania. Nie służą reklamie ani śledzeniu między witrynami. Jeżeli w przyszłości dodamy opcjonalne technologie wymagające zgody, poprosimy o nią przed ich użyciem.
           </p>
 
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
@@ -201,7 +207,7 @@ export default function PrivacyPolicyPage() {
           </h2>
 
           <p style={{ marginBottom: 16 }}>
-            Dane portfela na Twoim urządzeniu (lokalny tryb, iCloud) przechowujemy tak długo, jak korzystasz z aplikacji — usuwasz je sam, usuwając aplikację lub konkretne rekordy. Konto synchronizacji Zecca i powiązane z nim dane (e-mail, etykieta i identyfikator urządzenia, zaszyfrowane rekordy portfela, zaszyfrowana kopia klucza) przechowujemy do chwili usunięcia konta — usunięcie w aplikacji kasuje je trwale, bez okresu przejściowego. Usunięcie pojedynczego rekordu (np. transakcji) tylko oznacza go na serwerze jako usunięty; jego zaszyfrowana treść pozostaje tam do usunięcia konta lub do rozpoczęcia synchronizacji od nowa po utracie klucza. Kopie zapasowe infrastruktury (np. Supabase) mogą przechowywać usunięte dane przez ograniczony czas rotacji backupu, zanim zostaną nadpisane. Dane diagnostyczne (Sentry) i telemetria produktowa (TelemetryDeck) są przechowywane zgodnie z domyślną retencją tych dostawców i nie są powiązane z Twoim kontem ani tożsamością.
+            Dane portfela na Twoim urządzeniu (tryb lokalny, iCloud) przechowujemy tak długo, jak korzystasz z aplikacji — usuwasz je samodzielnie, usuwając aplikację lub konkretne rekordy. Konto synchronizacji Zecca i powiązane z nim dane (e-mail, etykieta i identyfikator urządzenia, zaszyfrowane rekordy portfela, zaszyfrowana kopia klucza) przechowujemy do chwili usunięcia konta — usunięcie w aplikacji kasuje je trwale, bez okresu przejściowego. Usunięcie pojedynczego rekordu (np. transakcji) tylko oznacza go na serwerze jako usunięty; jego zaszyfrowana treść pozostaje tam do usunięcia konta, rozpoczęcia synchronizacji od nowa albo — po włączeniu automatycznego czyszczenia — najdłużej 180 dni. Kopie zapasowe infrastruktury (np. Supabase) mogą przechowywać usunięte dane przez ograniczony czas rotacji backupu, zanim zostaną nadpisane. Dane diagnostyczne (Sentry) i telemetria produktowa (TelemetryDeck) są przechowywane zgodnie z domyślną retencją tych dostawców i nie są powiązane z Twoim kontem ani tożsamością.
           </p>
 
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
