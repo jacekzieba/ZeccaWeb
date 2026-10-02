@@ -179,9 +179,9 @@ describe("InstrumentEditorModal currency change", () => {
       grossAmount: 13_318.18,
       fxRateToBase: 3.71,
     });
-    expect(trades[0]!.options).toEqual({ baseUpdatedAt: freshBuy.updatedAt });
+    expect(trades[0]!.options).toEqual({ baseUpdatedAt: freshBuy.updatedAt, recordId: freshBuy.id });
     expect(trades[1]!.payload).toMatchObject({ currency: "EUR", quantity: 3 });
-    expect(trades[1]!.options).toEqual({ baseUpdatedAt: BASE });
+    expect(trades[1]!.options).toMatchObject({ baseUpdatedAt: BASE, recordId: expect.any(String) });
     expect(store.state.setSync).toHaveBeenCalledTimes(2);
     expect(announce).toHaveBeenCalledWith("Zmieniono walutę 2 transakcji na EUR.");
   });

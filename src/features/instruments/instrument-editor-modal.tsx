@@ -144,6 +144,9 @@ export function InstrumentEditorModal({
   const [isin, setIsin] = useState("");
   const [marketDataID, setMarketDataID] = useState("");
   const [saving, setSaving] = useState(false);
+  // Osobny od `saving`: odświeżenie store'u po zapisie instrumentu resetuje
+  // formularz (i `saving`), a zmiana waluty transakcji jeszcze trwa.
+  const [retagging, setRetagging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<InstrumentCandidate[]>([]);
   const [bondParams, setBondParams] = useState<Record<string, unknown> | null>(null);
@@ -348,6 +351,7 @@ export function InstrumentEditorModal({
    *  osobno; jeden odrzucony nie zatrzymuje reszty, ale nie znika po cichu. */
   async function handleRetag(retag: PendingRetag) {
     setPendingRetag(null);
+    setRetagging(true);
     const changed = retagTradeCurrency(retag.records, retag.instrumentID, retag.from, retag.to);
     try {
       if (isFakeSyncEnabled()) {
@@ -366,6 +370,7 @@ export function InstrumentEditorModal({
         try {
           const result = await saveRecord(supabase, userDataKey, "transaction", record.envelope.payload as WriteRecordPayload, {
             baseUpdatedAt: record.updatedAt,
+            recordId: record.id,
           });
           queued ||= result.queued;
         } catch (saveError) {
@@ -389,6 +394,7 @@ export function InstrumentEditorModal({
           : "Nie udało się zmienić waluty transakcji.",
       );
     } finally {
+      setRetagging(false);
       onClose();
     }
   }
@@ -430,7 +436,7 @@ export function InstrumentEditorModal({
       }}
     >
       <div
-        onClick={onClose}
+        onClick={retagging ? undefined : onClose}
         style={{
           position: "absolute",
           inset: 0,
@@ -463,7 +469,7 @@ export function InstrumentEditorModal({
             {initialValue ? "Edytuj instrument" : "Dodaj instrument"}
           </div>
           <button
-            onClick={onClose}
+            onClick={retagging ? undefined : onClose}
             aria-label="Zamknij"
             style={{
               width: 28,
@@ -732,7 +738,7 @@ export function InstrumentEditorModal({
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", paddingTop: 4 }}>
             <button
               type="button"
-              onClick={onClose}
+              onClick={retagging ? undefined : onClose}
               style={{
                 padding: "9px 18px",
                 borderRadius: "var(--r-lg)",
@@ -749,7 +755,7 @@ export function InstrumentEditorModal({
             </button>
             <button
               type="submit"
-              disabled={saving || !userDataKey}
+              disabled={saving || retagging || !userDataKey}
               style={{
                 padding: "9px 20px",
                 borderRadius: "var(--r-lg)",
