@@ -64,6 +64,8 @@ type PortfolioDraft = {
   colorHex?: string;
   targetAllocation?: Record<string, number>;
   updatedAt: string;
+  /** ID rekordu, gdy różni się od ID portfela (portfel przeniesiony migracją). */
+  recordId?: string;
 };
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -143,7 +145,7 @@ export function PortfolioEditorModal({
         ];
         setSync(nextRecords, buildInvestorDataSnapshot(nextRecords, { asOf: new Date(), historyGranularity: "daily", useLatestTransactionFxRate: true, useMarketQuotes: true }));
       } else {
-        const result = await saveRecord(supabase, userDataKey, "account", payload, { baseUpdatedAt: initialValue?.updatedAt ?? null });
+        const result = await saveRecord(supabase, userDataKey, "account", payload, { baseUpdatedAt: initialValue?.updatedAt ?? null, recordId: initialValue?.recordId });
         if (!result.queued) {
           const { records, snapshot } = await refreshSyncStore(supabase, userDataKey);
           setSync(records, snapshot);

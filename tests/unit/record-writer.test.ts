@@ -11,6 +11,7 @@ import {
   SyncConflictError,
 } from "@/sync/records/record-writer";
 import type { BrowserSupabaseClient } from "@/supabase/client";
+import { decryptEncryptedRecord } from "@/sync/records/encrypted-records";
 
 const userId = "11111111-1111-4111-8111-111111111111";
 const recordId = "22222222-2222-4222-8222-222222222222";
@@ -114,6 +115,28 @@ describe("record writer", () => {
 
     clearPendingSyncOperations();
     localStorage.clear();
+  });
+
+  it("zapisuje portfel przeniesiony pod nowe ID pod faktyczne ID rekordu", async () => {
+    // Portfel startowy po migracji: rekord pod nowym ID, w treści stare ID.
+    const payloadId = "00000000-0000-0000-0000-000000000001";
+    const liveRecordId = "e6506530-749a-4695-823f-93b9bca19a8a";
+    const updatedAt = "2026-10-02T06:47:22.294Z";
+    const { client, store } = createSupabaseStore({
+      metadata: { id: liveRecordId, record_type: "account", updated_at: updatedAt, deleted_at: null },
+    });
+    const key = await crypto.subtle.importKey("raw", new Uint8Array(32), { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+
+    await saveRecord(client, key, "account", { id: payloadId, recordType: "account", name: "Nowa nazwa", baseCurrency: "PLN" }, {
+      baseUpdatedAt: updatedAt,
+      recordId: liveRecordId,
+    });
+
+    const written = store.upserts[0] as Array<Record<string, unknown>>;
+    const row = (Array.isArray(written) ? written[0] : written) as Record<string, unknown>;
+    expect(row.id).toBe(liveRecordId);
+    const decrypted = await decryptEncryptedRecord(key, { ...row, created_at: updatedAt });
+    expect((decrypted.envelope.payload as { name: string }).name).toBe("Nowa nazwa");
   });
 
   it("queues failed writes and flushes them later", async () => {
