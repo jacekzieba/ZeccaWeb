@@ -50,7 +50,7 @@ export async function fetchNbpFxRate(
   });
 
   if (!response.ok) {
-    throw new Error(`NBP returned ${response.status} for ${normalizedCode}.`);
+    throw new Error(`NBP returned ${response.status}.`);
   }
 
   const parsed = nbpRateSchema.parse(await response.json());
@@ -139,7 +139,7 @@ export async function fetchNbpFxRateSeries(
         });
       }
     } else if (response.status !== 404) {
-      throw new Error(`NBP returned ${response.status} for ${normalizedCode}.`);
+      throw new Error(`NBP returned ${response.status}.`);
     }
 
     windowStart = new Date(clampedEnd);
@@ -185,7 +185,7 @@ export async function fetchNbpMonthlyAverageFxRate(
   });
 
   if (!response.ok) {
-    throw new Error(`NBP returned ${response.status} for ${normalizedCode}.`);
+    throw new Error(`NBP returned ${response.status}.`);
   }
 
   const parsed = nbpRateSchema.parse(await response.json());

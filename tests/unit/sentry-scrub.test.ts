@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { scrubSentryBreadcrumb, scrubSentryEvent } from "@/lib/sentry-options";
+import { scrubSentryBreadcrumb, scrubSentryEvent, scrubSentrySpan } from "@/lib/sentry-options";
 
 // Polityka prywatności obiecuje: zgłoszenia Sentry nie zawierają tickerów,
 // kwot ani parametrów URL. Tickery siedzą w query (/api/market-data/quote?symbol=)
@@ -154,10 +154,7 @@ describe("scrubSentryEvent — ślady wydajności", () => {
       "next.span_type": "BaseServer.handleRequest",
       "http.status_code": 200,
     });
-    expect(event.request).toEqual({
-      url: "https://zecca.app/api/market-data/quote",
-      headers: { referer: "https://zecca.app/portfolios/:id" },
-    });
+    expect(event.request).toEqual({ url: "https://zecca.app/api/market-data/quote", headers: {} });
     expect(event.spans?.[0]).toEqual({
       op: "http.client",
       description: "GET https://query1.finance.yahoo.com",
@@ -204,7 +201,7 @@ describe("scrubSentryEvent — ślady wydajności", () => {
 
     expect(event.transaction).toBe("/portfolios/:id");
     expect(event.request?.url).toBe("https://zecca.app/portfolios/:id");
-    expect(event.request?.headers).toEqual({ Referer: "https://zecca.app/instruments", "User-Agent": "ua" });
+    expect(event.request?.headers).toEqual({ "User-Agent": "ua" });
     expect(event.spans?.[0]).toEqual({
       op: "http.client",
       description: "GET /api/market-data/search",
@@ -229,5 +226,142 @@ describe("scrubSentryEvent — ślady wydajności", () => {
     expect(event.request?.url).toBe("https://zecca.app/portfolios/:id");
     expect(event.contexts?.trace?.data).toEqual({ "http.target": "/portfolios/:id", "http.route": "/portfolios/:id" });
     expect(JSON.stringify(event)).not.toMatch(LEAK);
+  });
+});
+
+// Spany INP (i inne samodzielne spany web vitals) idą osobną kopertą — omijają
+// beforeSend/beforeSendTransaction, przechodzi przez nie tylko beforeSendSpan.
+// Ich nazwa to selektor elementu z wartościami aria-label/title/alt/name,
+// a aplikacja wkłada tam symbole („Pokaż transakcje instrumentu VWRL.AS”).
+describe("scrubSentrySpan (beforeSendSpan)", () => {
+  it("span INP: selektor bez wartości atrybutów, trasa bez id portfela", () => {
+    const span = scrubSentrySpan({
+      description: 'body > main > button.row[aria-label="Pokaż transakcje instrumentu VWRL.AS"][type="button"]',
+      op: "ui.interaction.click",
+      data: {
+        "sentry.op": "ui.interaction.click",
+        transaction: `/portfolios/${PORTFOLIO_ID}`,
+        "user_agent.original": "ua",
+      },
+    });
+    expect(span).toEqual({
+      description: 'body > main > button.row[aria-label][type="button"]',
+      op: "ui.interaction.click",
+      data: { "sentry.op": "ui.interaction.click", transaction: "/portfolios/:id", "user_agent.original": "ua" },
+    });
+  });
+
+  it("selektor ucięty przez Sentry w połowie wartości atrybutu", () => {
+    const span = scrubSentrySpan({ description: 'div > img[alt="Wykres CDR.W' });
+    expect(span.description).toBe("div > img[alt]");
+  });
+});
+
+describe("scrubSentryEvent — atrybucja web vitals, nagłówki, komunikaty", () => {
+  it("pageload: lcp.element, lcp.url, cls.source.N, nagłówki i zagnieżdżone dane", () => {
+    const event = scrubSentryEvent({
+      type: "transaction",
+      transaction: "/dashboard",
+      contexts: {
+        trace: {
+          op: "pageload",
+          data: {
+            "lcp.element": 'img[alt="Logo VWRL"]',
+            "lcp.url": "https://zecca.app/icons/VWRL.png?v=2",
+            "cls.source.1": 'div.card[title="CDR.WA — Pozycja"]',
+            "browser.web_vital.cls.source.1": 'span[name="CDR.WA"]',
+            "http.request.header.next-url": [`/portfolios/${PORTFOLIO_ID}`],
+            "http.request.header.next-router-state-tree": `["",{"children":["portfolios",{"children":[["id","${PORTFOLIO_ID}","d"]]}]}]`,
+            "http.request.header.x-now-route-matches": `id=${PORTFOLIO_ID}`,
+            "http.request.header.accept-language": ["pl-PL"],
+            "custom.nested": { list: [`/portfolios/${PORTFOLIO_ID}?symbol=VWRL`] },
+          },
+        },
+      },
+      spans: [
+        { op: "ui.interaction.click", description: 'button[title="Usuń VWRL.AS"]', data: { transaction: `/portfolios/${PORTFOLIO_ID}` } },
+      ],
+    });
+
+    expect(event.contexts?.trace?.data).toEqual({
+      "lcp.element": "img[alt]",
+      "lcp.url": "https://zecca.app",
+      "cls.source.1": "div.card[title]",
+      "browser.web_vital.cls.source.1": "span[name]",
+      "http.request.header.accept-language": ["pl-PL"],
+      "custom.nested": { list: ["/portfolios/:id"] },
+    });
+    expect(event.spans?.[0]).toEqual({ op: "ui.interaction.click", description: "button[title]", data: { transaction: "/portfolios/:id" } });
+    expect(JSON.stringify(event)).not.toMatch(LEAK);
+  });
+
+  it("błąd z onRequestError: nextjs.request_path, nagłówki, komunikaty wyjątku i breadcrumbs", () => {
+    const event = scrubSentryEvent({
+      message: `Nie udało się wczytać /api/market-data/quote?symbol=VWRL.AS dla ${PORTFOLIO_ID}`,
+      exception: {
+        values: [
+          { type: "Error", value: "fetch failed: https://query1.finance.yahoo.com/v8/finance/chart/VWRL.AS?range=5d (timeout)" },
+          { type: "TypeError", value: `Cannot read portfolio ${PORTFOLIO_ID}` },
+        ],
+      },
+      contexts: {
+        nextjs: {
+          request_path: "/api/market-data/quote?symbol=VWRL.AS",
+          router_kind: "App Router",
+          router_path: "/api/market-data/quote",
+          route_type: "route",
+        },
+      },
+      request: {
+        url: "https://zecca.app/api/market-data/quote?symbol=VWRL.AS",
+        headers: {
+          "user-agent": "ua",
+          accept: "*/*",
+          "accept-language": "pl-PL",
+          "content-type": "application/json",
+          referer: `https://zecca.app/portfolios/${PORTFOLIO_ID}`,
+          "next-url": `/portfolios/${PORTFOLIO_ID}`,
+          "next-router-state-tree": PORTFOLIO_ID,
+          "x-now-route-matches": `id=${PORTFOLIO_ID}`,
+          "x-forwarded-for": "203.0.113.7",
+        },
+      },
+      breadcrumbs: [
+        { category: "sentry.event", message: "Error: fetch failed: /api/market-data/search?q=Vanguard FTSE" },
+        { category: "navigation", message: `/portfolios/${PORTFOLIO_ID}` },
+      ],
+    });
+
+    expect(event.message).toBe("Nie udało się wczytać /api/market-data/quote");
+    expect(event.exception?.values?.map((value) => value.value)).toEqual([
+      "fetch failed: https://query1.finance.yahoo.com",
+      "Cannot read portfolio :id",
+    ]);
+    expect(event.contexts?.nextjs?.request_path).toBe("/api/market-data/quote");
+    expect(event.request?.headers).toEqual({
+      "user-agent": "ua",
+      accept: "*/*",
+      "accept-language": "pl-PL",
+      "content-type": "application/json",
+    });
+    expect(event.breadcrumbs?.map((crumb) => crumb.message)).toEqual([
+      "Error: fetch failed: /api/market-data/search",
+      "/portfolios/:id",
+    ]);
+    expect(JSON.stringify(event)).not.toMatch(LEAK);
+  });
+
+  it("nie-stringowe url/referer/opis nie wywracają scrubbera (Sentry odrzuciłby zdarzenie)", () => {
+    const run = () =>
+      scrubSentryEvent({
+        transaction: 42,
+        request: { url: 42, headers: { referer: ["https://zecca.app/x?y"] } },
+        contexts: { trace: { data: { "http.target": 7 } }, nextjs: { request_path: null } },
+        exception: { values: [{ value: undefined }] },
+        breadcrumbs: [{ category: "fetch", message: 1, data: { url: { href: "/x?symbol=VWRL" } } }],
+        spans: [{ description: 1 }],
+      } as never);
+    expect(run).not.toThrow();
+    expect(JSON.stringify(run())).not.toMatch(LEAK);
   });
 });

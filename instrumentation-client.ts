@@ -1,5 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
-import { SENTRY_DSN, SENTRY_ENABLED, scrubSentryBreadcrumb, scrubSentryEvent } from "@/lib/sentry-options";
+import { SENTRY_DSN, SENTRY_ENABLED, scrubSentryBreadcrumb, scrubSentryEvent, scrubSentrySpan } from "@/lib/sentry-options";
 
 // Client-side Sentry. No Session Replay integration — it would record the DOM,
 // which shows decrypted portfolio data. Errors only, with PII scrubbed.
@@ -10,6 +10,7 @@ Sentry.init({
   sendDefaultPii: false,
   beforeSend: (event) => scrubSentryEvent(event),
   beforeSendTransaction: (event) => scrubSentryEvent(event),
+  beforeSendSpan: (span) => scrubSentrySpan(span),
   beforeBreadcrumb: (breadcrumb) => scrubSentryBreadcrumb(breadcrumb),
 });
 

@@ -40,10 +40,10 @@ export async function fetchYahooQuote(symbol: string): Promise<MarketQuote> {
   });
 
   if (response.status === 404) {
-    throw new MarketDataNotFoundError(`Yahoo Finance has no data for ${normalizedSymbol}.`);
+    throw new MarketDataNotFoundError("Yahoo Finance has no data.");
   }
   if (!response.ok) {
-    throw new Error(`Yahoo Finance returned ${response.status} for ${normalizedSymbol}.`);
+    throw new Error(`Yahoo Finance returned ${response.status}.`);
   }
 
   return parseYahooChart(await response.json(), normalizedSymbol);
@@ -105,10 +105,10 @@ export async function fetchYahooDailyHistory(
   });
 
   if (response.status === 404) {
-    throw new MarketDataNotFoundError(`Yahoo Finance has no data for ${normalizedSymbol}.`);
+    throw new MarketDataNotFoundError("Yahoo Finance has no data.");
   }
   if (!response.ok) {
-    throw new Error(`Yahoo Finance returned ${response.status} for ${normalizedSymbol}.`);
+    throw new Error(`Yahoo Finance returned ${response.status}.`);
   }
 
   return parseYahooChartSeries(await response.json(), normalizedSymbol);
@@ -191,7 +191,7 @@ export async function fetchYahooSearch(
   });
 
   if (!response.ok) {
-    throw new Error(`Yahoo Finance returned ${response.status} for search "${query}".`);
+    throw new Error(`Yahoo Finance returned ${response.status} for search.`);
   }
 
   return parseYahooSearch(await response.json(), kind);
