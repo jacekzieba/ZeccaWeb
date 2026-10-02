@@ -41,9 +41,4 @@ export default withSentryConfig(nextConfig, {
   // stack traces.
   silent: !process.env.CI,
   widenClientFileUpload: true,
-  // Zgłoszenia z przeglądarki idą przez naszą domenę (rewrite Next.js do
-  // ingest.de.sentry.io). Blokery DNS/treści odcinają *.sentry.io, a Safari
-  // zasypywał wtedy konsolę błędami „bad URL (envelope)”. Te same, wyczyszczone
-  // dane — inna droga. Ścieżka jest stała, bo wyklucza ją matcher w middleware.ts.
-  tunnelRoute: "/zdiag",
 });
