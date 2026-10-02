@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { V2, V2_TYPE, v2Mix } from "@/lib/v2-design";
 
 const SESSION_KEY = "investor-app-lock-pin";
@@ -197,12 +197,13 @@ export function AppLockRemove({ onDone }: { onDone?: () => void }) {
 
 // ── Main lock overlay ─────────────────────────────────────────────
 export function AppLock({ children }: { children: React.ReactNode }) {
-  const [mode, setMode] = useState<Mode>(() => {
-    if (!isSetupEnabled()) return "unlocked";
-    if (!getPinHash()) return "unlocked";
-    if (isVerified()) return "unlocked";
-    return "locked";
-  });
+  // Serwer nie widzi localStorage/sessionStorage, więc renderuje odblokowane.
+  // Pierwszy render klienta musi być taki sam (inaczej React #418), a blokadę
+  // zakładamy w layout effect — przed pierwszym malowaniem po hydratacji.
+  const [mode, setMode] = useState<Mode>("unlocked");
+  useLayoutEffect(() => {
+    if (isSetupEnabled() && getPinHash() && !isVerified()) setMode("locked");
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
