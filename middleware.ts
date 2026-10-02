@@ -150,6 +150,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml)$).*)",
+    // `zdiag` = tunel Sentry (tunnelRoute w next.config.ts): to tylko proxy
+    // zgłoszeń błędów, nie potrzebuje sesji Supabase ani odświeżania ciasteczek.
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|zdiag|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml)$).*)",
   ],
 };
