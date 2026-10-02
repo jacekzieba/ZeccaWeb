@@ -28,6 +28,7 @@ import { makeAccountPayload } from "@/sync/records/macos-payloads";
 import { clearPendingSyncOperations, refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
 import { clearPendingAuthPassword } from "@/features/auth/pending-auth-password";
 import { isFakeSyncEnabled } from "@/lib/env";
+import { INVESTMENT_DISCLAIMER } from "@/lib/investment-disclaimer";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
 import { AddTransactionModal } from "@/features/transactions/add-transaction-modal";
@@ -795,6 +796,10 @@ export function AppShell({
             dokąd skoczyć, bez tabIndex=-1 skok przesuwał widok, ale nie ognisko. */}
         <main id="tresc" tabIndex={-1} style={{ flex: 1, minWidth: 0, maxWidth: 1240, marginInline: "auto", width: "100%", paddingBottom: 4 }}>
           {children}
+          {/* Odstęp na dole w demo: plakietka „Dane przykładowe" jest przypięta w prawym dolnym rogu. */}
+          <p style={{ margin: "32px 0 0", paddingBottom: publicDemo ? 40 : 0, maxWidth: 720, fontSize: 12, lineHeight: 1.5, color: COLORS.textMuted }}>
+            {INVESTMENT_DISCLAIMER}
+          </p>
         </main>
       </div>
 
