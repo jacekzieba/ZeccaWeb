@@ -6,6 +6,7 @@ import {
 import { fetchYahooQuote } from "@/market-data/providers/yahoo";
 import { yahooSymbolForInstrument } from "@/market-data/symbols";
 import type { MarketQuote } from "@/market-data/types";
+import { MarketDataNotFoundError } from "@/market-data/errors";
 import { rateLimitResponse } from "@/market-data/rate-limit";
 
 const QUOTE_CACHE_TTL_MS = 15 * 60 * 1000;
@@ -48,9 +49,10 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     const yahooMessage = error instanceof Error ? error.message : "Błąd danych rynkowych.";
+    // Symbol bez danych to trwały brak (404), nie awaria Yahoo (502).
     return NextResponse.json(
       { error: yahooMessage },
-      { status: 502 },
+      { status: error instanceof MarketDataNotFoundError ? 404 : 502 },
     );
   }
 }

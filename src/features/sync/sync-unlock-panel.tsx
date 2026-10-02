@@ -6,7 +6,7 @@ import { COLORS } from "@/lib/design-tokens";
 import { v2Mix } from "@/lib/v2-design";
 import type { Session } from "@supabase/supabase-js";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import {
@@ -167,6 +167,10 @@ export type InitialSyncUser = {
   onboardingCompleted?: boolean;
 };
 
+function subscribeToNothing() {
+  return () => undefined;
+}
+
 export function SyncUnlockPanel({
   initialUser = null,
   onSyncLoaded,
@@ -204,6 +208,15 @@ export function SyncUnlockPanel({
   const accountPasswordForRewrapRef = useRef<string | null>(null);
   const [pendingPasswordAttempt, setPendingPasswordAttempt] =
     useState<"idle" | "trying">("idle");
+  // sessionStorage nie istnieje na serwerze. Czytanie go wprost w renderze
+  // dawało po przeładowaniu z logowania inny pierwszy render niż serwerowy
+  // (React #418). Przy hydratacji obowiązuje wartość serwera, zaraz potem
+  // prawdziwa; zwykły render kliencki czyta magazyn od razu, bez mignięcia.
+  const hasPendingAuthPassword = useSyncExternalStore(
+    subscribeToNothing,
+    () => peekPendingAuthPassword() !== null,
+    () => false,
+  );
 
   useEffect(() => {
     onSyncLoadedRef.current = onSyncLoaded;
@@ -833,7 +846,7 @@ export function SyncUnlockPanel({
   // jedną klatkę, zanim stan „trying" go zasłoni.
   const passwordAttemptPending =
     pendingPasswordAttempt === "trying" ||
-    (attemptedPendingPasswordUserRef.current !== userId && peekPendingAuthPassword() !== null);
+    (attemptedPendingPasswordUserRef.current !== userId && hasPendingAuthPassword);
   const showPassphraseForm =
     hasBackup &&
     unlockStatus !== "ready" &&

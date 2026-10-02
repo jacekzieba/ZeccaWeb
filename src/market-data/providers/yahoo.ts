@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MarketDataNotFoundError } from "@/market-data/errors";
 import type { InstrumentCandidate, MarketQuote } from "@/market-data/types";
 
 const chartSchema = z.object({
@@ -38,6 +39,9 @@ export async function fetchYahooQuote(symbol: string): Promise<MarketQuote> {
     next: { revalidate: 15 * 60 },
   });
 
+  if (response.status === 404) {
+    throw new MarketDataNotFoundError(`Yahoo Finance has no data for ${normalizedSymbol}.`);
+  }
   if (!response.ok) {
     throw new Error(`Yahoo Finance returned ${response.status} for ${normalizedSymbol}.`);
   }
@@ -54,13 +58,13 @@ export function parseYahooChart(json: unknown, symbol: string): MarketQuote {
 
   const result = parsed.chart.result?.[0];
   if (!result) {
-    throw new Error("Yahoo Finance returned no quote data.");
+    throw new MarketDataNotFoundError("Yahoo Finance returned no quote data.");
   }
 
   const quote = result.indicators.quote?.[0];
   const rawClose = result.meta.regularMarketPrice ?? latestNumber(quote?.close);
   if (!rawClose || rawClose <= 0) {
-    throw new Error("Yahoo Finance returned no valid price.");
+    throw new MarketDataNotFoundError("Yahoo Finance returned no valid price.");
   }
 
   const inPence = isPenceCurrency(result.meta.currency);
@@ -100,6 +104,9 @@ export async function fetchYahooDailyHistory(
     next: { revalidate: 60 * 60 },
   });
 
+  if (response.status === 404) {
+    throw new MarketDataNotFoundError(`Yahoo Finance has no data for ${normalizedSymbol}.`);
+  }
   if (!response.ok) {
     throw new Error(`Yahoo Finance returned ${response.status} for ${normalizedSymbol}.`);
   }
@@ -116,7 +123,7 @@ export function parseYahooChartSeries(json: unknown, symbol: string): MarketQuot
 
   const result = parsed.chart.result?.[0];
   if (!result) {
-    throw new Error("Yahoo Finance returned no quote data.");
+    throw new MarketDataNotFoundError("Yahoo Finance returned no quote data.");
   }
 
   const timestamps = result.timestamp ?? [];
@@ -148,7 +155,7 @@ export function parseYahooChartSeries(json: unknown, symbol: string): MarketQuot
   }
 
   if (series.length === 0) {
-    throw new Error("Yahoo Finance returned no valid price history.");
+    throw new MarketDataNotFoundError("Yahoo Finance returned no valid price history.");
   }
 
   return series;

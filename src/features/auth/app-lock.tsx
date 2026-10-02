@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { V2, V2_TYPE, v2Mix } from "@/lib/v2-design";
 
 const SESSION_KEY = "investor-app-lock-pin";
@@ -195,14 +195,27 @@ export function AppLockRemove({ onDone }: { onDone?: () => void }) {
   return <PinPad label="Podaj aktualny PIN, aby usunąć blokadę" onPin={verify} error={error} />;
 }
 
+function subscribeNever() {
+  return () => undefined;
+}
+
+function shouldLockNow() {
+  return Boolean(isSetupEnabled() && getPinHash() && !isVerified());
+}
+
 // ── Main lock overlay ─────────────────────────────────────────────
 export function AppLock({ children }: { children: React.ReactNode }) {
-  const [mode, setMode] = useState<Mode>(() => {
-    if (!isSetupEnabled()) return "unlocked";
-    if (!getPinHash()) return "unlocked";
-    if (isVerified()) return "unlocked";
-    return "locked";
-  });
+  // Serwer nie widzi localStorage/sessionStorage, więc renderuje odblokowane.
+  // Przy hydratacji pierwszy render klienta musi być taki sam (inaczej React
+  // #418) — useSyncExternalStore daje wtedy wartość serwerową, a blokadę
+  // zakładamy w layout effect, przed pierwszym malowaniem. Przy zwykłym
+  // montowaniu w przeglądarce (przejście między stronami) daje od razu
+  // prawdziwy stan, więc aplikacja nie uruchamia się pod blokadą.
+  const lockedAtMount = useSyncExternalStore(subscribeNever, shouldLockNow, () => false);
+  const [mode, setMode] = useState<Mode>(lockedAtMount ? "locked" : "unlocked");
+  useLayoutEffect(() => {
+    if (shouldLockNow()) setMode("locked");
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
