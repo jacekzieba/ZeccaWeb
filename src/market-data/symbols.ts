@@ -91,3 +91,70 @@ export function yahooSymbolForInstrument(symbol: string, currency?: string | nul
 
   return normalized;
 }
+
+// Sufiksy giełd XTB → linie Yahoo, jak w natywnym MarketDataIdentityResolver.
+// Celowo osobno od LEGACY_SYMBOL_SUFFIXES: tamte służą do odczytu notowań
+// (np. „.US” znika), a ta podpowiedź ma dawać dokładnie to samo co aplikacje.
+const XTB_VENUE_SUFFIXES: Record<string, string> = {
+  NL: ".AS",
+  UK: ".L",
+  GB: ".L",
+  PL: ".WA",
+};
+
+/**
+ * Linia Yahoo wywnioskowana z tickera brokera i waluty rozliczenia — wierna
+ * kopia natywnego `MarketDataIdentityResolver.suggestedIdentity`. `null`, gdy
+ * nie da się jej ustalić (np. goły ticker bez sufiksu giełdy).
+ */
+export function suggestedMarketDataID(symbol: string, currency: string): string | null {
+  const raw = symbol.trim().toUpperCase();
+  if (!raw) return null;
+  // Jak `split(separator:)` w Swift: puste kawałki („VWRL..NL”) pomijamy.
+  const [base = raw, suffix] = raw.split(".").filter(Boolean);
+  const code = currency.toUpperCase();
+
+  // XTB notuje VWRL.NL i w EUR, i w USD — to różne linie, rozstrzyga waluta.
+  if (base === "VWRL") {
+    if (code === "EUR") return "VWRL.AS";
+    if (code === "USD" || code === "GBP") return "VWRL.L";
+    return null;
+  }
+
+  // ICOM.UK w XTB to linia LSE w USD, w Yahoo ICOM.L.
+  if (base === "ICOM" && (raw.endsWith(".UK") || raw.endsWith(".L"))) {
+    return "ICOM.L";
+  }
+
+  const venue = suffix === undefined ? undefined : XTB_VENUE_SUFFIXES[suffix];
+  if (venue) return `${base}${venue}`;
+  return raw.includes(".") ? raw : null;
+}
+
+/**
+ * Symbol notowań po edycji instrumentu (jak natywne `marketDataIDAfterEdit`).
+ * Wpisany (albo wyczyszczony) w tej edycji wygrywa. Nietknięty zostaje, chyba
+ * że zmieniła się waluta albo symbol — wtedy stary wskazuje inną linię giełdową
+ * (np. VWRL w USD na LSE zamiast w EUR w Amsterdamie) i wyliczamy go od nowa.
+ */
+export function marketDataIDAfterEdit(input: {
+  symbol: string;
+  currency: string;
+  previousSymbol: string;
+  previousCurrency: string;
+  previousMarketDataID: string | null | undefined;
+  editedMarketDataID: string;
+}): string | null {
+  const typed = input.editedMarketDataID.trim().toUpperCase() || null;
+  const previous = input.previousMarketDataID?.trim().toUpperCase() || null;
+  if (typed !== previous) {
+    return typed ?? suggestedMarketDataID(input.symbol, input.currency);
+  }
+  const listingChanged =
+    input.currency.toUpperCase() !== input.previousCurrency.toUpperCase() ||
+    input.symbol.toUpperCase() !== input.previousSymbol.toUpperCase();
+  if (listingChanged || previous === null) {
+    return suggestedMarketDataID(input.symbol, input.currency) ?? previous;
+  }
+  return previous;
+}

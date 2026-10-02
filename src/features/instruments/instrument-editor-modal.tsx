@@ -12,12 +12,17 @@ import {
   type ReactNode,
 } from "react";
 import { useSyncStore } from "@/sync/store/sync-store";
-import { refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
+import { refreshSyncStore, saveRecord, type WriteRecordPayload } from "@/sync/records/record-writer";
+import type { DecryptedRecord } from "@/sync/records/encrypted-records";
 import { makeAssetPayload } from "@/sync/records/macos-payloads";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import { isFakeSyncEnabled } from "@/lib/env";
 import type { InstrumentCandidate } from "@/market-data/types";
 import { Select } from "@/components/ui/select";
+import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
+import { announce } from "@/components/feedback/status-announcer";
+import { marketDataIDAfterEdit } from "@/market-data/symbols";
+import { mismatchedTradeCurrency, retagTradeCurrency } from "./trade-currency";
 
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -92,6 +97,14 @@ export type SavedInstrumentDraft = {
   updatedAt: string;
 };
 
+type PendingRetag = {
+  instrumentID: string;
+  from: string;
+  to: string;
+  count: number;
+  records: DecryptedRecord[];
+};
+
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label style={{ display: "block" }}>
@@ -131,10 +144,14 @@ export function InstrumentEditorModal({
   const [isin, setIsin] = useState("");
   const [marketDataID, setMarketDataID] = useState("");
   const [saving, setSaving] = useState(false);
+  // Osobny od `saving`: odświeżenie store'u po zapisie instrumentu resetuje
+  // formularz (i `saving`), a zmiana waluty transakcji jeszcze trwa.
+  const [retagging, setRetagging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<InstrumentCandidate[]>([]);
   const [bondParams, setBondParams] = useState<Record<string, unknown> | null>(null);
   const [bondFetch, setBondFetch] = useState<"idle" | "loading" | "error">("idle");
+  const [pendingRetag, setPendingRetag] = useState<PendingRetag | null>(null);
 
   useEffect(() => setMounted(true), []);
 
@@ -239,12 +256,25 @@ export function InstrumentEditorModal({
     const trimmedName = name.trim();
     const trimmedExchange = exchange.trim();
     const trimmedIsin = isin.trim().toUpperCase();
-    const trimmedMarketDataID = marketDataID.trim().toUpperCase();
+    // Przy edycji nietknięty symbol notowań idzie za zmianą waluty albo symbolu,
+    // inaczej VWRL.NL przestawiony z USD na EUR dalej brałby cenę z linii
+    // londyńskiej. Tak samo jak w aplikacjach (marketDataIDAfterEdit).
+    const resolvedMarketDataID =
+      initialValue && (kind === "stock" || kind === "etf")
+        ? marketDataIDAfterEdit({
+            symbol: trimmedSymbol,
+            currency,
+            previousSymbol: initialValue.symbol,
+            previousCurrency: initialValue.currency,
+            previousMarketDataID: initialValue.marketDataID,
+            editedMarketDataID: marketDataID,
+          })
+        : marketDataID.trim().toUpperCase() || null;
     if (!trimmedSymbol || !trimmedName) {
       setError("Symbol i nazwa instrumentu są wymagane.");
       return;
     }
-    if ((kind === "stock" || kind === "etf") && !trimmedMarketDataID) {
+    if ((kind === "stock" || kind === "etf") && !resolvedMarketDataID) {
       setError("Dla akcji i ETF wybierz notowanie albo wpisz ticker Yahoo.");
       return;
     }
@@ -264,7 +294,7 @@ export function InstrumentEditorModal({
         exchange: trimmedExchange || null,
         country: initialValue?.country ?? null,
         isin: trimmedIsin || null,
-        marketDataID: trimmedMarketDataID || null,
+        marketDataID: resolvedMarketDataID,
         updatedAt: new Date().toISOString(),
       };
       const payload = makeAssetPayload({
@@ -280,6 +310,7 @@ export function InstrumentEditorModal({
         marketDataID: savedInstrument.marketDataID,
         bondParams: kind === "treasuryBond" ? bondParams : null,
       });
+      let latestRecords = records;
       if (isFakeSyncEnabled() && records) {
         const now = new Date().toISOString();
         const nextRecords = [
@@ -287,14 +318,23 @@ export function InstrumentEditorModal({
           { id, deviceId: "fake-sync-web", updatedAt: now, deletedAt: null, envelope: { type: "asset" as const, payloadVersion: 1, schemaVersion: 1, payload } },
         ];
         setSync(nextRecords, buildInvestorDataSnapshot(nextRecords, { asOf: new Date(), historyGranularity: "daily", useLatestTransactionFxRate: true, useMarketQuotes: true }));
+        latestRecords = nextRecords;
       } else {
         const result = await saveRecord(supabase, userDataKey, "asset", payload, { baseUpdatedAt: initialValue?.updatedAt ?? null });
         if (!result.queued) {
           const { records, snapshot } = await refreshSyncStore(supabase, userDataKey);
           setSync(records, snapshot);
+          latestRecords = records;
         }
       }
       onSaved?.(savedInstrument);
+      // Zakupy/sprzedaże w innej walucie niż instrument (np. z importu w USD,
+      // a ETF jest w EUR) — pytamy, czy zmienić też ich walutę. Jak w aplikacjach.
+      const mismatch = latestRecords ? mismatchedTradeCurrency(latestRecords, id, currency) : null;
+      if (latestRecords && mismatch) {
+        setPendingRetag({ instrumentID: id, from: mismatch.currency, to: currency, count: mismatch.count, records: latestRecords });
+        return;
+      }
       onClose();
     } catch (submitError) {
       setError(
@@ -303,6 +343,59 @@ export function InstrumentEditorModal({
           : "Nie udało się zapisać instrumentu.",
       );
       setSaving(false);
+    }
+  }
+
+  /** Zmienia tylko walutę zakupów/sprzedaży — cena, ilość i kurs zostają.
+   *  Każdy rekord ma własny znacznik, więc strażnik konfliktów sprawdza każdy
+   *  osobno; jeden odrzucony nie zatrzymuje reszty, ale nie znika po cichu. */
+  async function handleRetag(retag: PendingRetag) {
+    setPendingRetag(null);
+    setRetagging(true);
+    const changed = retagTradeCurrency(retag.records, retag.instrumentID, retag.from, retag.to);
+    try {
+      if (isFakeSyncEnabled()) {
+        const byId = new Map(changed.map((record) => [record.id, record]));
+        const nextRecords = retag.records.map((record) => byId.get(record.id) ?? record);
+        setSync(nextRecords, buildInvestorDataSnapshot(nextRecords, { asOf: new Date(), historyGranularity: "daily", useLatestTransactionFxRate: true, useMarketQuotes: true }));
+        announce(`Zmieniono walutę ${changed.length} transakcji na ${retag.to}.`);
+        return;
+      }
+      if (!userDataKey || !supabase) return;
+
+      let failed = 0;
+      let reason = "";
+      let queued = false;
+      for (const record of changed) {
+        try {
+          const result = await saveRecord(supabase, userDataKey, "transaction", record.envelope.payload as WriteRecordPayload, {
+            baseUpdatedAt: record.updatedAt,
+            recordId: record.id,
+          });
+          queued ||= result.queued;
+        } catch (saveError) {
+          failed += 1;
+          reason ||= saveError instanceof Error ? saveError.message : "";
+        }
+      }
+      if (failed < changed.length && !queued) {
+        const { records: nextRecords, snapshot } = await refreshSyncStore(supabase, userDataKey);
+        setSync(nextRecords, snapshot);
+      }
+      announce(
+        failed > 0
+          ? `Nie udało się zmienić waluty ${failed} z ${changed.length} transakcji${reason ? `: ${reason}` : "."}`
+          : `Zmieniono walutę ${changed.length} transakcji na ${retag.to}.`,
+      );
+    } catch (retagError) {
+      announce(
+        retagError instanceof Error
+          ? `Nie udało się zmienić waluty transakcji: ${retagError.message}`
+          : "Nie udało się zmienić waluty transakcji.",
+      );
+    } finally {
+      setRetagging(false);
+      onClose();
     }
   }
 
@@ -343,7 +436,7 @@ export function InstrumentEditorModal({
       }}
     >
       <div
-        onClick={onClose}
+        onClick={retagging ? undefined : onClose}
         style={{
           position: "absolute",
           inset: 0,
@@ -376,7 +469,7 @@ export function InstrumentEditorModal({
             {initialValue ? "Edytuj instrument" : "Dodaj instrument"}
           </div>
           <button
-            onClick={onClose}
+            onClick={retagging ? undefined : onClose}
             aria-label="Zamknij"
             style={{
               width: 28,
@@ -645,7 +738,7 @@ export function InstrumentEditorModal({
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", paddingTop: 4 }}>
             <button
               type="button"
-              onClick={onClose}
+              onClick={retagging ? undefined : onClose}
               style={{
                 padding: "9px 18px",
                 borderRadius: "var(--r-lg)",
@@ -662,7 +755,7 @@ export function InstrumentEditorModal({
             </button>
             <button
               type="submit"
-              disabled={saving || !userDataKey}
+              disabled={saving || retagging || !userDataKey}
               style={{
                 padding: "9px 20px",
                 borderRadius: "var(--r-lg)",
@@ -680,6 +773,25 @@ export function InstrumentEditorModal({
           </div>
         </form>
       </div>
+
+      <ConfirmDialog
+        open={pendingRetag !== null}
+        title="Zmienić też walutę transakcji?"
+        body={
+          pendingRetag
+            ? `Instrument jest w ${pendingRetag.to}, a ${pendingRetag.count} zakupów lub sprzedaży zapisano w ${pendingRetag.from}. Jeśli naprawdę były w ${pendingRetag.to}, zmień je — ceny i ilości zostaną, zmieni się tylko waluta.`
+            : undefined
+        }
+        confirmLabel={pendingRetag ? `Zmień ${pendingRetag.count} na ${pendingRetag.to}` : undefined}
+        cancelLabel={pendingRetag ? `Zostaw transakcje w ${pendingRetag.from}` : undefined}
+        onConfirm={() => {
+          if (pendingRetag) void handleRetag(pendingRetag);
+        }}
+        onCancel={() => {
+          setPendingRetag(null);
+          onClose();
+        }}
+      />
     </div>,
     document.body,
   );
