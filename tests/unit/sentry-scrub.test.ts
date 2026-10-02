@@ -251,6 +251,26 @@ describe("scrubSentrySpan (beforeSendSpan)", () => {
     });
   });
 
+  it("etykieta z cudzysłowem w środku nie zostawia ogona z symbolem", () => {
+    const span = scrubSentrySpan({ description: 'div > button[title="Fundusz "VWRL" acc"][type="button"] > span' });
+    expect(span.description).toBe('div > button[title][type="button"] > span');
+  });
+
+  it("nagłówki w atrybutach spanu z podkreślnikiem (user_agent, accept_language) są na liście dozwolonych", () => {
+    const span = scrubSentrySpan({
+      description: "GET /dashboard",
+      data: {
+        "http.request.header.user_agent": "ua",
+        "http.request.header.accept_language": "pl",
+        "http.request.header.next_router_state_tree": "x",
+      },
+    });
+    expect(span.data).toEqual({
+      "http.request.header.user_agent": "ua",
+      "http.request.header.accept_language": "pl",
+    });
+  });
+
   it("selektor ucięty przez Sentry w połowie wartości atrybutu", () => {
     const span = scrubSentrySpan({ description: 'div > img[alt="Wykres CDR.W' });
     expect(span.description).toBe("div > img[alt]");

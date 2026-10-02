@@ -14,5 +14,15 @@ Sentry.init({
   beforeBreadcrumb: (breadcrumb) => scrubSentryBreadcrumb(breadcrumb),
 });
 
+// The envelope header of a standalone INP span carries the span name as
+// `trace.transaction`, built from the live span — beforeSendSpan cannot reach
+// it. Rename the span at start so the selector never holds label values.
+Sentry.getClient()?.on("spanStart", (span) => {
+  const { op, description } = Sentry.spanToJSON(span);
+  if (op?.startsWith("ui.interaction") && description) {
+    span.updateName(scrubSentrySpan({ description }).description ?? description);
+  }
+});
+
 // Instruments client-side navigations (App Router).
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

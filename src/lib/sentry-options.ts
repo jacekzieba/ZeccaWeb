@@ -86,8 +86,10 @@ function redactPageUrl(url: string): string {
 
 // Element selectors (INP span names, lcp.element, cls.source.N) embed the
 // values of aria-label/title/alt/name — the app puts symbols there. Sentry
-// truncates long selectors, so the closing `"]` may be missing.
-const SELECTOR_ATTRIBUTE = /\[(aria-label|title|alt|name)="[^"]*(?:"\])?/g;
+// truncates long selectors, so the closing `"]` may be missing. Quotes inside
+// a value are not escaped, so the value ends only at a `"]` followed by the
+// next attribute, a child combinator or the end of the selector.
+const SELECTOR_ATTRIBUTE = /\[(aria-label|title|alt|name)="(?:(?!"\](?:\[| > |$)).)*(?:"\])?/g;
 // A URL token: absolute or a path starting a word. Once a query/fragment
 // starts, the rest of the line goes with it, so an unencoded space in a query
 // ("?q=Vanguard FTSE") cannot smuggle a phrase past the scrubber.
@@ -120,7 +122,8 @@ function scrubUrlFields(data: Record<string, unknown>): Record<string, unknown> 
   for (const [key, value] of Object.entries(data)) {
     if (QUERY_FIELDS.includes(key)) continue;
     const header = HEADER_ATTRIBUTE.exec(key);
-    if (header && !ALLOWED_HEADERS.includes(header[1]!.toLowerCase())) continue;
+    // Sentry zapisuje nazwy nagłówków w atrybutach z podkreślnikiem (user_agent).
+    if (header && !ALLOWED_HEADERS.includes(header[1]!.toLowerCase().replace(/_/g, "-"))) continue;
     out[key] = scrubValue(value);
   }
   return out;
