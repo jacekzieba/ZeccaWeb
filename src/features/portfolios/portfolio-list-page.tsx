@@ -18,6 +18,7 @@ import { currencyLabel } from "@/lib/money";
 import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 import { announce } from "@/components/feedback/status-announcer";
 import { pluralPl } from "@/lib/plural-pl";
+import { findAccountRecord } from "@/sync/records/account-record";
 
 const INK = token("ink");
 const MUTED = token("inkMuted");
@@ -64,12 +65,7 @@ export function PortfolioListPage() {
   const editablePortfolios = useMemo(
     () =>
       realPortfolios.map((portfolio) => {
-        const sourceRecord = records?.find(
-          (record) =>
-            !record.deletedAt &&
-            record.envelope.type === "account" &&
-            record.id === portfolio.id,
-        );
+        const sourceRecord = findAccountRecord(records, portfolio.id);
 
         const payload = (sourceRecord?.envelope.payload ?? {}) as {
           accountType?: string;
@@ -138,13 +134,9 @@ export function PortfolioListPage() {
         setSync(nextRecords, buildInvestorDataSnapshot(nextRecords, { asOf: new Date(), historyGranularity: "daily", useLatestTransactionFxRate: true, useMarketQuotes: true }));
         return;
       }
-      const sourceRecord = records.find(
-        (record) =>
-          !record.deletedAt &&
-          record.envelope.type === "account" &&
-          record.id === id,
-      );
-      const result = await deleteRecord(supabase, "account", id, {
+      const sourceRecord = findAccountRecord(records, id);
+      const recordId = sourceRecord?.id ?? id;
+      const result = await deleteRecord(supabase, "account", recordId, {
         baseUpdatedAt: sourceRecord?.updatedAt ?? null,
       });
       if (!result.queued) {
@@ -158,8 +150,10 @@ export function PortfolioListPage() {
       const operationId = result.operationId;
       announce(
         "Portfel usunięty.",
-        usunietyO ? { label: "Cofnij", run: () => void przywrocPortfel(id, usunietyO, operationId) } : undefined,
+        usunietyO ? { label: "Cofnij", run: () => void przywrocPortfel(recordId, usunietyO, operationId) } : undefined,
       );
+    } catch (error) {
+      announce(error instanceof Error ? `Nie udało się usunąć portfela: ${error.message}` : "Nie udało się usunąć portfela.");
     } finally {
       setDeletingId(null);
     }
