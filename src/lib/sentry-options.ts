@@ -89,7 +89,7 @@ function redactPageUrl(url: string): string {
 // truncates long selectors, so the closing `"]` may be missing. Quotes inside
 // a value are not escaped, so the value ends only at a `"]` followed by the
 // next attribute, a child combinator or the end of the selector.
-const SELECTOR_ATTRIBUTE = /\[(aria-label|title|alt|name)="(?:(?!"\](?:\[| > |$)).)*(?:"\])?/g;
+const SELECTOR_ATTRIBUTE = /\[(aria-label|title|alt|name)="(?:(?!"\](?:\[| > |$))[\s\S])*(?:"\])?/g;
 // A URL token: absolute or a path starting a word. Once a query/fragment
 // starts, the rest of the line goes with it, so an unencoded space in a query
 // ("?q=Vanguard FTSE") cannot smuggle a phrase past the scrubber.

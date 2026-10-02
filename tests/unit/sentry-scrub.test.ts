@@ -251,6 +251,11 @@ describe("scrubSentrySpan (beforeSendSpan)", () => {
     });
   });
 
+  it("etykieta z nową linią w środku też jest usuwana w całości", () => {
+    const span = scrubSentrySpan({ description: 'button[aria-label="linia 1\nVWRL.AS"] > span' });
+    expect(span.description).toBe("button[aria-label] > span");
+  });
+
   it("etykieta z cudzysłowem w środku nie zostawia ogona z symbolem", () => {
     const span = scrubSentrySpan({ description: 'div > button[title="Fundusz "VWRL" acc"][type="button"] > span' });
     expect(span.description).toBe('div > button[title][type="button"] > span');
