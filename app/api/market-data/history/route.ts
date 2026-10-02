@@ -9,6 +9,7 @@ import {
 } from "@/market-data/providers/yahoo";
 import { yahooSymbolForInstrument } from "@/market-data/symbols";
 import type { MarketQuote } from "@/market-data/types";
+import { MarketDataNotFoundError } from "@/market-data/errors";
 import { rateLimitResponse } from "@/market-data/rate-limit";
 
 // Daily history changes at most once per trading day; an hour keeps the latest
@@ -62,6 +63,10 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Błąd danych rynkowych.";
-    return NextResponse.json({ error: message }, { status: 502 });
+    // Symbol bez danych to trwały brak (404), nie awaria Yahoo (502).
+    return NextResponse.json(
+      { error: message },
+      { status: error instanceof MarketDataNotFoundError ? 404 : 502 },
+    );
   }
 }

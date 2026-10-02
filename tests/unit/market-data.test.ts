@@ -5,10 +5,13 @@ import {
   setCachedMarketData,
 } from "@/market-data/cache";
 import {
+  fetchYahooDailyHistory,
+  fetchYahooQuote,
   parseYahooChart,
   parseYahooChartSeries,
   parseYahooSearch,
 } from "@/market-data/providers/yahoo";
+import { MarketDataNotFoundError } from "@/market-data/errors";
 import { fetchNbpFxRate } from "@/market-data/providers/nbp";
 import {
   fetchGusCpiSeries,
@@ -115,6 +118,52 @@ describe("parseYahooChart", () => {
         "MISSING",
       ),
     ).toThrow("No data found");
+  });
+});
+
+describe("Yahoo: brak danych dla symbolu to nie awaria dostawcy", () => {
+  // Goły symbol bez giełdy (np. "VWRL") Yahoo zwraca z ceną 0 albo 404.
+  // To trwały brak danych dla tego symbolu, a nie błąd Yahoo — trasy
+  // odpowiadają wtedy 404 zamiast 502.
+  it("zerowa cena w notowaniu to MarketDataNotFoundError", () => {
+    expect(() =>
+      parseYahooChart(yahooChartResponse({ regularMarketPrice: 0, regularMarketTime: 1_778_803_200, close: [0] }), "VWRL"),
+    ).toThrow(MarketDataNotFoundError);
+  });
+
+  it("historia bez żadnego kursu to MarketDataNotFoundError", () => {
+    expect(() =>
+      parseYahooChartSeries(
+        {
+          chart: {
+            result: [{ meta: { currency: "USD" }, timestamp: [1_778_716_800], indicators: { quote: [{ close: [null] }] } }],
+            error: null,
+          },
+        },
+        "VWRL",
+      ),
+    ).toThrow(MarketDataNotFoundError);
+  });
+
+  it("brak wyniku w odpowiedzi to MarketDataNotFoundError", () => {
+    expect(() => parseYahooChart({ chart: { result: [], error: null } }, "VWRL")).toThrow(
+      MarketDataNotFoundError,
+    );
+  });
+
+  it("404 z Yahoo (nieznany symbol) to MarketDataNotFoundError — w notowaniu i historii", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(
+      async () => new Response(JSON.stringify({ chart: { result: null, error: { description: "No data found, symbol may be delisted" } } }), { status: 404 }),
+    );
+    await expect(fetchYahooQuote("NOPE")).rejects.toBeInstanceOf(MarketDataNotFoundError);
+    await expect(fetchYahooDailyHistory("NOPE")).rejects.toBeInstanceOf(MarketDataNotFoundError);
+  });
+
+  it("5xx z Yahoo zostaje zwykłym błędem dostawcy", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response("", { status: 503 }));
+    const quoteError = await fetchYahooQuote("AAPL").catch((error: unknown) => error);
+    expect(quoteError).toBeInstanceOf(Error);
+    expect(quoteError).not.toBeInstanceOf(MarketDataNotFoundError);
   });
 });
 

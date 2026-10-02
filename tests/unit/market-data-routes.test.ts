@@ -6,11 +6,13 @@ import {
   fetchNbpFxRate,
   fetchNbpMonthlyAverageFxRate,
 } from "@/market-data/providers/nbp";
-import { fetchYahooQuote, fetchYahooSearch } from "@/market-data/providers/yahoo";
+import { fetchYahooDailyHistory, fetchYahooQuote, fetchYahooSearch } from "@/market-data/providers/yahoo";
+import { MarketDataNotFoundError } from "@/market-data/errors";
 import { fetchGusCpiSeries } from "@/market-data/providers/gus";
 import { fetchFinwireCpiSeries } from "@/market-data/providers/finwire";
 import { GET as getFxRate } from "../../app/api/market-data/fx/route";
 import { GET as getQuote } from "../../app/api/market-data/quote/route";
+import { GET as getHistory } from "../../app/api/market-data/history/route";
 import { GET as getSearch } from "../../app/api/market-data/search/route";
 import { GET as getMarketDataStatus } from "../../app/api/market-data/status/route";
 import { GET as getCpi } from "../../app/api/market-data/cpi/route";
@@ -21,6 +23,7 @@ vi.mock("@/market-data/providers/nbp", () => ({
 }));
 
 vi.mock("@/market-data/providers/yahoo", () => ({
+  fetchYahooDailyHistory: vi.fn(),
   fetchYahooQuote: vi.fn(),
   fetchYahooSearch: vi.fn(),
 }));
@@ -36,6 +39,7 @@ vi.mock("@/market-data/providers/finwire", () => ({
 const mockedFetchNbpFxRate = vi.mocked(fetchNbpFxRate);
 const mockedFetchNbpMonthlyAverageFxRate = vi.mocked(fetchNbpMonthlyAverageFxRate);
 const mockedFetchYahooQuote = vi.mocked(fetchYahooQuote);
+const mockedFetchYahooDailyHistory = vi.mocked(fetchYahooDailyHistory);
 const mockedFetchYahooSearch = vi.mocked(fetchYahooSearch);
 const mockedFetchGusCpiSeries = vi.mocked(fetchGusCpiSeries);
 const mockedFetchFinwireCpiSeries = vi.mocked(fetchFinwireCpiSeries);
@@ -184,12 +188,42 @@ describe("GET /api/market-data/quote", () => {
     expect(response.status).toBe(502);
   });
 
+  it("returns a 404 (not 502) when Yahoo has no data for the symbol", async () => {
+    mockedFetchYahooQuote.mockRejectedValue(new MarketDataNotFoundError("Yahoo Finance returned no valid price."));
+
+    const response = await getQuote(request("http://localhost/api/market-data/quote?symbol=VWRL&currency=USD"));
+
+    await expect(response.json()).resolves.toEqual({ error: "Yahoo Finance returned no valid price." });
+    expect(response.status).toBe(404);
+  });
+
   it("returns a validation error when symbol is missing", async () => {
     const response = await getQuote(request("http://localhost/api/market-data/quote"));
 
     await expect(response.json()).resolves.toEqual({ error: "Brak symbolu." });
     expect(response.status).toBe(400);
     expect(mockedFetchYahooQuote).not.toHaveBeenCalled();
+  });
+});
+
+describe("GET /api/market-data/history", () => {
+  it("returns a 404 (not 502) when Yahoo has no history for the symbol", async () => {
+    mockedFetchYahooDailyHistory.mockRejectedValue(
+      new MarketDataNotFoundError("Yahoo Finance returned no valid price history."),
+    );
+
+    const response = await getHistory(request("http://localhost/api/market-data/history?symbol=VWRL&currency=USD"));
+
+    await expect(response.json()).resolves.toEqual({ error: "Yahoo Finance returned no valid price history." });
+    expect(response.status).toBe(404);
+  });
+
+  it("keeps a 502 for a real upstream failure", async () => {
+    mockedFetchYahooDailyHistory.mockRejectedValue(new Error("Yahoo Finance returned 503 for AAPL."));
+
+    const response = await getHistory(request("http://localhost/api/market-data/history?symbol=AAPL&currency=USD"));
+
+    expect(response.status).toBe(502);
   });
 });
 
