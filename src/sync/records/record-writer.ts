@@ -65,6 +65,9 @@ export type PendingSyncOperation =
 type SaveRecordOptions = {
   baseUpdatedAt?: string | null;
   enqueueOnFailure?: boolean;
+  /** Faktyczne ID rekordu, gdy różni się od ID w treści (portfel przeniesiony
+   * migracją pod nowe ID). Domyślnie ID z treści. */
+  recordId?: string;
 };
 
 export type WriteRecordResult = {
@@ -249,16 +252,17 @@ export async function saveRecord(
   options: SaveRecordOptions = {},
 ): Promise<WriteRecordResult> {
   const userId = await getCurrentUserId(supabase);
+  const recordId = options.recordId ?? payload.id;
   // v2 jak w iOS: rekord raz zapisany w v2 nie może wrócić do formatu bez AAD
   // (iOS odrzuca taki „downgrade”), więc web też zapisuje v2.
   const { encryptedPayload, nonce } = await encryptJsonPayloadV2(
     userDataKey,
     payload,
-    recordAdditionalData({ userId, id: payload.id, recordType, schemaVersion: 1, deleted: false }),
+    recordAdditionalData({ userId, id: recordId, recordType, schemaVersion: 1, deleted: false }),
   );
   const updatedAt = new Date().toISOString();
   const encryptedRecord: UpsertPayload = {
-    id: payload.id,
+    id: recordId,
     user_id: userId,
     record_type: recordType,
     encrypted_payload: encryptedPayload,
@@ -281,7 +285,7 @@ export async function saveRecord(
       operationId: crypto.randomUUID(),
       operation: "upsert",
       recordType,
-      id: payload.id,
+      id: recordId,
       baseUpdatedAt: options.baseUpdatedAt ?? null,
       createdAt: new Date().toISOString(),
       encryptedRecord,
@@ -290,7 +294,7 @@ export async function saveRecord(
     dispatchSyncMutation({
       operation: "upsert",
       recordType,
-      id: payload.id,
+      id: recordId,
       queued: true,
     });
     return { queued: true };
@@ -299,7 +303,7 @@ export async function saveRecord(
   dispatchSyncMutation({
     operation: "upsert",
     recordType,
-    id: payload.id,
+    id: recordId,
     queued: false,
   });
   return { queued: false };

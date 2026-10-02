@@ -41,6 +41,7 @@ import { languageName, setAppLanguage, useAppLanguage, type AppLanguage } from "
 import { useTranslation } from "@/features/i18n/translate";
 import { pluralPl } from "@/lib/plural-pl";
 import { announce } from "@/components/feedback/status-announcer";
+import { findAccountRecord } from "@/sync/records/account-record";
 
 const plnFormatter = new Intl.NumberFormat("pl-PL", {
   style: "currency",
@@ -676,12 +677,7 @@ function AccountsSection({ accounts }: { accounts: PortfolioSummary[] }) {
   const drafts = useMemo(() => {
     const map = new Map<string, AllocationDraft>();
     for (const account of accounts) {
-      const source = records?.find(
-        (record) =>
-          !record.deletedAt &&
-          record.envelope.type === "account" &&
-          record.id === account.id,
-      );
+      const source = findAccountRecord(records, account.id);
       const payload = (source?.envelope.payload ?? {}) as {
         accountType?: string;
         colorHex?: string;
@@ -695,6 +691,7 @@ function AccountsSection({ accounts }: { accounts: PortfolioSummary[] }) {
         colorHex: payload.colorHex,
         targetAllocation: payload.targetAllocation,
         updatedAt: source?.updatedAt ?? "",
+        recordId: source?.id,
       });
     }
     return map;

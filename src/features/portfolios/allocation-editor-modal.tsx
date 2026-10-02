@@ -25,6 +25,8 @@ export type AllocationDraft = {
   colorHex?: string;
   targetAllocation?: Record<string, number>;
   updatedAt: string;
+  /** ID rekordu, gdy różni się od ID portfela (portfel przeniesiony migracją). */
+  recordId?: string;
 };
 
 const PAPER = token("ground");
@@ -161,7 +163,7 @@ export function AllocationEditorModal({
           colorHex: draft.colorHex,
           targetAllocation,
         }),
-        { baseUpdatedAt: draft.updatedAt || null },
+        { baseUpdatedAt: draft.updatedAt || null, recordId: draft.recordId },
       );
       if (!result.queued) {
         const { records, snapshot } = await refreshSyncStore(supabase, userDataKey);

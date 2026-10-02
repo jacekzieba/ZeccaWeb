@@ -81,6 +81,7 @@ export function PortfolioListPage() {
           colorHex: payload.colorHex,
           targetAllocation: payload.targetAllocation,
           updatedAt: sourceRecord?.updatedAt ?? "",
+          recordId: sourceRecord?.id,
         };
       }),
     [records, realPortfolios],
