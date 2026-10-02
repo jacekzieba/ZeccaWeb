@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, type ReactElement } from "react";
 import { renderToString } from "react-dom/server";
-import { hydrateRoot } from "react-dom/client";
+import { createRoot, hydrateRoot } from "react-dom/client";
+import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppLock } from "@/features/auth/app-lock";
 import { SyncUnlockPanel } from "@/features/sync/sync-unlock-panel";
@@ -106,6 +107,26 @@ describe("hydratacja bramki zalogowanego użytkownika", () => {
     expect(errors).toEqual([]);
     // Po hydratacji blokada nadal zasłania aplikację.
     expect(container.textContent).not.toContain("aplikacja");
+    expect(container.textContent).toContain("PIN");
+  });
+
+  it("AppLock zamontowany w przeglądarce (bez hydratacji) od razu jest zablokowany", async () => {
+    localStorage.setItem("investor-app-lock-setup", "1");
+    sessionStorage.setItem("investor-app-lock-pin", "abc");
+    const mounted = vi.fn();
+    function App() {
+      useEffect(() => mounted(), []);
+      return <p>aplikacja</p>;
+    }
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+
+    await act(async () => {
+      createRoot(container).render(<AppLock><App /></AppLock>);
+    });
+
+    // Przejście między stronami nie może uruchamiać aplikacji pod blokadą.
+    expect(mounted).not.toHaveBeenCalled();
     expect(container.textContent).toContain("PIN");
   });
 
