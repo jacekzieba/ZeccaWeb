@@ -712,6 +712,7 @@
 /* 11px zostaje wyłącznie dla cechy — źródła i podstawy liczenia. Drobny tekst
    pomocniczy idzie 12px, żeby ten sam stopień nie znaczył dwóch różnych rzeczy. */
 .zlanding .foot-bot span { font-family: var(--text); font-size: 12px; color: var(--ink-3); }
+.zlanding .foot-disclaimer { margin: 14px 0 0; max-width: 720px; font-family: var(--text); font-size: 12px; line-height: 1.5; color: var(--ink-2); }
 
 .zlanding .preview .rail-row > .rail-mark { display: none; }
 .zlanding .preview .rail-row { display: block; }

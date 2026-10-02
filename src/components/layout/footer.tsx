@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { COLORS } from "@/lib/design-tokens";
+import { INVESTMENT_DISCLAIMER } from "@/lib/investment-disclaimer";
 import { CopyrightYear } from "./copyright-year";
 
 export function Footer() {
@@ -35,6 +36,18 @@ export function Footer() {
           </Link>
         </div>
       </div>
+      <p
+        style={{
+          maxWidth: "1240px",
+          marginInline: "auto",
+          marginTop: 12,
+          fontSize: 12,
+          lineHeight: 1.5,
+          color: COLORS.textMuted,
+        }}
+      >
+        {INVESTMENT_DISCLAIMER}
+      </p>
     </footer>
   );
 }
