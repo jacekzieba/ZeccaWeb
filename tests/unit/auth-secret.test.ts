@@ -29,21 +29,13 @@ describe("deriveAuthSecret", () => {
 });
 
 describe("signInWithAccountPassword", () => {
-  // Zachowuje się jak produkcyjne Supabase Auth: zmiana hasła poza sesją
-  // odzyskiwania wymaga poprawnego `current_password`
-  // (GOTRUE_SECURITY_UPDATE_PASSWORD_REQUIRE_CURRENT_PASSWORD).
   function client(accepts: string[]) {
-    let stored = [...accepts];
     const signInWithPassword = vi.fn(async ({ password }: { email: string; password: string }) =>
-      stored.includes(password) ? { error: null } : { error: { message: "Invalid login credentials" } },
+      accepts.includes(password) ? { error: null } : { error: { message: "Invalid login credentials" } },
     );
-    const updateUser = vi.fn(async ({ password, current_password }: { password?: string; current_password?: string }) => {
-      if (!current_password || !stored.includes(current_password)) {
-        return { error: { message: "Current password required when setting new password." } };
-      }
-      stored = password ? [password] : stored;
-      return { error: null };
-    });
+    // Logowanie nie zmienia hasła w Auth — updateUser jest tu tylko po to,
+    // żeby sprawdzić, że nie jest wołany.
+    const updateUser = vi.fn();
     return { auth: { signInWithPassword, updateUser } };
   }
 
