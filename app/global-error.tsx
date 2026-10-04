@@ -1,23 +1,16 @@
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
-import { useEffect } from "react";
 import { COLORS } from "@/lib/design-tokens";
 
-// Catches React rendering errors that escape the app's error boundaries and
-// reports them to Sentry. Replaces the root layout on a fatal error, so it must
-// render its own <html>/<body>.
+// Catches React rendering errors that escape the app's error boundaries.
+// Replaces the root layout on a fatal error, so it must render its own
+// <html>/<body>.
 export default function GlobalError({
-  error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    Sentry.captureException(error);
-  }, [error]);
-
   return (
     <html lang="pl">
       <body
@@ -37,7 +30,7 @@ export default function GlobalError({
             Coś poszło nie tak
           </h1>
           <p style={{ fontSize: 13, color: COLORS.textMuted, marginBottom: 20 }}>
-            Wystąpił nieoczekiwany błąd. Zgłosiliśmy go automatycznie.
+            Wystąpił nieoczekiwany błąd. Spróbuj ponownie, a jeśli problem się powtarza, odśwież stronę.
           </p>
           <button
             type="button"

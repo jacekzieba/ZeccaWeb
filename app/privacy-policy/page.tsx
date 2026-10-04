@@ -96,10 +96,6 @@ export default function PrivacyPolicyPage() {
             Webowa wersja Zecca korzysta także z Vercel Analytics i Vercel Speed Insights do technicznego pomiaru odwiedzin, wydajności i stabilności strony. Te dane pomagają wykrywać problemy z aplikacją web, ale nie zawierają treści portfela, transakcji, tickerów ani importowanych plików.
           </p>
 
-          <p style={{ marginBottom: 16 }}>
-            Do wykrywania i diagnozowania awarii aplikacji webowej korzystamy z Sentry (Functional Software, Inc.), z przechowywaniem danych w regionie UE (Niemcy). Sentry otrzymuje wyłącznie <strong>techniczne informacje o błędzie</strong>: typ błędu i ślad stosu, wersję i numer kompilacji aplikacji oraz typ przeglądarki. Zgłoszenia <strong>nie zawierają</strong> kwot, tickerów, treści portfela, adresów e-mail, tokenów sesji, zawartości formularzy ani parametrów adresu URL — dane te są usuwane przed wysłaniem. Zgłoszenia wysyłane są wyłącznie z produkcyjnej wersji aplikacji.
-          </p>
-
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
             Cookies i sesja
           </h2>
@@ -125,7 +121,7 @@ export default function PrivacyPolicyPage() {
           </h2>
 
           <p style={{ marginBottom: 16 }}>
-            Dane portfela na Twoim urządzeniu (lokalny tryb, iCloud) przechowujemy tak długo, jak korzystasz z aplikacji — usuwasz je sam, usuwając aplikację lub konkretne rekordy. Konto synchronizacji Zecca i powiązane z nim dane (e-mail, etykieta i identyfikator urządzenia, zaszyfrowane rekordy portfela, zaszyfrowana kopia klucza) przechowujemy do chwili usunięcia konta — usunięcie w aplikacji kasuje je trwale, bez okresu przejściowego. Kopie zapasowe infrastruktury (np. Supabase) mogą przechowywać usunięte dane przez ograniczony czas rotacji backupu, zanim zostaną nadpisane. Dane diagnostyczne (Sentry) i telemetria produktowa (TelemetryDeck) są przechowywane zgodnie z domyślną retencją tych dostawców i nie są powiązane z Twoim kontem ani tożsamością.
+            Dane portfela na Twoim urządzeniu (lokalny tryb, iCloud) przechowujemy tak długo, jak korzystasz z aplikacji — usuwasz je sam, usuwając aplikację lub konkretne rekordy. Konto synchronizacji Zecca i powiązane z nim dane (e-mail, etykieta i identyfikator urządzenia, zaszyfrowane rekordy portfela, zaszyfrowana kopia klucza) przechowujemy do chwili usunięcia konta — usunięcie w aplikacji kasuje je trwale, bez okresu przejściowego. Kopie zapasowe infrastruktury (np. Supabase) mogą przechowywać usunięte dane przez ograniczony czas rotacji backupu, zanim zostaną nadpisane. Telemetria produktowa (TelemetryDeck) jest przechowywana zgodnie z domyślną retencją tego dostawcy i nie jest powiązana z Twoim kontem ani tożsamością.
           </p>
 
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
