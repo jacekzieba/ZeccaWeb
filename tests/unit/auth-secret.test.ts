@@ -57,25 +57,25 @@ describe("signInWithAccountPassword", () => {
     expect(c.auth.updateUser).not.toHaveBeenCalled();
   });
 
-  it("stare konto: loguje surowym hasłem i od razu przestawia je na sekret", async () => {
+  it("konto ze starym hasłem w Auth: logowanie się nie udaje, a samo hasło nie jest wysyłane", async () => {
+    // Wszystkie konta używane po 28.09.2026 są już na sekrecie; stare konto
+    // ustawia hasło przez „Nie pamiętasz hasła?”, a reset zapisuje sekret.
     const c = client([VECTORS[0][1]]);
     const result = await signInWithAccountPassword(c as never, VECTORS[0][0], VECTORS[0][1]);
 
-    expect(result.error).toBeNull();
-    expect(c.auth.signInWithPassword).toHaveBeenCalledTimes(2);
-
-    // Po migracji konto przyjmuje już tylko sekret.
-    c.auth.signInWithPassword.mockClear();
-    await expect(signInWithAccountPassword(c as never, VECTORS[0][0], VECTORS[0][1])).resolves.toEqual({ error: null });
+    expect(result.error?.message).toMatch(/Invalid login credentials/);
     expect(c.auth.signInWithPassword).toHaveBeenCalledTimes(1);
     expect(c.auth.signInWithPassword).toHaveBeenCalledWith({ email: "jan.kowalski@example.pl", password: VECTORS[0][2] });
+    expect(c.auth.updateUser).not.toHaveBeenCalled();
   });
 
-  it("złe hasło: zwraca błąd, niczego nie migruje", async () => {
+  it("złe hasło (np. literówka): zwraca błąd i nie wysyła wpisanego hasła", async () => {
     const c = client([]);
     const result = await signInWithAccountPassword(c as never, VECTORS[0][0], "zle");
 
     expect(result.error?.message).toMatch(/Invalid login credentials/);
+    expect(c.auth.signInWithPassword).toHaveBeenCalledTimes(1);
+    expect(c.auth.signInWithPassword).not.toHaveBeenCalledWith(expect.objectContaining({ password: "zle" }));
     expect(c.auth.updateUser).not.toHaveBeenCalled();
   });
 });
