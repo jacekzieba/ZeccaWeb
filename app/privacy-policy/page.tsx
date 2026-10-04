@@ -76,7 +76,7 @@ export default function PrivacyPolicyPage() {
           </p>
 
           <p style={{ marginBottom: 16 }}>
-            Zaszyfrowaną kopię klucza synchronizacji odblokowuje na nowym urządzeniu klucz wyprowadzany lokalnie: przy koncie z hasłem — z <strong>hasła Twojego konta</strong>, a przy logowaniu przez Apple lub Google (konto bez hasła) — z osobnej <strong>frazy synchronizacji</strong> (passphrase), którą ustawiasz w aplikacji. Zecca nie przechowuje hasła ani frazy na serwerze i nie używa ich po stronie serwera do odszyfrowywania danych. Fraza nie opuszcza Twojego urządzenia. Przy logowaniu hasłem do usługi uwierzytelniania trafia sekret logowania wyprowadzony z hasła funkcją jednokierunkową (PBKDF2), inny niż klucz, którym szyfrowana jest kopia klucza synchronizacji. Wyjątek: jeśli logowanie sekretem się nie powiedzie — np. przy koncie założonym w starszej wersji aplikacji, która wysyłała samo hasło, albo przy błędnie wpisanym haśle — aplikacja ponawia próbę, wysyłając samo hasło szyfrowanym połączeniem. Gdy takie logowanie się uda, aplikacja od razu próbuje zastąpić hasło w usłudze uwierzytelniania sekretem (do potwierdzenia zmiany wysyła wtedy ponownie samo hasło); jeśli się to nie uda, ponowi próbę przy kolejnym logowaniu.
+            Zaszyfrowaną kopię klucza synchronizacji odblokowuje na nowym urządzeniu klucz wyprowadzany lokalnie: przy koncie z hasłem — z <strong>hasła Twojego konta</strong>, a przy logowaniu przez Apple lub Google (konto bez hasła) — z osobnej <strong>frazy synchronizacji</strong> (passphrase), którą ustawiasz w aplikacji. Zecca nie przechowuje hasła ani frazy na serwerze i nie używa ich po stronie serwera do odszyfrowywania danych. Fraza nie opuszcza Twojego urządzenia. Przy logowaniu hasłem do usługi uwierzytelniania trafia sekret logowania wyprowadzony z hasła funkcją jednokierunkową (PBKDF2), inny niż klucz, którym szyfrowana jest kopia klucza synchronizacji. Samo hasło nie jest wysyłane do serwera — także przy nieudanym logowaniu, zakładaniu konta, zmianie i resecie hasła.
           </p>
 
           <p style={{ marginBottom: 16 }}>
@@ -131,10 +131,6 @@ export default function PrivacyPolicyPage() {
             Wersja web korzysta także z Vercel Analytics i Vercel Speed Insights do pomiaru odwiedzin, wydajności i stabilności strony (m.in. adres podstrony, typ przeglądarki i urządzenia, kraj). Te dane pomagają wykrywać problemy z wersją web, ale nie zawierają treści portfela, transakcji, tickerów ani importowanych plików.
           </p>
 
-          <p style={{ marginBottom: 16 }}>
-            Do wykrywania i diagnozowania awarii wersji web korzystamy z Sentry (Functional Software, Inc.), z przechowywaniem danych w regionie UE (Niemcy). Przy błędzie Sentry otrzymuje <strong>techniczne informacje o błędzie</strong>: typ błędu i ślad stosu, adres podstrony (bez parametrów), wersję i numer kompilacji aplikacji oraz typ przeglądarki. Dodatkowo z około 10% odwiedzin Sentry otrzymuje pomiary wydajności, obejmujące m.in. adresy odwiedzanych podstron i czasy ładowania. Zgłoszenia <strong>nie zawierają</strong> kwot, tickerów, treści portfela, adresów e-mail, tokenów sesji, zawartości formularzy ani parametrów adresu URL — dane te są usuwane przed wysłaniem. Zgłoszenia wysyłane są wyłącznie z produkcyjnej wersji aplikacji.
-          </p>
-
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
             Cookies i sesja
           </h2>
@@ -159,7 +155,7 @@ export default function PrivacyPolicyPage() {
               <strong>Telemetria produktowa</strong> — w aplikacjach na iOS i macOS Twoja zgoda, o którą pytamy przy pierwszym uruchomieniu (art. 6 ust. 1 lit. a RODO); w wersji web nasz prawnie uzasadniony interes w ulepszaniu aplikacji (art. 6 ust. 1 lit. f RODO). W obu przypadkach możesz ją w każdej chwili wyłączyć w ustawieniach (w wersji web — po odblokowaniu danych).
             </li>
             <li>
-              <strong>Diagnostyka błędów, pomiar wydajności i statystyki odwiedzin strony (Vercel Analytics)</strong> — prawnie uzasadniony interes w utrzymaniu działającej i bezpiecznej usługi (art. 6 ust. 1 lit. f RODO).
+              <strong>Pomiar wydajności i statystyki odwiedzin strony (Vercel Analytics, Speed Insights)</strong> — prawnie uzasadniony interes w utrzymaniu działającej i bezpiecznej usługi (art. 6 ust. 1 lit. f RODO).
             </li>
           </ul>
 
@@ -181,9 +177,6 @@ export default function PrivacyPolicyPage() {
             <li style={{ marginBottom: 8 }}>
               <strong>TelemetryDeck GmbH</strong> (Niemcy) — telemetria produktowa.
             </li>
-            <li>
-              <strong>Functional Software, Inc. (Sentry)</strong> — diagnostyka błędów i pomiar wydajności wersji web, dane w UE.
-            </li>
           </ul>
 
           <p style={{ marginBottom: 16 }}>
@@ -191,7 +184,7 @@ export default function PrivacyPolicyPage() {
           </p>
 
           <p style={{ marginBottom: 16 }}>
-            Supabase, Vercel i Sentry to firmy z USA. Jeśli dane trafiają poza Europejski Obszar Gospodarczy, odbywa się to na podstawie standardowych klauzul umownych zatwierdzonych przez Komisję Europejską lub decyzji o odpowiednim stopniu ochrony (EU-US Data Privacy Framework).
+            Supabase i Vercel to firmy z USA. Jeśli dane trafiają poza Europejski Obszar Gospodarczy, odbywa się to na podstawie standardowych klauzul umownych zatwierdzonych przez Komisję Europejską lub decyzji o odpowiednim stopniu ochrony (EU-US Data Privacy Framework).
           </p>
 
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
@@ -207,7 +200,7 @@ export default function PrivacyPolicyPage() {
           </h2>
 
           <p style={{ marginBottom: 16 }}>
-            Dane portfela na Twoim urządzeniu (tryb lokalny, iCloud) przechowujemy tak długo, jak korzystasz z aplikacji — usuwasz je samodzielnie, usuwając aplikację lub konkretne rekordy. Konto synchronizacji Zecca i powiązane z nim dane (e-mail, etykieta i identyfikator urządzenia, zaszyfrowane rekordy portfela, zaszyfrowana kopia klucza) przechowujemy do chwili usunięcia konta — usunięcie w aplikacji kasuje je trwale, bez okresu przejściowego. Usunięcie pojedynczego rekordu (np. transakcji) tylko oznacza go na serwerze jako usunięty; jego zaszyfrowana treść pozostaje tam do usunięcia konta, rozpoczęcia synchronizacji od nowa albo — po włączeniu automatycznego czyszczenia — najdłużej 180 dni. Kopie zapasowe infrastruktury (np. Supabase) mogą przechowywać usunięte dane przez ograniczony czas rotacji backupu, zanim zostaną nadpisane. Dane diagnostyczne (Sentry) i telemetria produktowa (TelemetryDeck) są przechowywane zgodnie z domyślną retencją tych dostawców i nie są powiązane z Twoim kontem ani tożsamością.
+            Dane portfela na Twoim urządzeniu (tryb lokalny, iCloud) przechowujemy tak długo, jak korzystasz z aplikacji — usuwasz je samodzielnie, usuwając aplikację lub konkretne rekordy. Konto synchronizacji Zecca i powiązane z nim dane (e-mail, etykieta i identyfikator urządzenia, zaszyfrowane rekordy portfela, zaszyfrowana kopia klucza) przechowujemy do chwili usunięcia konta — usunięcie w aplikacji kasuje je trwale, bez okresu przejściowego. Usunięcie pojedynczego rekordu (np. transakcji) tylko oznacza go na serwerze jako usunięty; jego zaszyfrowana treść pozostaje tam do usunięcia konta, rozpoczęcia synchronizacji od nowa albo — po włączeniu automatycznego czyszczenia — najdłużej 180 dni. Kopie zapasowe infrastruktury (np. Supabase) mogą przechowywać usunięte dane przez ograniczony czas rotacji backupu, zanim zostaną nadpisane. Telemetria produktowa (TelemetryDeck) jest przechowywana zgodnie z domyślną retencją tego dostawcy i nie jest powiązana z Twoim kontem ani tożsamością.
           </p>
 
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
