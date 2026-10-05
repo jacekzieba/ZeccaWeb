@@ -39,6 +39,30 @@ jobs:
       - name: Testy jednostkowe + progi pokrycia
         run: npm run test:coverage
 
+  csp:
+    name: CSP na wersji produkcyjnej
+    # W next dev CSP jest tylko Report-Only, więc e2e nie widzą wymuszonej
+    # polityki. Usunięcie `dynamic = "force-dynamic"` albo nonce psułoby
+    # hydratację na produkcji, a reszta CI by tego nie zauważyła.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Przeglądarka
+        run: npx playwright install --with-deps chromium
+      - name: Build produkcyjny
+        run: npm run build
+      - name: Sprawdzenie CSP
+        run: |
+          npx next start -p 3200 &
+          npx --yes wait-on@8 http://127.0.0.1:3200/login --timeout 60000
+          BASE=http://127.0.0.1:3200 node scripts/csp-check.mjs
+
   e2e:
     name: e2e (fake-sync i scenariusz certyfikacyjny)
     runs-on: ubuntu-latest

@@ -98,8 +98,11 @@ function ProductCard({
   );
 }
 
+// Deterministyczne dane demo — liczone raz przy załadowaniu modułu, nie przy
+// każdym renderze (strona główna renderuje się teraz na żądanie, dla nonce CSP).
+const snapshot = buildLandingDemoSnapshot();
+
 export function LandingHero() {
-  const snapshot = buildLandingDemoSnapshot();
   const hero = landingCopy.hero;
   const metrics = snapshot.metrics;
   const totalReturn = metrics.totalReturnPct;

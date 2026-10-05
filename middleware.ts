@@ -52,6 +52,9 @@ export async function middleware(request: NextRequest) {
       ? "Content-Security-Policy"
       : "Content-Security-Policy-Report-Only";
   const requestHeaders = new Headers(request.headers);
+  // Next czyta nonce z nagłówka CSP żądania — nie może to być wartość od klienta.
+  requestHeaders.delete("content-security-policy");
+  requestHeaders.delete("content-security-policy-report-only");
   requestHeaders.set(cspHeaderName, csp);
 
   const applyCsp = (response: NextResponse) => {
