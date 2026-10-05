@@ -100,8 +100,9 @@ const landingJsonLd = {
   ],
 };
 
-// Static marketing page. Logged-in visitors are redirected to /dashboard in
-// middleware, so `/` needs no per-request auth call and can be prerendered.
+// Marketing page. Logged-in visitors are redirected to /dashboard in
+// middleware, so `/` needs no per-request auth call. Rendered per request
+// (root layout is force-dynamic) so Next can stamp the CSP nonce on its scripts.
 export default function LandingPage() {
   return (
     <>
