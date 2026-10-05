@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useId, useState } from "react";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { authRedirectBase } from "@/lib/auth-redirect";
@@ -7,12 +8,14 @@ import { COLORS } from "@/lib/design-tokens";
 import { OAuthButtons, type OAuthStatus } from "@/features/auth/oauth-buttons";
 import { setPendingAuthPassword } from "@/features/auth/pending-auth-password";
 import { signInWithAccountPassword } from "@/features/auth/auth-secret";
+import { authErrorMessage, isInvalidCredentials } from "@/features/auth/auth-error-message";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [invalidCredentials, setInvalidCredentials] = useState(false);
   const [oauthStatus, setOauthStatus] = useState<OAuthStatus>("idle");
   const emailId = useId();
   const passwordId = useId();
@@ -23,6 +26,7 @@ export function LoginForm() {
     event.preventDefault();
     setStatus("loading");
     setErrorMessage(null);
+    setInvalidCredentials(false);
 
     const supabase = createBrowserSupabaseClientOrNull();
 
@@ -36,7 +40,8 @@ export function LoginForm() {
 
     if (error) {
       setStatus("error");
-      setErrorMessage(error.message);
+      setInvalidCredentials(isInvalidCredentials(error));
+      setErrorMessage(authErrorMessage(error));
       return;
     }
 
@@ -117,7 +122,14 @@ export function LoginForm() {
 
         {status === "error" && (
           <div style={{ fontSize: 12, color: COLORS.loss }}>
-            {errorMessage ?? "Nie udało się zalogować. Sprawdź dane i konfigurację Supabase."}
+            {invalidCredentials ? (
+              <>
+                Nieprawidłowy e-mail lub hasło. Jeśli konto zakładałeś przed 28.09.2026 albo nie pamiętasz hasła, użyj{" "}
+                <Link href="/forgot-password" style={{ color: COLORS.loss, fontWeight: 600 }}>„Nie pamiętasz hasła?”</Link>.
+              </>
+            ) : (
+              errorMessage ?? "Nie udało się zalogować. Sprawdź dane i konfigurację Supabase."
+            )}
           </div>
         )}
 

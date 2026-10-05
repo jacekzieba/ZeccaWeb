@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { track } from "@vercel/analytics";
 
 const DRAFT_COPY_PREFIX = "zecca-landing-copy:";
 const PUBLISHED_COPY_PREFIX = "zecca-landing-published:";
@@ -221,76 +220,6 @@ export function LandingInteractions() {
     document.addEventListener("keydown", onMenuKeydown);
     window.addEventListener("resize", onMenuResize);
 
-    // Beta waitlist → Airtable-backed API when explicitly enabled.
-    const betaForm = document.getElementById("betaWaitlistForm") as HTMLFormElement | null;
-    const betaStatus = document.getElementById("beta-waitlist-status");
-    const betaEmail = document.getElementById("beta-email") as HTMLInputElement | null;
-    const betaConsent = document.getElementById("beta-consent") as HTMLInputElement | null;
-    const betaHoneypot = document.getElementById("beta-company") as HTMLInputElement | null;
-    const betaButton = betaForm?.querySelector<HTMLButtonElement>('button[type="submit"]') ?? null;
-    const setBetaStatus = (message: string, type: "idle" | "success" | "error" = "idle") => {
-      if (!betaStatus) return;
-      betaStatus.textContent = message;
-      betaStatus.dataset.type = type;
-    };
-    const onBetaSubmit = async (event: Event) => {
-      event.preventDefault();
-      if (!betaForm || betaForm.dataset.enabled !== "true") {
-        return;
-      }
-
-      const email = betaEmail?.value.trim() ?? "";
-      const consent = Boolean(betaConsent?.checked);
-      const company = betaHoneypot?.value.trim() ?? "";
-      const labels = betaStatus?.dataset;
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        setBetaStatus(labels?.invalidEmail ?? "Podaj poprawny adres e-mail.", "error");
-        betaEmail?.focus();
-        return;
-      }
-      if (!consent) {
-        setBetaStatus(labels?.missingConsent ?? "Zaznacz zgodę.", "error");
-        betaConsent?.focus();
-        return;
-      }
-
-      betaButton?.setAttribute("disabled", "true");
-      setBetaStatus("", "idle");
-      try {
-        const response = await fetch("/api/beta-waitlist", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email,
-            consent,
-            company,
-            source: "landing",
-          }),
-        });
-        const contentType = response.headers.get("content-type") ?? "";
-        const payload = contentType.includes("application/json")
-          ? ((await response.json().catch(() => null)) as { error?: string; ok?: boolean } | null)
-          : null;
-        if (!response.ok || payload?.ok !== true) {
-          throw new Error(payload?.error ?? "waitlist_failed");
-        }
-        betaForm.reset();
-        setBetaStatus(labels?.success ?? "Dziękujemy! Wyślemy Ci niedługo informacje o dostępie do aplikacji.", "success");
-        track("Beta Waitlist Signup", { source: "landing" });
-        window.dispatchEvent(
-          new CustomEvent("zecca:beta-waitlist-signup", {
-            detail: { source: "landing" },
-          }),
-        );
-      } catch {
-        setBetaStatus(labels?.error ?? "Nie udało się zapisać. Spróbuj ponownie za chwilę.", "error");
-      } finally {
-        betaButton?.removeAttribute("disabled");
-      }
-    };
-    betaForm?.addEventListener("submit", onBetaSubmit);
-
-
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const landingAnchors = root
       ? Array.from(root.querySelectorAll<HTMLAnchorElement>('a[href^="#"]'))
@@ -465,7 +394,6 @@ export function LandingInteractions() {
       document.removeEventListener("click", onMenuDocClick);
       document.removeEventListener("keydown", onMenuKeydown);
       window.removeEventListener("resize", onMenuResize);
-      betaForm?.removeEventListener("submit", onBetaSubmit);
       landingAnchors.forEach((anchor) => anchor.removeEventListener("click", onAnchorClick));
       platformTabHandlers.forEach(([element, eventName, handler]) => {
         element.removeEventListener(eventName, handler);

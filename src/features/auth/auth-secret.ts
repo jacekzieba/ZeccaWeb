@@ -51,29 +51,21 @@ export async function deriveAuthSecret(email: string, password: string): Promise
   return AUTH_SECRET_PREFIX + base64Url(new Uint8Array(bits));
 }
 
-type AuthClient = Pick<BrowserSupabaseClient["auth"], "signInWithPassword" | "updateUser">;
+type AuthClient = Pick<BrowserSupabaseClient["auth"], "signInWithPassword">;
 
 /**
- * Logowanie hasłem konta. Najpierw wyprowadzonym sekretem; jeśli konto
- * pochodzi sprzed tej zmiany (w Auth wciąż surowe hasło), jednorazowo
- * logujemy się surowym hasłem i od razu przestawiamy je na sekret. Nieudana
- * migracja nie blokuje logowania — ponowi się przy następnym.
+ * Logowanie hasłem konta — wyłącznie wyprowadzonym sekretem. Samo hasło nigdy
+ * nie trafia do serwera, także po nieudanej próbie (np. literówce). Konto,
+ * które w Auth ma jeszcze surowe hasło (sprzed 28.09.2026), ustawia nowe przez
+ * „Nie pamiętasz hasła?” — reset zapisuje już sekret.
  */
 export async function signInWithAccountPassword(
   supabase: { auth: AuthClient },
   email: string,
   password: string,
-): Promise<{ error: { message: string } | null }> {
+): Promise<{ error: { message: string; code?: string; status?: number } | null }> {
   const normalizedEmail = normalizeAuthEmail(email);
   const secret = await deriveAuthSecret(normalizedEmail, password);
-
-  const first = await supabase.auth.signInWithPassword({ email: normalizedEmail, password: secret });
-  if (!first.error) return { error: null };
-
-  const legacy = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
-  if (legacy.error) return { error: first.error };
-
-  // Produkcja wymaga obecnego hasła przy jego zmianie (poza odzyskiwaniem).
-  await supabase.auth.updateUser({ password: secret, current_password: password }).catch(() => undefined);
-  return { error: null };
+  const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password: secret });
+  return { error: error ? { message: error.message, code: error.code, status: error.status } : null };
 }

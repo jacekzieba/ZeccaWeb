@@ -92,5 +92,11 @@ W `middleware.ts` wdrożono **egzekwowany CSP w produkcji** (Report-Only w dev),
 
 **Kompromis (świadomy):** `'unsafe-inline'` w `script-src` dopuszcza skrypty inline (wymagane przez bootstrap Next na stronach statycznych), więc ochrona przed inline-XSS jest słabsza niż nonce. Blokowane są jednak skrypty zewnętrzne/wstrzyknięte przez `src`, a ryzyko inline-XSS jest niskie (escaping React, brak dynamicznego `dangerouslySetInnerHTML`, escapowany JSON-LD). Ścieżka do pełnej ochrony nonce = opcja (2) w przyszłości.
 
+### ✅ AKTUALIZACJA (2026-10-05) — opcja (2): nonce + `strict-dynamic`, bez `'unsafe-inline'`
+
+Właściciel zdecydował o stronach dynamicznych. `middleware.ts` losuje per żądanie nonce (16 B z `crypto.getRandomValues`, base64) i ustawia `script-src 'self' 'nonce-…' 'strict-dynamic'` w nagłówku odpowiedzi oraz w nagłówku CSP żądania (stamtąd Next bierze nonce dla swoich skryptów). `app/layout.tsx` ma `export const dynamic = "force-dynamic"`, więc wszystkie strony renderują się na żądanie; `/robots.txt` i `/sitemap.xml` zostają statyczne. Pozostałe dyrektywy bez zmian, `style-src 'unsafe-inline'` zostaje (style inline w komponentach). Z ○ na ƒ przeszły: `/`, `/_not-found`, `/demo`, `/forgot-password`, `/login`, `/privacy-policy`, `/register`, `/reset-password`.
+
+Weryfikacja (`next build` + `next start`, headless Chromium): na `/`, `/login`, `/register`, `/forgot-password`, `/reset-password`, `/faq`, `/privacy-policy`, `/demo`, `/dashboard` (→ `/login`) i nieistniejącym adresie (404) — zero naruszeń CSP, każdy wykonywalny `<script>` z nonce, React zhydrowany; nawigacja kliencka `/demo` → `/portfolios` bez przeładowania. Bez zmiany w layoucie (sam nonce) te same strony miały 32–84 naruszeń i nie hydratowały się.
+
 ## Cookies sesyjne (do potwierdzenia w runtime — NOT ASSESSED)
 Flagi ustawiane przez `@supabase/ssr`. Zweryfikować w produkcji: `HttpOnly`, `Secure`, `SameSite=Lax/Strict`, prefiks `__Host-`/`__Secure-`, brak dostępu JS, zakres domeny/ścieżki, zachowanie na subdomenach i preview.

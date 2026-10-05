@@ -120,15 +120,15 @@ export default function PrivacyPolicyPage() {
           </h2>
 
           <p style={{ marginBottom: 16 }}>
-            Zecca może zbierać <strong>pseudonimową</strong> telemetrię produktową przez TelemetryDeck GmbH (Augsburg, Niemcy): użycie ekranów, importy (nazwa brokera i liczba wierszy podana w przedziale, np. 6–20), typ dodanej transakcji (np. kupno, wpłata) lub formę zatrudnienia przy dodanym zarobku (etat lub działalność), akcje synchronizacji, wersję i numer kompilacji aplikacji, platformę oraz wybrany tryb synchronizacji. W aplikacjach na iOS i macOS TelemetryDeck otrzymuje też zahaszowany, stały identyfikator urządzenia oraz parametry urządzenia i systemu, m.in. model urządzenia, wersję systemu, architekturę procesora, rozdzielczość i orientację ekranu, język, region, strefę czasową, ustawienia dostępności, sposób instalacji aplikacji (np. App Store, TestFlight) oraz statystyki sesji (liczba i długość sesji, liczba dni użycia, data pierwszego uruchomienia).
+            Za Twoją zgodą Zecca zbiera <strong>pseudonimową</strong> telemetrię produktową przez TelemetryDeck GmbH (Augsburg, Niemcy): użycie ekranów, importy (nazwa brokera i liczba wierszy podana w przedziale, np. 6–20), typ dodanej transakcji (np. kupno, wpłata) lub formę zatrudnienia przy dodanym zarobku (etat lub działalność), akcje synchronizacji, wersję i numer kompilacji aplikacji, platformę oraz wybrany tryb synchronizacji. W aplikacjach na iOS i macOS TelemetryDeck otrzymuje też zahaszowany, stały identyfikator urządzenia oraz parametry urządzenia i systemu, m.in. model urządzenia, wersję systemu, architekturę procesora, rozdzielczość i orientację ekranu, język, region, strefę czasową, ustawienia dostępności, sposób instalacji aplikacji (np. App Store, TestFlight) oraz statystyki sesji (liczba i długość sesji, liczba dni użycia, data pierwszego uruchomienia).
           </p>
 
           <p style={{ marginBottom: 16 }}>
-            Telemetria <strong>nie zawiera</strong> kwot, tickerów, adresów e-mail, identyfikatorów portfeli ani identyfikatora konta synchronizacji. W wersji web TelemetryDeck otrzymuje zamiast identyfikatora urządzenia losowy identyfikator istniejący tylko w pamięci bieżącej karty; nie zapisujemy go w cookies, localStorage, sessionStorage ani IndexedDB. Telemetrię można wyłączyć w ustawieniach (w wersji web — po odblokowaniu danych).
+            Telemetria <strong>nie zawiera</strong> kwot, tickerów, adresów e-mail, identyfikatorów portfeli ani identyfikatora konta synchronizacji. W wersji web TelemetryDeck otrzymuje zamiast identyfikatora urządzenia losowy identyfikator istniejący tylko w pamięci bieżącej karty; nie zapisujemy go w cookies, localStorage, sessionStorage ani IndexedDB. W aplikacjach na iOS i macOS pytamy o zgodę przy pierwszym uruchomieniu, a w przeglądarce — w okienku „Pomóż ulepszać Zecca”; bez Twojej zgody nic nie jest wysyłane.
           </p>
 
           <p style={{ marginBottom: 16 }}>
-            Wersja web korzysta także z Vercel Analytics i Vercel Speed Insights do pomiaru odwiedzin, wydajności i stabilności strony (m.in. adres podstrony, typ przeglądarki i urządzenia, kraj). Te dane pomagają wykrywać problemy z wersją web, ale nie zawierają treści portfela, transakcji, tickerów ani importowanych plików.
+            Za Twoją zgodą wersja web korzysta także z Vercel Analytics i Vercel Speed Insights do pomiaru odwiedzin, wydajności i stabilności strony (m.in. adres podstrony, typ przeglądarki i urządzenia, kraj); bez zgody ich skrypty nie są wczytywane. Adres podstrony wysyłamy bez parametrów i identyfikatorów (np. <code>/portfolios/:id</code>). Te dane pomagają wykrywać problemy z wersją web, ale nie zawierają treści portfela, transakcji, tickerów ani importowanych plików.
           </p>
 
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
@@ -140,7 +140,7 @@ export default function PrivacyPolicyPage() {
           </p>
 
           <p style={{ marginBottom: 16 }}>
-            Dlatego nie wyświetlamy banera cookies dla TelemetryDeck. Pozostałe lokalne magazyny przeglądarki służą wyłącznie działaniu funkcji wybranych przez użytkownika: ustawieniom interfejsu, kolejce zaszyfrowanej synchronizacji, blokadzie aplikacji, krótkiemu przekazaniu hasła po zalogowaniu i lokalnie zapamiętanemu kluczowi odszyfrowywania. Nie służą reklamie ani śledzeniu między witrynami. Jeżeli w przyszłości dodamy opcjonalne technologie wymagające zgody, poprosimy o nią przed ich użyciem.
+            Nie używamy banera cookies — o zgodę na statystyki użycia pytamy w osobnym okienku, a Twoją decyzję zapisujemy w localStorage przeglądarki (<code>zecca-web-analytics-consent-v1</code>). Pozostałe lokalne magazyny przeglądarki służą wyłącznie działaniu funkcji wybranych przez użytkownika: ustawieniom interfejsu, kolejce zaszyfrowanej synchronizacji, blokadzie aplikacji, krótkiemu przekazaniu hasła po zalogowaniu i lokalnie zapamiętanemu kluczowi odszyfrowywania. Nie służą reklamie ani śledzeniu między witrynami.
           </p>
 
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
@@ -152,10 +152,7 @@ export default function PrivacyPolicyPage() {
               <strong>Konto i synchronizacja</strong> — wykonanie usługi, o którą prosisz (art. 6 ust. 1 lit. b RODO).
             </li>
             <li style={{ marginBottom: 8 }}>
-              <strong>Telemetria produktowa</strong> — w aplikacjach na iOS i macOS Twoja zgoda, o którą pytamy przy pierwszym uruchomieniu (art. 6 ust. 1 lit. a RODO); w wersji web nasz prawnie uzasadniony interes w ulepszaniu aplikacji (art. 6 ust. 1 lit. f RODO). W obu przypadkach możesz ją w każdej chwili wyłączyć w ustawieniach (w wersji web — po odblokowaniu danych).
-            </li>
-            <li>
-              <strong>Pomiar wydajności i statystyki odwiedzin strony (Vercel Analytics, Speed Insights)</strong> — prawnie uzasadniony interes w utrzymaniu działającej i bezpiecznej usługi (art. 6 ust. 1 lit. f RODO).
+              <strong>Statystyki użycia: telemetria produktowa (TelemetryDeck) oraz pomiar odwiedzin i wydajności strony (Vercel Analytics, Speed Insights)</strong> — Twoja zgoda (art. 6 ust. 1 lit. a RODO). Możesz ją wycofać w każdej chwili, bez wpływu na zgodność z prawem przetwarzania sprzed jej wycofania: w aplikacjach na iOS i macOS w ustawieniach, a w wersji web przyciskiem „Zmień decyzję o statystykach użycia” na tej stronie, odnośnikiem w stopce lub w Ustawieniach (decyzja dotyczy tej przeglądarki).
             </li>
           </ul>
 
@@ -172,7 +169,7 @@ export default function PrivacyPolicyPage() {
               <strong>Supabase Inc.</strong> — konto, zaszyfrowane rekordy portfela i zaszyfrowana kopia klucza; dane przechowywane w Zurychu (Szwajcaria — kraj, wobec którego Komisja Europejska stwierdziła odpowiedni stopień ochrony danych).
             </li>
             <li style={{ marginBottom: 8 }}>
-              <strong>Vercel Inc.</strong> — hosting wersji web, pośredniczenie w zapytaniach o dane rynkowe oraz statystyki odwiedzin i pomiar wydajności (Vercel Analytics, Vercel Speed Insights); funkcje serwerowe działają w regionie UE (Frankfurt).
+              <strong>Vercel Inc.</strong> — hosting wersji web, pośredniczenie w zapytaniach o dane rynkowe oraz — za Twoją zgodą — statystyki odwiedzin i pomiar wydajności (Vercel Analytics, Vercel Speed Insights); funkcje serwerowe działają w regionie UE (Frankfurt).
             </li>
             <li style={{ marginBottom: 8 }}>
               <strong>TelemetryDeck GmbH</strong> (Niemcy) — telemetria produktowa.
@@ -204,11 +201,11 @@ export default function PrivacyPolicyPage() {
           </p>
 
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
-            Co się zmienia, gdy wyłączysz synchronizację lub telemetrię
+            Co się zmienia, gdy wyłączysz synchronizację lub wycofasz zgodę na statystyki
           </h2>
 
           <p style={{ marginBottom: 16 }}>
-            Wyłączenie prywatnej synchronizacji Zecca lub iCloud nie usuwa danych już przesłanych. Z serwera Zecca usuwasz je, kasując konto; z iCloud — usuwając rekordy w aplikacji, dopóki synchronizacja iCloud jest włączona. Po wyłączeniu nowe zmiany zostają wyłącznie lokalnie na urządzeniu, na którym je wprowadzasz, i przestają się pojawiać na pozostałych Twoich urządzeniach. Wyłączenie telemetrii produktowej zatrzymuje wysyłanie nowych zdarzeń natychmiast; nie wpływa to na działanie żadnej funkcji aplikacji.
+            Wyłączenie prywatnej synchronizacji Zecca lub iCloud nie usuwa danych już przesłanych. Z serwera Zecca usuwasz je, kasując konto; z iCloud — usuwając rekordy w aplikacji, dopóki synchronizacja iCloud jest włączona. Po wyłączeniu nowe zmiany zostają wyłącznie lokalnie na urządzeniu, na którym je wprowadzasz, i przestają się pojawiać na pozostałych Twoich urządzeniach. Wycofanie zgody na statystyki użycia (TelemetryDeck, Vercel Analytics, Speed Insights) zatrzymuje wysyłanie nowych zdarzeń natychmiast; nie wpływa to na działanie żadnej funkcji aplikacji.
           </p>
 
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
