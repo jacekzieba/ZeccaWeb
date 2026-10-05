@@ -7,27 +7,24 @@ import { DEMO_SESSION_COOKIE } from "@/features/onboarding/demo-session";
  * (so local HMR/eval is not blocked while violations are still reported to
  * `/api/csp-report`).
  *
- * Script policy is `script-src 'self' 'unsafe-inline'` rather than a nonce +
- * `strict-dynamic` policy: several pages (`/`, `/login`, `/register`, `/demo`,
- * `/faq`, `/privacy-policy`, `/forgot-password`, `/reset-password`) are
- * statically prerendered, so their script tags are baked at build time and
- * cannot carry a per-request nonce. A nonce + `strict-dynamic` policy makes
- * browsers ignore `'self'`/`'unsafe-inline'` and blocks Next's inline RSC
- * bootstrap (`self.__next_f.push`) on those pages — verified to break them.
- * `'self' 'unsafe-inline'` keeps them working while still blocking external and
- * injected `src` scripts, and every other directive is enforced strictly. The
- * app ships no external scripts and no app-authored executable inline scripts
- * (only Next's framework bootstrap and escaped application/ld+json data blocks).
+ * Skrypty: `script-src 'self' 'nonce-…' 'strict-dynamic'`, bez `'unsafe-inline'`.
+ * Nonce losujemy na każde żądanie i przekazujemy w nagłówku CSP żądania — Next
+ * czyta go stamtąd i stempluje nim swój bootstrap (`self.__next_f.push`) oraz
+ * skrypty chunków; `'strict-dynamic'` przepuszcza to, co te skrypty doładują
+ * (chunki webpacka, Vercel Analytics / Speed Insights z `/_vercel/*`). Nonce
+ * działa tylko na stronach renderowanych na żądanie, dlatego root layout jest
+ * `force-dynamic` — strona prerenderowana miałaby skrypty bez nonce i przestałaby
+ * się hydratować. Bloki `application/ld+json` / `application/json` to dane,
+ * nie skrypty, więc CSP ich nie dotyczy. `style-src` zostaje z `'unsafe-inline'`
+ * (style inline w komponentach i next/font).
  * Browser requests only ever reach our own origin (all `/api/*` and same-origin
  * `/_vercel/*` analytics), Supabase (auth + realtime) and TelemetryDeck;
- * Yahoo/NBP/GUS/finwire/obligacjeskarbowe are called server-side. To upgrade to
- * a strong nonce policy later, make the currently-static pages dynamic — see
- * audit/SECURITY_HEADERS_AND_BROWSER_CONTROLS.md.
+ * Yahoo/NBP/GUS/finwire/obligacjeskarbowe are called server-side.
  */
-function buildCsp(): string {
+function buildCsp(nonce: string): string {
   return [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data:",
     "font-src 'self'",
@@ -45,7 +42,9 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_FAKE_SYNC === "1" &&
     process.env.NODE_ENV !== "production";
 
-  const csp = buildCsp();
+  // 128 bitów z CSPRNG, base64 — format, który Next rozpoznaje jako nonce.
+  const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
+  const csp = buildCsp(nonce);
   // Enforce in production; keep Report-Only in development so local HMR
   // (eval/inline) is not blocked while we still collect violation reports.
   const cspHeaderName =
@@ -98,8 +97,8 @@ export async function middleware(request: NextRequest) {
     return applyCsp(NextResponse.redirect(new URL("/dashboard", request.url)));
   }
 
-  // Logged-in users skip the marketing landing and land straight in their app.
-  // This keeps `/` itself static — the page component does no auth work.
+  // Logged-in users skip the marketing landing and land straight in their app,
+  // so the page component does no auth work.
   if (user && pathname === "/" && !fakeSyncEnabled) {
     return applyCsp(NextResponse.redirect(new URL("/dashboard", request.url)));
   }

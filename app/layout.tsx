@@ -33,6 +33,13 @@ const mono = IBM_Plex_Mono({
   display: "swap",
 });
 
+// CSP bez 'unsafe-inline': middleware losuje nonce na każde żądanie, a Next
+// stempluje nim swoje skrypty tylko przy renderze na żądanie. Strona
+// prerenderowana w buildzie miałaby skrypty bez nonce — przeglądarka by je
+// zablokowała i strona nie ożyłaby. Dlatego cała aplikacja renderuje się
+// dynamicznie (robots.txt i sitemap.xml to nie strony — zostają statyczne).
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://zecca.pl"),
   applicationName: "Zecca",
