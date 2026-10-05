@@ -5,14 +5,10 @@ import {
 } from "@/market-data/cache";
 import { fetchYahooSearch } from "@/market-data/providers/yahoo";
 import type { InstrumentCandidate } from "@/market-data/types";
-import { rateLimitResponse } from "@/market-data/rate-limit";
 
 const SEARCH_CACHE_TTL_MS = 60 * 60 * 1000;
 
 export async function GET(request: NextRequest) {
-  const limited = rateLimitResponse(request);
-  if (limited) return limited;
-
   const query = (request.nextUrl.searchParams.get("q") ?? "").trim();
   if (!query) {
     return NextResponse.json({ data: [] });

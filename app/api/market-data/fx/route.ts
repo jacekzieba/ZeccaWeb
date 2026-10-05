@@ -9,14 +9,10 @@ import {
   fetchNbpMonthlyAverageFxRate,
 } from "@/market-data/providers/nbp";
 import type { FxRate } from "@/market-data/types";
-import { rateLimitResponse } from "@/market-data/rate-limit";
 
 const FX_CACHE_TTL_MS = 60 * 60 * 1000;
 
 export async function GET(request: NextRequest) {
-  const limited = rateLimitResponse(request);
-  if (limited) return limited;
-
   const code = request.nextUrl.searchParams.get("code") ?? "";
   const date = request.nextUrl.searchParams.get("date");
   const start = request.nextUrl.searchParams.get("start");

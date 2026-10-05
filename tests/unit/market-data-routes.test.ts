@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearMarketDataCache } from "@/market-data/cache";
-import { clearRateLimitState } from "@/market-data/rate-limit";
 import {
   fetchNbpFxRate,
   fetchNbpMonthlyAverageFxRate,
@@ -54,63 +53,6 @@ afterEach(() => {
   vi.resetAllMocks();
   vi.restoreAllMocks();
   clearMarketDataCache();
-  clearRateLimitState();
-});
-
-describe("market-data rate limiting", () => {
-  it("returns 429 with Retry-After once a single IP exceeds the window", async () => {
-    mockedFetchNbpFxRate.mockResolvedValue({
-      provider: "nbp",
-      base: "USD",
-      quote: "PLN",
-      rate: 3.74,
-      effectiveDate: "2026-06-12",
-      table: "A",
-    });
-
-    const headers = { "x-forwarded-for": "203.0.113.7" };
-    let lastStatus = 200;
-    // The limiter allows 60/min; 61 calls from the same IP must trip it.
-    for (let i = 0; i < 61; i += 1) {
-      const response = await getFxRate(
-        new NextRequest("http://localhost/api/market-data/fx?code=USD", { headers }),
-      );
-      lastStatus = response.status;
-      if (response.status === 429) {
-        expect(response.headers.get("Retry-After")).toBeTruthy();
-        break;
-      }
-    }
-
-    expect(lastStatus).toBe(429);
-  });
-
-  it("tracks limits per IP, so a different IP is unaffected", async () => {
-    mockedFetchNbpFxRate.mockResolvedValue({
-      provider: "nbp",
-      base: "USD",
-      quote: "PLN",
-      rate: 3.74,
-      effectiveDate: "2026-06-12",
-      table: "A",
-    });
-
-    for (let i = 0; i < 61; i += 1) {
-      await getFxRate(
-        new NextRequest("http://localhost/api/market-data/fx?code=USD", {
-          headers: { "x-forwarded-for": "203.0.113.7" },
-        }),
-      );
-    }
-
-    const otherIp = await getFxRate(
-      new NextRequest("http://localhost/api/market-data/fx?code=USD", {
-        headers: { "x-forwarded-for": "198.51.100.2" },
-      }),
-    );
-
-    expect(otherIp.status).toBe(200);
-  });
 });
 
 describe("GET /api/market-data/quote", () => {
@@ -367,23 +309,6 @@ describe("GET /api/market-data/search", () => {
     await expect(response.json()).resolves.toEqual({ data: [] });
     expect(response.status).toBe(200);
   });
-
-  it("returns 429 once a single IP exceeds the window", async () => {
-    mockedFetchYahooSearch.mockResolvedValue([candidate]);
-
-    let lastStatus = 200;
-    for (let i = 0; i < 61; i += 1) {
-      const response = await getSearch(
-        new NextRequest("http://localhost/api/market-data/search?q=apple", {
-          headers: { "x-forwarded-for": "203.0.113.9" },
-        }),
-      );
-      lastStatus = response.status;
-      if (response.status === 429) break;
-    }
-
-    expect(lastStatus).toBe(429);
-  });
 });
 
 describe("GET /api/market-data/cpi", () => {
@@ -475,7 +400,7 @@ describe("GET /api/market-data/cpi", () => {
 
 describe("GET /api/market-data/status", () => {
   it("reports the configured providers", async () => {
-    const response = await getMarketDataStatus(request("http://localhost/api/market-data/status"));
+    const response = await getMarketDataStatus();
 
     await expect(response.json()).resolves.toEqual({
       providers: {

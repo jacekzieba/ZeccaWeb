@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { POST } from "../../app/api/beta-waitlist/route";
-import { clearRateLimitState } from "@/market-data/rate-limit";
 
 function postRequest(body: unknown) {
   return new NextRequest("http://localhost/api/beta-waitlist", {
@@ -13,13 +12,6 @@ function postRequest(body: unknown) {
     body: JSON.stringify(body),
   });
 }
-
-beforeEach(() => {
-  // The route shares the in-memory rate limiter, whose per-IP counter would
-  // otherwise carry over between cases (all requests key off the same "unknown"
-  // client) and trip the limit mid-suite.
-  clearRateLimitState();
-});
 
 afterEach(() => {
   vi.unstubAllEnvs();

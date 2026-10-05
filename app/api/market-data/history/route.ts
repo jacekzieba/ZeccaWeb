@@ -10,7 +10,6 @@ import {
 import { yahooSymbolForInstrument } from "@/market-data/symbols";
 import type { MarketQuote } from "@/market-data/types";
 import { MarketDataNotFoundError } from "@/market-data/errors";
-import { rateLimitResponse } from "@/market-data/rate-limit";
 
 // Daily history changes at most once per trading day; an hour keeps the latest
 // close reasonably fresh without hammering Yahoo on every dashboard render.
@@ -25,9 +24,6 @@ function parseRange(value: string | null): YahooHistoryRange {
 }
 
 export async function GET(request: NextRequest) {
-  const limited = rateLimitResponse(request);
-  if (limited) return limited;
-
   const symbol = request.nextUrl.searchParams.get("symbol") ?? "";
   const currency = request.nextUrl.searchParams.get("currency");
   const range = parseRange(request.nextUrl.searchParams.get("range"));
