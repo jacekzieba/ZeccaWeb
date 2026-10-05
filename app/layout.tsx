@@ -55,8 +55,9 @@ export default function RootLayout({
   return (
     <html lang="pl" data-theme="dark" className={`${display.variable} ${text.variable} ${mono.variable}`}>
       <body className="antialiased">
-        {children}
+        {/* Pierwsze w DOM: pytanie o zgodę jest pierwsze w kolejności Tab. */}
         <AnalyticsConsentGate />
+        {children}
       </body>
     </html>
   );

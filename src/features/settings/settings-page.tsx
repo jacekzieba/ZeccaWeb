@@ -30,7 +30,8 @@ import { readAllocation, sumAllocation } from "@/features/portfolios/asset-class
 import type { PortfolioSummary } from "@/domain/models/investor-data";
 import { AppLockSettingsRow } from "@/features/auth/app-lock";
 import { ChangePasswordForm } from "@/features/auth/change-password-form";
-import { setAnalyticsConsent, useAnalyticsConsent } from "@/features/telemetry/analytics-consent";
+import { setAnalyticsConsent } from "@/lib/analytics-consent";
+import { useAnalyticsConsent } from "@/features/telemetry/use-analytics-consent";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { clearCachedUserDataKey } from "@/sync/encryption/key-cache";
 import { clearPendingSyncOperations } from "@/sync/records/record-writer";
@@ -419,8 +420,8 @@ function DisplaySection() {
 
 // ── Privacy / diagnostics ─────────────────────────────────────────
 function PrivacySection() {
-  // Zgoda dotyczy tej przeglądarki (localStorage), więc zmienia się ją bez
-  // odblokowania synchronizowanych danych.
+  // Zgoda dotyczy tej przeglądarki (localStorage), nie synchronizowanych ustawień.
+  // Bez logowania zmieniają ją też kontrolki w stopce i polityce prywatności.
   const consent = useAnalyticsConsent();
 
   return (

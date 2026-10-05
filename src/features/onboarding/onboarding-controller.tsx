@@ -250,6 +250,7 @@ export function OnboardingController({
         />
         {mode === "demo" && (
           <div
+            data-demo-badge=""
             style={{
               position: "fixed", right: 16, bottom: 16, zIndex: 902,
               fontFamily: V2_TYPE.ui, fontSize: 11, fontWeight: 700,

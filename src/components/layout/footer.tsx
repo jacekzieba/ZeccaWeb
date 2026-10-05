@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { COLORS } from "@/lib/design-tokens";
 import { CopyrightYear } from "./copyright-year";
+import { AnalyticsConsentReset } from "./analytics-consent-reset";
 
 export function Footer() {
   return (
@@ -33,6 +34,9 @@ export function Footer() {
           <Link href="/faq" className="footer-link" style={{ fontSize: 12 }}>
             FAQ
           </Link>
+          <AnalyticsConsentReset className="footer-link" style={{ fontSize: 12 }}>
+            Zmień zgodę na statystyki
+          </AnalyticsConsentReset>
         </div>
       </div>
     </footer>

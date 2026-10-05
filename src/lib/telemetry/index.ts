@@ -5,6 +5,7 @@ import {
   type TelemetryClient,
 } from "./telemetry-client";
 import { TelemetryService } from "./telemetry-service";
+import { hasAnalyticsConsent } from "@/lib/analytics-consent";
 
 export { TelemetryEvent, type TelemetryEventName } from "./events";
 export { telemetrySnakeCased, telemetryRowBucket } from "./params";
@@ -51,6 +52,7 @@ export function getTelemetryService(): TelemetryService {
     client: createClient(),
     buildInfo: { platform: "web", appVersion: APP_VERSION, build: BUILD },
     forcedOff: isTelemetryForcedOff(),
+    hasConsent: hasAnalyticsConsent,
   });
   return singleton;
 }

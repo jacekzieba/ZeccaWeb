@@ -27,6 +27,9 @@ export type TelemetryServiceOptions = {
   buildInfo: TelemetryBuildInfo;
   /** Kill switch for e2e/UI tests and dev. Overrides the consent gate. */
   forcedOff?: boolean;
+  /** Live consent read on every signal (web: the stored local decision), so a
+   * stale cached gate can never send after consent is withdrawn. */
+  hasConsent?: () => boolean;
 };
 
 export class TelemetryService {
@@ -40,6 +43,7 @@ export class TelemetryService {
   private telemetryEnabled = false;
   private telemetryForcedOff = false;
   private syncMode = "none";
+  private readonly hasConsent: () => boolean;
 
   constructor(options: TelemetryServiceOptions) {
     this.appID = options.appID;
@@ -47,6 +51,7 @@ export class TelemetryService {
     this.client = options.client ?? new NoopTelemetryClient();
     this.buildInfo = options.buildInfo;
     this.telemetryForcedOff = options.forcedOff ?? false;
+    this.hasConsent = options.hasConsent ?? (() => true);
   }
 
   bootstrap(settings: TelemetryGateSettings, forcedOff?: boolean): void {
@@ -89,7 +94,8 @@ export class TelemetryService {
     return (
       this.appID !== null &&
       this.telemetryEnabled &&
-      !this.telemetryForcedOff
+      !this.telemetryForcedOff &&
+      this.hasConsent()
     );
   }
 

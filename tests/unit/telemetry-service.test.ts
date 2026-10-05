@@ -76,6 +76,21 @@ describe("TelemetryService", () => {
     ]);
   });
 
+  it("checks live consent on every signal (hasConsent)", () => {
+    let consent = true;
+    const service = new TelemetryService({
+      appID: APP_ID,
+      client,
+      buildInfo: { platform: "web", appVersion: "1.2.3", build: "abc123" },
+      hasConsent: () => consent,
+    });
+    service.bootstrap(enabled);
+    consent = false;
+    service.signal(TelemetryEvent.dashboardViewed);
+
+    expect(client.signals.map((s) => s.name)).toEqual([TelemetryEvent.appLaunched]);
+  });
+
   it("stays silent when telemetry is disabled", () => {
     const service = makeService(client);
     service.bootstrap({ ...enabled, telemetryEnabled: false });

@@ -354,6 +354,7 @@ export const landingCopy = {
           { label: "E-mail", href: "mailto:zecca.barista363@passmail.net" },
           { label: "FAQ", href: "/faq" },
           { label: "Polityka prywatności", href: "/privacy-policy" },
+          { label: "Zmień zgodę na statystyki", consentReset: true },
         ],
       },
     ],

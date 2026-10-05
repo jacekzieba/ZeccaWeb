@@ -47,7 +47,7 @@ const KEY = "zecca-web-analytics-consent-v1";
 
 // Świeże moduły w każdym teście: serwis telemetrii to singleton na kartę.
 async function load() {
-  const consent = await import("@/features/telemetry/analytics-consent");
+  const consent = await import("@/lib/analytics-consent");
   const { AnalyticsConsentGate } = await import(
     "@/features/telemetry/analytics-consent-gate"
   );
@@ -56,7 +56,17 @@ async function load() {
   );
   const telemetry = await import("@/lib/telemetry");
   const { useSyncStore } = await import("@/sync/store/sync-store");
-  return { ...consent, AnalyticsConsentGate, TelemetryBootstrap, ...telemetry, useSyncStore };
+  const { AnalyticsConsentReset } = await import(
+    "@/components/layout/analytics-consent-reset"
+  );
+  return {
+    ...consent,
+    AnalyticsConsentGate,
+    AnalyticsConsentReset,
+    TelemetryBootstrap,
+    ...telemetry,
+    useSyncStore,
+  };
 }
 
 function vercelScripts() {
@@ -86,6 +96,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  document.body.style.paddingBottom = "";
   vi.unstubAllEnvs();
   td.signal.mockClear();
   document.head.querySelectorAll("script").forEach((script) => script.remove());
@@ -106,7 +117,7 @@ describe("pytanie o zgodę", () => {
     expect(screen.getByRole("button", { name: "Zgadzam się" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Nie, dziękuję" })).toBeTruthy();
     expect(
-      screen.getByRole("link", { name: /polityk/i }).getAttribute("href"),
+      screen.getByRole("link", { name: /polityce prywatności/i }).getAttribute("href"),
     ).toBe("/privacy-policy");
     expect(vercelScripts()).toHaveLength(0);
   });
@@ -168,7 +179,7 @@ describe("wycofanie zgody (przełącznik w Ustawieniach)", () => {
     // Po jednym haku z Analytics i Speed Insights (komponent i inject rejestrują ten sam).
     expect(hooks.length).toBeGreaterThanOrEqual(2);
     const event = { type: "pageview", url: "https://zecca.pl/" };
-    for (const hook of hooks) expect(hook(event)).toBe(event);
+    for (const hook of hooks) expect(hook(event)).toEqual(event);
 
     // Skrypt raz wczytany zostaje w pamięci karty — dlatego każde zdarzenie
     // przechodzi przez beforeSend, który po wycofaniu zgody je odrzuca.
@@ -193,6 +204,83 @@ describe("wycofanie zgody (przełącznik w Ustawieniach)", () => {
   });
 });
 
+describe("adresy wysyłane do Vercel", () => {
+  it("ze zgodą zastępuje UUID przez :id i obcina query oraz hash", async () => {
+    window.localStorage.setItem(KEY, "granted");
+    const { AnalyticsConsentGate } = await load();
+    renderInApp(<AnalyticsConsentGate />);
+
+    const url =
+      "https://zecca.pl/portfolios/3f2b8c1e-9a4d-4c2b-8e1f-0a9b8c7d6e5f?tab=holdings#x";
+    for (const hook of beforeSendHooks()) {
+      expect(hook({ type: "pageview", url })).toEqual({
+        type: "pageview",
+        url: "https://zecca.pl/portfolios/:id",
+      });
+    }
+  });
+});
+
+describe("publiczna kontrolka „zmień zgodę” (stopka, polityka prywatności)", () => {
+  it("wycofuje zgodę jednym kliknięciem: analityka staje, pytanie wraca", async () => {
+    window.localStorage.setItem(KEY, "granted");
+    const {
+      AnalyticsConsentGate,
+      AnalyticsConsentReset,
+      TelemetryBootstrap,
+      getTelemetryService,
+      TelemetryEvent,
+    } = await load();
+    renderInApp(
+      <>
+        <AnalyticsConsentGate />
+        <TelemetryBootstrap />
+        <AnalyticsConsentReset />
+      </>,
+    );
+    const hooks = beforeSendHooks();
+    expect(hooks.length).toBeGreaterThanOrEqual(2);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Zmień decyzję o statystykach użycia" }),
+    );
+
+    expect(window.localStorage.getItem(KEY)).toBeNull();
+    expect(screen.getByRole("region", { name: "Pomóż ulepszać Zecca" })).toBeTruthy();
+    for (const hook of hooks) expect(hook({ type: "pageview", url: "https://zecca.pl/" })).toBeNull();
+    getTelemetryService().signal(TelemetryEvent.dashboardViewed);
+    expect(td.signal).not.toHaveBeenCalledWith(TelemetryEvent.dashboardViewed, expect.anything());
+  });
+
+  it("działa też dla przycisku ze statycznego HTML landingu", async () => {
+    window.localStorage.setItem(KEY, "denied");
+    const { AnalyticsConsentGate } = await load();
+    const container = document.createElement("div");
+    container.innerHTML =
+      '<button type="button" class="consent-reset" data-analytics-consent-reset>Zmień zgodę na statystyki</button>';
+    document.body.appendChild(container);
+    renderInApp(<AnalyticsConsentGate />);
+    expect(screen.queryByRole("region", { name: "Pomóż ulepszać Zecca" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Zmień zgodę na statystyki" }));
+
+    expect(screen.getByRole("region", { name: "Pomóż ulepszać Zecca" })).toBeTruthy();
+    container.remove();
+  });
+});
+
+describe("układ pytania", () => {
+  it("póki pytanie jest widoczne, <body> ma dolne dopełnienie; po decyzji znika", async () => {
+    const { AnalyticsConsentGate } = await load();
+    renderInApp(<AnalyticsConsentGate />);
+    expect(document.body.style.paddingBottom).not.toBe("");
+
+    fireEvent.click(screen.getByRole("button", { name: "Nie, dziękuję" }));
+
+    expect(document.body.style.paddingBottom).toBe("");
+  });
+});
+
 describe("TelemetryDeck", () => {
   it("nie wysyła sygnałów przed zgodą, wysyła po zgodzie, przestaje po wycofaniu", async () => {
     const { TelemetryBootstrap, getTelemetryService, TelemetryEvent, setAnalyticsConsent } =
@@ -212,6 +300,19 @@ describe("TelemetryDeck", () => {
     td.signal.mockClear();
     act(() => setAnalyticsConsent("denied"));
     getTelemetryService().signal(TelemetryEvent.dashboardViewed);
+    expect(td.signal).not.toHaveBeenCalled();
+  });
+
+  it("sprawdza zapisaną zgodę przy każdym sygnale, nie tylko flagę z bootstrapu", async () => {
+    window.localStorage.setItem(KEY, "granted");
+    const { TelemetryBootstrap, getTelemetryService, TelemetryEvent } = await load();
+    render(<TelemetryBootstrap />);
+
+    // Decyzja zmieniona poza magazynem (np. inna karta, zanim przyszło
+    // zdarzenie storage) — bramka w serwisie jest jeszcze otwarta.
+    window.localStorage.setItem(KEY, "denied");
+    getTelemetryService().signal(TelemetryEvent.dashboardViewed);
+
     expect(td.signal).not.toHaveBeenCalled();
   });
 
