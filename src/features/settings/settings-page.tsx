@@ -424,7 +424,7 @@ function PrivacySection() {
 
   const desc = !canWrite
     ? "Odblokuj synchronizację, aby zmienić ustawienie telemetrii produktowej TelemetryDeck."
-    : "Steruje pseudonimową telemetrią produktową TelemetryDeck. Zdarzenia łączy losowy identyfikator tej karty, tworzony od nowa przy każdym otwarciu aplikacji i niepowiązany z kontem. Nie używa cookies ani pamięci przeglądarki; szczegóły są w polityce prywatności.";
+    : "Steruje pseudonimową telemetrią produktową TelemetryDeck. Zdarzenia łączy losowy identyfikator tej karty, tworzony od nowa przy każdym otwarciu aplikacji i niepowiązany z kontem. Nie zapisuje niczego w cookies ani w magazynach przeglądarki (localStorage, sessionStorage, IndexedDB); szczegóły są w polityce prywatności.";
 
   return (
     <Section eyebrow="Prywatność" title="Bezpieczeństwo i diagnostyka">

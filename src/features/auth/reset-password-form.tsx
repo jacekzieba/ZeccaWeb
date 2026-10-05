@@ -228,8 +228,8 @@ export function ResetPasswordForm() {
                 chronić nowe hasło.
               </li>
               <li style={{ marginTop: 6 }}>
-                Masz Zecca z tymi danymi na iPhonie, iPadzie lub Macu? Zaloguj się tam nowym
-                hasłem — aplikacja sama przepnie dane na nowe hasło. Potem odblokujesz je tu
+                Masz Zecca z tymi danymi na iPhonie, iPadzie lub Macu? Wyloguj się tam i zaloguj
+                nowym hasłem — aplikacja sama przepnie dane na nowe hasło. Potem odblokujesz je tu
                 nowym hasłem.
               </li>
             </ul>
