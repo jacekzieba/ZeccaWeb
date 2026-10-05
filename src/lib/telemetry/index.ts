@@ -24,7 +24,7 @@ const APP_ID =
   "0B524246-D7D6-4A77-9685-129DE5604015";
 
 /** True when signals must be suppressed: e2e/fake-sync runs and explicit opt-out. */
-function isForcedOff(): boolean {
+export function isTelemetryForcedOff(): boolean {
   return (
     process.env.NEXT_PUBLIC_TELEMETRY_DISABLED === "1" ||
     process.env.NEXT_PUBLIC_FAKE_SYNC === "1"
@@ -50,7 +50,7 @@ export function getTelemetryService(): TelemetryService {
     appID: APP_ID,
     client: createClient(),
     buildInfo: { platform: "web", appVersion: APP_VERSION, build: BUILD },
-    forcedOff: isForcedOff(),
+    forcedOff: isTelemetryForcedOff(),
   });
   return singleton;
 }

@@ -13,7 +13,9 @@ export type TelemetryBuildInfo = {
   build: string;
 };
 
-/** Gate inputs, sourced from the synced settings record (SnapshotSettings). */
+/** Gate inputs. On web `telemetryEnabled` is this browser's local analytics
+ * consent (opt-in), not the synced settings flag; `syncMode` comes from the
+ * synced settings record (SnapshotSettings). */
 export type TelemetryGateSettings = {
   telemetryEnabled: boolean;
   syncMode: string | null;
@@ -34,7 +36,8 @@ export class TelemetryService {
 
   private didInitialize = false;
   private didTrackLaunch = false;
-  private telemetryEnabled = true;
+  // Closed until a gate input opens it: web sends nothing before consent.
+  private telemetryEnabled = false;
   private telemetryForcedOff = false;
   private syncMode = "none";
 
@@ -56,6 +59,12 @@ export class TelemetryService {
     this.telemetryEnabled = settings.telemetryEnabled;
     this.syncMode = settings.syncMode ?? "none";
     this.trackLaunchIfAllowed();
+  }
+
+  /** Opens/closes the gate without emitting `app_launched` — on web consent is
+   * known before the synced settings that carry `sync_mode`. */
+  setEnabled(enabled: boolean): void {
+    this.telemetryEnabled = enabled;
   }
 
   signal(

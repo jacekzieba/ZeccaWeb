@@ -56,6 +56,26 @@ describe("TelemetryService", () => {
     expect(client.initialized).toBe(APP_ID);
   });
 
+  it("is closed until a gate input opens it (web: nothing before consent)", () => {
+    const service = makeService(client);
+    service.signal(TelemetryEvent.dashboardViewed);
+
+    expect(client.signals).toHaveLength(0);
+    expect(client.initialized).toBeNull();
+  });
+
+  it("setEnabled opens and closes the gate without emitting app_launched", () => {
+    const service = makeService(client);
+    service.setEnabled(true);
+    service.signal(TelemetryEvent.dashboardViewed);
+    service.setEnabled(false);
+    service.signal(TelemetryEvent.positionsViewed);
+
+    expect(client.signals.map((s) => s.name)).toEqual([
+      TelemetryEvent.dashboardViewed,
+    ]);
+  });
+
   it("stays silent when telemetry is disabled", () => {
     const service = makeService(client);
     service.bootstrap({ ...enabled, telemetryEnabled: false });
