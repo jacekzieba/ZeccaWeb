@@ -63,9 +63,9 @@ export async function signInWithAccountPassword(
   supabase: { auth: AuthClient },
   email: string,
   password: string,
-): Promise<{ error: { message: string } | null }> {
+): Promise<{ error: { message: string; code?: string; status?: number } | null }> {
   const normalizedEmail = normalizeAuthEmail(email);
   const secret = await deriveAuthSecret(normalizedEmail, password);
   const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password: secret });
-  return { error: error ? { message: error.message } : null };
+  return { error: error ? { message: error.message, code: error.code, status: error.status } : null };
 }

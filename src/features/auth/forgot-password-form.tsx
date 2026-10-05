@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { authRedirectBase } from "@/lib/auth-redirect";
 import { COLORS } from "@/lib/design-tokens";
+import { authErrorMessage } from "@/features/auth/auth-error-message";
 
 type Status = "idle" | "loading" | "error" | "sent";
 
@@ -33,7 +34,7 @@ export function ForgotPasswordForm() {
 
     if (error) {
       setStatus("error");
-      setErrorMessage(error.message);
+      setErrorMessage(authErrorMessage(error));
       return;
     }
 
