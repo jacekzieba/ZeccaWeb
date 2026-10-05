@@ -22,7 +22,7 @@ test("makes FAQ questions and answers editable in copy-editing mode", async ({ p
   await expect(page.locator('[data-landing-edit-id="faq.items.0.answer"]')).toHaveAttribute("contenteditable", "true");
 });
 
-test("renders an interactive product hero without submitting the beta waitlist", async ({ page }) => {
+test("renders an interactive product hero", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "Wszystkie Twoje inwestycje w jednym miejscu" })).toBeVisible();
@@ -46,33 +46,9 @@ test("renders an interactive product hero without submitting the beta waitlist",
   await expect(range).toHaveAttribute("aria-checked", "true");
   await expect(page.locator('.static-vvd-chart svg')).toHaveAttribute("data-chart-range", "1Y");
 
-  const waitlistRequests: string[] = [];
-  page.on("request", (request) => {
-    if (request.url().includes("airtable") || request.url().includes("waitlist")) {
-      waitlistRequests.push(request.url());
-    }
-  });
-
-  const betaSection = page.locator("#lista-beta");
-  await expect(betaSection.getByRole("heading", { name: "Zapisy uruchomimy w kontrolowany sposób." })).toBeVisible();
-  const waitlistForm = betaSection.locator("#betaWaitlistForm");
-  const waitlistEnabled = await waitlistForm.getAttribute("data-enabled");
-  const emailField = betaSection.getByPlaceholder("ty@przyklad.pl");
-  const consentField = waitlistForm.getByRole("checkbox");
-  if (waitlistEnabled === "true") {
-    await expect(betaSection.getByRole("button", { name: "Dołącz do listy" })).toBeEnabled();
-    await expect(emailField).toBeEnabled();
-    await expect(consentField).toBeEnabled();
-  } else {
-    await expect(betaSection.getByRole("button", { name: "Wkrótce" })).toBeDisabled();
-    await expect(emailField).toBeDisabled();
-    await expect(consentField).toBeDisabled();
-  }
-  // The hero now leads with App Store / Mac App Store badges instead of an inline
-  // waitlist field; they point at the beta section and submit nothing.
+  // The hero leads with App Store / Mac App Store badges.
   await expect(page.locator(".landing-hero .store-badge")).toHaveCount(2);
   await expect(page.locator(".landing-hero").getByRole("link", { name: "Zobacz demo", exact: true })).toHaveAttribute("href", "/demo");
-  expect(waitlistRequests).toEqual([]);
 });
 
 test("uses the requested menu, smooth in-page links, and active Discord link", async ({ page }) => {

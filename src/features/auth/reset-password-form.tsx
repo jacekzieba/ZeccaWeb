@@ -214,20 +214,32 @@ export function ResetPasswordForm() {
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={panelStyle}>
             <div style={{ fontSize: 13, fontWeight: 600, color: COLORS.text, marginBottom: 4 }}>
-              Hasło zmienione — sprawdź, czy Twoje zaszyfrowane dane nadal się odblokują
+              Hasło zmienione — teraz odblokuj swoje dane
             </div>
             <p style={{ fontSize: 13, color: COLORS.textMuted, lineHeight: 1.5 }}>
-              Jeśli włączyłeś sync przed tą zmianą, mogłeś mieć osobną frazę (passphrase)
-              niezależną od hasła logowania — w takim razie nic się nie stało, przejdź do
-              aplikacji i wpisz ją tak jak dotychczas. Reset przez link e-mail nie zna
-              natomiast Twojego <em>starego hasła</em>, więc jeśli to ono było jednocześnie
-              tą frazą, nie może nim odszyfrować i ponownie zaszyfrować danych nowym —
-              wtedy jedyne wyjście to zacząć od nowa, tracąc dostęp do poprzednio
-              zsynchronizowanych danych.
+              Twoje zsynchronizowane dane mogą być jeszcze chronione <em>starym hasłem</em> albo
+              osobną frazą synchronizacji. Reset przez e-mail ich nie zna, ale dane nadal
+              odzyskasz:
+            </p>
+            <ul style={{ fontSize: 13, color: COLORS.textMuted, lineHeight: 1.5, margin: "8px 0 0", paddingLeft: 18 }}>
+              <li>
+                Pamiętasz stare hasło lub frazę? Przejdź do aplikacji i, gdy poprosi o hasło do
+                danych, wpisz je ten jeden raz. Dane się odblokują, a od tej pory będzie je
+                chronić nowe hasło.
+              </li>
+              <li style={{ marginTop: 6 }}>
+                Masz Zecca z tymi danymi na iPhonie, iPadzie lub Macu? Wyloguj się tam i zaloguj
+                nowym hasłem — aplikacja sama przepnie dane na nowe hasło. Potem odblokujesz je tu
+                nowym hasłem.
+              </li>
+            </ul>
+            <p style={{ fontSize: 13, color: COLORS.textMuted, lineHeight: 1.5, marginTop: 8 }}>
+              Dopiero gdy żadna z tych dróg nie jest możliwa, możesz zacząć od nowa — stracisz
+              wtedy dostęp do poprzednio zsynchronizowanych danych.
             </p>
           </div>
           <a href="/dashboard" style={linkBtnStyle}>
-            Przejdź do aplikacji i spróbuj obecnej frazy
+            Przejdź do aplikacji i odblokuj dane
           </a>
           {startFreshError && (
             <div style={{ fontSize: 12, color: COLORS.loss }}>{startFreshError}</div>
@@ -244,7 +256,7 @@ export function ResetPasswordForm() {
                 cursor: "pointer",
               }}
             >
-              To nie zadziałało — zacznij od nowa
+              Nie mam starego hasła ani urządzenia z danymi — zacznij od nowa
             </button>
           ) : (
             <div style={{ ...panelStyle, display: "flex", flexDirection: "column", gap: 10 }}>
