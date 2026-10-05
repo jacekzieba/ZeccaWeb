@@ -81,8 +81,12 @@ describe("ResetPasswordForm", () => {
     render(<ResetPasswordForm />);
     await submitNewPassword();
 
-    const safe = await screen.findByRole("link", { name: /spróbuj obecnej frazy/ });
+    const safe = await screen.findByRole("link", { name: "Przejdź do aplikacji i odblokuj dane" });
     expect(safe.getAttribute("href")).toBe("/dashboard");
+    // Najpierw drogi bez utraty danych: stare hasło raz przy odblokowaniu
+    // (przepina backup na nowe) albo urządzenie z danymi.
+    expect(screen.getByText(/wpisz je ten jeden raz/)).toBeTruthy();
+    expect(screen.getByText(/iPhonie, iPadzie lub Macu/)).toBeTruthy();
     expect(screen.getByRole("button", { name: /zacznij od nowa/ })).toBeTruthy();
     expect(backend.upsert).not.toHaveBeenCalled();
     expect(peekPendingAuthPassword()).toBe(NEW_PASSWORD);

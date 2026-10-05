@@ -42,6 +42,8 @@ import { useTranslation } from "@/features/i18n/translate";
 import { pluralPl } from "@/lib/plural-pl";
 import { announce } from "@/components/feedback/status-announcer";
 import { findAccountRecord } from "@/sync/records/account-record";
+import { accountDeletionMessage, requestAccountDeletion } from "@/features/settings/account-deletion";
+import { handleLogout } from "@/components/layout/app-shell";
 
 const plnFormatter = new Intl.NumberFormat("pl-PL", {
   style: "currency",
@@ -457,10 +459,13 @@ function DangerZone() {
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // delete-account rejects sessions authenticated more than 5 minutes ago.
+  const [needsReauthentication, setNeedsReauthentication] = useState(false);
 
   async function deleteAccount() {
     setDeleting(true);
     setError(null);
+    setNeedsReauthentication(false);
 
     const supabase = createBrowserSupabaseClientOrNull();
     if (!supabase) {
@@ -478,8 +483,13 @@ function DangerZone() {
         return;
       }
 
-      const { error: fnError } = await supabase.functions.invoke("delete-account");
-      if (fnError) throw fnError;
+      const outcome = await requestAccountDeletion(supabase);
+      if (outcome !== "deleted") {
+        setError(accountDeletionMessage(outcome));
+        setNeedsReauthentication(outcome === "reauthentication_required");
+        setDeleting(false);
+        return;
+      }
 
       clearPendingSyncOperations();
       await clearCachedUserDataKey(userId).catch(() => {});
@@ -516,7 +526,22 @@ function DangerZone() {
           )}
         </div>
         <div style={{ display: "flex", gap: 10 }}>
-          {confirming ? (
+          {confirming && needsReauthentication ? (
+            <>
+              <button
+                onClick={() => { setConfirming(false); setError(null); setNeedsReauthentication(false); }}
+                style={{ ...buttonBase, border: `0.5px solid ${V2.line}`, background: V2.card, color: V2.ink }}
+              >
+                Anuluj
+              </button>
+              <button
+                onClick={() => void handleLogout()}
+                style={{ ...buttonBase, border: "none", background: V2.ink, color: V2.page }}
+              >
+                Wyloguj i zaloguj ponownie
+              </button>
+            </>
+          ) : confirming ? (
             <>
               <button
                 onClick={() => { setConfirming(false); setError(null); }}

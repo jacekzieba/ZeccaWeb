@@ -128,8 +128,7 @@ export async function middleware(request: NextRequest) {
   const isPublicApiRoute =
     pathname.startsWith("/api/health") ||
     pathname.startsWith("/api/market-data/") ||
-    pathname === "/api/csp-report" ||
-    pathname === "/api/beta-waitlist";
+    pathname === "/api/csp-report";
   const isProtectedApiRoute = pathname.startsWith("/api/") && !isPublicApiRoute;
   const isAppRoute = isProtectedPage || isProtectedApiRoute;
 
