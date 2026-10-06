@@ -6,6 +6,7 @@ import { authRedirectBase } from "@/lib/auth-redirect";
 import { COLORS } from "@/lib/design-tokens";
 import { OAuthButtons, type OAuthStatus } from "@/features/auth/oauth-buttons";
 import { setPendingAuthPassword } from "@/features/auth/pending-auth-password";
+import { markPolicyNoticeSeen } from "@/components/layout/policy-update-notice";
 import { deriveAuthSecret, normalizeAuthEmail } from "@/features/auth/auth-secret";
 import { MIN_PASSWORD_LENGTH, passwordRequirementError } from "@/features/auth/password-requirements";
 
@@ -74,6 +75,9 @@ export function SignupForm() {
       setErrorMessage(friendlySignupError(error.message));
       return;
     }
+
+    // Konto zakłada się pod obecną wersją polityki — bez komunikatu o jej zmianie.
+    markPolicyNoticeSeen();
 
     // Email confirmation OFF → a session is returned immediately, go straight in.
     // The password becomes this account's encryption passphrase too (see

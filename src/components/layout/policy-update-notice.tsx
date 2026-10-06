@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRef, useSyncExternalStore } from "react";
+import { useOnboardingStore } from "@/features/onboarding/onboarding-state";
 import {
   PRIVACY_POLICY_CHANGES,
   PRIVACY_POLICY_EFFECTIVE_DATE,
@@ -37,9 +38,17 @@ function dismiss() {
 
 function subscribe(listener: () => void) {
   listeners.add(listener);
+  // „Rozumiem” w innej karcie chowa powiadomienie także tutaj.
+  window.addEventListener("storage", listener);
   return () => {
     listeners.delete(listener);
+    window.removeEventListener("storage", listener);
   };
+}
+
+/** Rejestracja: nowe konto właśnie zaakceptowało tę wersję polityki. */
+export function markPolicyNoticeSeen() {
+  dismiss();
 }
 
 /**
@@ -52,7 +61,9 @@ function subscribe(listener: () => void) {
 export function PolicyUpdateNotice() {
   const ref = useRef<HTMLElement>(null);
   const dismissed = useSyncExternalStore(subscribe, isDismissed, () => true);
-  if (dismissed) return null;
+  // W trakcie wprowadzenia nie dokładamy drugiego komunikatu nad demo.
+  const onboarding = useOnboardingStore((state) => state.phase !== "idle");
+  if (dismissed || onboarding) return null;
 
   function onDismiss() {
     const main = ref.current?.closest("main");

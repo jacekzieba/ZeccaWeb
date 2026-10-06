@@ -95,6 +95,39 @@ describe("powiadomienie o zmianie polityki prywatności", () => {
     expect(notice()).toBeNull();
   });
 
+  it("zamknięcie w innej karcie (zdarzenie storage) chowa powiadomienie także tutaj", async () => {
+    const PolicyUpdateNotice = await load();
+    render(<PolicyUpdateNotice />);
+    expect(notice()).not.toBeNull();
+
+    window.localStorage.setItem(KEY, "1");
+    act(() => {
+      window.dispatchEvent(new StorageEvent("storage", { key: KEY, newValue: "1" }));
+    });
+
+    expect(notice()).toBeNull();
+  });
+
+  it("nowe konto (rejestracja) nie widzi powiadomienia o polityce, którą właśnie zaakceptowało", async () => {
+    const { markPolicyNoticeSeen } = await import("@/components/layout/policy-update-notice");
+    markPolicyNoticeSeen();
+
+    const PolicyUpdateNotice = await reload();
+    render(<PolicyUpdateNotice />);
+    expect(notice()).toBeNull();
+  });
+
+  it("w trakcie wprowadzenia (onboarding) powiadomienie się nie pokazuje", async () => {
+    const { useOnboardingStore } = await import("@/features/onboarding/onboarding-state");
+    const PolicyUpdateNotice = await load();
+    act(() => useOnboardingStore.getState().setPhase("intro"));
+    render(<PolicyUpdateNotice />);
+    expect(notice()).toBeNull();
+
+    act(() => useOnboardingStore.getState().setPhase("idle"));
+    expect(notice()).not.toBeNull();
+  });
+
   it("po „Rozumiem” przenosi fokus na treść strony, a nie gubi go na <body>", async () => {
     const PolicyUpdateNotice = await load();
     render(
