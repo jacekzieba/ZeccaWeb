@@ -26,12 +26,12 @@ export default function PrivacyPolicyPage() {
           </h1>
 
           <p style={{ fontSize: 13, color: COLORS.textMuted, marginBottom: 24 }}>
-            <strong>Data wejścia w życie:</strong> 12 lipca 2026
+            <strong>Data wejścia w życie:</strong> 6 października 2026
           </p>
 
           <div style={{ marginBottom: 24 }}>
             <p>
-              <strong>Administrator danych:</strong> Jacek Zięba
+              <strong>Administrator danych:</strong> Jacek Zięba, ul. Ogrodowa 12, 40-759 Katowice
             </p>
             <p>
               <strong>Kontakt:</strong> kontakt@jacekzieba.pl
@@ -59,6 +59,8 @@ export default function PrivacyPolicyPage() {
 
           <ul style={{ marginBottom: 16, paddingLeft: 20 }}>
             <li>adres e-mail konta,</li>
+            <li>dane logowania prowadzone przez usługę uwierzytelniania Supabase: czas założenia konta i ostatniego logowania oraz — przy logowaniu przez Apple lub Google — dane tożsamości przekazane przez dostawcę,</li>
+            <li>datę ukończenia wprowadzenia do aplikacji,</li>
             <li>neutralną etykietę urządzenia,</li>
             <li>identyfikator urządzenia wygenerowany przez aplikację,</li>
             <li>zaszyfrowane rekordy portfela,</li>
@@ -66,7 +68,35 @@ export default function PrivacyPolicyPage() {
           </ul>
 
           <p style={{ marginBottom: 16 }}>
-            Zaszyfrowaną kopię klucza synchronizacji odblokowuje na nowym urządzeniu klucz wyprowadzany lokalnie z <strong>hasła Twojego konta</strong> (dla kont założonych hasłem) albo z <strong>osobnej frazy synchronizacji (passphrase)</strong> — jeśli ustawiłeś ją wcześniej lub w aplikacji na iOS/macOS. Zecca nie przechowuje ani hasła, ani frazy w postaci jawnej i nie używa ich po stronie serwera do odszyfrowywania danych; samo hasło nie opuszcza Twojego urządzenia — do usługi uwierzytelniania trafia wyłącznie sekret logowania wyprowadzony z hasła funkcją jednokierunkową (PBKDF2), inny niż klucz, którym szyfrowana jest kopia klucza synchronizacji. Konta założone przed tą zmianą przesyłają hasło jeden raz, przy pierwszym logowaniu po aktualizacji, po czym zostają przestawione na sekret. Bez hasła lub frazy zaszyfrowanych danych nie da się odczytać, a jeśli je utracisz, nie jesteśmy w stanie ich odzyskać.
+            Treść rekordów jest zaszyfrowana, ale do działania synchronizacji serwer przechowuje jawnie: typ i identyfikator każdego rekordu (np. transakcja, konto, wycena), czas jego utworzenia, zmiany i usunięcia, identyfikator urządzenia, które go zapisało, platformę urządzenia i czas jego ostatniej aktywności oraz parametry wyprowadzania klucza (KDF). Na tej podstawie można ustalić np. liczbę rekordów każdego typu i daty ich zmian, ale nie ich treść.
+          </p>
+
+          <p style={{ marginBottom: 16 }}>
+            Supabase i Vercel (hosting wersji web) zapisują w technicznych dziennikach żądań m.in. adres IP i identyfikator przeglądarki lub aplikacji (User-Agent). W dziennikach Vercel znajdują się też adresy zapytań wersji web o dane rynkowe, które zawierają symbole instrumentów. Dzienniki te są przechowywane krótko — zgodnie z domyślną retencją bezpłatnych planów tych dostawców, nie dłużej niż kilka dni.
+          </p>
+
+          <p style={{ marginBottom: 16 }}>
+            Zaszyfrowaną kopię klucza synchronizacji odblokowuje na nowym urządzeniu klucz wyprowadzany lokalnie: przy koncie z hasłem — z <strong>hasła Twojego konta</strong>, a przy logowaniu przez Apple lub Google (konto bez hasła) — z osobnej <strong>frazy synchronizacji</strong> (passphrase), którą ustawiasz w aplikacji. Zecca nie przechowuje hasła ani frazy na serwerze i nie używa ich po stronie serwera do odszyfrowywania danych. Fraza nie opuszcza Twojego urządzenia. Przy logowaniu hasłem do usługi uwierzytelniania trafia sekret logowania wyprowadzony z hasła funkcją jednokierunkową (PBKDF2), inny niż klucz, którym szyfrowana jest kopia klucza synchronizacji. Samo hasło nie jest wysyłane do serwera — także przy nieudanym logowaniu, zakładaniu konta, zmianie i resecie hasła.
+          </p>
+
+          <p style={{ marginBottom: 16 }}>
+            Jeśli kopia klucza jest chroniona starszą, osobną frazą synchronizacji, a logujesz się hasłem konta, wystarczy raz podać tę frazę — kopia klucza zostaje wtedy ponownie zaszyfrowana hasłem konta i fraza przestaje być potrzebna. W aplikacjach na iOS i macOS dzieje się to przy logowaniu hasłem bez pytania o frazę, jeśli urządzenie ma już lokalnie klucz, którym da się odczytać dane zapisane na serwerze. Bez hasła konta (albo frazy synchronizacji) zaszyfrowanych danych nie da się odczytać — jeśli utracisz hasło lub frazę, nie odzyskamy danych.
+          </p>
+
+          <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
+            Logowanie przez Apple lub Google
+          </h2>
+
+          <p style={{ marginBottom: 16 }}>
+            Jeśli logujesz się przez Apple lub Google, otrzymujemy od tego dostawcy adres e-mail (w przypadku Apple może to być adres przekierowujący „Ukryj mój e-mail”) i techniczny identyfikator konta, a jeśli dostawca je przekaże — także imię i nazwisko oraz adres zdjęcia profilowego (zapisuje je usługa uwierzytelniania Supabase). Nie otrzymujemy Twojego hasła do Apple ani Google, ani dostępu do innych danych z tych kont.
+          </p>
+
+          <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
+            Notowania i dane rynkowe
+          </h2>
+
+          <p style={{ marginBottom: 16 }}>
+            Aby wyświetlać aktualne ceny, kursy walut, inflację i parametry obligacji, Zecca pobiera dane od publicznych dostawców: Yahoo Finance, CoinGecko, NBP, GUS, Bankier.pl, BiznesRadar, obligacjeskarbowe.pl oraz Finwire. Zapytanie zawiera wyłącznie symbol instrumentu, kod waluty lub serię obligacji, wyszukiwaną frazę oraz datę lub zakres dat — nigdy liczbę jednostek, kwoty, nazwy portfeli ani dane konta. W aplikacjach na iOS i macOS zapytania są wysyłane bezpośrednio z Twojego urządzenia, więc dostawca widzi Twój adres IP. W wersji web zapytania przechodzą przez serwer Zecca, a dostawca widzi adres serwera.
           </p>
 
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
@@ -74,7 +104,11 @@ export default function PrivacyPolicyPage() {
           </h2>
 
           <p style={{ marginBottom: 16 }}>
-            W przeglądarce Zecca zapisuje ustawienia interfejsu, preferencje profilu, identyfikator urządzenia web oraz lokalną kolejkę synchronizacji. Opcjonalnie w IndexedDB może zostać zapamiętany klucz odszyfrowywania, jeśli wybierzesz zaufanie tej przeglądarce. Klucz jest usuwany przy wylogowaniu.
+            W przeglądarce Zecca zapisuje ustawienia interfejsu, profil wyświetlany w aplikacji (nazwa i zdjęcie, jeśli je ustawisz) wraz z preferencjami powiadomień, identyfikator urządzenia web, lokalną kolejkę synchronizacji oraz — jeśli włączysz blokadę aplikacji — jej ustawienia i skrót kodu PIN. Po odblokowaniu danych klucz odszyfrowywania jest zapamiętywany w IndexedDB tej przeglądarki, aby nie trzeba było go odblokowywać przy każdej wizycie. Klucz jest usuwany przy wylogowaniu.
+          </p>
+
+          <p style={{ marginBottom: 16 }}>
+            Po zalogowaniu hasłem, założeniu konta lub ustawieniu nowego hasła hasło trafia na krótko do sessionStorage bieżącej karty, aby odblokować dane bez ponownego wpisywania. Jest ważne najwyżej 2 minuty; usuwamy je zaraz po użyciu i przy wylogowaniu, a przeglądarka — po zamknięciu karty.
           </p>
 
           <p style={{ marginBottom: 16 }}>
@@ -86,15 +120,15 @@ export default function PrivacyPolicyPage() {
           </h2>
 
           <p style={{ marginBottom: 16 }}>
-            Zecca może zbierać <strong>pseudonimową</strong> telemetrię produktową przez TelemetryDeck GmbH (Augsburg, Niemcy): użycie ekranów, importy, akcje synchronizacji, wersję i numer kompilacji aplikacji, platformę oraz wybrany tryb synchronizacji.
+            Za Twoją zgodą Zecca zbiera <strong>pseudonimową</strong> telemetrię produktową przez TelemetryDeck GmbH (Augsburg, Niemcy): użycie ekranów, importy (nazwa brokera i liczba wierszy podana w przedziale, np. 6–20), typ dodanej transakcji (np. kupno, wpłata) lub formę zatrudnienia przy dodanym zarobku (etat lub działalność), akcje synchronizacji, wersję i numer kompilacji aplikacji, platformę oraz wybrany tryb synchronizacji. W aplikacjach na iOS i macOS TelemetryDeck otrzymuje też zahaszowany, stały identyfikator urządzenia oraz parametry urządzenia i systemu, m.in. model urządzenia, wersję systemu, architekturę procesora, rozdzielczość i orientację ekranu, język, region, strefę czasową, ustawienia dostępności, sposób instalacji aplikacji (np. App Store, TestFlight) oraz statystyki sesji (liczba i długość sesji, liczba dni użycia, data pierwszego uruchomienia).
           </p>
 
           <p style={{ marginBottom: 16 }}>
-            Telemetria <strong>nie zawiera</strong> kwot, tickerów, adresów e-mail, identyfikatorów portfeli ani identyfikatora konta synchronizacji. Na webie TelemetryDeck otrzymuje wyłącznie losowy identyfikator istniejący w pamięci bieżącej karty; nie zapisujemy go w cookies, localStorage, sessionStorage ani IndexedDB. Można ją wyłączyć w ustawieniach.
+            Telemetria <strong>nie zawiera</strong> kwot, tickerów, adresów e-mail, identyfikatorów portfeli ani identyfikatora konta synchronizacji. W wersji web TelemetryDeck otrzymuje zamiast identyfikatora urządzenia losowy identyfikator istniejący tylko w pamięci bieżącej karty; nie zapisujemy go w cookies, localStorage, sessionStorage ani IndexedDB. W aplikacjach na iOS i macOS pytamy o zgodę przy pierwszym uruchomieniu, a w przeglądarce — w okienku „Pomóż ulepszać Zecca”; bez Twojej zgody nic nie jest wysyłane.
           </p>
 
           <p style={{ marginBottom: 16 }}>
-            Webowa wersja Zecca korzysta także z Vercel Analytics i Vercel Speed Insights do technicznego pomiaru odwiedzin, wydajności i stabilności strony. Te dane pomagają wykrywać problemy z aplikacją web, ale nie zawierają treści portfela, transakcji, tickerów ani importowanych plików.
+            Za Twoją zgodą wersja web korzysta także z Vercel Analytics i Vercel Speed Insights do pomiaru odwiedzin, wydajności i stabilności strony (m.in. adres podstrony, typ przeglądarki i urządzenia, kraj); bez zgody ich skrypty nie są wczytywane. Adres podstrony wysyłamy bez parametrów i identyfikatorów (np. <code>/portfolios/:id</code>). Te dane pomagają wykrywać problemy z wersją web, ale nie zawierają treści portfela, transakcji, tickerów ani importowanych plików.
           </p>
 
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
@@ -102,11 +136,55 @@ export default function PrivacyPolicyPage() {
           </h2>
 
           <p style={{ marginBottom: 16 }}>
-            Zecca używa cookies sesji Supabase wyłącznie do logowania, odświeżania sesji i ochrony dostępu do prywatnych części aplikacji. Są one niezbędne do usługi, o którą prosisz. Nie używamy cookies reklamowych, remarketingowych ani cookies TelemetryDeck.
+            Zecca używa cookies sesji Supabase wyłącznie do logowania, odświeżania sesji i ochrony dostępu do prywatnych części aplikacji. Są one niezbędne do usługi, o którą prosisz. W wersji demo ustawiamy dodatkowo sesyjne cookie <code>zecca-demo</code>, które oznacza, że przeglądasz dane przykładowe; znika po zakończeniu demo lub zamknięciu przeglądarki. Nie używamy cookies reklamowych, remarketingowych ani cookies TelemetryDeck.
           </p>
 
           <p style={{ marginBottom: 16 }}>
-            Dlatego nie wyświetlamy baneru cookies dla TelemetryDeck. Pozostałe lokalne magazyny przeglądarki służą wyłącznie działaniu funkcji wybranych przez użytkownika: ustawieniom interfejsu, kolejce zaszyfrowanej synchronizacji i — gdy to wybierzesz — lokalnie zapamiętanemu kluczowi odszyfrowywania. Nie służą reklamie ani śledzeniu między witrynami. Jeżeli w przyszłości dodamy opcjonalne technologie wymagające zgody, poprosimy o nią przed ich użyciem.
+            Nie używamy banera cookies — o zgodę na statystyki użycia pytamy w osobnym okienku, a Twoją decyzję zapisujemy w localStorage przeglądarki (<code>zecca-web-analytics-consent-v1</code>). Pozostałe lokalne magazyny przeglądarki służą wyłącznie działaniu funkcji wybranych przez użytkownika: ustawieniom interfejsu, kolejce zaszyfrowanej synchronizacji, blokadzie aplikacji, krótkiemu przekazaniu hasła po zalogowaniu i lokalnie zapamiętanemu kluczowi odszyfrowywania. Nie służą reklamie ani śledzeniu między witrynami.
+          </p>
+
+          <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
+            Podstawy prawne
+          </h2>
+
+          <ul style={{ marginBottom: 16, paddingLeft: 20 }}>
+            <li style={{ marginBottom: 8 }}>
+              <strong>Konto i synchronizacja</strong> — wykonanie usługi, o którą prosisz (art. 6 ust. 1 lit. b RODO).
+            </li>
+            <li style={{ marginBottom: 8 }}>
+              <strong>Statystyki użycia: telemetria produktowa (TelemetryDeck) oraz pomiar odwiedzin i wydajności strony (Vercel Analytics, Speed Insights)</strong> — Twoja zgoda (art. 6 ust. 1 lit. a RODO). Możesz ją wycofać w każdej chwili, bez wpływu na zgodność z prawem przetwarzania sprzed jej wycofania: w aplikacjach na iOS i macOS w ustawieniach, a w wersji web przyciskiem „Zmień decyzję o statystykach użycia” na tej stronie, odnośnikiem w stopce lub w Ustawieniach (decyzja dotyczy tej przeglądarki).
+            </li>
+          </ul>
+
+          <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
+            Komu powierzamy dane
+          </h2>
+
+          <p style={{ marginBottom: 16 }}>
+            Dane przetwarzają w naszym imieniu następujący dostawcy:
+          </p>
+
+          <ul style={{ marginBottom: 16, paddingLeft: 20 }}>
+            <li style={{ marginBottom: 8 }}>
+              <strong>Supabase Inc.</strong> — konto, zaszyfrowane rekordy portfela i zaszyfrowana kopia klucza; dane przechowywane w Zurychu (Szwajcaria — kraj, wobec którego Komisja Europejska stwierdziła odpowiedni stopień ochrony danych).
+            </li>
+            <li style={{ marginBottom: 8 }}>
+              <strong>Vercel Inc.</strong> — hosting wersji web, pośredniczenie w zapytaniach o dane rynkowe oraz — za Twoją zgodą — statystyki odwiedzin i pomiar wydajności (Vercel Analytics, Vercel Speed Insights); funkcje serwerowe działają w regionie UE (Frankfurt).
+            </li>
+            <li style={{ marginBottom: 8 }}>
+              <strong>TelemetryDeck GmbH</strong> (Niemcy) — telemetria produktowa.
+            </li>
+            <li style={{ marginBottom: 8 }}>
+              <strong>Dostawca usługi wysyłki poczty e-mail (SMTP)</strong> — wysyłka wiadomości związanych z kontem (potwierdzenie rejestracji, link do resetu hasła); otrzymuje Twój adres e-mail i treść tej wiadomości.
+            </li>
+          </ul>
+
+          <p style={{ marginBottom: 16 }}>
+            Synchronizacja iCloud działa w ramach Twojego własnego konta Apple: jeśli ją wybierzesz, dane trafiają do Twojego prywatnego kontenera iCloud na zasadach, które łączą Cię z Apple. Zecca nie ma do nich dostępu.
+          </p>
+
+          <p style={{ marginBottom: 16 }}>
+            Supabase i Vercel to firmy z USA. Jeśli dane trafiają poza Europejski Obszar Gospodarczy, odbywa się to na podstawie standardowych klauzul umownych zatwierdzonych przez Komisję Europejską lub decyzji o odpowiednim stopniu ochrony (EU-US Data Privacy Framework).
           </p>
 
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
@@ -122,15 +200,23 @@ export default function PrivacyPolicyPage() {
           </h2>
 
           <p style={{ marginBottom: 16 }}>
-            Dane portfela na Twoim urządzeniu (lokalny tryb, iCloud) przechowujemy tak długo, jak korzystasz z aplikacji — usuwasz je sam, usuwając aplikację lub konkretne rekordy. Konto synchronizacji Zecca i powiązane z nim dane (e-mail, etykieta i identyfikator urządzenia, zaszyfrowane rekordy portfela, zaszyfrowana kopia klucza) przechowujemy do chwili usunięcia konta — usunięcie w aplikacji kasuje je trwale, bez okresu przejściowego. Kopie zapasowe infrastruktury (np. Supabase) mogą przechowywać usunięte dane przez ograniczony czas rotacji backupu, zanim zostaną nadpisane. Telemetria produktowa (TelemetryDeck) jest przechowywana zgodnie z domyślną retencją tego dostawcy i nie jest powiązana z Twoim kontem ani tożsamością.
+            Dane portfela na Twoim urządzeniu (tryb lokalny, iCloud) przechowujemy tak długo, jak korzystasz z aplikacji — usuwasz je samodzielnie, usuwając aplikację lub konkretne rekordy. Konto synchronizacji Zecca i powiązane z nim dane (e-mail, etykieta i identyfikator urządzenia, zaszyfrowane rekordy portfela, zaszyfrowana kopia klucza) przechowujemy do chwili usunięcia konta — usunięcie w aplikacji kasuje je trwale, bez okresu przejściowego. Usunięcie pojedynczego rekordu (np. transakcji) tylko oznacza go na serwerze jako usunięty; jego zaszyfrowana treść pozostaje tam do usunięcia konta, rozpoczęcia synchronizacji od nowa albo — po włączeniu automatycznego czyszczenia — najdłużej 180 dni. Kopie zapasowe infrastruktury (np. Supabase) mogą przechowywać usunięte dane przez ograniczony czas rotacji backupu, zanim zostaną nadpisane. Telemetria produktowa (TelemetryDeck) jest przechowywana zgodnie z domyślną retencją tego dostawcy i nie jest powiązana z Twoim kontem ani tożsamością.
           </p>
 
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
-            Co się zmienia, gdy wyłączysz synchronizację lub telemetrię
+            Co się zmienia, gdy wyłączysz synchronizację lub wycofasz zgodę na statystyki
           </h2>
 
           <p style={{ marginBottom: 16 }}>
-            Wyłączenie prywatnej synchronizacji Zecca lub iCloud nie usuwa danych już przesłanych — usuwasz je osobno, kasując konto lub konkretne rekordy. Po wyłączeniu nowe zmiany zostają wyłącznie lokalnie na urządzeniu, na którym je wprowadzasz, i przestają się pojawiać na pozostałych Twoich urządzeniach. Wyłączenie telemetrii produktowej zatrzymuje wysyłanie nowych zdarzeń natychmiast; nie wpływa to na działanie żadnej funkcji aplikacji.
+            Wyłączenie prywatnej synchronizacji Zecca lub iCloud nie usuwa danych już przesłanych. Z serwera Zecca usuwasz je, kasując konto; z iCloud — usuwając rekordy w aplikacji, dopóki synchronizacja iCloud jest włączona. Po wyłączeniu nowe zmiany zostają wyłącznie lokalnie na urządzeniu, na którym je wprowadzasz, i przestają się pojawiać na pozostałych Twoich urządzeniach. Wycofanie zgody na statystyki użycia (TelemetryDeck, Vercel Analytics, Speed Insights) zatrzymuje wysyłanie nowych zdarzeń natychmiast; nie wpływa to na działanie żadnej funkcji aplikacji.
+          </p>
+
+          <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
+            Czy musisz podać dane
+          </h2>
+
+          <p style={{ marginBottom: 16 }}>
+            Podanie danych jest dobrowolne. Adres e-mail jest niezbędny tylko do założenia konta synchronizacji Zecca — z aplikacji możesz korzystać bez konta, w trybie lokalnym lub z iCloud. Nie podejmujemy wobec Ciebie decyzji opartych wyłącznie na zautomatyzowanym przetwarzaniu, w tym profilowaniu (art. 22 RODO).
           </p>
 
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
@@ -138,7 +224,7 @@ export default function PrivacyPolicyPage() {
           </h2>
 
           <p style={{ marginBottom: 16 }}>
-            Masz prawo do dostępu do swoich danych, ich poprawienia oraz usunięcia. Konto i powiązane z nim dane synchronizacji możesz usunąć bezpośrednio w aplikacji (Ustawienia → Konto → Usuń konto) lub kontaktując się pod adresem kontakt@jacekzieba.pl.
+            Masz prawo dostępu do swoich danych, ich sprostowania, usunięcia, ograniczenia przetwarzania i przeniesienia (eksport danych jest dostępny w aplikacji), a także prawo sprzeciwu wobec przetwarzania opartego na prawnie uzasadnionym interesie i prawo wycofania zgody w dowolnym momencie — bez wpływu na zgodność z prawem przetwarzania sprzed jej wycofania. Konto i powiązane z nim dane synchronizacji usuniesz bezpośrednio w aplikacji (na iOS i macOS: Ustawienia → Konto i synchronizacja → Usuń konto Zecca; w wersji web: Ustawienia → Usuń konto) lub pisząc na adres kontakt@jacekzieba.pl. Masz też prawo wnieść skargę do Prezesa Urzędu Ochrony Danych Osobowych (ul. Stawki 2, 00-193 Warszawa).
           </p>
 
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>

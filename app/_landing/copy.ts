@@ -13,6 +13,8 @@
 //     pól FAQ itd. jest dopasowana do ikon. Edycja samych tekstów jest bezpieczna.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { INVESTMENT_DISCLAIMER } from "@/lib/investment-disclaimer";
+
 export const landingCopy = {
   // ── Górna nawigacja ───────────────────────────────────────────────────────
   nav: {
@@ -360,6 +362,7 @@ export const landingCopy = {
     ],
     copyright: "© 2026 Zecca · Zbudowane dla polskiego inwestora",
     betaNote: "Wersja beta. W aplikacji mogą występować błędy.",
+    disclaimer: INVESTMENT_DISCLAIMER,
   },
 } as const;
 
