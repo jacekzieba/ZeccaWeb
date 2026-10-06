@@ -1,6 +1,7 @@
 import { COLORS } from "@/lib/design-tokens";
 import { Footer } from "@/components/layout/footer";
 import { AnalyticsConsentReset } from "@/components/layout/analytics-consent-reset";
+import { PRIVACY_POLICY_EFFECTIVE_DATE_LABEL } from "@/lib/privacy-policy";
 
 export const metadata = {
   title: "Polityka prywatności - Zecca",
@@ -26,7 +27,7 @@ export default function PrivacyPolicyPage() {
           </h1>
 
           <p style={{ fontSize: 13, color: COLORS.textMuted, marginBottom: 24 }}>
-            <strong>Data wejścia w życie:</strong> 6 października 2026
+            <strong>Data wejścia w życie:</strong> {PRIVACY_POLICY_EFFECTIVE_DATE_LABEL}
           </p>
 
           <div style={{ marginBottom: 24 }}>
