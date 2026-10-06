@@ -14,6 +14,18 @@ export default defineConfig({
   use: {
     baseURL: "http://127.0.0.1:3100",
     trace: "on-first-retry",
+    // Pytanie o zgodę na statystyki jest przyklejone do dołu ekranu i zasłania
+    // treść. Specyfikacje startują z zapisaną odmową; samo pytanie sprawdza
+    // analytics-consent.spec.ts na czystym stanie przeglądarki.
+    storageState: {
+      cookies: [],
+      origins: [
+        {
+          origin: "http://127.0.0.1:3100",
+          localStorage: [{ name: "zecca-web-analytics-consent-v1", value: "denied" }],
+        },
+      ],
+    },
   },
   projects: [
     {

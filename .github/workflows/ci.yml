@@ -64,7 +64,7 @@ jobs:
           BASE=http://127.0.0.1:3200 node scripts/csp-check.mjs
 
   e2e:
-    name: e2e (fake-sync i scenariusz certyfikacyjny)
+    name: e2e (fake-sync, scenariusz certyfikacyjny i strony publiczne)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -80,6 +80,10 @@ jobs:
         run: npm run test:e2e:fake-sync
       - name: e2e certyfikacyjne
         run: npx playwright test --config playwright.fake-sync-cert.config.ts
+      # Landing, rejestracja, bramka logowania i tryb demo bez fake-sync. Supabase
+      # tylko z wartości zastępczych wyżej — bez sekretów i bez dostępu do produkcji.
+      - name: e2e strony publiczne
+        run: npm run test:e2e
       - name: Ślady przy porażce
         if: failure()
         uses: actions/upload-artifact@v4
