@@ -123,7 +123,7 @@ export function ForgotPasswordForm() {
       </div>
 
       {status === "error" && (
-        <div style={{ fontSize: 12, color: COLORS.loss }}>
+        <div role="alert" style={{ fontSize: 12, color: COLORS.loss }}>
           {errorMessage ?? "Nie udało się wysłać linku. Spróbuj ponownie."}
         </div>
       )}

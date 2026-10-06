@@ -35,7 +35,9 @@ test("demo cookie opens the app pages with sample data", async ({ page }) => {
     ["Raporty", "/reports"],
   ] as const) {
     await page.getByRole("link", { name: label, exact: true }).click();
-    await expect(page).toHaveURL(new RegExp(`${path}$`));
+    // next dev kompiluje każdą stronę przy pierwszym wejściu — na zimnym
+    // runnerze CI trwa to dłużej niż domyślne 5 s, a adres zmienia się dopiero potem.
+    await expect(page).toHaveURL(new RegExp(`${path}$`), { timeout: 20_000 });
     await expect(page.getByTestId("demo-badge")).toBeVisible();
   }
 });

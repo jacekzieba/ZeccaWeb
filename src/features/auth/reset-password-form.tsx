@@ -242,7 +242,7 @@ export function ResetPasswordForm() {
             Przejdź do aplikacji i odblokuj dane
           </a>
           {startFreshError && (
-            <div style={{ fontSize: 12, color: COLORS.loss }}>{startFreshError}</div>
+            <div role="alert" style={{ fontSize: 12, color: COLORS.loss }}>{startFreshError}</div>
           )}
           {startFresh === "needed" ? (
             <button
@@ -349,7 +349,7 @@ export function ResetPasswordForm() {
       </div>
 
       {status === "error" && (
-        <div style={{ fontSize: 12, color: COLORS.loss }}>
+        <div role="alert" style={{ fontSize: 12, color: COLORS.loss }}>
           {errorMessage ?? "Nie udało się zmienić hasła. Spróbuj ponownie."}
         </div>
       )}
