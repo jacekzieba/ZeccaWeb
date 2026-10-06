@@ -26,13 +26,12 @@ export default function PrivacyPolicyPage() {
           </h1>
 
           <p style={{ fontSize: 13, color: COLORS.textMuted, marginBottom: 24 }}>
-            {/* TODO: data publikacji — ustawić przy publikacji polityki */}
-            <strong>Data wejścia w życie:</strong> 1 października 2026
+            <strong>Data wejścia w życie:</strong> 6 października 2026
           </p>
 
           <div style={{ marginBottom: 24 }}>
             <p>
-              <strong>Administrator danych:</strong> Jacek Zięba
+              <strong>Administrator danych:</strong> Jacek Zięba, ul. Ogrodowa 12, 40-759 Katowice
             </p>
             <p>
               <strong>Kontakt:</strong> kontakt@jacekzieba.pl
@@ -73,7 +72,7 @@ export default function PrivacyPolicyPage() {
           </p>
 
           <p style={{ marginBottom: 16 }}>
-            Supabase i Vercel (hosting wersji web) zapisują w technicznych dziennikach żądań m.in. adres IP i identyfikator przeglądarki lub aplikacji (User-Agent). W dziennikach Vercel znajdują się też adresy zapytań wersji web o dane rynkowe, które zawierają symbole instrumentów.
+            Supabase i Vercel (hosting wersji web) zapisują w technicznych dziennikach żądań m.in. adres IP i identyfikator przeglądarki lub aplikacji (User-Agent). W dziennikach Vercel znajdują się też adresy zapytań wersji web o dane rynkowe, które zawierają symbole instrumentów. Dzienniki te są przechowywane krótko — zgodnie z domyślną retencją bezpłatnych planów tych dostawców, nie dłużej niż kilka dni.
           </p>
 
           <p style={{ marginBottom: 16 }}>
@@ -175,6 +174,9 @@ export default function PrivacyPolicyPage() {
             <li style={{ marginBottom: 8 }}>
               <strong>TelemetryDeck GmbH</strong> (Niemcy) — telemetria produktowa.
             </li>
+            <li style={{ marginBottom: 8 }}>
+              <strong>Dostawca usługi wysyłki poczty e-mail (SMTP)</strong> — wysyłka wiadomości związanych z kontem (potwierdzenie rejestracji, link do resetu hasła); otrzymuje Twój adres e-mail i treść tej wiadomości.
+            </li>
           </ul>
 
           <p style={{ marginBottom: 16 }}>
@@ -207,6 +209,14 @@ export default function PrivacyPolicyPage() {
 
           <p style={{ marginBottom: 16 }}>
             Wyłączenie prywatnej synchronizacji Zecca lub iCloud nie usuwa danych już przesłanych. Z serwera Zecca usuwasz je, kasując konto; z iCloud — usuwając rekordy w aplikacji, dopóki synchronizacja iCloud jest włączona. Po wyłączeniu nowe zmiany zostają wyłącznie lokalnie na urządzeniu, na którym je wprowadzasz, i przestają się pojawiać na pozostałych Twoich urządzeniach. Wycofanie zgody na statystyki użycia (TelemetryDeck, Vercel Analytics, Speed Insights) zatrzymuje wysyłanie nowych zdarzeń natychmiast; nie wpływa to na działanie żadnej funkcji aplikacji.
+          </p>
+
+          <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
+            Czy musisz podać dane
+          </h2>
+
+          <p style={{ marginBottom: 16 }}>
+            Podanie danych jest dobrowolne. Adres e-mail jest niezbędny tylko do założenia konta synchronizacji Zecca — z aplikacji możesz korzystać bez konta, w trybie lokalnym lub z iCloud. Nie podejmujemy wobec Ciebie decyzji opartych wyłącznie na zautomatyzowanym przetwarzaniu, w tym profilowaniu (art. 22 RODO).
           </p>
 
           <h2 style={{ fontSize: 21, fontWeight: 700, marginTop: 32, marginBottom: 16 }}>
