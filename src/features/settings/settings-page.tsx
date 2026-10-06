@@ -351,11 +351,11 @@ export function SettingsPage() {
         />
         <Row
           label="E-mail"
-          desc="zecca.barista363@passmail.net"
+          desc="kontakt@jacekzieba.pl"
           last
           control={
             <a
-              href="mailto:zecca.barista363@passmail.net"
+              href="mailto:kontakt@jacekzieba.pl"
               style={{ fontFamily: V2_TYPE.ui, fontSize: 12, fontWeight: 600, color: V2.brand, textDecoration: "none" }}
             >
               Napisz →

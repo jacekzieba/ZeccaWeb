@@ -320,7 +320,7 @@ export const landingCopy = {
     discordHref: "https://discord.gg/Y7yJep36bq",
     discordNote: "Społeczność, zapowiedzi i szybki kontakt z autorem.",
     // Adres, na który trafia formularz (otwiera klienta poczty) oraz temat maila.
-    email: "zecca.barista363@passmail.net",
+    email: "kontakt@jacekzieba.pl",
     emailSubject: "Zecca feedback z bety",
     form: {
       nameLabel: "Imię",
@@ -353,7 +353,6 @@ export const landingCopy = {
         links: [
           { label: "Discord", href: "https://discord.gg/Y7yJep36bq" },
           { label: "Kontakt", href: "mailto:kontakt@jacekzieba.pl" },
-          { label: "E-mail", href: "mailto:zecca.barista363@passmail.net" },
           { label: "FAQ", href: "/faq" },
           { label: "Polityka prywatności", href: "/privacy-policy" },
           { label: "Zmień zgodę na statystyki", consentReset: true },
