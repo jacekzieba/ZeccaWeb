@@ -21,7 +21,7 @@ export const landingCopy = {
     links: [
       { label: "Funkcje", href: "#funkcje" },
       { label: "Aplikacje", href: "#aplikacje" },
-      { label: "Kontakt", href: "#kontakt" },
+      { label: "Kontakt", href: "mailto:kontakt@jacekzieba.pl" },
       { label: "Zobacz demo", href: "/demo" },
       { label: "Zaloguj się", href: "/login" },
       { label: "Załóż konto", href: "/register" },
@@ -352,7 +352,7 @@ export const landingCopy = {
         title: "Kontakt",
         links: [
           { label: "Discord", href: "https://discord.gg/Y7yJep36bq" },
-          { label: "Kontakt", href: "#kontakt" },
+          { label: "Kontakt", href: "mailto:kontakt@jacekzieba.pl" },
           { label: "E-mail", href: "mailto:zecca.barista363@passmail.net" },
           { label: "FAQ", href: "/faq" },
           { label: "Polityka prywatności", href: "/privacy-policy" },

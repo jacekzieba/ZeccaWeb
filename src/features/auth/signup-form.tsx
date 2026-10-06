@@ -215,7 +215,7 @@ export function SignupForm() {
         </div>
 
         {status === "error" && (
-          <div style={{ fontSize: 12, color: COLORS.loss }}>
+          <div role="alert" style={{ fontSize: 12, color: COLORS.loss }}>
             {errorMessage ?? "Nie udało się utworzyć konta. Spróbuj ponownie."}
           </div>
         )}

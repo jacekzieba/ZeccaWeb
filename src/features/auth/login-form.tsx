@@ -121,7 +121,7 @@ export function LoginForm() {
         </div>
 
         {status === "error" && (
-          <div style={{ fontSize: 12, color: COLORS.loss }}>
+          <div role="alert" style={{ fontSize: 12, color: COLORS.loss }}>
             {invalidCredentials ? (
               <>
                 Nieprawidłowy e-mail lub hasło. Jeśli konto zakładałeś przed 28.09.2026 albo nie pamiętasz hasła, użyj{" "}

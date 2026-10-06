@@ -69,6 +69,8 @@ test("uses the requested menu, smooth in-page links, and active Discord link", a
   await expect(nav.getByRole("link", { name: "Zobacz demo" })).toHaveAttribute("href", "/demo");
   await expect(nav.getByRole("link", { name: "Zaloguj się" })).toHaveAttribute("href", "/login");
   await expect(nav.getByRole("link", { name: "Załóż konto" })).toHaveAttribute("href", "/register");
+  // Kontakt to adres z polityki prywatności — sekcji #kontakt na stronie nie ma.
+  await expect(nav.getByRole("link", { name: "Kontakt" })).toHaveAttribute("href", "mailto:kontakt@jacekzieba.pl");
 
   await nav.getByRole("link", { name: "Funkcje" }).click();
   await expect(page).toHaveURL(/#funkcje$/);
@@ -77,6 +79,7 @@ test("uses the requested menu, smooth in-page links, and active Discord link", a
   const footer = page.locator(".zlanding footer");
   await expect(footer.getByRole("link", { name: "Discord" })).toHaveAttribute("href", "https://discord.gg/Y7yJep36bq");
   await expect(footer.getByRole("link", { name: "Polityka prywatności" })).toHaveAttribute("href", "/privacy-policy");
+  await expect(footer.getByRole("link", { name: "Kontakt" })).toHaveAttribute("href", "mailto:kontakt@jacekzieba.pl");
   // Sklepy jeszcze niedostępne: oznaczone, ale nie jako linki.
   await expect(footer.locator(".foot-link-unavailable")).toHaveCount(3);
   await expect(footer.getByRole("link", { name: /App Store|TestFlight/ })).toHaveCount(0);
