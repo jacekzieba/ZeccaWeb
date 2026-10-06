@@ -1,5 +1,6 @@
 import { COLORS } from "@/lib/design-tokens";
 import { Footer } from "@/components/layout/footer";
+import { AnalyticsConsentReset } from "@/components/layout/analytics-consent-reset";
 
 export const metadata = {
   title: "Polityka prywatności - Zecca",
@@ -232,6 +233,10 @@ export default function PrivacyPolicyPage() {
             W sprawach dotyczących prywatności napisz na: <strong>kontakt@jacekzieba.pl</strong>
           </p>
         </article>
+
+        <aside aria-label="Zgoda na statystyki użycia" style={{ marginTop: 32 }}>
+          <AnalyticsConsentReset className="consent-reset--button" />
+        </aside>
       </main>
 
       <Footer />

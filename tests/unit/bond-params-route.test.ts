@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearMarketDataCache } from "@/market-data/cache";
-import { clearRateLimitState } from "@/market-data/rate-limit";
 import { fetchTreasuryBondParams } from "@/market-data/providers/treasury-bond-params";
 import { GET as getBondParams } from "../../app/api/market-data/bond-params/route";
 
@@ -22,7 +21,6 @@ afterEach(() => {
   vi.resetAllMocks();
   vi.restoreAllMocks();
   clearMarketDataCache();
-  clearRateLimitState();
 });
 
 describe("GET /api/market-data/bond-params", () => {

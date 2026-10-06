@@ -39,7 +39,10 @@ These are enforced by tests on both platforms.
    the Supabase user id, or any value derived from decrypted records.
 3. **Gating.** A signal is emitted **only** when
    `telemetryEnabled && hasAcknowledgedPrivacyDisclosure && !forcedOff`.
-   Both flags come from the synced settings record, so all platforms gate identically.
+   On iOS/macOS both flags come from the synced settings record. **Web** gates on this
+   browser's local opt-in consent instead (`zecca-web-analytics-consent-v1` in
+   localStorage; no decision = off), which also governs Vercel Analytics / Speed
+   Insights; the synced `telemetryEnabled` flag is neither read nor written by web.
    `forcedOff` is the UI-test / e2e kill switch.
 4. **`app_launched` fires at most once per process**, and only after the gate is open.
 
@@ -86,7 +89,7 @@ Event-specific parameters below are **merged on top** of these.
 > All five `*_viewed` events are wired on web via `<ScreenView>` in each route's
 > `page.tsx`. `sample_data_loaded` is wired on /benchmark and /reports (the only
 > sample-fallback screens) via `useSampleDataSignal`; on web it fires only if
-> consent was granted before syncing real data, since the gate is otherwise closed.
+> this browser has granted analytics consent, since the gate is otherwise closed.
 
 ### 5.2 Product events — *Phase B* (NEW — add to native AND web together)
 

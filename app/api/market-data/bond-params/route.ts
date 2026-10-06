@@ -6,7 +6,6 @@ import {
 import { fetchTreasuryBondParams } from "@/market-data/providers/treasury-bond-params";
 import { knownTreasuryBondValuationParams } from "@/domain/valuation/treasury-bond-issues";
 import type { BondParamsInput } from "@/domain/valuation/position-valuator";
-import { rateLimitResponse } from "@/market-data/rate-limit";
 
 // Emission letters are immutable once published, so a resolved series can be
 // cached for a long time.
@@ -37,9 +36,6 @@ function serialize(params: BondParamsInput): SerializedBondParams {
 }
 
 export async function GET(request: NextRequest) {
-  const limited = rateLimitResponse(request);
-  if (limited) return limited;
-
   const code = (request.nextUrl.searchParams.get("code") ?? "").trim().toUpperCase();
   if (!/^[A-Z]{3}\d{4}$/.test(code)) {
     return NextResponse.json({ error: "Nieprawidłowy kod obligacji." }, { status: 400 });

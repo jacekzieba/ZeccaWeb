@@ -13,7 +13,9 @@ export type TelemetryBuildInfo = {
   build: string;
 };
 
-/** Gate inputs, sourced from the synced settings record (SnapshotSettings). */
+/** Gate inputs. On web `telemetryEnabled` is this browser's local analytics
+ * consent (opt-in), not the synced settings flag; `syncMode` comes from the
+ * synced settings record (SnapshotSettings). */
 export type TelemetryGateSettings = {
   telemetryEnabled: boolean;
   syncMode: string | null;
@@ -25,6 +27,9 @@ export type TelemetryServiceOptions = {
   buildInfo: TelemetryBuildInfo;
   /** Kill switch for e2e/UI tests and dev. Overrides the consent gate. */
   forcedOff?: boolean;
+  /** Live consent read on every signal (web: the stored local decision), so a
+   * stale cached gate can never send after consent is withdrawn. */
+  hasConsent?: () => boolean;
 };
 
 export class TelemetryService {
@@ -34,9 +39,11 @@ export class TelemetryService {
 
   private didInitialize = false;
   private didTrackLaunch = false;
-  private telemetryEnabled = true;
+  // Closed until a gate input opens it: web sends nothing before consent.
+  private telemetryEnabled = false;
   private telemetryForcedOff = false;
   private syncMode = "none";
+  private readonly hasConsent: () => boolean;
 
   constructor(options: TelemetryServiceOptions) {
     this.appID = options.appID;
@@ -44,6 +51,7 @@ export class TelemetryService {
     this.client = options.client ?? new NoopTelemetryClient();
     this.buildInfo = options.buildInfo;
     this.telemetryForcedOff = options.forcedOff ?? false;
+    this.hasConsent = options.hasConsent ?? (() => true);
   }
 
   bootstrap(settings: TelemetryGateSettings, forcedOff?: boolean): void {
@@ -56,6 +64,12 @@ export class TelemetryService {
     this.telemetryEnabled = settings.telemetryEnabled;
     this.syncMode = settings.syncMode ?? "none";
     this.trackLaunchIfAllowed();
+  }
+
+  /** Opens/closes the gate without emitting `app_launched` — on web consent is
+   * known before the synced settings that carry `sync_mode`. */
+  setEnabled(enabled: boolean): void {
+    this.telemetryEnabled = enabled;
   }
 
   signal(
@@ -80,7 +94,8 @@ export class TelemetryService {
     return (
       this.appID !== null &&
       this.telemetryEnabled &&
-      !this.telemetryForcedOff
+      !this.telemetryForcedOff &&
+      this.hasConsent()
     );
   }
 

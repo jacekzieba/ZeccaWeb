@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import {
   getCachedMarketData,
   setCachedMarketData,
@@ -6,7 +6,6 @@ import {
 import { fetchNbpReferenceRates } from "@/market-data/providers/nbp-reference-rates";
 import { fetchFinwireReferenceRateLatest } from "@/market-data/providers/finwire";
 import type { ReferenceRateChange } from "@/market-data/types";
-import { rateLimitResponse } from "@/market-data/rate-limit";
 
 // RPP decyduje o stopach raz w miesiącu, więc długi TTL jest bezpieczny.
 const REFERENCE_RATES_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
@@ -36,10 +35,7 @@ async function crossCheckReferenceRate(ours: ReferenceRateChange[]): Promise<voi
   }
 }
 
-export async function GET(request: NextRequest) {
-  const limited = rateLimitResponse(request);
-  if (limited) return limited;
-
+export async function GET() {
   const cacheKey = "reference-rates:nbp";
   const cached = getCachedMarketData<ReferenceRateChange[]>(cacheKey);
   if (cached) {

@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { rateLimitResponse } from "@/market-data/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -7,11 +6,8 @@ export const runtime = "nodejs";
 // phase. Browsers POST here (report-uri) with a JSON body; we log the blocked
 // directive/URI so real violations from our own code can be triaged before the
 // policy is switched to enforcing. Kept unauthenticated (the browser sends no
-// session) but rate-limited so it can't be used to flood logs.
+// session); the per-IP rate limit against log flooding lives in Vercel Firewall.
 export async function POST(request: NextRequest) {
-  const limited = rateLimitResponse(request, { namespace: "csp-report", max: 30 });
-  if (limited) return limited;
-
   try {
     const body = (await request.json().catch(() => null)) as
       | { "csp-report"?: Record<string, unknown> }

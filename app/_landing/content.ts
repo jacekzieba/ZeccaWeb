@@ -515,6 +515,9 @@ const footerHtml = `
           .map(
             (l) => {
               const label = `${l.label}${"soon" in l && l.soon ? `<span class="soon">${l.soon}</span>` : ""}`;
+              if ("consentReset" in l && l.consentReset) {
+                return `<button type="button" class="consent-reset" data-analytics-consent-reset>${label}</button>`;
+              }
               if ("unavailable" in l && l.unavailable) {
                 return `<span class="foot-link-unavailable" aria-disabled="true">${label}</span>`;
               }

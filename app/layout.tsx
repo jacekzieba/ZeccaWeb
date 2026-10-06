@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import "@/design/tokens.css";
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
+import { AnalyticsConsentGate } from "@/features/telemetry/analytics-consent-gate";
 import { Bodoni_Moda, Archivo, IBM_Plex_Mono } from "next/font/google";
 
 // Didone niesie nagłówki (rodowód grawerowanego banknotu), grotesk prozę
@@ -63,9 +62,9 @@ export default function RootLayout({
   return (
     <html lang="pl" data-theme="dark" className={`${display.variable} ${text.variable} ${mono.variable}`}>
       <body className="antialiased">
+        {/* Pierwsze w DOM: pytanie o zgodę jest pierwsze w kolejności Tab. */}
+        <AnalyticsConsentGate />
         {children}
-        <Analytics />
-        <SpeedInsights />
       </body>
     </html>
   );
