@@ -50,6 +50,7 @@ import { useDisplayCurrency } from "@/features/sync/use-display-currency";
 import { AppLock } from "@/features/auth/app-lock";
 import { AuthBrand } from "@/features/auth/auth-brand";
 import { ProfileMenu } from "@/components/layout/profile-menu";
+import { PolicyUpdateNotice } from "@/components/layout/policy-update-notice";
 import { useTranslation } from "@/features/i18n/translate";
 import { currencyLabel } from "@/lib/money";
 import { StatusAnnouncer } from "@/components/feedback/status-announcer";
@@ -795,6 +796,8 @@ export function AppShell({
             id/tabIndex są celem odsyłacza pomijającego wyżej — bez id link nie miał
             dokąd skoczyć, bez tabIndex=-1 skok przesuwał widok, ale nie ognisko. */}
         <main id="tresc" tabIndex={-1} style={{ flex: 1, minWidth: 0, maxWidth: 1240, marginInline: "auto", width: "100%", paddingBottom: 4 }}>
+          {/* Demo nie ma użytkownika, którego polityka dotyczy. */}
+          {!publicDemo && <PolicyUpdateNotice />}
           {children}
           {/* Odstęp na dole w demo: plakietka „Dane przykładowe" jest przypięta w prawym dolnym rogu. */}
           <p style={{ margin: "32px 0 0", paddingBottom: publicDemo ? 40 : 0, maxWidth: 720, fontSize: 12, lineHeight: 1.5, color: COLORS.textMuted }}>

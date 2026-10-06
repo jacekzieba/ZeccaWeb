@@ -612,6 +612,61 @@ body:has([data-testid="demo-badge"], [data-demo-badge]) .analytics-consent {
   .analytics-consent__actions { margin-top: var(--space-3); }
 }
 
+/* ── Powiadomienie o zmianie polityki prywatności ────────────────────────────
+   Pasek na górze treści aplikacji (policy-update-notice.tsx), w zwykłym
+   przepływie strony — nie zasłania nagłówka ani pytania o zgodę przy dolnej
+   krawędzi. Te same tokeny i kontrasty co pytanie o zgodę: treść --ink-muted na
+   --surface 7,1 / 8,5:1, odnośnik i przycisk --ink. */
+.policy-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-text);
+}
+.policy-notice__body {
+  flex: 1 1 320px;
+  margin: 0;
+  font-size: var(--t-4);
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+.policy-notice__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+}
+.policy-notice__actions a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--ink);
+  font-size: var(--t-4);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.policy-notice__actions button {
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--ink-muted);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-4);
+  font-weight: 600;
+  cursor: pointer;
+}
+.policy-notice__actions button:hover { border-color: var(--ink); }
+
 /* Kontrolka „zmień zgodę” (stopki, polityka prywatności) to przycisk, który
    w stopkach wygląda jak link obok. */
 .consent-reset {
