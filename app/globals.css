@@ -532,3 +532,104 @@ body {
   font-weight: 500;
   text-decoration: none;
 }
+
+/* ── Pytanie o zgodę na statystyki ───────────────────────────────────────────
+   Nieblokujące (bez zaciemnienia i pułapki fokusu), w rogu. z-index nad
+   przyklejonym nagłówkiem (50), pod szufladą menu (80) i modalami (200+), żeby
+   nigdy nie zasłaniało ich przycisków. Plakietkę „Dane przykładowe” (fixed,
+   prawy dolny róg) omija, podnosząc się nad nią. Póki pytanie jest widoczne,
+   <body> dostaje dolne dopełnienie (analytics-consent-gate.tsx).
+   Oba przyciski mają tę samą wagę — odmowa nie może być trudniejsza niż zgoda.
+   Kontrast (jasny / ciemny): treść --ink-muted na --surface 7,1 / 8,5:1,
+   przyciski --ink na --surface-2 15,6:1, obramowanie --ink-muted ≥ 6:1. */
+.analytics-consent {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 75;
+  width: min(420px, calc(100vw - 2 * var(--space-4)));
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-text);
+}
+.analytics-consent__title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--t-5);
+  font-weight: 600;
+}
+.analytics-consent__body {
+  margin: 0;
+  font-size: var(--t-4);
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+.analytics-consent__body a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.analytics-consent__actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+.analytics-consent__actions button {
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--ink-muted);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-4);
+  font-weight: 600;
+  cursor: pointer;
+}
+.analytics-consent__actions button:hover { border-color: var(--ink); }
+
+body:has([data-testid="demo-badge"], [data-demo-badge]) .analytics-consent {
+  bottom: calc(var(--space-4) + 44px);
+}
+
+/* Na telefonie: pełna szerokość przy krawędzi i ciaśniej, żeby pytanie zajmowało
+   jak najmniej ekranu (przyciski zostają ≥ 44 px wysokości). */
+@media (max-width: 600px) {
+  .analytics-consent {
+    right: var(--space-2);
+    bottom: var(--space-2);
+    width: calc(100vw - 2 * var(--space-2));
+    padding: var(--space-3) var(--space-4);
+  }
+  body:has([data-testid="demo-badge"], [data-demo-badge]) .analytics-consent {
+    bottom: calc(var(--space-2) + 44px);
+  }
+  .analytics-consent__title { margin-bottom: var(--space-1); font-size: var(--t-4); }
+  .analytics-consent__body { font-size: var(--t-3); line-height: 1.45; }
+  .analytics-consent__actions { margin-top: var(--space-3); }
+}
+
+/* Kontrolka „zmień zgodę” (stopki, polityka prywatności) to przycisk, który
+   w stopkach wygląda jak link obok. */
+.consent-reset {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.consent-reset--button {
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--ink-muted);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: var(--t-4);
+  font-weight: 600;
+}
+.consent-reset--button:hover { border-color: var(--ink); }

@@ -1,10 +1,6 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { rateLimitResponse } from "@/market-data/rate-limit";
+import { NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
-  const limited = rateLimitResponse(request);
-  if (limited) return limited;
-
+export async function GET() {
   return NextResponse.json({
     providers: {
       yahoo: {

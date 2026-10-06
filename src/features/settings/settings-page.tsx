@@ -30,7 +30,8 @@ import { readAllocation, sumAllocation } from "@/features/portfolios/asset-class
 import type { PortfolioSummary } from "@/domain/models/investor-data";
 import { AppLockSettingsRow } from "@/features/auth/app-lock";
 import { ChangePasswordForm } from "@/features/auth/change-password-form";
-import { useTelemetryConsent } from "@/features/telemetry/use-telemetry-consent";
+import { setAnalyticsConsent } from "@/lib/analytics-consent";
+import { useAnalyticsConsent } from "@/features/telemetry/use-analytics-consent";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { clearCachedUserDataKey } from "@/sync/encryption/key-cache";
 import { clearPendingSyncOperations } from "@/sync/records/record-writer";
@@ -419,12 +420,9 @@ function DisplaySection() {
 
 // ── Privacy / diagnostics ─────────────────────────────────────────
 function PrivacySection() {
-  const { enabled, canWrite, saving, error, setConsent } =
-    useTelemetryConsent();
-
-  const desc = !canWrite
-    ? "Odblokuj synchronizację, aby zmienić ustawienie telemetrii produktowej TelemetryDeck."
-    : "Steruje pseudonimową telemetrią produktową TelemetryDeck. Zdarzenia łączy losowy identyfikator tej karty, tworzony od nowa przy każdym otwarciu aplikacji i niepowiązany z kontem. Nie zapisuje niczego w cookies ani w magazynach przeglądarki (localStorage, sessionStorage, IndexedDB); szczegóły są w polityce prywatności.";
+  // Zgoda dotyczy tej przeglądarki (localStorage), nie synchronizowanych ustawień.
+  // Bez logowania zmieniają ją też kontrolki w stopce i polityce prywatności.
+  const consent = useAnalyticsConsent();
 
   return (
     <Section eyebrow="Prywatność" title="Bezpieczeństwo i diagnostyka">
@@ -432,16 +430,13 @@ function PrivacySection() {
         <AppLockSettingsRow />
       </div>
       <Row
-        label="Telemetria produktowa TelemetryDeck"
-        desc={error ?? desc}
+        label="Statystyki użycia"
+        desc="Telemetria produktowa TelemetryDeck oraz Vercel Analytics i Speed Insights działają tylko za Twoją zgodą. Wybór dotyczy tej przeglądarki; wyłączenie od razu wstrzymuje wysyłanie. Szczegóły są w polityce prywatności."
         control={
           <Switch
-            on={canWrite && enabled}
-            label="Telemetria produktowa TelemetryDeck"
-            onChange={(v) => {
-              if (!canWrite || saving) return;
-              void setConsent(v);
-            }}
+            on={consent === "granted"}
+            label="Statystyki użycia"
+            onChange={(v) => setAnalyticsConsent(v ? "granted" : "denied")}
           />
         }
       />
@@ -452,7 +447,7 @@ function PrivacySection() {
       />
       <Row
         label="Dane w tej przeglądarce"
-        desc="W localStorage trzymamy ustawienia interfejsu, profil i kolejkę synchronizacji (wyłącznie zaszyfrowane rekordy), a w IndexedDB — opcjonalnie zapamiętany klucz odszyfrowywania, usuwany przy wylogowaniu. Odszyfrowane dane portfela istnieją tylko w pamięci karty."
+        desc="W localStorage trzymamy ustawienia interfejsu, decyzję o statystykach użycia, profil i kolejkę synchronizacji (wyłącznie zaszyfrowane rekordy), a w IndexedDB — opcjonalnie zapamiętany klucz odszyfrowywania, usuwany przy wylogowaniu. Odszyfrowane dane portfela istnieją tylko w pamięci karty."
         last
         control={<span />}
       />

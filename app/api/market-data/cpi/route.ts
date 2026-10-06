@@ -6,16 +6,12 @@ import {
 import { fetchGusCpiSeries } from "@/market-data/providers/gus";
 import { fetchFinwireCpiSeries } from "@/market-data/providers/finwire";
 import type { CpiObservation } from "@/market-data/types";
-import { rateLimitResponse } from "@/market-data/rate-limit";
 
 // GUS publishes CPI once a month, so a cached reading stays valid far longer
 // than FX/quote data.
 const CPI_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 
 export async function GET(request: NextRequest) {
-  const limited = rateLimitResponse(request);
-  if (limited) return limited;
-
   const start = request.nextUrl.searchParams.get("start");
   const end = request.nextUrl.searchParams.get("end");
 
