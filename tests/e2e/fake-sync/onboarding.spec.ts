@@ -70,7 +70,7 @@ test("settings exposes Discord and e-mail support links", async ({ page }) => {
   );
   await expect(page.getByRole("link", { name: "Napisz →" })).toHaveAttribute(
     "href",
-    "mailto:zecca.barista363@passmail.net",
+    "mailto:kontakt@jacekzieba.pl",
   );
 });
 
