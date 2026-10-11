@@ -25,10 +25,12 @@ test("extra chart sections are hidden by default and can be turned on", async ({
     await expect(card.getByRole("img", { name: chart })).toBeVisible();
   }
 
-  for (const label of ["Dywidendy", "Odsetki", "Podział walut"]) {
+  for (const label of ["Dywidendy", "Odsetki", "Podział walut", "Zwroty roczne", "Docelowa vs aktualna"]) {
     await main.getByRole("checkbox", { name: `Pokaż sekcję ${label}` }).check();
   }
   await expect(page.getByTestId("dashboard-section-chartDividends")).toBeVisible();
   await expect(page.getByTestId("dashboard-section-chartInterest")).toBeVisible();
   await expect(page.getByTestId("dashboard-section-chartCurrencyBreakdown")).toBeVisible();
+  await expect(page.getByTestId("dashboard-section-chartAnnualReturns")).toBeVisible();
+  await expect(page.getByTestId("dashboard-section-allocationTargetVsActual")).toBeVisible();
 });

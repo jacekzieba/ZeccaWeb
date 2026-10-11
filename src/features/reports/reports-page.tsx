@@ -13,6 +13,7 @@ import { AreaChart } from "@/components/charts/area-chart";
 import { ValueVsDepositsChart } from "@/components/charts/value-vs-deposits-chart";
 import { KPI_HELP_HREFS, KPI_MARKS, type KpiTileId } from "@/components/metrics/portfolio-kpi-strip";
 import type { ValuationPoint } from "@/domain/models/investor-data";
+import { yearlyReturns as calcYearlyReturns } from "@/domain/metrics/chart-series";
 import { V2, V2_TYPE, v2Mix } from "@/lib/v2-design";
 import { assetClassColor } from "@/lib/asset-colors";
 import { currencyLabel } from "@/lib/money";
@@ -78,24 +79,6 @@ function calcMonthlyStats(perf: ValuationPoint[]): MonthlyStats {
     negative: changes.filter((c) => c.pct < 0).length,
     total: changes.length,
   };
-}
-
-type YearlyReturn = { year: number; returnPct: number };
-
-// Year-over-year return from the time-weighted index (deposit-neutral).
-function calcYearlyReturns(perf: ValuationPoint[]): YearlyReturn[] {
-  if (perf.length < 2) return [];
-  const lastByYear = new Map<number, number>();
-  for (const point of perf) lastByYear.set(new Date(point.date).getFullYear(), point.value);
-  const years = [...lastByYear.keys()].sort();
-  const results: YearlyReturn[] = [];
-  let prevEnd = perf[0].value;
-  for (const year of years) {
-    const end = lastByYear.get(year)!;
-    if (prevEnd > 0) results.push({ year, returnPct: ((end - prevEnd) / prevEnd) * 100 });
-    prevEnd = end;
-  }
-  return results;
 }
 
 const REPORTS = [

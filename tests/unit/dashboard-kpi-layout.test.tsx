@@ -36,6 +36,9 @@ describe("dashboard KPI layout", () => {
       kpiInvested: [1],
       kpiDividends: [1],
       kpiOpenPositions: [1],
+      kpiInterest: [1],
+      kpiFees: [1],
+      kpiTaxes: [1],
     });
   });
 });

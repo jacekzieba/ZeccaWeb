@@ -143,6 +143,9 @@ const PD_KPI_ICONS: Record<string, typeof ChartLine> = {
   kpiRealized: BadgeDollarSign,
   kpiInvested: Landmark,
   kpiDividends: Coins,
+  kpiInterest: Banknote,
+  kpiFees: BadgeDollarSign,
+  kpiTaxes: Landmark,
   kpiOpenPositions: BriefcaseBusiness,
 };
 
@@ -151,7 +154,7 @@ const KPI_SIZE: SectionSize[] = [{ width: 1 }, { width: 2 }];
 const PD_SECTIONS: SectionDef<string>[] = [
   { id: "kpiValue", label: "Wartość portfela", desc: "Łączna wartość portfela.", category: "metrics", icon: LayoutDashboard, sizePresets: KPI_SIZE },
   { id: "kpiCash", label: "Gotówka", desc: "Saldo środków pieniężnych.", category: "metrics", icon: Coins, sizePresets: KPI_SIZE },
-  ...KPI_TILE_META.map((t) => ({ id: t.id, label: t.label, desc: t.desc, category: "metrics", icon: PD_KPI_ICONS[t.id], sizePresets: KPI_SIZE })),
+  ...KPI_TILE_META.map((t) => ({ id: t.id, label: t.label, desc: t.desc, category: "metrics", icon: PD_KPI_ICONS[t.id], sizePresets: KPI_SIZE, defaultHidden: t.defaultHidden })),
   { id: "history", label: "Historia wartości", desc: "Wykres wartości z wyborem zakresu.", category: "charts", icon: ChartArea, sizePresets: [{ width: 4 }, { width: 2 }] },
   { id: "valueVsDeposits", label: "Wartość vs wpłaty", desc: "Wartość konta na tle wpłat.", category: "charts", icon: ChartNoAxesCombined, sizePresets: [{ width: 4 }, { width: 2 }] },
   { id: "holdings", label: "Pozycje", desc: "Tabela instrumentów w portfelu.", category: "data", icon: Wallet, sizePresets: [{ width: 4 }, { width: 3 }, { width: 2 }] },

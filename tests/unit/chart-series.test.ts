@@ -5,6 +5,7 @@ import {
   inflationIndexSeries,
   pnlOverTimeSeries,
   rebaseToHundred,
+  yearlyReturns,
 } from "@/domain/metrics/chart-series";
 import { computeMaxDrawdownPct } from "@/domain/metrics/portfolio-metrics";
 
@@ -84,5 +85,18 @@ describe("currencyBreakdown", () => {
   });
   it("is empty without value", () => {
     expect(currencyBreakdown([])).toEqual([]);
+  });
+});
+
+describe("yearlyReturns", () => {
+  it("measures each calendar year from the previous year-end", () => {
+    const perf = [pt("2024-01-02", 100), pt("2024-12-30", 110), pt("2025-12-30", 99)];
+    const r = yearlyReturns(perf);
+    expect(r.map((x) => x.year)).toEqual([2024, 2025]);
+    expect(r[0].returnPct).toBeCloseTo(10);
+    expect(r[1].returnPct).toBeCloseTo(-10);
+  });
+  it("is empty for fewer than two points", () => {
+    expect(yearlyReturns([pt("2025-01-01", 100)])).toEqual([]);
   });
 });

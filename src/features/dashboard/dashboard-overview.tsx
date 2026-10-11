@@ -60,9 +60,11 @@ import { KpiRegister, KPI_TILE_META, getKpiTiles } from "@/components/metrics/po
 import { ValueVsDepositsChart } from "@/components/charts/value-vs-deposits-chart";
 import { BarSeriesChart, SeriesLineChart } from "@/components/charts/series-chart";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
+import { AllocationGapCard } from "@/features/reports/allocation-gap-card";
 import {
   currencyBreakdown,
   drawdownSeries,
+  yearlyReturns,
   inflationIndexSeries,
   pnlOverTimeSeries,
   rebaseToHundred,
@@ -110,6 +112,9 @@ const DASHBOARD_KPI_ICONS: Record<string, LucideIcon> = {
   kpiRealized: BadgeDollarSign,
   kpiInvested: Landmark,
   kpiDividends: Coins,
+  kpiInterest: Banknote,
+  kpiFees: BadgeDollarSign,
+  kpiTaxes: Landmark,
   kpiOpenPositions: BriefcaseBusiness,
 };
 
@@ -122,6 +127,7 @@ const DASHBOARD_SECTIONS: SectionDef<string>[] = [
     category: "metrics",
     icon: DASHBOARD_KPI_ICONS[tile.id],
     sizePresets: tile.sizePresets,
+    defaultHidden: tile.defaultHidden,
   })),
   { id: "valueVsDeposits", label: "Wartość vs wpłaty", desc: "Wartość konta na tle skumulowanych wpłat.", category: "charts", icon: ChartNoAxesCombined, sizePresets: [{ width: 4 }, { width: 2 }] },
   { id: "holdings", label: "Instrumenty", desc: "Największe aktywne pozycje.", category: "data", icon: Wallet, sizePresets: [{ width: 3 }, { width: 4 }] },
@@ -130,6 +136,8 @@ const DASHBOARD_SECTIONS: SectionDef<string>[] = [
   { id: "chartPnLOverTime", label: "Wynik w czasie", desc: "Wartość minus wpłaty — zysk lub strata narastająco.", category: "charts", icon: ChartLine, sizePresets: [{ width: 2 }, { width: 4 }], defaultHidden: true },
   { id: "chartDrawdown", label: "Obsunięcie", desc: "Spadek od szczytu w czasie.", category: "charts", icon: ChartNoAxesColumnDecreasing, sizePresets: [{ width: 2 }, { width: 4 }], defaultHidden: true },
   { id: "chartBenchmarkVsInflation", label: "Portfel vs inflacja", desc: "Zwrot ważony czasem na tle inflacji.", category: "charts", icon: ChartNoAxesCombined, sizePresets: [{ width: 2 }, { width: 4 }], defaultHidden: true },
+  { id: "chartAnnualReturns", label: "Zwroty roczne", desc: "Zwrot ważony czasem w kolejnych latach.", category: "charts", icon: ChartColumn, sizePresets: [{ width: 2 }, { width: 4 }], defaultHidden: true },
+  { id: "allocationTargetVsActual", label: "Docelowa vs aktualna", desc: "Alokacja klas aktywów na tle planu.", category: "charts", icon: ChartPie, sizePresets: [{ width: 2 }, { width: 4 }], defaultHidden: true },
   { id: "chartDividends", label: "Dywidendy", desc: "Dywidendy w kolejnych miesiącach.", category: "charts", icon: Coins, sizePresets: [{ width: 2 }, { width: 4 }], defaultHidden: true },
   { id: "chartInterest", label: "Odsetki", desc: "Odsetki i kupony w kolejnych miesiącach.", category: "charts", icon: Banknote, sizePresets: [{ width: 2 }, { width: 4 }], defaultHidden: true },
   { id: "chartCurrencyBreakdown", label: "Podział walut", desc: "Udział walut w wartości pozycji.", category: "charts", icon: ChartPie, sizePresets: [{ width: 1 }, { width: 2 }], defaultHidden: true },
@@ -1059,6 +1067,24 @@ export function DashboardOverview() {
           />
         </ChartCard>
       );
+    }
+    if (section === "chartAnnualReturns") {
+      const source = snapshot.performanceSeries.length >= 2 ? snapshot.performanceSeries : historySource;
+      const years = yearlyReturns(source).map((row) => ({ label: String(row.year), value: row.returnPct }));
+      return (
+        <ChartCard eyebrow="Wyniki" title="Zwroty roczne" empty={years.length === 0 ? "Za mało historii na zwroty roczne." : undefined}>
+          <BarSeriesChart
+            ariaLabel="Zwrot portfela w kolejnych latach"
+            data={years}
+            color={PALETTE.profit}
+            negativeColor={PALETTE.loss}
+            format={(v) => `${v >= 0 ? "+" : ""}${fmt(v, 2)}%`}
+          />
+        </ChartCard>
+      );
+    }
+    if (section === "allocationTargetVsActual") {
+      return <AllocationGapCard portfolioIds={snapshot.portfolios.map((portfolio) => portfolio.id)} />;
     }
     if (section === "chartCurrencyBreakdown") {
       const slices = currencyBreakdown(instruments);

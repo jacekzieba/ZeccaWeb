@@ -26,11 +26,21 @@ export type KpiTileId =
   | "kpiRealized"
   | "kpiInvested"
   | "kpiDividends"
+  | "kpiInterest"
+  | "kpiFees"
+  | "kpiTaxes"
   | "kpiOpenPositions";
 
 /** Metadata for each KPI tile — used to register them as individually
  * toggleable dashboard sections. */
-export const KPI_TILE_META: { id: KpiTileId; label: string; desc: string; sizePresets: SectionSize[] }[] = [
+export const KPI_TILE_META: {
+  id: KpiTileId;
+  label: string;
+  desc: string;
+  sizePresets: SectionSize[];
+  /** Not shown until the user turns it on, even on layouts saved before it shipped. */
+  defaultHidden?: boolean;
+}[] = [
   { id: "kpiUnrealized", label: "Zysk niezrealizowany", desc: "Wartość ponad zainwestowany kapitał.", sizePresets: [{ width: 1 }] },
   { id: "kpiXirr", label: "MWR · XIRR", desc: "Roczny zwrot ważony kapitałem.", sizePresets: [{ width: 1 }] },
   { id: "kpiTwr", label: "Zwrot (TWR)", desc: "Zwrot całkowity, bez wpłat.", sizePresets: [{ width: 1 }] },
@@ -41,6 +51,9 @@ export const KPI_TILE_META: { id: KpiTileId; label: string; desc: string; sizePr
   { id: "kpiInvested", label: "Zainwestowany kapitał", desc: "Wpłaty netto.", sizePresets: [{ width: 1 }] },
   { id: "kpiDividends", label: "Dywidendy", desc: "Suma otrzymanych dywidend.", sizePresets: [{ width: 1 }] },
   { id: "kpiOpenPositions", label: "Otwarte pozycje", desc: "Liczba aktywnych pozycji.", sizePresets: [{ width: 1 }] },
+  { id: "kpiInterest", label: "Odsetki", desc: "Suma odsetek i kuponów.", sizePresets: [{ width: 1 }], defaultHidden: true },
+  { id: "kpiFees", label: "Prowizje", desc: "Suma opłat transakcyjnych.", sizePresets: [{ width: 1 }], defaultHidden: true },
+  { id: "kpiTaxes", label: "Podatki", desc: "Suma zapłaconych podatków.", sizePresets: [{ width: 1 }], defaultHidden: true },
 ];
 
 export const KPI_HELP_HREFS: Partial<Record<KpiTileId, string>> = {
@@ -103,6 +116,9 @@ export function getKpiTiles(input: PortfolioKpiInput): KpiTile[] {
     { id: "kpiInvested", label: "Zainwestowany kapitał", value: `${fmt(metrics.netInvested)} ${currencyLabel(currency)}`, color: V2.ink },
     { id: "kpiDividends", label: "Dywidendy", value: `+${fmt(cashflows.dividends)} ${currencyLabel(currency)}`, color: V2.ink },
     { id: "kpiOpenPositions", label: "Otwarte pozycje", value: String(openPositions), color: V2.ink },
+    { id: "kpiInterest", label: "Odsetki", value: `+${fmt(cashflows.interest)} ${currencyLabel(currency)}`, color: V2.ink },
+    { id: "kpiFees", label: "Prowizje", value: `-${fmt(cashflows.fees)} ${currencyLabel(currency)}`, color: V2.ink },
+    { id: "kpiTaxes", label: "Podatki", value: `-${fmt(cashflows.taxes)} ${currencyLabel(currency)}`, color: V2.ink },
   ];
 
   return tiles.map((tile) => ({ ...tile, helpHref: KPI_HELP_HREFS[tile.id] }));
@@ -125,6 +141,9 @@ export const KPI_MARKS: Record<KpiTileId, { source: string; detail: string }> = 
   kpiRealized: { source: "FIFO", detail: "zamknięte pozycje" },
   kpiInvested: { source: "Transakcje", detail: "od pierwszej wpłaty" },
   kpiDividends: { source: "Transakcje", detail: "wpływy z dywidend" },
+  kpiInterest: { source: "Transakcje", detail: "odsetki i kupony" },
+  kpiFees: { source: "Transakcje", detail: "opłaty transakcyjne" },
+  kpiTaxes: { source: "Transakcje", detail: "zapłacone podatki" },
   kpiOpenPositions: { source: "Pozycje", detail: "liczba obserwacji" },
 };
 

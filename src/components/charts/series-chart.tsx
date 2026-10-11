@@ -149,49 +149,58 @@ export function SeriesLineChart({
   );
 }
 
-/** Simple per-period bar chart of non-negative amounts. */
+/** Per-period bar chart; values below zero hang under the baseline in `negativeColor`. */
 export function BarSeriesChart({
   data,
   color,
+  negativeColor = color,
   height = 180,
   format,
   ariaLabel,
 }: {
   data: { label: string; value: number }[];
   color: string;
+  negativeColor?: string;
   height?: number;
   format: (value: number) => string;
   ariaLabel: string;
 }) {
   const { ref, width } = useWidth();
   if (data.length === 0) return null;
-  const max = Math.max(...data.map((d) => d.value), 0) * 1.08 || 1;
+  const { lo, hi } = niceRange(data.map((d) => d.value), true);
   const W = width - PAD.left - PAD.right;
   const H = height - PAD.top - PAD.bottom;
   const slot = W / data.length;
   const barW = Math.max(3, Math.min(32, slot * 0.64));
-  const ticks = [0, 0.5, 1].map((f) => f * max);
+  const ty = (v: number) => PAD.top + H - ((v - lo) / (hi - lo)) * H;
+  const ticks = [0, 0.5, 1].map((f) => lo + f * (hi - lo));
 
   return (
     <div ref={ref} style={{ width: "100%", minWidth: 0 }}>
       <svg role="img" aria-label={ariaLabel} width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ display: "block", maxWidth: "100%" }}>
-        {ticks.map((v, i) => {
-          const y = PAD.top + H - (v / max) * H;
-          return (
-            <g key={i}>
-              <line x1={PAD.left} x2={PAD.left + W} y1={y} y2={y} stroke={COLORS.lineSoft} strokeWidth="1" strokeDasharray="3 4" />
-              <text x={PAD.left - 8} y={y + 4} textAnchor="end" fontSize="10" fill={COLORS.subtle} fontFamily={TYPOGRAPHY.mono}>
-                {formatAxisValue(v, max)}
-              </text>
-            </g>
-          );
-        })}
+        {ticks.map((v, i) => (
+          <g key={i}>
+            <line x1={PAD.left} x2={PAD.left + W} y1={ty(v)} y2={ty(v)} stroke={COLORS.lineSoft} strokeWidth="1" strokeDasharray="3 4" />
+            <text x={PAD.left - 8} y={ty(v) + 4} textAnchor="end" fontSize="10" fill={COLORS.subtle} fontFamily={TYPOGRAPHY.mono}>
+              {formatAxisValue(v, hi - lo)}
+            </text>
+          </g>
+        ))}
+        <line x1={PAD.left} x2={PAD.left + W} y1={ty(0)} y2={ty(0)} stroke={COLORS.textMuted} strokeWidth="1" opacity="0.5" />
         {data.map((d, i) => {
-          const h = (d.value / max) * H;
           const x = PAD.left + slot * i + (slot - barW) / 2;
+          const top = ty(Math.max(d.value, 0));
+          const bottom = ty(Math.min(d.value, 0));
           return (
             <g key={`${d.label}-${i}`}>
-              <rect x={x} y={PAD.top + H - h} width={barW} height={Math.max(h, d.value > 0 ? 1 : 0)} rx={2} fill={color}>
+              <rect
+                x={x}
+                y={top}
+                width={barW}
+                height={Math.max(bottom - top, d.value !== 0 ? 1 : 0)}
+                rx={2}
+                fill={d.value < 0 ? negativeColor : color}
+              >
                 <title>{`${d.label}: ${format(d.value)}`}</title>
               </rect>
               {(data.length <= 12 || i % Math.ceil(data.length / 12) === 0) && (

@@ -65,3 +65,21 @@ export function currencyBreakdown(
     .map(([label, value]) => ({ label, percent: (value / total) * 100 }))
     .sort((a, b) => b.percent - a.percent);
 }
+
+export type YearlyReturn = { year: number; returnPct: number };
+
+/** Year-over-year change of a deposit-neutral index (the time-weighted performance series). */
+export function yearlyReturns(perf: ValuationPoint[]): YearlyReturn[] {
+  if (perf.length < 2) return [];
+  const lastByYear = new Map<number, number>();
+  for (const point of perf) lastByYear.set(new Date(point.date).getFullYear(), point.value);
+  const years = [...lastByYear.keys()].sort();
+  const results: YearlyReturn[] = [];
+  let prevEnd = perf[0].value;
+  for (const year of years) {
+    const end = lastByYear.get(year)!;
+    if (prevEnd > 0) results.push({ year, returnPct: ((end - prevEnd) / prevEnd) * 100 });
+    prevEnd = end;
+  }
+  return results;
+}
