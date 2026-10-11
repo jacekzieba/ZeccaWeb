@@ -1,5 +1,7 @@
 import { z } from "zod";
+import { kindToAssetClass } from "@/domain/allocation/asset-class";
 import { findOversells } from "@/domain/ledger/oversell";
+import { ASSET_CLASSES } from "@/features/portfolios/asset-classes";
 import { toOversellInput } from "./oversell-check";
 import type {
   AllocationSlice,
@@ -2310,22 +2312,8 @@ function addLocalDays(date: Date, days: number) {
 }
 
 function assetClassLabel(kind: string | undefined) {
-  switch (kind) {
-    case "stock":
-    case "etf":
-      return "Akcje / ETF";
-    case "treasuryBond":
-    case "listedBond":
-      return "Obligacje";
-    case "crypto":
-      return "Kryptowaluty";
-    case "deposit":
-      return "Lokaty";
-    case "cash":
-      return "Gotówka";
-    default:
-      return "Inne aktywa";
-  }
+  const key = kindToAssetClass(kind);
+  return ASSET_CLASSES.find((c) => c.key === key)!.label;
 }
 
 function monthLabel(date: Date) {

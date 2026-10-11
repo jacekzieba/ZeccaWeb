@@ -5,6 +5,7 @@ import { CircleHelp } from "lucide-react";
 import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
 import { DataQualityBanner } from "@/features/sync/data-quality-banner";
 import { useDisplayCurrency } from "@/features/sync/use-display-currency";
+import { AllocationGapCard } from "./allocation-gap-card";
 import { useSampleDataSignal } from "@/features/telemetry/use-sample-data-signal";
 import { sampleSnapshot } from "@/features/dashboard/sample-data";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
@@ -188,6 +189,7 @@ export function ReportsPage() {
   const metrics = snapshot.metrics;
   const cashflows = snapshot.cashflows;
   const personalIncome = snapshot.income;
+  const portfolioIds = useMemo(() => snapshot.portfolios.map((p) => p.id), [snapshot.portfolios]);
   const monthlyStats = useMemo(() => calcMonthlyStats(perf), [perf]);
   const yearlyReturns = useMemo(() => calcYearlyReturns(perf), [perf]);
 
@@ -380,6 +382,9 @@ export function ReportsPage() {
                 );
               })
             )}
+          </div>
+          <div style={{ gridColumn: "1 / -1" }}>
+            <AllocationGapCard portfolioIds={isDemo ? [] : portfolioIds} />
           </div>
         </div>
       )}
