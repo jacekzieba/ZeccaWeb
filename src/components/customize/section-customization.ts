@@ -12,6 +12,9 @@ export type SectionDef<Id extends string> = {
   category: string;
   icon: LucideIcon;
   sizePresets: SectionSize[];
+  /** Hidden until the user turns it on in the customize panel — also for users
+   * who already have a saved layout from before the section shipped. */
+  defaultHidden?: boolean;
 };
 export type SectionRegistry<Id extends string> = {
   storageKey: string;
@@ -95,11 +98,15 @@ export function defaultSizes<Id extends string>(registry: SectionRegistry<Id>): 
   ) as Record<Id, SectionSize>;
 }
 
+function defaultVisibleIds<Id extends string>(registry: SectionRegistry<Id>): Id[] {
+  return registry.sections.filter((section) => !section.defaultHidden).map((section) => section.id);
+}
+
 export function defaultConfig<Id extends string>(registry: SectionRegistry<Id>): SectionConfig<Id> {
   const ids = allIds(registry);
   return {
     sectionOrder: [...ids],
-    visibleSections: [...ids],
+    visibleSections: defaultVisibleIds(registry),
     sectionSizes: defaultSizes(registry),
     knownSections: [...ids],
   };
@@ -119,8 +126,8 @@ function sanitizeVisible<Id extends string>(registry: SectionRegistry<Id>, value
   const allowed = new Set<string>(ids);
   const visible = Array.isArray(value)
     ? value.filter((item): item is Id => typeof item === "string" && allowed.has(item))
-    : ids;
-  return visible.length > 0 ? visible : [...ids];
+    : defaultVisibleIds(registry);
+  return visible.length > 0 ? visible : defaultVisibleIds(registry);
 }
 
 function sanitizeSizes<Id extends string>(
@@ -165,7 +172,12 @@ export function readConfig<Id extends string>(registry: SectionRegistry<Id>): Se
           ? config.sectionOrder
           : []
     ).filter(isKnownId);
-    const newlyShipped = ids.filter((id) => !known.includes(id) && !visible.includes(id));
+    const hiddenByDefault = new Set<string>(
+      registry.sections.filter((section) => section.defaultHidden).map((section) => section.id),
+    );
+    const newlyShipped = ids.filter(
+      (id) => !known.includes(id) && !visible.includes(id) && !hiddenByDefault.has(id),
+    );
     return {
       sectionOrder,
       visibleSections: [...visible, ...newlyShipped],

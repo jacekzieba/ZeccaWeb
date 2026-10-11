@@ -98,6 +98,24 @@ describe("section-customization", () => {
     expect(readConfig(registry).visibleSections).toEqual(["a", "c"]);
   });
 
+  it("keeps defaultHidden sections out of the default and newly-shipped visible set", () => {
+    const withHidden: SectionRegistry<Id> = {
+      ...registry,
+      sections: registry.sections.map((section) =>
+        section.id === "c" ? { ...section, defaultHidden: true } : section,
+      ),
+    };
+    expect(defaultConfig(withHidden).visibleSections).toEqual(["a", "b"]);
+    expect(defaultConfig(withHidden).sectionOrder).toEqual(["a", "b", "c"]);
+
+    // A layout saved before "c" shipped must not suddenly show it.
+    window.localStorage.setItem(
+      withHidden.storageKey,
+      JSON.stringify({ sectionOrder: ["a", "b"], visibleSections: ["a", "b"], sectionSizes: {}, knownSections: ["a", "b"] }),
+    );
+    expect(readConfig(withHidden).visibleSections).toEqual(["a", "b"]);
+  });
+
   it("reorderVisibleSection moves a section across category boundaries", () => {
     // a,b are g1; c is g2. Moving b down past c puts a g1 item below a g2 item.
     expect(reorderVisibleSection(["a", "b", "c"], ["a", "b", "c"], "b", 1)).toEqual(["a", "c", "b"]);

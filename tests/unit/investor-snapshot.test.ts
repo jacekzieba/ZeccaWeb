@@ -1769,6 +1769,11 @@ describe("InvestorDataSnapshot mapper", () => {
 
     expect(snapshot.cashflows.fees).toBe(22.5);
     expect(snapshot.cashflows.taxes).toBe(9);
+    // The same dividend lands in its calendar month, FX-converted like the total.
+    expect(snapshot.cashflows.monthly).toEqual([
+      { month: "2026-05", dividends: snapshot.cashflows.dividends, interest: 0 },
+    ]);
+    expect(snapshot.cashflows.dividends).toBeCloseTo(450);
   });
 
   it("can revalue foreign currency positions with historical FX context", () => {

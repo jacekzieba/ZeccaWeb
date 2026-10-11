@@ -713,6 +713,13 @@ function buildCashflowSummary(
   let interest = 0;
   let fees = 0;
   let taxes = 0;
+  const monthly = new Map<string, { dividends: number; interest: number }>();
+  const addMonthly = (date: Date, kind: "dividends" | "interest", amount: number) => {
+    const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    const bucket = monthly.get(month) ?? { dividends: 0, interest: 0 };
+    bucket[kind] += amount;
+    monthly.set(month, bucket);
+  };
   // Otwarte lokaty (FIFO per portfel i instrument), koszt w walucie prezentacji po kursie
   // z dnia otwarcia — do wyliczenia odsetek przy zamknięciu.
   const openDeposits = new Map<string, { quantity: number; unitCost: number }[]>();
@@ -735,10 +742,12 @@ function buildCashflowSummary(
     switch (transaction.transactionType) {
       case "dividend":
         dividends += gross;
+        addMonthly(toDate(transaction.date), "dividends", gross);
         break;
       case "interest":
       case "bondCoupon":
         interest += gross;
+        addMonthly(toDate(transaction.date), "interest", gross);
         break;
       // Odsetki od lokaty to nie osobna transakcja, tylko różnica między kwotą przy
       // zamknięciu a wpłaconą przy otwarciu — tak liczy je natywny LedgerEngine
@@ -763,6 +772,7 @@ function buildCashflowSummary(
           if (lots[0].quantity <= EPSILON) lots.shift();
         }
         interest += Math.max(0, gross - cost);
+        addMonthly(toDate(transaction.date), "interest", Math.max(0, gross - cost));
         break;
       }
       case "fee":
@@ -774,7 +784,15 @@ function buildCashflowSummary(
     }
   }
 
-  return { dividends, interest, fees, taxes };
+  return {
+    dividends,
+    interest,
+    fees,
+    taxes,
+    monthly: [...monthly.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, sums]) => ({ month, ...sums })),
+  };
 }
 
 /** Amount of an external (investor ⇄ portfolio) cashflow in the base currency,

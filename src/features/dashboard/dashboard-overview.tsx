@@ -58,6 +58,15 @@ import {
 } from "@/domain/bonds/bond-series-groups";
 import { KpiRegister, KPI_TILE_META, getKpiTiles } from "@/components/metrics/portfolio-kpi-strip";
 import { ValueVsDepositsChart } from "@/components/charts/value-vs-deposits-chart";
+import { BarSeriesChart, SeriesLineChart } from "@/components/charts/series-chart";
+import { AllocationDonut } from "@/components/charts/allocation-donut";
+import {
+  currencyBreakdown,
+  drawdownSeries,
+  inflationIndexSeries,
+  pnlOverTimeSeries,
+  rebaseToHundred,
+} from "@/domain/metrics/chart-series";
 import { assetClassColor, portfolioDotColor } from "@/lib/asset-colors";
 
 const SERIF = TYPOGRAPHY.serif;
@@ -118,6 +127,12 @@ const DASHBOARD_SECTIONS: SectionDef<string>[] = [
   { id: "holdings", label: "Instrumenty", desc: "Największe aktywne pozycje.", category: "data", icon: Wallet, sizePresets: [{ width: 3 }, { width: 4 }] },
   { id: "allocation", label: "Alokacja", desc: "Podział klas aktywów.", category: "charts", icon: ChartPie, sizePresets: [{ width: 1 }, { width: 2 }] },
   { id: "monthly", label: "Miesięczny P&L", desc: "Miesięczne zmiany wartości.", category: "charts", icon: ChartColumn, sizePresets: [{ width: 1 }, { width: 2 }] },
+  { id: "chartPnLOverTime", label: "Wynik w czasie", desc: "Wartość minus wpłaty — zysk lub strata narastająco.", category: "charts", icon: ChartLine, sizePresets: [{ width: 2 }, { width: 4 }], defaultHidden: true },
+  { id: "chartDrawdown", label: "Obsunięcie", desc: "Spadek od szczytu w czasie.", category: "charts", icon: ChartNoAxesColumnDecreasing, sizePresets: [{ width: 2 }, { width: 4 }], defaultHidden: true },
+  { id: "chartBenchmarkVsInflation", label: "Portfel vs inflacja", desc: "Zwrot ważony czasem na tle inflacji.", category: "charts", icon: ChartNoAxesCombined, sizePresets: [{ width: 2 }, { width: 4 }], defaultHidden: true },
+  { id: "chartDividends", label: "Dywidendy", desc: "Dywidendy w kolejnych miesiącach.", category: "charts", icon: Coins, sizePresets: [{ width: 2 }, { width: 4 }], defaultHidden: true },
+  { id: "chartInterest", label: "Odsetki", desc: "Odsetki i kupony w kolejnych miesiącach.", category: "charts", icon: Banknote, sizePresets: [{ width: 2 }, { width: 4 }], defaultHidden: true },
+  { id: "chartCurrencyBreakdown", label: "Podział walut", desc: "Udział walut w wartości pozycji.", category: "charts", icon: ChartPie, sizePresets: [{ width: 1 }, { width: 2 }], defaultHidden: true },
   { id: "transactions", label: "Ostatnie transakcje", desc: "Najnowsza aktywność konta.", category: "data", icon: ClipboardList, sizePresets: [{ width: 2 }, { width: 3 }, { width: 4 }] },
   { id: "portfolios", label: "Portfele i cashflow", desc: "Podział kont, dywidendy, odsetki i prowizje.", category: "data", icon: Banknote, sizePresets: [{ width: 2 }, { width: 3 }, { width: 4 }] },
 ];
@@ -984,6 +999,75 @@ export function DashboardOverview() {
     if (section === "holdings") return <HoldingsCard holdings={holdings} isMobile={isMobile} />;
     if (section === "allocation") return <AllocationCard allocation={allocation} />;
     if (section === "monthly") return <MonthlyCard valuationSeries={historySource} />;
+    if (section === "chartPnLOverTime") {
+      return (
+        <ChartCard eyebrow="Wynik" title="Zysk lub strata w czasie">
+          <SeriesLineChart
+            ariaLabel="Wartość portfela minus wpłaty w czasie"
+            series={[{ label: "Wynik", color: PALETTE.profit, points: pnlOverTimeSeries(historySource, snapshot.netInvestedSeries) }]}
+            format={(v) => `${fmt(v)} ${currencyLabel(displayCurrency)}`}
+          />
+        </ChartCard>
+      );
+    }
+    if (section === "chartDrawdown") {
+      const source = snapshot.performanceSeries.length >= 2 ? snapshot.performanceSeries : historySource;
+      return (
+        <ChartCard eyebrow="Ryzyko" title="Obsunięcie od szczytu">
+          <SeriesLineChart
+            ariaLabel="Obsunięcie portfela od szczytu w procentach"
+            series={[{ label: "Obsunięcie", color: PALETTE.loss, points: drawdownSeries(source) }]}
+            format={(v) => `${fmt(v, 2)}%`}
+          />
+        </ChartCard>
+      );
+    }
+    if (section === "chartBenchmarkVsInflation") {
+      const source = snapshot.performanceSeries.length >= 2 ? snapshot.performanceSeries : historySource;
+      const portfolio = rebaseToHundred(source);
+      return (
+        <ChartCard
+          eyebrow="Realna wartość"
+          title="Portfel vs inflacja"
+          note={`Inflacja: stała stopa ${fmt(metrics.inflationPct, 1)}% rocznie.`}
+        >
+          <SeriesLineChart
+            ariaLabel="Zwrot portfela na tle inflacji, start = 100"
+            series={[
+              { label: "Portfel", color: PALETTE.brand, points: portfolio },
+              { label: "Inflacja", color: PALETTE.subtle, dashed: true, points: inflationIndexSeries(portfolio, metrics.inflationPct) },
+            ]}
+            format={(v) => fmt(v, 1)}
+          />
+        </ChartCard>
+      );
+    }
+    if (section === "chartDividends" || section === "chartInterest") {
+      const kind = section === "chartDividends" ? "dividends" : "interest";
+      const bars = (cashflows.monthly ?? []).map((row) => ({ label: monthShortLabel(row.month), value: row[kind] }));
+      return (
+        <ChartCard
+          eyebrow="Dochód"
+          title={kind === "dividends" ? "Dywidendy miesięcznie" : "Odsetki i kupony miesięcznie"}
+          empty={bars.every((bar) => bar.value <= 0) ? "Brak wpływów w historii." : undefined}
+        >
+          <BarSeriesChart
+            ariaLabel={kind === "dividends" ? "Dywidendy w kolejnych miesiącach" : "Odsetki w kolejnych miesiącach"}
+            data={bars}
+            color={PALETTE.profit}
+            format={(v) => `${fmt(v)} ${currencyLabel(displayCurrency)}`}
+          />
+        </ChartCard>
+      );
+    }
+    if (section === "chartCurrencyBreakdown") {
+      const slices = currencyBreakdown(instruments);
+      return (
+        <ChartCard eyebrow="Waluty" title="Podział walut" empty={slices.length === 0 ? "Brak pozycji." : undefined}>
+          <AllocationDonut slices={slices} />
+        </ChartCard>
+      );
+    }
     if (section === "transactions") return <TransactionsCard transactions={txRows} />;
     return (
       <PortfoliosCard
@@ -1430,6 +1514,34 @@ function AllocationCard({ allocation }: { allocation: { id: string; label: strin
           </div>
         ))}
       </div>
+    </Card>
+  );
+}
+
+function monthShortLabel(month: string) {
+  const [year, m] = month.split("-").map(Number);
+  return new Date(year, m - 1, 1).toLocaleString("pl-PL", { month: "short", year: "2-digit" });
+}
+
+function ChartCard({
+  eyebrow,
+  title,
+  note,
+  empty,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  note?: string;
+  empty?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card>
+      <Eyebrow>{eyebrow}</Eyebrow>
+      <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 500, color: PALETTE.ink, margin: "4px 0 12px" }}>{title}</div>
+      {empty ? <div style={{ fontFamily: UI, fontSize: 13, color: PALETTE.subtle }}>{empty}</div> : children}
+      {note && !empty && <div style={{ fontFamily: UI, fontSize: 11, color: PALETTE.muted, marginTop: 8 }}>{note}</div>}
     </Card>
   );
 }

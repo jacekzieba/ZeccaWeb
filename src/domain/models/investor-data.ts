@@ -82,6 +82,9 @@ export type CashflowSummary = {
   interest: number;
   fees: number;
   taxes: number;
+  /** Dividends and interest per calendar month ("YYYY-MM"), ascending, months
+   * without either omitted. Optional so demo/sample snapshots can omit it. */
+  monthly?: { month: string; dividends: number; interest: number }[];
 };
 
 export type InvestorDataSnapshot = {
