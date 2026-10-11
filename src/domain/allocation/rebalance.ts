@@ -199,3 +199,81 @@ export function buildTaxLots(
   }
   return result;
 }
+
+export type InstrumentOrderLine = {
+  key: AssetClassKey;
+  action: "buy" | "sell";
+  /** null when the class holds no instrument yet (the user picks one). */
+  instrumentId: string | null;
+  symbol: string | null;
+  name: string | null;
+  amount: number;
+  /** Approximate units at the current valuation; null for a class-only line. */
+  quantity: number | null;
+};
+
+/**
+ * Splits class-level orders across the instruments already held in each class,
+ * proportionally to their value (so a sell never exceeds a holding). The same
+ * instrument held in several portfolios is aggregated. Classes with no holdings
+ * keep a single class-only line.
+ */
+export function splitOrdersByInstrument(
+  orders: ReadonlyArray<RebalanceOrder>,
+  holdings: ReadonlyArray<{
+    instrumentId: string;
+    symbol: string;
+    name: string;
+    kind: string;
+    marketValue: number;
+    quantity: number;
+  }>,
+): InstrumentOrderLine[] {
+  const byClass = new Map<AssetClassKey, Map<string, { symbol: string; name: string; value: number; quantity: number }>>();
+  for (const holding of holdings) {
+    if (!(holding.marketValue > 0)) continue;
+    const key = kindToAssetClass(holding.kind);
+    const group = byClass.get(key) ?? new Map();
+    const entry = group.get(holding.instrumentId) ?? {
+      symbol: holding.symbol,
+      name: holding.name,
+      value: 0,
+      quantity: 0,
+    };
+    entry.value += holding.marketValue;
+    entry.quantity += holding.quantity;
+    group.set(holding.instrumentId, entry);
+    byClass.set(key, group);
+  }
+
+  const lines: InstrumentOrderLine[] = [];
+  for (const order of orders) {
+    const group = byClass.get(order.key);
+    const total = group ? [...group.values()].reduce((s, e) => s + e.value, 0) : 0;
+    if (!group || !(total > 0)) {
+      lines.push({
+        key: order.key,
+        action: order.action,
+        instrumentId: null,
+        symbol: null,
+        name: null,
+        amount: order.amount,
+        quantity: null,
+      });
+      continue;
+    }
+    for (const [instrumentId, entry] of [...group.entries()].sort((a, b) => b[1].value - a[1].value)) {
+      const amount = Math.round(((order.amount * entry.value) / total) * 100) / 100;
+      lines.push({
+        key: order.key,
+        action: order.action,
+        instrumentId,
+        symbol: entry.symbol,
+        name: entry.name,
+        amount,
+        quantity: entry.value > 0 ? (amount * entry.quantity) / entry.value : null,
+      });
+    }
+  }
+  return lines;
+}

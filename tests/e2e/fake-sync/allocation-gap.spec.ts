@@ -40,4 +40,6 @@ test("reports show target vs actual per asset class once a plan is set", async (
   await page.getByRole("radio", { name: "Pełny rebalansing" }).click();
   await expect(plan).toContainText("Szacowany podatek");
   await expect(plan.getByText(/Sprzedaj:|Dokup:/).first()).toBeVisible();
+  // Class orders are broken down to the instruments already held.
+  await expect(plan.getByText(/szt\.|Wybierz instrument tej klasy/).first()).toBeVisible();
 });

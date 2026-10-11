@@ -8,7 +8,7 @@ import {
   sumByAssetClass,
   type GapTone,
 } from "@/domain/allocation/allocation-gap";
-import { buildTaxLots, planBuyOnlyRebalance, planFullRebalance } from "@/domain/allocation/rebalance";
+import { buildTaxLots, planBuyOnlyRebalance, planFullRebalance, splitOrdersByInstrument } from "@/domain/allocation/rebalance";
 import { wrapperType } from "@/features/settings/ike-ikze-usage";
 import { currencyLabel } from "@/lib/money";
 import { useDisplayCurrency } from "@/features/sync/use-display-currency";
@@ -42,7 +42,7 @@ export function AllocationGapCard({ portfolioIds }: { portfolioIds: string[] }) 
   const [planOpen, setPlanOpen] = useState(false);
   const [mode, setMode] = useState<"buyOnly" | "full">("buyOnly");
 
-  const { gap, target, valuesByClass, lotsByClass } = useMemo(() => {
+  const { gap, target, valuesByClass, lotsByClass, holdings: allHoldings } = useMemo(() => {
     const details = records
       ? portfolioIds
           .filter((id) => id !== SYNTHETIC_FALLBACK_ACCOUNT_ID)
@@ -89,6 +89,7 @@ export function AllocationGapCard({ portfolioIds }: { portfolioIds: string[] }) 
       target,
       valuesByClass: sumByAssetClass(holdings),
       lotsByClass,
+      holdings,
     };
   }, [records, portfolioIds, marketFxRates, marketQuotes, marketCpi, marketMetricsCpi, marketReferenceRates, displayCurrency]);
 
@@ -111,6 +112,10 @@ export function AllocationGapCard({ portfolioIds }: { portfolioIds: string[] }) 
     };
   }, [planOpen, mode, contribution, target, valuesByClass, lotsByClass]);
   const ccy = currencyLabel(displayCurrency);
+  const instrumentLines = useMemo(
+    () => (plan ? splitOrdersByInstrument(plan.orders, allHoldings) : []),
+    [plan, allHoldings],
+  );
 
   return (
     <div
@@ -258,16 +263,31 @@ export function AllocationGapCard({ portfolioIds }: { portfolioIds: string[] }) 
                     <div style={{ fontSize: 13, color: V2.muted }}>Brak klas z ustawionym celem do dokupienia.</div>
                   ) : (
                     plan.orders.map((order) => (
-                      <div
-                        key={order.key}
-                        style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 13, color: V2.ink }}
-                      >
-                        <span>
-                          {order.action === "sell" ? "Sprzedaj" : "Dokup"}: {meta.get(order.key)!.label}
-                        </span>
-                        <span style={{ fontFamily: V2_TYPE.mono, fontVariantNumeric: "tabular-nums" }}>
-                          {order.amount.toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {ccy}
-                        </span>
+                      <div key={order.key} style={{ padding: "6px 0" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: V2.ink }}>
+                          <span>
+                            {order.action === "sell" ? "Sprzedaj" : "Dokup"}: {meta.get(order.key)!.label}
+                          </span>
+                          <span style={{ fontFamily: V2_TYPE.mono, fontVariantNumeric: "tabular-nums" }}>
+                            {order.amount.toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {ccy}
+                          </span>
+                        </div>
+                        {instrumentLines
+                          .filter((line) => line.key === order.key && line.action === order.action)
+                          .map((line) => (
+                            <div
+                              key={line.instrumentId ?? "class"}
+                              style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: V2.muted, paddingLeft: 14, marginTop: 2 }}
+                            >
+                              <span>{line.symbol ?? "Wybierz instrument tej klasy"}</span>
+                              {line.symbol && (
+                                <span style={{ fontFamily: V2_TYPE.mono, fontVariantNumeric: "tabular-nums" }}>
+                                  {line.amount.toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {ccy}
+                                  {line.quantity != null && ` · ok. ${line.quantity.toLocaleString("pl-PL", { maximumFractionDigits: 4 })} szt.`}
+                                </span>
+                              )}
+                            </div>
+                          ))}
                       </div>
                     ))
                   )}
