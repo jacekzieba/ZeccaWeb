@@ -6,9 +6,10 @@ Bez zależności od zewnętrznych danych: liczymy na tym, co już jest w sync st
 **Zasada nadrzędna: parytet z natywną apką** (macOS/iOS, `/Volumes/T5/Zecca` — źródło prawdy).
 Ta funkcja **już istnieje natywnie** — web ma ją odtworzyć, nie wymyślić od nowa.
 
-Status (2026-10-11): **Fazy 0, 1 i 2a zrobione**, 2b i 3 zostają. Odstępstwa od speca:
+Status (2026-10-11): **Fazy 0, 1, 2a i 2b zrobione**, 3 zostaje. Odstępstwa od speca:
 - aktualna alokacja liczona wg natywnej: tylko pozycje (gotówka portfela poza nią), % z sumy pozycji;
 - agregat celu wazony wartoscia WSZYSTKICH portfeli (portfel bez planu obniza agregat), jak natywnie;
+- 2b: pełny rebalansing sprzedaje klasy powyżej celu; sprzedaż najpierw z IKE/IKZE (bez podatku), reszta po średnim wskaźniku zysku klasy × 19%. Gotówka i lokaty bez podatku. Brak kosztu bazowego = brak zysku (szacunek zaniżony, nie zawyżony);
 - plan dokupienia to panel w karcie "Docelowa vs aktualna" w Raportach, nie modal na portfelu.
 
 ## Parytet — co natywna apka JUŻ ma (i czego nie ma)

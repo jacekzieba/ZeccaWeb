@@ -13,7 +13,7 @@ describe("planBuyOnlyRebalance", () => {
       currentByClass: values({ etf: 800, treasuryBond: 200 }),
       contribution: 100,
     });
-    expect(plan.orders.every((o) => o.amount > 0)).toBe(true);
+    expect(plan.orders.every((o) => o.amount > 0 && o.action === "buy")).toBe(true);
     expect(plan.orders.reduce((s, o) => s + o.amount, 0)).toBeCloseTo(100, 2);
     // equity is already over target: everything goes to bonds
     expect(plan.orders).toHaveLength(1);

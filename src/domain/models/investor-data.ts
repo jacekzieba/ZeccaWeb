@@ -153,6 +153,8 @@ export type HoldingRow = {
   valuationSourceLabel: string;
   marketValue: number;
   portfolioPercent: number;
+  /** FIFO cost of the open lots in the display currency; absent in demo/sample data. */
+  costBasis?: number;
 };
 
 export type CashBalance = {

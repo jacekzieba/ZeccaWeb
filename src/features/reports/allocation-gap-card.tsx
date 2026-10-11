@@ -8,7 +8,8 @@ import {
   sumByAssetClass,
   type GapTone,
 } from "@/domain/allocation/allocation-gap";
-import { planBuyOnlyRebalance } from "@/domain/allocation/rebalance";
+import { buildTaxLots, planBuyOnlyRebalance, planFullRebalance } from "@/domain/allocation/rebalance";
+import { wrapperType } from "@/features/settings/ike-ikze-usage";
 import { currencyLabel } from "@/lib/money";
 import { useDisplayCurrency } from "@/features/sync/use-display-currency";
 import { useSyncStore } from "@/sync/store/sync-store";
@@ -39,8 +40,9 @@ export function AllocationGapCard({ portfolioIds }: { portfolioIds: string[] }) 
 
   const [contributionText, setContributionText] = useState("");
   const [planOpen, setPlanOpen] = useState(false);
+  const [mode, setMode] = useState<"buyOnly" | "full">("buyOnly");
 
-  const { gap, target, valuesByClass } = useMemo(() => {
+  const { gap, target, valuesByClass, lotsByClass } = useMemo(() => {
     const details = records
       ? portfolioIds
           .filter((id) => id !== SYNTHETIC_FALLBACK_ACCOUNT_ID)
@@ -59,30 +61,55 @@ export function AllocationGapCard({ portfolioIds }: { portfolioIds: string[] }) 
           )
           .filter((detail): detail is NonNullable<typeof detail> => detail !== null)
       : [];
-    const targets = details.map((detail) => {
-      const payload = (findAccountRecord(records, detail.id)?.envelope.payload ?? {}) as {
-        targetAllocation?: Record<string, number>;
-      };
-      return { totalValue: detail.totalValue, target: readAllocation(payload.targetAllocation) };
-    });
+    const payloads = details.map(
+      (detail) =>
+        (findAccountRecord(records, detail.id)?.envelope.payload ?? {}) as {
+          targetAllocation?: Record<string, number>;
+          accountType?: string;
+        },
+    );
+    const targets = details.map((detail, i) => ({
+      totalValue: detail.totalValue,
+      target: readAllocation(payloads[i].targetAllocation),
+    }));
     const holdings = details.flatMap((detail) => detail.holdings);
+    const lotsByClass = buildTaxLots(
+      details.flatMap((detail, i) =>
+        detail.holdings.map((holding) => ({
+          kind: holding.kind,
+          marketValue: holding.marketValue,
+          costBasis: holding.costBasis,
+          exempt: wrapperType(payloads[i].accountType) !== null,
+        })),
+      ),
+    );
     const target = aggregateTarget(targets);
     return {
       gap: buildAllocationGap(target, computeActualAllocation(holdings)),
       target,
       valuesByClass: sumByAssetClass(holdings),
+      lotsByClass,
     };
   }, [records, portfolioIds, marketFxRates, marketQuotes, marketCpi, marketMetricsCpi, marketReferenceRates, displayCurrency]);
 
   const meta = new Map(ASSET_CLASSES.map((c) => [c.key, c]));
   const contribution = Number(contributionText.replace(/\s/g, "").replace(",", "."));
-  const plan = useMemo(
-    () =>
-      planOpen && contribution > 0
-        ? planBuyOnlyRebalance({ target, currentByClass: valuesByClass, contribution })
-        : null,
-    [planOpen, contribution, target, valuesByClass],
-  );
+  const plan = useMemo(() => {
+    if (!planOpen) return null;
+    if (mode === "full") {
+      return planFullRebalance({
+        target,
+        currentByClass: valuesByClass,
+        lotsByClass,
+        contribution: Math.max(0, contribution || 0),
+      });
+    }
+    if (!(contribution > 0)) return null;
+    return {
+      ...planBuyOnlyRebalance({ target, currentByClass: valuesByClass, contribution }),
+      estimatedTax: 0,
+    };
+  }, [planOpen, mode, contribution, target, valuesByClass, lotsByClass]);
   const ccy = currencyLabel(displayCurrency);
 
   return (
@@ -173,8 +200,34 @@ export function AllocationGapCard({ portfolioIds }: { portfolioIds: string[] }) 
           </button>
           {planOpen && (
             <div style={{ marginTop: 12 }}>
+              <div role="radiogroup" aria-label="Tryb planu" style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                {([
+                  ["buyOnly", "Tylko dokupowanie"],
+                  ["full", "Pełny rebalansing"],
+                ] as const).map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="radio"
+                    aria-checked={mode === id}
+                    onClick={() => setMode(id)}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: "var(--r-lg)",
+                      border: `0.5px solid ${V2.line}`,
+                      background: mode === id ? V2.ink : V2.card,
+                      color: mode === id ? V2.card : V2.ink,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
               <label style={{ display: "block", fontSize: 12, color: V2.muted }}>
-                Kwota nowej wpłaty ({ccy})
+                Kwota nowej wpłaty ({ccy}){mode === "full" ? ", opcjonalnie" : ""}
                 <input
                   type="text"
                   inputMode="decimal"
@@ -195,7 +248,9 @@ export function AllocationGapCard({ portfolioIds }: { portfolioIds: string[] }) 
                 />
               </label>
               <div style={{ fontSize: 12, color: V2.muted, marginTop: 8 }}>
-                Tylko dokupowanie: nic nie sprzedajemy, więc bez podatku. To podpowiedź, nic się nie zapisuje.
+                {mode === "buyOnly"
+                  ? "Tylko dokupowanie: nic nie sprzedajemy, więc bez podatku. To podpowiedź, nic się nie zapisuje."
+                  : "Sprzedajemy klasy powyżej celu i dokupujemy poniżej. Sprzedaż najpierw z IKE/IKZE, reszta z podatkiem Belki 19% od średniego zysku klasy. To szacunek na poziomie klasy, nie porada podatkowa. Nic się nie zapisuje."}
               </div>
               {plan && (
                 <div style={{ marginTop: 12 }} data-testid="rebalance-plan">
@@ -207,12 +262,22 @@ export function AllocationGapCard({ portfolioIds }: { portfolioIds: string[] }) 
                         key={order.key}
                         style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 13, color: V2.ink }}
                       >
-                        <span>Dokup: {meta.get(order.key)!.label}</span>
+                        <span>
+                          {order.action === "sell" ? "Sprzedaj" : "Dokup"}: {meta.get(order.key)!.label}
+                        </span>
                         <span style={{ fontFamily: V2_TYPE.mono, fontVariantNumeric: "tabular-nums" }}>
                           {order.amount.toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {ccy}
                         </span>
                       </div>
                     ))
+                  )}
+                  {mode === "full" && plan.orders.length > 0 && (
+                    <div style={{ fontSize: 12, color: V2.ink, marginTop: 6 }}>
+                      Szacowany podatek:{" "}
+                      <span style={{ fontFamily: V2_TYPE.mono }}>
+                        {plan.estimatedTax.toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {ccy}
+                      </span>
+                    </div>
                   )}
                   <div style={{ fontSize: 12, color: V2.muted, marginTop: 6 }}>
                     Największe odchylenie: {pct(plan.preMaxDriftPp)} pp → {pct(plan.postMaxDriftPp)} pp

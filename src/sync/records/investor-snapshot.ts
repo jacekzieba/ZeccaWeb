@@ -2406,6 +2406,9 @@ export function buildPortfolioDetail(
       valuationSourceLabel: valuation.sourceLabel,
       marketValue,
       portfolioPercent: 0,
+      costBasis:
+        (ledger.openLots.get(instrumentId) ?? []).reduce((sum, lot) => sum + lotBaseCost(lot), 0) /
+        asOfRate,
     });
   }
 

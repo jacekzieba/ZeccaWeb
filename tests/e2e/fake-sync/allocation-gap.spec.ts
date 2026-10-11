@@ -34,4 +34,10 @@ test("reports show target vs actual per asset class once a plan is set", async (
   const plan = page.getByTestId("rebalance-plan");
   await expect(plan).toContainText("Dokup:");
   await expect(plan).toContainText("Największe odchylenie");
+  await expect(plan).not.toContainText("Sprzedaj:");
+
+  // Full mode may sell overweight classes and shows the tax estimate.
+  await page.getByRole("radio", { name: "Pełny rebalansing" }).click();
+  await expect(plan).toContainText("Szacowany podatek");
+  await expect(plan.getByText(/Sprzedaj:|Dokup:/).first()).toBeVisible();
 });

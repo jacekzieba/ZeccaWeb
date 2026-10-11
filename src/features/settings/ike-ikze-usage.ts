@@ -16,7 +16,7 @@ function toDate(value: unknown): Date | null {
 
 /** Normalises an accountType to "IKE" | "IKZE" | null, case-insensitively —
  * real sync sends the display strings while fake sync uses lowercase codes. */
-function wrapperType(accountType: unknown): "IKE" | "IKZE" | null {
+export function wrapperType(accountType: unknown): "IKE" | "IKZE" | null {
   const t = typeof accountType === "string" ? accountType.trim().toUpperCase() : "";
   return t === "IKE" || t === "IKZE" ? t : null;
 }

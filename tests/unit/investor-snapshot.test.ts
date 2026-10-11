@@ -1715,6 +1715,7 @@ describe("InvestorDataSnapshot mapper", () => {
         valuationSourceLabel: "Wycena ręczna",
         marketValue: 2_400,
         portfolioPercent: expect.closeTo(23.01496, 5),
+        costBasis: 2_000,
       },
     ]);
 
