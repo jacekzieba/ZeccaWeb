@@ -2,6 +2,13 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { V2, V2_TYPE, v2Mix } from "@/lib/v2-design";
+import {
+  getStoredPasskeyId,
+  isPasskeySupported,
+  registerPasskey,
+  removePasskey,
+  verifyPasskey,
+} from "./passkey";
 
 const SESSION_KEY = "investor-app-lock-pin";
 const VERIFIED_KEY = "investor-app-lock-verified";
@@ -188,6 +195,7 @@ export function AppLockRemove({ onDone }: { onDone?: () => void }) {
       return;
     }
     removePinHash();
+    removePasskey();
     localStorage.removeItem(SETUP_KEY);
     onDone?.();
   }
@@ -259,6 +267,16 @@ export function AppLock({ children }: { children: React.ReactNode }) {
     setError(null);
   }
 
+  async function unlockWithPasskey() {
+    if (await verifyPasskey()) {
+      markVerified();
+      setMode("unlocked");
+      setError(null);
+    } else {
+      setError("Nie udało się potwierdzić passkey. Użyj PIN-u albo spróbuj ponownie.");
+    }
+  }
+
   if (mode === "locked") {
     return (
       <div
@@ -271,6 +289,19 @@ export function AppLock({ children }: { children: React.ReactNode }) {
       >
         <div style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 500, color: V2.ink, marginBottom: 8 }}>Zecca</div>
         <PinPad label="Podaj PIN, aby odblokować" onPin={verify} error={error} />
+        {getStoredPasskeyId() && isPasskeySupported() && (
+          <button
+            type="button"
+            onClick={unlockWithPasskey}
+            style={{
+              marginTop: 18, padding: "10px 20px", borderRadius: "var(--r-xl)",
+              border: `0.5px solid ${V2.line}`, background: V2.card, color: V2.ink,
+              fontFamily: UI, fontSize: 13, fontWeight: 600, cursor: "pointer",
+            }}
+          >
+            Odblokuj biometrią (passkey)
+          </button>
+        )}
       </div>
     );
   }
@@ -282,11 +313,31 @@ export function AppLock({ children }: { children: React.ReactNode }) {
 export function AppLockSettingsRow() {
   const [enabled, setEnabled] = useState(isSetupEnabled);
   const [view, setView] = useState<"idle" | "setup" | "remove">("idle");
+  const [hasPasskey, setHasPasskey] = useState(() => Boolean(getStoredPasskeyId()));
+  const [passkeyError, setPasskeyError] = useState<string | null>(null);
+  const [passkeySupported, setPasskeySupported] = useState(false);
+  useEffect(() => setPasskeySupported(isPasskeySupported()), []);
+
+  async function addPasskey() {
+    setPasskeyError(null);
+    try {
+      await registerPasskey();
+      setHasPasskey(true);
+    } catch {
+      setPasskeyError("Nie udało się dodać passkey. Sprawdź, czy urządzenie ma biometrię albo PIN systemu.");
+    }
+  }
+
+  function dropPasskey() {
+    removePasskey();
+    setHasPasskey(false);
+  }
 
   if (view === "setup") return <AppLockSetup onDone={() => { setEnabled(true); setView("idle"); }} />;
   if (view === "remove") return <AppLockRemove onDone={() => { setEnabled(false); setView("idle"); }} />;
 
   return (
+    <>
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
       <div>
         <div style={{ fontFamily: UI, fontSize: 13, fontWeight: 600, color: V2.ink }}>Blokada ekranu PIN</div>
@@ -307,5 +358,29 @@ export function AppLockSettingsRow() {
         {enabled ? "Usuń PIN" : "Ustaw blokadę"}
       </button>
     </div>
+    {enabled && passkeySupported && (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap", marginTop: 14 }}>
+        <div>
+          <div style={{ fontFamily: UI, fontSize: 13, fontWeight: 600, color: V2.ink }}>Odblokowanie biometrią (passkey)</div>
+          <div style={{ fontFamily: UI, fontSize: 12, color: V2.muted, marginTop: 2 }}>
+            {hasPasskey
+              ? "Odblokowanie wymaga potwierdzenia na urządzeniu: biometrią albo PIN-em systemu. PIN nadal działa."
+              : "Dodaj passkey tego urządzenia, żeby odblokowywać widok biometrią zamiast PIN-u."}
+          </div>
+          {passkeyError && <div role="alert" style={{ fontFamily: UI, fontSize: 12, color: V2.loss, marginTop: 4 }}>{passkeyError}</div>}
+        </div>
+        <button
+          onClick={hasPasskey ? dropPasskey : addPasskey}
+          style={{
+            padding: "8px 14px", borderRadius: "var(--r-xl)", border: `0.5px solid ${V2.line}`,
+            background: V2.card, color: hasPasskey ? V2.loss : V2.ink,
+            fontFamily: UI, fontSize: 12, fontWeight: 600, cursor: "pointer",
+          }}
+        >
+          {hasPasskey ? "Usuń passkey" : "Dodaj passkey"}
+        </button>
+      </div>
+    )}
+    </>
   );
 }
