@@ -1,7 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
-import { aggregateTarget, buildAllocationGap, computeActualAllocation, type GapTone } from "@/domain/allocation/allocation-gap";
+import { useMemo, useState } from "react";
+import {
+  aggregateTarget,
+  buildAllocationGap,
+  computeActualAllocation,
+  sumByAssetClass,
+  type GapTone,
+} from "@/domain/allocation/allocation-gap";
+import { planBuyOnlyRebalance } from "@/domain/allocation/rebalance";
+import { currencyLabel } from "@/lib/money";
 import { useDisplayCurrency } from "@/features/sync/use-display-currency";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { buildPortfolioDetail, SYNTHETIC_FALLBACK_ACCOUNT_ID } from "@/sync/records/investor-snapshot";
@@ -29,7 +37,10 @@ export function AllocationGapCard({ portfolioIds }: { portfolioIds: string[] }) 
   const marketReferenceRates = useSyncStore((s) => s.marketReferenceRates);
   const { currency: displayCurrency } = useDisplayCurrency();
 
-  const gap = useMemo(() => {
+  const [contributionText, setContributionText] = useState("");
+  const [planOpen, setPlanOpen] = useState(false);
+
+  const { gap, target, valuesByClass } = useMemo(() => {
     const details = records
       ? portfolioIds
           .filter((id) => id !== SYNTHETIC_FALLBACK_ACCOUNT_ID)
@@ -54,11 +65,25 @@ export function AllocationGapCard({ portfolioIds }: { portfolioIds: string[] }) 
       };
       return { totalValue: detail.totalValue, target: readAllocation(payload.targetAllocation) };
     });
-    const actual = computeActualAllocation(details.flatMap((detail) => detail.holdings));
-    return buildAllocationGap(aggregateTarget(targets), actual);
+    const holdings = details.flatMap((detail) => detail.holdings);
+    const target = aggregateTarget(targets);
+    return {
+      gap: buildAllocationGap(target, computeActualAllocation(holdings)),
+      target,
+      valuesByClass: sumByAssetClass(holdings),
+    };
   }, [records, portfolioIds, marketFxRates, marketQuotes, marketCpi, marketMetricsCpi, marketReferenceRates, displayCurrency]);
 
   const meta = new Map(ASSET_CLASSES.map((c) => [c.key, c]));
+  const contribution = Number(contributionText.replace(/\s/g, "").replace(",", "."));
+  const plan = useMemo(
+    () =>
+      planOpen && contribution > 0
+        ? planBuyOnlyRebalance({ target, currentByClass: valuesByClass, contribution })
+        : null,
+    [planOpen, contribution, target, valuesByClass],
+  );
+  const ccy = currencyLabel(displayCurrency);
 
   return (
     <div
@@ -126,6 +151,78 @@ export function AllocationGapCard({ portfolioIds }: { portfolioIds: string[] }) 
           );
         })}
       </div>
+
+      {gap.hasTarget && (
+        <div style={{ marginTop: 18, paddingTop: 14, borderTop: `0.5px solid ${V2.line2}` }}>
+          <button
+            type="button"
+            onClick={() => setPlanOpen((open) => !open)}
+            aria-expanded={planOpen}
+            style={{
+              padding: "7px 14px",
+              borderRadius: "var(--r-lg)",
+              border: `0.5px solid ${V2.line}`,
+              background: V2.card,
+              color: V2.ink,
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Zaplanuj dokupienie
+          </button>
+          {planOpen && (
+            <div style={{ marginTop: 12 }}>
+              <label style={{ display: "block", fontSize: 12, color: V2.muted }}>
+                Kwota nowej wpłaty ({ccy})
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={contributionText}
+                  onChange={(e) => setContributionText(e.target.value)}
+                  style={{
+                    display: "block",
+                    marginTop: 6,
+                    width: 160,
+                    padding: "7px 10px",
+                    borderRadius: "var(--r-lg)",
+                    border: `0.5px solid ${V2.line}`,
+                    background: V2.card,
+                    color: V2.ink,
+                    fontFamily: V2_TYPE.mono,
+                    fontSize: 13,
+                  }}
+                />
+              </label>
+              <div style={{ fontSize: 12, color: V2.muted, marginTop: 8 }}>
+                Tylko dokupowanie: nic nie sprzedajemy, więc bez podatku. To podpowiedź, nic się nie zapisuje.
+              </div>
+              {plan && (
+                <div style={{ marginTop: 12 }} data-testid="rebalance-plan">
+                  {plan.orders.length === 0 ? (
+                    <div style={{ fontSize: 13, color: V2.muted }}>Brak klas z ustawionym celem do dokupienia.</div>
+                  ) : (
+                    plan.orders.map((order) => (
+                      <div
+                        key={order.key}
+                        style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 13, color: V2.ink }}
+                      >
+                        <span>Dokup: {meta.get(order.key)!.label}</span>
+                        <span style={{ fontFamily: V2_TYPE.mono, fontVariantNumeric: "tabular-nums" }}>
+                          {order.amount.toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {ccy}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                  <div style={{ fontSize: 12, color: V2.muted, marginTop: 6 }}>
+                    Największe odchylenie: {pct(plan.preMaxDriftPp)} pp → {pct(plan.postMaxDriftPp)} pp
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

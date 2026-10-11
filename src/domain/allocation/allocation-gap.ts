@@ -28,15 +28,24 @@ export type AllocationGap = {
   hasTarget: boolean;
 };
 
+/** Market value per asset class (holdings only; portfolio cash is not included). */
+export function sumByAssetClass(
+  holdings: ReadonlyArray<{ kind: string; marketValue: number }>,
+): Allocation {
+  const result = emptyAllocation();
+  for (const h of holdings) result[kindToAssetClass(h.kind)] += h.marketValue;
+  return result;
+}
+
 /** Native `currentAllocation`: holdings only (portfolio cash is not included), as % of their total. */
 export function computeActualAllocation(
   holdings: ReadonlyArray<{ kind: string; marketValue: number }>,
 ): Allocation {
-  const result = emptyAllocation();
+  const values = sumByAssetClass(holdings);
   const total = holdings.reduce((sum, h) => sum + h.marketValue, 0);
-  if (!(total > 0)) return result;
-  for (const h of holdings) result[kindToAssetClass(h.kind)] += (h.marketValue / total) * 100;
-  return result;
+  if (!(total > 0)) return values;
+  for (const { key } of ASSET_CLASSES) values[key] = (values[key] / total) * 100;
+  return values;
 }
 
 /**

@@ -27,4 +27,11 @@ test("reports show target vs actual per asset class once a plan is set", async (
   await expect(equity).toHaveText(/\/ \d+,\d{2}%[+-]\d+,\d{2}pp/);
   await expect(equity).not.toContainText("/ 0,00%");
   await expect(page.getByText("Brak ustawionej alokacji docelowej.")).toBeHidden();
+
+  // Buy-only plan: shows orders, never persists anything.
+  await page.getByRole("button", { name: "Zaplanuj dokupienie" }).click();
+  await page.getByLabel(/Kwota nowej wpłaty/).fill("1000");
+  const plan = page.getByTestId("rebalance-plan");
+  await expect(plan).toContainText("Dokup:");
+  await expect(plan).toContainText("Największe odchylenie");
 });
