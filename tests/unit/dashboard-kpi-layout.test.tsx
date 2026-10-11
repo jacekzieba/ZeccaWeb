@@ -39,6 +39,7 @@ describe("dashboard KPI layout", () => {
       kpiInterest: [1],
       kpiFees: [1],
       kpiTaxes: [1],
+      kpiCash: [1],
     });
   });
 });

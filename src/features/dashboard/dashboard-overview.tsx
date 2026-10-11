@@ -42,6 +42,7 @@ import type {
 import { TYPOGRAPHY } from "@/lib/design-tokens";
 import { formatAxisValue, currencyLabel, formatShare } from "@/lib/money";
 import {
+  buildAllocationHistory,
   buildInstrumentList,
   buildTransactionList,
 } from "@/sync/records/investor-snapshot";
@@ -58,9 +59,15 @@ import {
 } from "@/domain/bonds/bond-series-groups";
 import { KpiRegister, KPI_TILE_META, getKpiTiles } from "@/components/metrics/portfolio-kpi-strip";
 import { ValueVsDepositsChart } from "@/components/charts/value-vs-deposits-chart";
-import { BarSeriesChart, SeriesLineChart } from "@/components/charts/series-chart";
+import { BarSeriesChart, SeriesLineChart, StackedShareChart } from "@/components/charts/series-chart";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
 import { AllocationGapCard } from "@/features/reports/allocation-gap-card";
+import {
+  MODEL_BENCHMARKS,
+  buildBenchmarkSeries,
+  growthFromMonthly,
+  toMonthly,
+} from "@/domain/benchmark/model-benchmarks";
 import {
   currencyBreakdown,
   drawdownSeries,
@@ -115,6 +122,7 @@ const DASHBOARD_KPI_ICONS: Record<string, LucideIcon> = {
   kpiInterest: Banknote,
   kpiFees: BadgeDollarSign,
   kpiTaxes: Landmark,
+  kpiCash: Wallet,
   kpiOpenPositions: BriefcaseBusiness,
 };
 
@@ -138,6 +146,9 @@ const DASHBOARD_SECTIONS: SectionDef<string>[] = [
   { id: "chartBenchmarkVsInflation", label: "Portfel vs inflacja", desc: "Zwrot ważony czasem na tle inflacji.", category: "charts", icon: ChartNoAxesCombined, sizePresets: [{ width: 2 }, { width: 4 }], defaultHidden: true },
   { id: "chartAnnualReturns", label: "Zwroty roczne", desc: "Zwrot ważony czasem w kolejnych latach.", category: "charts", icon: ChartColumn, sizePresets: [{ width: 2 }, { width: 4 }], defaultHidden: true },
   { id: "allocationTargetVsActual", label: "Docelowa vs aktualna", desc: "Alokacja klas aktywów na tle planu.", category: "charts", icon: ChartPie, sizePresets: [{ width: 2 }, { width: 4 }], defaultHidden: true },
+  { id: "chartXIRROverTime", label: "XIRR w czasie", desc: "Roczny zwrot ważony kapitałem w kolejnych punktach historii.", category: "charts", icon: BadgePercent, sizePresets: [{ width: 2 }, { width: 4 }], defaultHidden: true },
+  { id: "chartAllocationOverTime", label: "Alokacja w czasie", desc: "Udział klas aktywów na koniec kolejnych miesięcy.", category: "charts", icon: ChartPie, sizePresets: [{ width: 2 }, { width: 4 }], defaultHidden: true },
+  { id: "chartModelBenchmark", label: "Portfel vs model", desc: "Zwrot portfela na tle modelowego benchmarku.", category: "charts", icon: ChartNoAxesCombined, sizePresets: [{ width: 2 }, { width: 4 }], defaultHidden: true },
   { id: "chartDividends", label: "Dywidendy", desc: "Dywidendy w kolejnych miesiącach.", category: "charts", icon: Coins, sizePresets: [{ width: 2 }, { width: 4 }], defaultHidden: true },
   { id: "chartInterest", label: "Odsetki", desc: "Odsetki i kupony w kolejnych miesiącach.", category: "charts", icon: Banknote, sizePresets: [{ width: 2 }, { width: 4 }], defaultHidden: true },
   { id: "chartCurrencyBreakdown", label: "Podział walut", desc: "Udział walut w wartości pozycji.", category: "charts", icon: ChartPie, sizePresets: [{ width: 1 }, { width: 2 }], defaultHidden: true },
@@ -943,6 +954,7 @@ export function DashboardOverview() {
       totalValue,
       openPositions: holdings.length,
       currency: displayCurrency,
+      cash: snapshot.cash,
     }).map((tile) => [tile.id, tile]),
   );
   const visibleSections = new Set(dashboardConfig.visibleSections);
@@ -1066,6 +1078,26 @@ export function DashboardOverview() {
             format={(v) => `${fmt(v)} ${currencyLabel(displayCurrency)}`}
           />
         </ChartCard>
+      );
+    }
+    if (section === "chartXIRROverTime") {
+      const points = metrics.xirrSeries ?? [];
+      return (
+        <ChartCard eyebrow="Wyniki" title="XIRR w czasie" empty={points.length < 2 ? "Za mało historii na wykres XIRR." : undefined}>
+          <SeriesLineChart
+            ariaLabel="Roczny zwrot ważony kapitałem w czasie"
+            series={[{ label: "XIRR", color: PALETTE.brand, points }]}
+            format={(v) => `${fmt(v, 2)}%`}
+          />
+        </ChartCard>
+      );
+    }
+    if (section === "chartAllocationOverTime") return <AllocationOverTimeCard />;
+    if (section === "chartModelBenchmark") {
+      return (
+        <ModelBenchmarkCard
+          performance={snapshot.performanceSeries.length >= 2 ? snapshot.performanceSeries : historySource}
+        />
       );
     }
     if (section === "chartAnnualReturns") {
@@ -1569,6 +1601,101 @@ function ChartCard({
       {empty ? <div style={{ fontFamily: UI, fontSize: 13, color: PALETTE.subtle }}>{empty}</div> : children}
       {note && !empty && <div style={{ fontFamily: UI, fontSize: 11, color: PALETTE.muted, marginTop: 8 }}>{note}</div>}
     </Card>
+  );
+}
+
+function AllocationOverTimeCard() {
+  const records = useSyncStore((s) => s.records);
+  const marketFxRates = useSyncStore((s) => s.marketFxRates);
+  const marketQuotes = useSyncStore((s) => s.marketQuotes);
+  const marketCpi = useSyncStore((s) => s.marketCpi);
+  const marketReferenceRates = useSyncStore((s) => s.marketReferenceRates);
+  const columns = useMemo(() => {
+    if (!records) return [];
+    return buildAllocationHistory(records, {
+      asOf: new Date(),
+      fxRates: marketFxRates,
+      marketQuotes,
+      cpi: marketCpi,
+      referenceRates: marketReferenceRates,
+      useLatestTransactionFxRate: true,
+      useMarketQuotes: true,
+    }).map((point) => ({
+      label: point.label,
+      segments: point.slices.map((slice) => ({
+        label: slice.label,
+        color: assetClassColor(slice.label),
+        percent: slice.percent,
+      })),
+    }));
+  }, [records, marketFxRates, marketQuotes, marketCpi, marketReferenceRates]);
+  const legend = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const column of columns) for (const segment of column.segments) seen.set(segment.label, segment.color);
+    return [...seen.entries()];
+  }, [columns]);
+  return (
+    <ChartCard eyebrow="Struktura" title="Alokacja w czasie" empty={columns.length < 2 ? "Za mało historii na wykres alokacji." : undefined}>
+      <StackedShareChart data={columns} ariaLabel="Udział klas aktywów na koniec kolejnych miesięcy" />
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", marginTop: 10 }}>
+        {legend.map(([label, color]) => (
+          <span key={label} style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: UI, fontSize: 11, color: PALETTE.muted }}>
+            <span style={{ width: 10, height: 10, borderRadius: "var(--r-xs)", background: color }} />
+            {label}
+          </span>
+        ))}
+      </div>
+    </ChartCard>
+  );
+}
+
+function ModelBenchmarkCard({ performance }: { performance: ValuationPoint[] }) {
+  const [benchmarkId, setBenchmarkId] = useState(MODEL_BENCHMARKS[0].id);
+  const model = MODEL_BENCHMARKS.find((item) => item.id === benchmarkId) ?? MODEL_BENCHMARKS[0];
+  const portfolio = useMemo(() => growthFromMonthly(toMonthly(performance)), [performance]);
+  const benchmark = useMemo(() => buildBenchmarkSeries(model, portfolio.growth.length), [model, portfolio.growth.length]);
+  const enough = performance.length >= 2 && portfolio.growth.length >= 2;
+  const labelAt = (i: number) => portfolio.labels[i] ?? String(i);
+  return (
+    <ChartCard
+      eyebrow="Porównanie"
+      title="Portfel vs model"
+      empty={enough ? undefined : "Za mało historii portfela do porównania z benchmarkiem."}
+      note="Benchmarki modelowe są symulacją o założonym zwrocie i zmienności, nie historią notowań, i nie stanowią rekomendacji inwestycyjnej."
+    >
+      <div role="radiogroup" aria-label="Benchmark modelowy" style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+        {MODEL_BENCHMARKS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            role="radio"
+            aria-checked={item.id === benchmarkId}
+            onClick={() => setBenchmarkId(item.id)}
+            style={{
+              padding: "5px 11px",
+              borderRadius: "var(--r-lg)",
+              border: `0.5px solid ${PALETTE.line}`,
+              background: item.id === benchmarkId ? PALETTE.ink : PALETTE.card,
+              color: item.id === benchmarkId ? PALETTE.card : PALETTE.ink,
+              fontFamily: UI,
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            {item.name}
+          </button>
+        ))}
+      </div>
+      <SeriesLineChart
+        ariaLabel={`Wzrost portfela na tle modelu ${model.name}, start = 100`}
+        series={[
+          { label: "Portfel", color: PALETTE.brand, points: portfolio.growth.map((value, i) => ({ label: labelAt(i), value })) },
+          { label: model.name, color: PALETTE.subtle, dashed: true, points: benchmark.growth.map((value, i) => ({ label: labelAt(i), value })) },
+        ]}
+        format={(v) => fmt(v, 1)}
+      />
+    </ChartCard>
   );
 }
 

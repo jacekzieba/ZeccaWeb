@@ -4,6 +4,7 @@ import { findOversells } from "@/domain/ledger/oversell";
 import { ASSET_CLASSES } from "@/features/portfolios/asset-classes";
 import { toOversellInput } from "./oversell-check";
 import type {
+  AllocationHistoryPoint,
   AllocationSlice,
   CashBalance,
   HoldingRow,
@@ -1035,7 +1036,7 @@ function buildXirrHistory(
   valuationSeries: InvestorDataSnapshot["valuationSeries"],
   baseToPln: BaseToPln,
   points = 12,
-): number[] {
+): ValuationPoint[] {
   if (valuationSeries.length < 2) return [];
 
   const step = Math.max(1, Math.floor((valuationSeries.length - 1) / (points - 1)));
@@ -1045,14 +1046,13 @@ function buildXirrHistory(
   }
   const sampled = indexes.sort((a, b) => a - b).map((i) => valuationSeries[i]);
 
-  return sampled
-    .map((point) => {
-      const asOf = toDate(point.date);
-      const cashflows = buildXirrCashflows(accountIds, dataset, asOf, point.value, baseToPln);
-      return computeXirr(cashflows);
-    })
-    .filter((rate): rate is number => rate != null)
-    .map((rate) => rate * 100);
+  const samples: ValuationPoint[] = [];
+  for (const point of sampled) {
+    const asOf = toDate(point.date);
+    const rate = computeXirr(buildXirrCashflows(accountIds, dataset, asOf, point.value, baseToPln));
+    if (rate != null) samples.push({ label: point.label, date: point.date, value: rate * 100 });
+  }
+  return samples;
 }
 
 function buildMetrics(
@@ -1089,11 +1089,12 @@ function buildMetrics(
   // The sparkline's endpoint must read as the *same* number as the headline
   // above it, not an approximation of it — overwrite the last sample with
   // the authoritative value instead of trusting the resample to land on it.
-  const xirrHistorySamples = buildXirrHistory(accountIds, dataset, valuationSeries, baseToPln);
-  const xirrHistory =
-    xirr != null && xirrHistorySamples.length > 0
-      ? [...xirrHistorySamples.slice(0, -1), xirr * 100]
-      : xirrHistorySamples;
+  const xirrSamples = buildXirrHistory(accountIds, dataset, valuationSeries, baseToPln);
+  const xirrSeries =
+    xirr != null && xirrSamples.length > 0
+      ? [...xirrSamples.slice(0, -1), { ...xirrSamples[xirrSamples.length - 1], value: xirr * 100 }]
+      : xirrSamples;
+  const xirrHistory = xirrSeries.map((point) => point.value);
   const inflationPct = getInflationPct(dataset, asOf);
   const totalReturnPct = computePerformanceReturnPct(performanceSeries);
   const cagrPct = computeCagrPct(performanceSeries);
@@ -1118,6 +1119,7 @@ function buildMetrics(
     realReturnPct,
     xirrPct: xirr == null ? null : xirr * 100,
     xirrHistory,
+    xirrSeries,
     maxDrawdownPct,
     realizedPnl,
     inflationPct,
@@ -2175,6 +2177,56 @@ function buildAllocation(
       label,
       percent: (value / total) * 100,
     }));
+}
+
+/**
+ * Asset-class shares at every month end, for the "allocation over time" chart.
+ * Separate from the snapshot (and so lazy): it replays valuation per month and is
+ * only needed by one dashboard section.
+ */
+export function buildAllocationHistory(
+  records: DecryptedRecord[],
+  options: SnapshotBuildOptions = {},
+): AllocationHistoryPoint[] {
+  const dataset = parseDataset(records, options);
+  const asOf = getAsOf(records, dataset, options);
+  const accounts = getAccounts(dataset, getBaseCurrency(dataset));
+  const precomputed = precomputeValuation(dataset);
+  const runners = accounts.map((account) => ({
+    transactions: transactionsForPortfolio(dataset.transactions, account.id),
+    ledger: emptyLedger(),
+    cursor: 0,
+  }));
+
+  const points: AllocationHistoryPoint[] = [];
+  for (const date of fullMonthEndDates(dataset, asOf)) {
+    const dayEnd = endOfLocalDay(date);
+    const values = new Map<string, number>();
+    for (const runner of runners) {
+      while (
+        runner.cursor < runner.transactions.length &&
+        toDate(runner.transactions[runner.cursor].date).getTime() <= dayEnd.getTime()
+      ) {
+        applyTransaction(runner.ledger, runner.transactions[runner.cursor]);
+        runner.cursor += 1;
+      }
+      const valuation = valuePortfolio(runner.ledger, dataset, dayEnd, { precomputed });
+      for (const [label, value] of valuation.allocationValues) {
+        values.set(label, (values.get(label) ?? 0) + value);
+      }
+    }
+    const total = [...values.values()].reduce((sum, value) => sum + Math.max(0, value), 0);
+    if (total <= EPSILON) continue;
+    points.push({
+      label: monthLabel(date),
+      date: date.toISOString(),
+      slices: [...values.entries()]
+        .filter(([, value]) => value > EPSILON)
+        .sort(([, left], [, right]) => right - left)
+        .map(([label, value]) => ({ label, percent: (value / total) * 100 })),
+    });
+  }
+  return points;
 }
 
 function buildValuationSeries(

@@ -25,7 +25,7 @@ test("extra chart sections are hidden by default and can be turned on", async ({
     await expect(card.getByRole("img", { name: chart })).toBeVisible();
   }
 
-  for (const label of ["Dywidendy", "Odsetki", "Podział walut", "Zwroty roczne", "Docelowa vs aktualna"]) {
+  for (const label of ["Dywidendy", "Odsetki", "Podział walut", "Zwroty roczne", "Docelowa vs aktualna", "XIRR w czasie", "Alokacja w czasie", "Portfel vs model"]) {
     await main.getByRole("checkbox", { name: `Pokaż sekcję ${label}` }).check();
   }
   await expect(page.getByTestId("dashboard-section-chartDividends")).toBeVisible();
@@ -33,4 +33,16 @@ test("extra chart sections are hidden by default and can be turned on", async ({
   await expect(page.getByTestId("dashboard-section-chartCurrencyBreakdown")).toBeVisible();
   await expect(page.getByTestId("dashboard-section-chartAnnualReturns")).toBeVisible();
   await expect(page.getByTestId("dashboard-section-allocationTargetVsActual")).toBeVisible();
+  await expect(page.getByTestId("dashboard-section-chartXIRROverTime")).toBeVisible();
+  const allocationOverTime = page.getByTestId("dashboard-section-chartAllocationOverTime");
+  await expect(allocationOverTime.getByRole("img", { name: /Udział klas aktywów/ })).toBeVisible();
+  const model = page.getByTestId("dashboard-section-chartModelBenchmark");
+  await expect(model.getByText(/symulacją/)).toBeVisible();
+  await model.getByRole("radio", { name: "60 / 40" }).click();
+  await expect(model.getByRole("img", { name: /60 \/ 40/ })).toBeVisible();
+
+  // KPI sections live under "Wskaźniki".
+  await main.getByRole("button", { name: /^Wskaźniki/ }).click();
+  await main.getByRole("checkbox", { name: "Pokaż sekcję Gotówka" }).check();
+  await expect(main.locator(".metric-tile", { hasText: "Gotówka" })).toBeVisible();
 });

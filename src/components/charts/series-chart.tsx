@@ -215,3 +215,62 @@ export function BarSeriesChart({
     </div>
   );
 }
+
+export type ShareSegment = { label: string; color: string; percent: number };
+
+/** One 100% stacked column per period; `segments` of a column sum to ~100. */
+export function StackedShareChart({
+  data,
+  height = 200,
+  ariaLabel,
+}: {
+  data: { label: string; segments: ShareSegment[] }[];
+  height?: number;
+  ariaLabel: string;
+}) {
+  const { ref, width } = useWidth();
+  if (data.length === 0) return null;
+  const W = width - PAD.left - PAD.right;
+  const H = height - PAD.top - PAD.bottom;
+  const slot = W / data.length;
+  const barW = Math.max(4, Math.min(36, slot * 0.72));
+  const ty = (pct: number) => PAD.top + H - (pct / 100) * H;
+
+  return (
+    <div ref={ref} style={{ width: "100%", minWidth: 0 }}>
+      <svg role="img" aria-label={ariaLabel} width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ display: "block", maxWidth: "100%" }}>
+        {[0, 50, 100].map((v) => (
+          <g key={v}>
+            <line x1={PAD.left} x2={PAD.left + W} y1={ty(v)} y2={ty(v)} stroke={COLORS.lineSoft} strokeWidth="1" strokeDasharray="3 4" />
+            <text x={PAD.left - 8} y={ty(v) + 4} textAnchor="end" fontSize="10" fill={COLORS.subtle} fontFamily={TYPOGRAPHY.mono}>
+              {v}%
+            </text>
+          </g>
+        ))}
+        {data.map((column, i) => {
+          const x = PAD.left + slot * i + (slot - barW) / 2;
+          let acc = 0;
+          return (
+            <g key={`${column.label}-${i}`}>
+              {column.segments.map((segment) => {
+                const y = ty(acc + segment.percent);
+                const h = ty(acc) - y;
+                acc += segment.percent;
+                return (
+                  <rect key={segment.label} x={x} y={y} width={barW} height={Math.max(h, 0)} fill={segment.color}>
+                    <title>{`${column.label} · ${segment.label}: ${segment.percent.toFixed(1)}%`}</title>
+                  </rect>
+                );
+              })}
+              {(data.length <= 12 || i % Math.ceil(data.length / 12) === 0) && (
+                <text x={x + barW / 2} y={height - 10} textAnchor="middle" fontSize="10" fill={COLORS.subtle} fontFamily={TYPOGRAPHY.mono}>
+                  {column.label}
+                </text>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}

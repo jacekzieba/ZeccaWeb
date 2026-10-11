@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { RecordType } from "@/domain/models/investor-data";
 import { makeRecord } from "./helpers/records";
 import {
+  buildAllocationHistory,
   buildIncomeLists,
   buildInstrumentList,
   buildInvestorDataSnapshot,
@@ -829,6 +830,21 @@ describe("InvestorDataSnapshot mapper", () => {
       snapshot.metrics.xirrPct!,
       5,
     );
+    // The dated series carries exactly the same samples, in date order.
+    const series = snapshot.metrics.xirrSeries!;
+    expect(series.map((point) => point.value)).toEqual(snapshot.metrics.xirrHistory);
+    const dates = series.map((point) => point.date);
+    expect([...dates].sort()).toEqual(dates);
+
+    // Allocation over time: one point per month end, shares summing to 100.
+    const history = buildAllocationHistory(records, {
+      asOf: new Date("2026-07-01T10:00:00.000Z"),
+    });
+    expect(history.length).toBeGreaterThan(1);
+    for (const point of history) {
+      expect(point.slices.reduce((sum, slice) => sum + slice.percent, 0)).toBeCloseTo(100, 6);
+    }
+    expect(history.at(-1)!.slices.map((slice) => slice.label)).toContain("Akcje / ETF");
   });
 
   it("treats an inter-account cash transfer as a flow, not performance", () => {

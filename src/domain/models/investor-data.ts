@@ -64,6 +64,9 @@ export type PortfolioMetrics = {
    * a separate metric. Used for the KPI sparkline; empty when there isn't
    * enough history to sample more than one point. */
   xirrHistory: number[];
+  /** The same samples as `xirrHistory` with their dates (percent). Optional so
+   * demo/sample snapshots can omit it. */
+  xirrSeries?: ValuationPoint[];
   /** Maximum drawdown of the valuation series, non-positive percent. */
   maxDrawdownPct: number;
   /** Realised P&L from closed positions (FIFO proceeds − cost basis), base
@@ -213,4 +216,11 @@ export type InstrumentRow = {
   totalQuantity: number;
   marketValue: number;
   portfolios: string[];
+};
+
+/** Share of each asset class at the end of a month; `slices` percents sum to 100. */
+export type AllocationHistoryPoint = {
+  label: string;
+  date: string;
+  slices: AllocationSlice[];
 };

@@ -29,6 +29,7 @@ export type KpiTileId =
   | "kpiInterest"
   | "kpiFees"
   | "kpiTaxes"
+  | "kpiCash"
   | "kpiOpenPositions";
 
 /** Metadata for each KPI tile — used to register them as individually
@@ -54,6 +55,7 @@ export const KPI_TILE_META: {
   { id: "kpiInterest", label: "Odsetki", desc: "Suma odsetek i kuponów.", sizePresets: [{ width: 1 }], defaultHidden: true },
   { id: "kpiFees", label: "Prowizje", desc: "Suma opłat transakcyjnych.", sizePresets: [{ width: 1 }], defaultHidden: true },
   { id: "kpiTaxes", label: "Podatki", desc: "Suma zapłaconych podatków.", sizePresets: [{ width: 1 }], defaultHidden: true },
+  { id: "kpiCash", label: "Gotówka", desc: "Saldo środków pieniężnych.", sizePresets: [{ width: 1 }], defaultHidden: true },
 ];
 
 export const KPI_HELP_HREFS: Partial<Record<KpiTileId, string>> = {
@@ -86,12 +88,14 @@ export type PortfolioKpiInput = {
   totalValue: number;
   openPositions: number;
   currency: string;
+  /** Cash balance in `currency`; the Gotówka tile is omitted when absent. */
+  cash?: number;
 };
 
 /** Computes every KPI tile from values the snapshot already produces. Single
  * source of truth for the Portfel strip and the per-tile Dashboard sections. */
 export function getKpiTiles(input: PortfolioKpiInput): KpiTile[] {
-  const { metrics, cashflows, openPositions, currency } = input;
+  const { metrics, cashflows, openPositions, currency, cash } = input;
   const xirr = metrics.xirrPct;
   // Wcześniej każda liczba ≥0 była na zielono — osiem kafelków tym samym
   // odcieniem obok siebie nie różniło się niczym poza treścią etykiety, a sam
@@ -120,6 +124,9 @@ export function getKpiTiles(input: PortfolioKpiInput): KpiTile[] {
     { id: "kpiFees", label: "Prowizje", value: `-${fmt(cashflows.fees)} ${currencyLabel(currency)}`, color: V2.ink },
     { id: "kpiTaxes", label: "Podatki", value: `-${fmt(cashflows.taxes)} ${currencyLabel(currency)}`, color: V2.ink },
   ];
+  if (cash !== undefined) {
+    tiles.push({ id: "kpiCash", label: "Gotówka", value: `${fmt(cash)} ${currencyLabel(currency)}`, color: V2.ink });
+  }
 
   return tiles.map((tile) => ({ ...tile, helpHref: KPI_HELP_HREFS[tile.id] }));
 }
@@ -144,6 +151,7 @@ export const KPI_MARKS: Record<KpiTileId, { source: string; detail: string }> = 
   kpiInterest: { source: "Transakcje", detail: "odsetki i kupony" },
   kpiFees: { source: "Transakcje", detail: "opłaty transakcyjne" },
   kpiTaxes: { source: "Transakcje", detail: "zapłacone podatki" },
+  kpiCash: { source: "Portfel", detail: "salda gotówkowe" },
   kpiOpenPositions: { source: "Pozycje", detail: "liczba obserwacji" },
 };
 
