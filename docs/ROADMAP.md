@@ -78,6 +78,11 @@ Procedura walidacji: `docs/STAGING_VALIDATION.md`.
 
 ## Etap 8 - parytet web-native po release-risk
 
-1. Rozszerzyc dashboard customize poza webowe presety: drag-and-drop, gesty resize i brakujace sekcje natywne po `zecca.dashboard.sections.v1`.
-2. Dodac WebAuthn/passkey jako mocniejszy odpowiednik LocalAuthentication dla weba. Obecny App Lock pozostaje tylko lekka blokada ekranu PIN.
-3. Domknac brakujace wykresy i raporty native-web po zamknieciu staging oraz compliance P0/P1.
+Stan 2026-10-11.
+
+1. Dashboard customize: drag-and-drop i wybor szerokosci sekcji - gotowe. Dodane sekcje natywne (domyslnie ukryte, wlaczane w "Dostosuj"): wynik w czasie, obsuniecie, portfel vs inflacja, zwroty roczne, dywidendy, odsetki, podzial walut, docelowa vs aktualna oraz KPI odsetki/prowizje/podatki. Brak: `chartXIRROverTime`, `chartAllocationOverTime`, `chartModelBenchmark`, KPI gotowki na dashboardzie.
+2. Passkey (WebAuthn) jako dodatkowe odblokowanie App Lock - gotowe jako lokalne poswiadczenie z wymuszonym user verification. To nadal blokada widoku, nie granica bezpieczenstwa (brak weryfikacji podpisu po stronie serwera); PIN zostaje fallbackiem.
+3. Docelowa vs aktualna alokacja w Raportach (parytet 1:1 z natywna sekcja) i plan dokupienia bez sprzedazy (web-first, prezentacyjny) - gotowe. Rebalansing ze sprzedaza i Belka: `docs/PLAN_DRIFT_REBALANCING.md`, Faza 2b.
+4. Zostaje po stronie uzytkownika (Etap 7): deploy `delete-account` z `verify_jwt=false`, parytet web<->native na tych samych rekordach, tombstone native->web, inspekcja sieci providerow.
+
+Plan realizacji: `docs/PLAN_NEXT.md`.
