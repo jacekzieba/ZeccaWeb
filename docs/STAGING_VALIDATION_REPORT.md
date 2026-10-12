@@ -193,3 +193,19 @@ Remaining for the user:
 Non-blocking issues: Stooq fallback not configured
 Follow-up owner: Codex can continue conflict/tombstone checks; user needed for the edge-function deploy, native app actions, and passphrase entry
 ```
+
+## Aktualizacja 2026-10-12: deploy `delete-account` i parytet silników
+
+```text
+delete-account: DEPLOYED, nie wymaga zmian. Na produkcji działa wersja 6 z 2026-10-05 18:29, wdrożona minutę po commicie e18af740 (CORS z x-zecca-sync-protocol) w repo Zecca. Funkcja ma verify_jwt=true i odpowiada na preflight: OPTIONS z Origin https://zecca.pl dostaje 204 z access-control-allow-headers zawierającym x-zecca-sync-protocol. Wcześniejsze założenie, że potrzebne jest verify_jwt=false, było błędne: bramka przepuszcza preflight, a wyłączenie weryfikacji JWT osłabiłoby funkcję, więc nie robić tego.
+Smoke usuwania konta w przeglądarce: nie wykonany (destrukcyjny na realnym koncie; wymaga konta testowego).
+
+Parytet silników (fixtury złote): PASS po obu stronach.
+- node scripts/sync-native-golden.mjs --check (NATIVE_REPO=/Volumes/T5/Zecca): OK dla all_transaction_types.json i diversified_portfolio.json, kopie zgodne z repo natywnym dc0d65c1.
+- web: tests/unit/native-golden-parity.test.ts i macos-refactor-fixtures.test.ts, 17/17.
+- native: swift test --filter "TransactionCertificationFixtureTests|ValuationScenarioFixtureTests", 3/3.
+- parametry modeli benchmarkowych (cagr, zmienność, seed, nazwy) zgodne z ModelBenchmark.all.
+
+Nadal wymaga natywnej aplikacji i konta testowego: zapis web -> native i native -> web na realnych rekordach, tombstone native -> web, inspekcja sieci providerów.
+```
+
