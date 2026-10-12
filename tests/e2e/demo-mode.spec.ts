@@ -47,9 +47,11 @@ test("skipping the onboarding leaves the visitor inside the demo", async ({ page
 
   await page.getByTestId("onboarding-skip").click();
 
-  await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByTestId("demo-badge")).toBeVisible();
-  await expect(page.getByTestId("dashboard-grid")).toBeVisible();
+  // next dev kompiluje /dashboard przy pierwszym wejściu — na zimnym runnerze CI
+  // trwa to dłużej niż domyślne 5 s (jak w teście powyżej).
+  await expect(page).toHaveURL(/\/dashboard$/, { timeout: 20_000 });
+  await expect(page.getByTestId("demo-badge")).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId("dashboard-grid")).toBeVisible({ timeout: 20_000 });
 });
 
 test("demo can open the transaction form but not save it", async ({ page }) => {
