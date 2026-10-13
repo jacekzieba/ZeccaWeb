@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef } from "react";
 import type { MarketQuoteInput } from "@/domain/valuation/price-resolver";
 import type { MarketQuote } from "@/market-data/types";
 import { useProfile } from "@/features/profile/profile-store";
-import { marketDataSymbolForInstrument } from "@/market-data/symbols";
+import { marketDataCandidates } from "@/market-data/symbols";
 import { buildInstrumentList } from "@/sync/records/investor-snapshot";
 import { useSyncStore } from "@/sync/store/sync-store";
 
@@ -28,8 +28,8 @@ const QUOTED_KINDS = new Set(["stock", "etf", "crypto"]);
 
 type QuotedInstrument = {
   id: string;
-  /** Symbol passed to the market-data API (already mapped for crypto). */
-  requestSymbol: string;
+  /** Symbols passed to the market-data API in order of preference (already mapped for crypto). */
+  requestSymbols: string[];
   currency: string;
 };
 
@@ -85,11 +85,8 @@ export function marketQuoteInputsFromHistory(
   return inputs.sort((a, b) => a.date.getTime() - b.date.getTime());
 }
 
-async function fetchMarketData(instrument: QuotedInstrument): Promise<MarketDataResponse> {
-  const params = new URLSearchParams({
-    symbol: instrument.requestSymbol,
-    currency: instrument.currency,
-  });
+async function fetchListing(symbol: string, currency: string): Promise<MarketDataResponse | null> {
+  const params = new URLSearchParams({ symbol, currency });
   const historyParams = new URLSearchParams(params);
   historyParams.set("range", "2y");
   const [historyResult, quoteResult] = await Promise.allSettled([
@@ -103,10 +100,46 @@ async function fetchMarketData(instrument: QuotedInstrument): Promise<MarketData
   const latest = quoteResult.status === "fulfilled" && quoteResult.value.ok
     ? ((await quoteResult.value.json()) as QuoteResponse).data
     : null;
-  if (history.length === 0 && !latest) {
-    throw new Error("Nie udało się pobrać notowań.");
-  }
+  if (history.length === 0 && !latest) return null;
   return { history, latest };
+}
+
+/**
+ * Z wyników kolejnych linii wybiera tę notowaną w walucie instrumentu; gdy żadna
+ * nie pasuje, zostaje pierwsza znaleziona (cena z innej linii lepsza niż brak ceny).
+ */
+export function chooseMarketData(
+  results: Array<MarketDataResponse | null>,
+  currency: string,
+): MarketDataResponse | null {
+  const wanted = currency.trim().toUpperCase();
+  let fallback: MarketDataResponse | null = null;
+  for (const result of results) {
+    if (!result) continue;
+    if (isQuotedIn(result, wanted)) return result;
+    fallback ??= result;
+  }
+  return fallback;
+}
+
+async function fetchMarketData(instrument: QuotedInstrument): Promise<MarketDataResponse> {
+  const results: Array<MarketDataResponse | null> = [];
+  for (const symbol of instrument.requestSymbols) {
+    const result = await fetchListing(symbol, instrument.currency);
+    results.push(result);
+    // Linia w walucie instrumentu kończy poszukiwania, bez dalszych zapytań.
+    if (result && chooseMarketData([result], instrument.currency) === result && isQuotedIn(result, instrument.currency)) {
+      return result;
+    }
+  }
+  const chosen = chooseMarketData(results, instrument.currency);
+  if (!chosen) throw new Error("Nie udało się pobrać notowań.");
+  return chosen;
+}
+
+function isQuotedIn(result: MarketDataResponse, currency: string) {
+  const provider = (result.latest?.currency ?? result.history.at(-1)?.currency ?? "").toUpperCase();
+  return !provider || provider === currency.trim().toUpperCase();
 }
 
 export function MarketQuoteBootstrap() {
@@ -121,17 +154,17 @@ export function MarketQuoteBootstrap() {
       .filter((row) => row.totalQuantity > 0 && QUOTED_KINDS.has(row.kind) && row.symbol.trim())
       .map((row) => ({
         id: row.id,
-        requestSymbol:
+        requestSymbols:
           row.kind === "crypto" && !row.symbol.includes("-")
-            ? `${row.symbol.trim().toUpperCase()}-USD`
-            : marketDataSymbolForInstrument({ ...row, currency: row.assetCurrency }),
+            ? [`${row.symbol.trim().toUpperCase()}-USD`]
+            : marketDataCandidates({ ...row, currency: row.assetCurrency }),
         currency: row.assetCurrency,
       }));
   }, [records, displayCurrency]);
 
   const queries = useQueries({
     queries: instruments.map((instrument) => ({
-      queryKey: ["market-history", instrument.requestSymbol, instrument.currency],
+      queryKey: ["market-history", instrument.requestSymbols.join(","), instrument.currency],
       // Current valuation comes from the quote endpoint (cached for 15 minutes);
       // the long history is retained only for series and period changes.
       staleTime: 15 * 60 * 1000,

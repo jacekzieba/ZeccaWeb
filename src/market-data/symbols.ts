@@ -57,6 +57,62 @@ export function marketDataSymbolForInstrument(instrument: MarketDataInstrument) 
   return override?.yahooSymbol ?? yahooSymbolForInstrument(symbol, currency);
 }
 
+const VENUE_FALLBACKS = [".AS", ".DE", ".L"];
+
+function venueSuffixesForCurrency(currency: string | null | undefined) {
+  const preferred =
+    currency === "USD" || currency === "GBP"
+      ? [".L"]
+      : currency === "PLN"
+        ? [".WA"]
+        : currency === "CHF"
+          ? [".SW"]
+          : [];
+  const ordered = [...preferred];
+  for (const venue of VENUE_FALLBACKS) {
+    if (!ordered.includes(venue)) ordered.push(venue);
+  }
+  return ordered;
+}
+
+/**
+ * Symbole do sprawdzenia u dostawcy, w kolejności prób — jak natywny
+ * `MarketDataIdentityResolver.candidateSymbols`. Ten sam ETF notuje się na kilku
+ * giełdach w różnych walutach (IEMA: Londyn w USD, Amsterdam w EUR), więc dla
+ * tickera bez sufiksu kolejność wynika z waluty instrumentu.
+ */
+export function marketDataCandidates(instrument: MarketDataInstrument): string[] {
+  const out: string[] = [];
+  const add = (value: string | null | undefined) => {
+    if (value && !out.includes(value)) out.push(value);
+  };
+
+  const explicit = instrument.marketDataID?.trim().toUpperCase();
+  if (explicit) return [explicit];
+
+  const symbol = instrument.symbol.trim().toUpperCase();
+  const currency = instrument.currency?.trim().toUpperCase();
+  const primary = marketDataSymbolForInstrument(instrument);
+  const isBare = !symbol.includes(".") && !symbol.includes("-") && !symbol.includes("=");
+
+  if (!symbol || !isBare) {
+    add(primary);
+    return out;
+  }
+
+  // Goły ticker w USD to zwykle notowanie amerykańskie (AAPL), więc idzie pierwszy;
+  // w innej walucie nigdy nie jest linią USA i trafia na koniec.
+  const venues = venueSuffixesForCurrency(currency).map((suffix) => `${symbol}${suffix}`);
+  if (!currency || currency === "USD") {
+    add(symbol);
+    venues.forEach(add);
+  } else {
+    venues.forEach(add);
+    add(symbol);
+  }
+  return out;
+}
+
 /** Returns the verified venue for a Yahoo suffix when it is unambiguous. */
 export function marketDataExchangeForSymbol(symbol: string) {
   const normalized = symbol.trim().toUpperCase();
