@@ -54,6 +54,7 @@ export type Database = {
       encrypted_records: {
         Row: {
           id: string;
+          logical_id: string | null;
           user_id: string;
           record_type: RecordType;
           encrypted_payload: string;
@@ -67,6 +68,7 @@ export type Database = {
         };
         Insert: {
           id: string;
+          logical_id?: string | null;
           user_id: string;
           record_type: RecordType;
           encrypted_payload: string;

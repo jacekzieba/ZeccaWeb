@@ -15,6 +15,24 @@ describe("rekordy v2 z aplikacji iOS", () => {
     expect(decrypted.id).toBe(swiftV2.record.id);
   });
 
+  it("rekord tenant-scoped: AAD i id to tożsamość logiczna, a id wiersza zostaje jako storageId", async () => {
+    const key = await importAesGcmKey(base64ToBytes(swiftV2.keyBase64));
+    const tenantRow = {
+      ...swiftV2.record,
+      id: "5b3f1c0e-8d2a-5c11-9a77-0c1d2e3f4a5b", // id wiersza (hash właściciela + typu + id logicznego)
+      logical_id: swiftV2.record.id,
+    };
+    const decrypted = await decryptEncryptedRecord(key, tenantRow);
+    expect(decrypted.id).toBe(swiftV2.record.id);
+    expect(decrypted.storageId).toBe(tenantRow.id);
+  });
+
+  it("rekord legacy (bez logical_id) ma storageId równe id", async () => {
+    const key = await importAesGcmKey(base64ToBytes(swiftV2.keyBase64));
+    const decrypted = await decryptEncryptedRecord(key, swiftV2.record);
+    expect(decrypted.storageId).toBe(swiftV2.record.id);
+  });
+
   it("odrzuca rekord v2 przeniesiony pod inne ID (AAD)", async () => {
     const key = await importAesGcmKey(base64ToBytes(swiftV2.keyBase64));
     const moved = { ...swiftV2.record, id: "00000000-0000-4000-8000-000000000001" };

@@ -2,8 +2,11 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   fetchActiveEncryptedRecords,
   fetchEncryptedKeyBackup,
+  fetchEncryptedRecordMetadata,
   registerWebDevice,
   restoreEncryptedRecord,
+  softDeleteEncryptedRecord,
+  upsertEncryptedRecord,
 } from "@/sync/records/supabase-sync-store";
 import type { BrowserSupabaseClient } from "@/supabase/client";
 
@@ -199,5 +202,92 @@ describe("restoreEncryptedRecord", () => {
 
   it("zgłasza błąd, gdy żaden wiersz się nie zmienił (UI nie może udawać przywrócenia)", async () => {
     await expect(restoreEncryptedRecord(restoreClient([]), payload)).rejects.toThrow(/Nie udało się przywrócić/);
+  });
+});
+
+// Tożsamość logiczna: wiersz jest adresowany przez (user_id, record_type, logical_id),
+// bo `id` wiersza może być hashem (klient natywny tenant-scoped), a nie id logicznym.
+describe("tożsamość logiczna rekordów", () => {
+  type Call = { op: string; args: unknown[] };
+
+  function recordingClient(options: { updateRows?: unknown[]; insertError?: { code: string } | null } = {}) {
+    const calls: Call[] = [];
+    let updateCalls = 0;
+    const chain: Record<string, unknown> = {};
+    const record = (op: string) => (...args: unknown[]) => {
+      calls.push({ op, args });
+      return chain;
+    };
+    chain.select = (...args: unknown[]) => {
+      calls.push({ op: "select", args });
+      return chain;
+    };
+    chain.eq = record("eq");
+    chain.update = record("update");
+    chain.maybeSingle = () => Promise.resolve({ data: null, error: null });
+    chain.insert = (...args: unknown[]) => {
+      calls.push({ op: "insert", args });
+      return Promise.resolve({ error: options.insertError ?? null });
+    };
+    // `await` on the update chain ends at select("id") — emulate it as thenable.
+    chain.then = (resolve: (value: unknown) => unknown) => {
+      updateCalls += 1;
+      const rows = updateCalls === 1 ? (options.updateRows ?? []) : (options.updateRows ?? [{ id: "x" }]);
+      return Promise.resolve({ data: rows, error: null }).then(resolve);
+    };
+    return { calls, client: { from: () => chain } as unknown as BrowserSupabaseClient };
+  }
+
+  const base = {
+    id: "11111111-aaaa-4aaa-8aaa-111111111111",
+    user_id: "22222222-bbbb-4bbb-8bbb-222222222222",
+    record_type: "transaction",
+    encrypted_payload: "ct",
+    nonce: "n",
+    payload_version: 1,
+    schema_version: 1,
+    device_id: "web",
+    updated_at: "2026-10-12T10:00:00.000Z",
+  };
+
+  it("odczyt prosi o logical_id", async () => {
+    const mock = createSupabaseMock({ data: [], error: null });
+    await fetchActiveEncryptedRecords(mock as unknown as BrowserSupabaseClient);
+    const selected = (mock.builders[0] as unknown as { selected?: string }).selected;
+    expect(selected ?? "logical_id").toContain("logical_id");
+  });
+
+  it("zapis istniejącego rekordu aktualizuje po logical_id i nie zmienia klucza wiersza", async () => {
+    const { calls, client } = recordingClient({ updateRows: [{ id: "hash-id" }] });
+    await upsertEncryptedRecord(client, base);
+
+    const update = calls.find((c) => c.op === "update")!;
+    expect(update.args[0]).not.toHaveProperty("id");
+    expect(update.args[0]).not.toHaveProperty("user_id");
+    expect(update.args[0]).toMatchObject({ encrypted_payload: "ct", nonce: "n", updated_at: base.updated_at });
+    const eqs = calls.filter((c) => c.op === "eq").map((c) => c.args);
+    expect(eqs).toContainEqual(["logical_id", base.id]);
+    expect(eqs).toContainEqual(["record_type", "transaction"]);
+    expect(eqs).toContainEqual(["user_id", base.user_id]);
+    expect(calls.some((c) => c.op === "insert")).toBe(false);
+  });
+
+  it("nowy rekord jest wstawiany z id = logical_id (zgodnie ze starymi klientami)", async () => {
+    const { calls, client } = recordingClient({ updateRows: [] });
+    await upsertEncryptedRecord(client, base);
+
+    const insert = calls.find((c) => c.op === "insert")!;
+    expect((insert.args[0] as unknown[])[0]).toMatchObject({ id: base.id, logical_id: base.id });
+  });
+
+  it("metadane i usunięcie szukają po logical_id", async () => {
+    const meta = recordingClient();
+    await fetchEncryptedRecordMetadata(meta.client, "transaction", base.id);
+    expect(meta.calls.filter((c) => c.op === "eq").map((c) => c.args)).toContainEqual(["logical_id", base.id]);
+
+    const del = recordingClient();
+    await softDeleteEncryptedRecord(del.client, base);
+    expect(del.calls.filter((c) => c.op === "eq").map((c) => c.args)).toContainEqual(["logical_id", base.id]);
+    expect(del.calls.filter((c) => c.op === "eq").map((c) => c.args)).not.toContainEqual(["id", base.id]);
   });
 });

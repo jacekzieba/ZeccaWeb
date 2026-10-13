@@ -18,6 +18,9 @@ const timestampSchema = z.string().refine(
 
 export const encryptedRecordSchema = z.object({
   id: z.string().uuid(),
+  /** Tożsamość logiczna w (user_id, record_type). NULL u wierszy sprzed
+   * backfillu; wtedy tożsamością jest `id`. */
+  logical_id: z.string().uuid().nullish(),
   user_id: z.string().uuid(),
   record_type: recordTypeSchema,
   encrypted_payload: z.string().min(1),

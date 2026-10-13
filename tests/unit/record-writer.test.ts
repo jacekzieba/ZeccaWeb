@@ -58,16 +58,40 @@ function createSupabaseStore(options: StoreOptions = {}) {
           store.upserts.push(payload);
           return { error: store.upsertError };
         }),
+        // Zapis rekordu: najpierw update po (user_id, record_type, logical_id), a gdy nic
+        // nie zmienił — insert z logical_id.
+        insert: vi.fn(async (payload: unknown) => {
+          store.upserts.push(payload);
+          return { error: store.upsertError };
+        }),
         update: vi.fn((payload: unknown) => {
           store.updates.push(payload);
+          const filters: Record<string, unknown> = {};
+          const isRecordWrite =
+            typeof payload === "object" && payload !== null && "encrypted_payload" in payload;
           const updateBuilder = {
             error: store.updateError,
-            eq: vi.fn(() => updateBuilder),
-            // restoreEncryptedRecord checks that a row actually changed.
-            select: vi.fn(async () => ({
-              data: store.updateError ? null : [{ id: options.metadata?.id }],
-              error: store.updateError,
-            })),
+            eq: vi.fn((column: string, value: unknown) => {
+              filters[column] = value;
+              return updateBuilder;
+            }),
+            // restoreEncryptedRecord / zapis sprawdzają, czy wiersz faktycznie się zmienił.
+            select: vi.fn(async () => {
+              if (store.updateError) return { data: null, error: store.updateError };
+              if (isRecordWrite) {
+                if (!store.metadata) return { data: [], error: null };
+                if (store.upsertError) return { data: null, error: store.upsertError };
+                store.upserts.push([
+                  {
+                    ...(payload as object),
+                    id: filters.logical_id,
+                    user_id: filters.user_id,
+                    record_type: filters.record_type,
+                  },
+                ]);
+              }
+              return { data: [{ id: options.metadata?.id }], error: null };
+            }),
           };
           return updateBuilder;
         }),
@@ -284,8 +308,9 @@ describe("record writer", () => {
     });
 
     expect(deleteResult.queued).toBe(false);
-    expect(store.updates).toHaveLength(1);
-    expect(store.updates[0]).toMatchObject({
+    // [0] = próba aktualizacji przy zapisie (0 wierszy → insert), [1] = soft delete.
+    expect(store.updates).toHaveLength(2);
+    expect(store.updates[1]).toMatchObject({
       deleted_at: expect.any(String),
       updated_at: expect.any(String),
     });

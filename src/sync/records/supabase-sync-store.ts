@@ -119,6 +119,7 @@ export async function fetchActiveEncryptedRecords(
       .select(
         [
           "id",
+          "logical_id",
           "user_id",
           "record_type",
           "encrypted_payload",
@@ -148,7 +149,7 @@ export async function fetchEncryptedRecordMetadata(
   const { data, error } = await supabase
     .from("encrypted_records")
     .select("id, record_type, updated_at, deleted_at")
-    .eq("id", id)
+    .eq("logical_id", id)
     .eq("record_type", recordType)
     .maybeSingle();
 
@@ -159,15 +160,46 @@ export async function fetchEncryptedRecordMetadata(
   return data as EncryptedRecordMetadata | null;
 }
 
+/**
+ * Zapis rekordu adresowany tożsamością logiczną (user_id, record_type, logical_id).
+ *
+ * `upsert … onConflict: "id"` nie wystarcza: wiersz zapisany przez klienta
+ * tenant-scoped ma `id` będące hashem, więc zapis pod `id` logicznym albo
+ * wstawiłby duplikat, albo przekluczył wiersz. Dlatego najpierw aktualizacja po
+ * logical_id (bez ruszania `id`), a dopiero gdy wiersza nie ma — wstawienie z
+ * `id = logical_id`, tak jak robią klienci legacy.
+ */
 export async function upsertEncryptedRecord(
   supabase: BrowserSupabaseClient,
   payload: UpsertPayload,
 ): Promise<void> {
+  const { id, user_id, record_type, ...changes } = payload;
+  const definedChanges = Object.fromEntries(
+    Object.entries(changes).filter(([, value]) => value !== undefined),
+  );
+
+  const updateExisting = async () => {
+    const { data, error } = await supabase
+      .from("encrypted_records")
+      .update(definedChanges as never)
+      .eq("user_id", user_id)
+      .eq("record_type", record_type)
+      .eq("logical_id", id)
+      .select("id");
+    if (error) throw error;
+    return Array.isArray(data) && data.length > 0;
+  };
+
+  if (await updateExisting()) return;
+
   const { error } = await supabase
     .from("encrypted_records")
-    .upsert([payload] as never[], { onConflict: "id" });
+    .insert([{ ...payload, logical_id: id }] as never[]);
+  if (!error) return;
 
-  if (error) throw error;
+  // 23505: inny klient wstawił ten rekord między aktualizacją a wstawieniem.
+  if ((error as { code?: string }).code === "23505" && (await updateExisting())) return;
+  throw error;
 }
 
 /** Cofnięcie miękkiego usunięcia — czyści `deleted_at`.
@@ -187,7 +219,7 @@ export async function restoreEncryptedRecord(
       deleted_at: null,
       updated_at: payload.updated_at,
     } as never)
-    .eq("id", payload.id)
+    .eq("logical_id", payload.id)
     .eq("user_id", payload.user_id)
     .eq("record_type", payload.record_type)
     .select("id");
@@ -210,7 +242,7 @@ export async function softDeleteEncryptedRecord(
       deleted_at: payload.updated_at,
       updated_at: payload.updated_at,
     } as never)
-    .eq("id", payload.id)
+    .eq("logical_id", payload.id)
     .eq("user_id", payload.user_id)
     .eq("record_type", payload.record_type);
 

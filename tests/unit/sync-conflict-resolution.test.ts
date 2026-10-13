@@ -65,9 +65,28 @@ function createSupabaseStore(metadata: Metadata, errors: { upsert?: Error | null
           store.upserts.push(payload);
           return { error: store.upsertError };
         }),
+        // Zapis rekordu: update po logical_id (0 wierszy → insert) — jak w supabase-sync-store.
+        insert: vi.fn(async (payload: unknown) => {
+          store.upserts.push(payload);
+          return { error: store.upsertError };
+        }),
         update: vi.fn((payload: unknown) => {
           store.updates.push(payload);
-          const builder = { error: store.updateError, eq: vi.fn(() => builder) };
+          const isRecordWrite =
+            typeof payload === "object" && payload !== null && "encrypted_payload" in payload;
+          const builder = {
+            error: store.updateError,
+            eq: vi.fn(() => builder),
+            select: vi.fn(async () => {
+              if (store.updateError) return { data: null, error: store.updateError };
+              if (isRecordWrite) {
+                if (!store.metadata) return { data: [], error: null };
+                if (store.upsertError) return { data: null, error: store.upsertError };
+                store.upserts.push([payload]);
+              }
+              return { data: [{ id: store.metadata?.id }], error: null };
+            }),
+          };
           return builder;
         }),
       };

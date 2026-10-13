@@ -10,12 +10,22 @@ import {
 export type EncryptedRecord = z.infer<typeof encryptedRecordSchema>;
 
 export type DecryptedRecord<TPayload = unknown> = {
+  /** Tożsamość logiczna rekordu (= id z payloadu). Dla wierszy legacy równa id wiersza. */
   id: string;
+  /** Klucz główny wiersza; różni się od `id` tylko u rekordów tenant-scoped.
+   * Brak u rekordów zbudowanych lokalnie (fake-sync, testy). */
+  storageId?: string;
   deviceId: string | null;
   updatedAt: string;
   deletedAt: string | null;
   envelope: PayloadEnvelope<TPayload>;
 };
+
+/** Klient tenant-scoped zapisuje wiersz pod id będącym hashem, a tożsamość
+ * logiczna siedzi w `logical_id`. AAD v2 wiąże szyfrogram z tożsamością logiczną. */
+function logicalRecordId(record: EncryptedRecord): string {
+  return record.logical_id ?? record.id;
+}
 
 export async function decryptEncryptedRecord(
   userDataKey: CryptoKey,
@@ -53,7 +63,8 @@ export async function decryptEncryptedRecord(
   }
 
   return {
-    id: record.id,
+    id: logicalRecordId(record),
+    storageId: record.id,
     deviceId: record.device_id,
     updatedAt: record.updated_at,
     deletedAt: record.deleted_at,
@@ -91,7 +102,7 @@ function versionedCiphertext(record: EncryptedRecord): { ciphertext: string; add
       ciphertext: payload.slice(3),
       additionalData: recordAdditionalData({
         userId: record.user_id,
-        id: record.id,
+        id: logicalRecordId(record),
         recordType: record.record_type,
         schemaVersion: record.schema_version,
         deleted: Boolean(record.deleted_at),
