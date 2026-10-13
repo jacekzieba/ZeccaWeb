@@ -26,7 +26,7 @@ import {
   type EncryptedKeyBackup,
 } from "@/sync/encryption/key-backup";
 import { importAesGcmKey } from "@/sync/encryption/aes-gcm";
-import { decryptEncryptedRecords } from "@/sync/records/encrypted-records";
+import { decryptEncryptedRecords, RecordDecryptionError } from "@/sync/records/encrypted-records";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import { buildParitySnapshot } from "@/sync/records/parity-snapshot";
 import {
@@ -108,6 +108,11 @@ function withTimeout<T>(promise: Promise<T>, label: string, timeoutMs = 20_000) 
 }
 
 function getUnlockErrorMessage(error: unknown) {
+  // Hasło było dobre (klucz odblokowany) — nie wysyłamy użytkownika do poprawiania hasła.
+  if (error instanceof RecordDecryptionError) {
+    return error.message;
+  }
+
   if (error instanceof DOMException) {
     if (error.name === "OperationError") {
       return "Nie udało się odszyfrować backupu klucza. Sprawdź hasło lub passphrase.";

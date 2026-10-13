@@ -116,13 +116,35 @@ function versionedCiphertext(record: EncryptedRecord): { ciphertext: string; add
   return { ciphertext: payload };
 }
 
+/** Klucz użytkownika jest poprawny, ale konkretnego rekordu nie da się odszyfrować
+ * (np. zapisał go klient z innym sposobem adresowania, którego ta wersja weba nie
+ * zna). Odróżniamy to od błędnego hasła, które kończy się tym samym błędem AES-GCM. */
+export class RecordDecryptionError extends Error {
+  constructor(
+    readonly recordType: string,
+    options?: { cause?: unknown },
+  ) {
+    super(
+      `Klucz jest poprawny, ale nie udało się odszyfrować rekordu typu „${recordType}". ` +
+        "Odśwież stronę lub zaktualizuj aplikację web do najnowszej wersji.",
+      options,
+    );
+    this.name = "RecordDecryptionError";
+  }
+}
+
 export async function decryptEncryptedRecords(
   userDataKey: CryptoKey,
   encryptedRecords: unknown[],
 ) {
   return Promise.all(
-    encryptedRecords.map((record) =>
-      decryptEncryptedRecord(userDataKey, record),
-    ),
+    encryptedRecords.map(async (record) => {
+      try {
+        return await decryptEncryptedRecord(userDataKey, record);
+      } catch (error) {
+        const type = (record as { record_type?: unknown } | null)?.record_type;
+        throw new RecordDecryptionError(typeof type === "string" ? type : "nieznany", { cause: error });
+      }
+    }),
   );
 }

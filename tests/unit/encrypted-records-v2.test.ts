@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { importAesGcmKey } from "@/sync/encryption/aes-gcm";
 import { base64ToBytes } from "@/sync/encryption/base64";
-import { decryptEncryptedRecord } from "@/sync/records/encrypted-records";
+import {
+  decryptEncryptedRecord,
+  decryptEncryptedRecords,
+  RecordDecryptionError,
+} from "@/sync/records/encrypted-records";
 import swiftV2 from "../fixtures/crypto/aes-gcm-swift-v2.transaction.json";
 
 // iOS od lipca zapisuje rekordy jako „v2.<base64>” z AAD wiążącym szyfrogram
@@ -37,6 +41,15 @@ describe("rekordy v2 z aplikacji iOS", () => {
     const key = await importAesGcmKey(base64ToBytes(swiftV2.keyBase64));
     const moved = { ...swiftV2.record, id: "00000000-0000-4000-8000-000000000001" };
     await expect(decryptEncryptedRecord(key, moved)).rejects.toThrow();
+  });
+
+  it("błąd odszyfrowania rekordu to osobny błąd z typem rekordu, nie błąd hasła", async () => {
+    const key = await importAesGcmKey(base64ToBytes(swiftV2.keyBase64));
+    const moved = { ...swiftV2.record, id: "00000000-0000-4000-8000-000000000001" };
+    const error = await decryptEncryptedRecords(key, [moved]).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(RecordDecryptionError);
+    expect((error as RecordDecryptionError).message).toContain("transaction");
+    expect((error as RecordDecryptionError).message).not.toMatch(/hasło/i);
   });
 
   it("odrzuca nieznaną wersję szyfrogramu zamiast dekodować ją jako base64", async () => {
