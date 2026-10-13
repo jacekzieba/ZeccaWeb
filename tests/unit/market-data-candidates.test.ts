@@ -19,6 +19,15 @@ describe("marketDataCandidates", () => {
     expect(marketDataCandidates({ symbol: "VUSA", currency: "GBP" })[0]).toBe("VUSA.L");
   });
 
+  it("goły marketDataID nie blokuje wyboru giełdy", () => {
+    expect(marketDataCandidates({ symbol: "IEMA", currency: "USD", marketDataID: "IEMA" })).toEqual([
+      "IEMA",
+      "IEMA.L",
+      "IEMA.AS",
+      "IEMA.DE",
+    ]);
+  });
+
   it("jawne marketDataID jest jedynym kandydatem", () => {
     expect(
       marketDataCandidates({ symbol: "IEMA", currency: "USD", marketDataID: "iema.as" }),

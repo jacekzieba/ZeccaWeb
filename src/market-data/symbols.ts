@@ -88,9 +88,13 @@ export function marketDataCandidates(instrument: MarketDataInstrument): string[]
   };
 
   const explicit = instrument.marketDataID?.trim().toUpperCase();
-  if (explicit) return [explicit];
+  const isBareID = (value: string) => !/[.\-=]/.test(value);
+  // Ticker z sufiksem giełdy to świadomy wybór linii. Goły ticker (np. "IEMA"
+  // zapisany przez klienta natywnego) nie wskazuje giełdy, więc przechodzi
+  // przez te same kandydaty co symbol instrumentu.
+  if (explicit && !isBareID(explicit)) return [explicit];
 
-  const symbol = instrument.symbol.trim().toUpperCase();
+  const symbol = (explicit || instrument.symbol).trim().toUpperCase();
   const currency = instrument.currency?.trim().toUpperCase();
   const primary = marketDataSymbolForInstrument(instrument);
   const isBare = !symbol.includes(".") && !symbol.includes("-") && !symbol.includes("=");
