@@ -9,6 +9,24 @@ import {
 } from "@/sync/records/web-device";
 import { fetchAllPages } from "./paged-fetch";
 
+/** Kolumny `encrypted_records` potrzebne do odszyfrowania. Jedna lista dla wszystkich
+ * ścieżek odczytu (klient i trasa serwerowa bootstrap) — dwie osobne listy rozjechały
+ * się już raz: bez `logical_id` rekordy tenant-scoped miały zły AAD. */
+export const ENCRYPTED_RECORD_COLUMNS = [
+  "id",
+  "logical_id",
+  "user_id",
+  "record_type",
+  "encrypted_payload",
+  "nonce",
+  "payload_version",
+  "schema_version",
+  "device_id",
+  "created_at",
+  "updated_at",
+  "deleted_at",
+].join(", ");
+
 export type UpsertPayload = {
   id: string;
   user_id: string;
@@ -117,20 +135,7 @@ export async function fetchActiveEncryptedRecords(
     supabase
       .from("encrypted_records")
       .select(
-        [
-          "id",
-          "logical_id",
-          "user_id",
-          "record_type",
-          "encrypted_payload",
-          "nonce",
-          "payload_version",
-          "schema_version",
-          "device_id",
-          "created_at",
-          "updated_at",
-          "deleted_at",
-        ].join(", "),
+        ENCRYPTED_RECORD_COLUMNS,
       )
       .is("deleted_at", null)
       .order("updated_at", { ascending: true })

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { encryptedRecordSchema } from "@/sync/envelopes/envelope";
 import { createServerSupabaseClient } from "@/supabase/server";
 import { fetchAllPages } from "@/sync/records/paged-fetch";
+import { ENCRYPTED_RECORD_COLUMNS } from "@/sync/records/supabase-sync-store";
 
 export async function GET() {
   const supabase = await createServerSupabaseClient();
@@ -25,21 +26,7 @@ export async function GET() {
     fetchAllPages((from, to) =>
       supabase
         .from("encrypted_records")
-        .select(
-          [
-            "id",
-            "user_id",
-            "record_type",
-            "encrypted_payload",
-            "nonce",
-            "payload_version",
-            "schema_version",
-            "device_id",
-            "created_at",
-            "updated_at",
-            "deleted_at",
-          ].join(", "),
-        )
+        .select(ENCRYPTED_RECORD_COLUMNS)
         .is("deleted_at", null)
         .order("updated_at", { ascending: true })
         .order("id", { ascending: true })
