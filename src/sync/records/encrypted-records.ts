@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z, ZodError } from "zod";
 import { decryptJsonPayload } from "@/sync/encryption/aes-gcm";
 import { bytesToBase64, utf8ToBytes } from "@/sync/encryption/base64";
 import {
@@ -116,17 +116,36 @@ function versionedCiphertext(record: EncryptedRecord): { ciphertext: string; add
   return { ciphertext: payload };
 }
 
-/** Klucz użytkownika jest poprawny, ale konkretnego rekordu nie da się odszyfrować
- * (np. zapisał go klient z innym sposobem adresowania, którego ta wersja weba nie
- * zna). Odróżniamy to od błędnego hasła, które kończy się tym samym błędem AES-GCM. */
+/** Klucz użytkownika jest poprawny, ale część rekordów nie daje się odszyfrować
+ * (np. zapisał je inny klucz albo klient z innym sposobem adresowania). Odróżniamy
+ * to od błędnego hasła, które kończy się tym samym błędem AES-GCM. */
 export class RecordDecryptionError extends Error {
   constructor(
+    /** Typ pierwszego nieczytelnego rekordu (zachowane dla zgodności). */
     readonly recordType: string,
+    readonly summary: {
+      failed: number;
+      total: number;
+      byType: Record<string, number>;
+      devices: string[];
+      /** Skąd błąd: AES-GCM (zły klucz / AAD) albo kształt koperty (schemat). Bez wartości danych. */
+      causes?: string[];
+    } = {
+      failed: 1,
+      total: 1,
+      byType: { [recordType]: 1 },
+      devices: [],
+    },
     options?: { cause?: unknown },
   ) {
+    const types = Object.entries(summary.byType)
+      .map(([type, count]) => `${type}×${count}`)
+      .join(", ");
+    const devices = summary.devices.length > 0 ? ` Urządzenia: ${summary.devices.join(", ")}.` : "";
+    const causes = summary.causes && summary.causes.length > 0 ? ` Przyczyna: ${summary.causes.join("; ")}.` : "";
     super(
-      `Klucz jest poprawny, ale nie udało się odszyfrować rekordu typu „${recordType}". ` +
-        "Odśwież stronę lub zaktualizuj aplikację web do najnowszej wersji.",
+      `Klucz jest poprawny, ale nie udało się odszyfrować ${summary.failed} z ${summary.total} rekordów ` +
+        `(${types}).${devices}${causes} Odśwież stronę lub zaktualizuj aplikację web do najnowszej wersji.`,
       options,
     );
     this.name = "RecordDecryptionError";
@@ -137,14 +156,56 @@ export async function decryptEncryptedRecords(
   userDataKey: CryptoKey,
   encryptedRecords: unknown[],
 ) {
-  return Promise.all(
-    encryptedRecords.map(async (record) => {
-      try {
-        return await decryptEncryptedRecord(userDataKey, record);
-      } catch (error) {
-        const type = (record as { record_type?: unknown } | null)?.record_type;
-        throw new RecordDecryptionError(typeof type === "string" ? type : "nieznany", { cause: error });
-      }
-    }),
+  const settled = await Promise.allSettled(
+    encryptedRecords.map((record) => decryptEncryptedRecord(userDataKey, record)),
   );
+
+  const failures: { record: unknown; reason: unknown }[] = [];
+  const decrypted: DecryptedRecord[] = [];
+  settled.forEach((result, index) => {
+    if (result.status === "fulfilled") decrypted.push(result.value);
+    else failures.push({ record: encryptedRecords[index], reason: result.reason });
+  });
+
+  if (failures.length === 0) return decrypted;
+
+  const byType: Record<string, number> = {};
+  const devices = new Set<string>();
+  const causes = new Set<string>();
+  for (const { record, reason } of failures) {
+    causes.add(describeDecryptionCause(reason));
+    const entry = (record ?? {}) as { record_type?: unknown; device_id?: unknown };
+    const type = typeof entry.record_type === "string" ? entry.record_type : "nieznany";
+    byType[type] = (byType[type] ?? 0) + 1;
+    if (typeof entry.device_id === "string") devices.add(entry.device_id.slice(0, 8));
+  }
+  const firstType = Object.keys(byType)[0] ?? "nieznany";
+  throw new RecordDecryptionError(
+    firstType,
+    {
+      failed: failures.length,
+      total: encryptedRecords.length,
+      byType,
+      devices: [...devices],
+      causes: [...causes].slice(0, 4),
+    },
+    { cause: failures[0].reason },
+  );
+}
+
+/** Krótki opis przyczyny bez wartości z danych: nazwa błędu, a dla schematu ścieżki pól. */
+function describeDecryptionCause(reason: unknown): string {
+  if (reason instanceof ZodError) {
+    const paths = reason.issues
+      .slice(0, 3)
+      .map((issue) => `${issue.path.join(".") || "(root)"}:${issue.code}`);
+    return `schemat koperty (${paths.join(", ")})`;
+  }
+  if (reason instanceof DOMException) {
+    return reason.name === "OperationError" ? "AES-GCM: klucz albo dane uwierzytelniane (AAD) się nie zgadzają" : reason.name;
+  }
+  if (reason instanceof Error) {
+    return reason.message.slice(0, 120);
+  }
+  return "nieznana";
 }

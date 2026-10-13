@@ -49,7 +49,33 @@ describe("rekordy v2 z aplikacji iOS", () => {
     const error = await decryptEncryptedRecords(key, [moved]).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(RecordDecryptionError);
     expect((error as RecordDecryptionError).message).toContain("transaction");
+    expect((error as RecordDecryptionError).message).toContain("1 z 1");
     expect((error as RecordDecryptionError).message).not.toMatch(/hasło/i);
+  });
+
+  it("zbiera wszystkie nieczytelne rekordy: typy i urządzenia, a czytelne nie przeszkadzają", async () => {
+    const key = await importAesGcmKey(base64ToBytes(swiftV2.keyBase64));
+    const good = swiftV2.record;
+    const bad = (type: string, device: string) => ({
+      ...swiftV2.record,
+      id: "00000000-0000-4000-8000-000000000001",
+      record_type: type,
+      device_id: device,
+    });
+    const error = await decryptEncryptedRecords(key, [
+      good,
+      bad("settings", "b1ad0981-aaaa"),
+      bad("asset", "b1ad0981-aaaa"),
+      bad("settings", "a47f0468-bbbb"),
+    ]).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(RecordDecryptionError);
+    const failure = error as RecordDecryptionError;
+    expect(failure.summary.failed).toBe(3);
+    expect(failure.summary.total).toBe(4);
+    expect(failure.summary.byType).toEqual({ settings: 2, asset: 1 });
+    expect(failure.summary.devices.sort()).toEqual(["a47f0468", "b1ad0981"]);
+    expect(failure.message).toContain("3 z 4");
   });
 
   it("odrzuca nieznaną wersję szyfrogramu zamiast dekodować ją jako base64", async () => {
