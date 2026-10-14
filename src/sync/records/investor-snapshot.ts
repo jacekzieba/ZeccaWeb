@@ -1,3 +1,4 @@
+import { lowercaseUuids } from "@/sync/records/encrypted-records";
 import { z } from "zod";
 import { kindToAssetClass } from "@/domain/allocation/asset-class";
 import { findOversells } from "@/domain/ledger/oversell";
@@ -1349,7 +1350,7 @@ function parseDataset(
     record: DecryptedRecord,
     target: T[],
   ) => {
-    const result = schema.safeParse(record.envelope.payload);
+    const result = schema.safeParse(lowercaseUuids(record.envelope.payload));
     if (result.success) {
       target.push(result.data);
       return;

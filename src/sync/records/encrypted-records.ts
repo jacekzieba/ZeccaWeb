@@ -72,6 +72,26 @@ export async function decryptEncryptedRecord(
   };
 }
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Klient natywny serializuje UUID wielkimi literami, web małymi. Powiązania
+ * (portfolioID, instrumentID, id) są porównywane jako teksty, więc bez
+ * ujednolicenia transakcja z iOS nie trafia do portfela utworzonego na webie.
+ */
+export function lowercaseUuids(value: unknown): unknown {
+  if (typeof value === "string") {
+    return UUID_PATTERN.test(value) ? value.toLowerCase() : value;
+  }
+  if (Array.isArray(value)) return value.map(lowercaseUuids);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, item]) => [key, lowercaseUuids(item)]),
+    );
+  }
+  return value;
+}
+
 /**
  * iOS zapisuje rekordy jako „v2.<base64>” z AAD wiążącym szyfrogram z kontem,
  * ID, typem, schematem i flagą usunięcia — kanoniczny tekst musi być bajt
