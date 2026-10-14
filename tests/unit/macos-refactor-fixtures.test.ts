@@ -1,3 +1,4 @@
+import { lowercaseUuids } from "@/sync/records/encrypted-records";
 import { describe, expect, it } from "vitest";
 import fixture from "../fixtures/macos-refactor/sync-fixture.json";
 import {
@@ -18,7 +19,7 @@ describe("macOS refactor sync fixtures", () => {
     const records = await decryptEncryptedRecords(key, fixture.encryptedRecords);
 
     expect(records.map((record) => record.envelope.payload)).toEqual(
-      fixture.plaintextPayloads,
+      lowercaseUuids(fixture.plaintextPayloads),
     );
     expect(new Set(records.map((record) => record.envelope.type))).toEqual(
       new Set([

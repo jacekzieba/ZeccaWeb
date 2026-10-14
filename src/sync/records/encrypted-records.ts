@@ -68,7 +68,7 @@ export async function decryptEncryptedRecord(
     deviceId: record.device_id,
     updatedAt: record.updated_at,
     deletedAt: record.deleted_at,
-    envelope,
+    envelope: { ...envelope, payload: lowercaseUuids(envelope.payload) as typeof envelope.payload },
   };
 }
 

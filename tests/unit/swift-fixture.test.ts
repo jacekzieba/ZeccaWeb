@@ -1,3 +1,4 @@
+import { lowercaseUuids } from "@/sync/records/encrypted-records";
 import { describe, expect, it } from "vitest";
 import fixture from "../fixtures/crypto/aes-gcm-swift.transaction.json";
 import { base64ToBytes } from "@/sync/encryption/base64";
@@ -20,7 +21,8 @@ describe("Swift CryptoKit fixture", () => {
       type: "transaction",
       payloadVersion: 1,
       schemaVersion: 1,
-      payload: fixture.plaintext,
+      // UUID są normalizowane do małych liter przy odszyfrowaniu.
+      payload: lowercaseUuids(fixture.plaintext),
     });
     const payload = record.envelope.payload as typeof fixture.plaintext;
     expect(payload.recordType).toBe("transaction");
