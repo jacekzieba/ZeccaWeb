@@ -9,7 +9,8 @@ test("adds, edits and removes an unheld instrument in fake sync", async ({ page 
   const form = page.locator("form").filter({ has: page.getByText("Symbol", { exact: true }) });
   await form.getByLabel("Symbol").fill("E2E1");
   await form.getByLabel("Nazwa").fill("E2E Instrument");
-  await form.getByLabel("Ticker Yahoo").fill("E2E1");
+  // Ticker Yahoo jest opcjonalny i schowany w „Szczegółach notowania”.
+  await expect(form.getByText("Szczegóły notowania (opcjonalne)")).toBeVisible();
   await form.getByRole("button", { name: "Dodaj instrument" }).click();
 
   const createdRow = main.getByRole("row", { name: "E2E1 E2E Instrument" });
