@@ -1,5 +1,6 @@
 "use client";
 
+import { dayCountLabel, isShortHistory, mwrDisplay } from "@/domain/metrics/short-history";
 import { v2Mix } from "@/lib/v2-design";
 import { token } from "@/design/tokens";
 import Link from "next/link";
@@ -1319,9 +1320,9 @@ function SummaryCard({
           <div style={{ height: "0.5px", background: PALETTE.line, margin: isMobile ? "20px 0" : "24px 0" }} />
           <div style={{ display: "grid", gap: 10 }}>
             {stat(
-              "MWR · XIRR",
-              metrics.xirrPct == null ? "—" : fmtPct(metrics.xirrPct),
-              metrics.xirrPct == null ? PALETTE.muted : metrics.xirrPct >= 0 ? PALETTE.profit : PALETTE.loss,
+              isShortHistory(metrics) ? `MWR · za ${dayCountLabel(metrics.historyDays ?? 0)}` : "MWR · XIRR",
+              mwrDisplay(metrics).value == null ? "—" : fmtPct(mwrDisplay(metrics).value as number),
+              mwrDisplay(metrics).value == null ? PALETTE.muted : (mwrDisplay(metrics).value as number) >= 0 ? PALETTE.profit : PALETTE.loss,
             )}
             {stat(
               "Wynik realny",

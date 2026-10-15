@@ -1,5 +1,6 @@
 "use client";
 
+import { annualizedOrNull, isShortHistory, mwrDisplay } from "@/domain/metrics/short-history";
 import { useMemo, useState, type CSSProperties } from "react";
 import { CircleHelp } from "lucide-react";
 import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
@@ -215,8 +216,8 @@ export function ReportsPage() {
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
             <Kpi label="Łączny zwrot (TWR)" value={fmtPct(metrics.totalReturnPct)} sub={`${absGain >= 0 ? "+" : ""}${fmt(absGain)} ${ccy} ponad wpłaty`} color={metrics.totalReturnPct >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiTwr")} mark={KPI_MARKS.kpiTwr} />
-            <Kpi label="CAGR" value={fmtPct(metrics.cagrPct)} sub="rocznie, ważony czasem" color={metrics.cagrPct >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiCagr")} mark={KPI_MARKS.kpiCagr} />
-            <Kpi label="MWR · XIRR" value={metrics.xirrPct == null ? "—" : fmtPct(metrics.xirrPct)} sub="rocznie, ważony kapitałem" color={(metrics.xirrPct ?? 0) >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiXirr")} mark={KPI_MARKS.kpiXirr} />
+            <Kpi label="CAGR" value={annualizedOrNull(metrics, metrics.cagrPct).value == null ? "—" : fmtPct(metrics.cagrPct)} sub={isShortHistory(metrics) ? "od 1 roku historii" : "rocznie, ważony czasem"} color={metrics.cagrPct >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiCagr")} mark={KPI_MARKS.kpiCagr} />
+            <Kpi label="MWR · XIRR" value={mwrDisplay(metrics).value == null ? "—" : fmtPct(mwrDisplay(metrics).value as number)} sub={mwrDisplay(metrics, "rocznie, ważony kapitałem").sub} color={(mwrDisplay(metrics).value ?? 0) >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiXirr")} mark={KPI_MARKS.kpiXirr} />
             <Kpi label="Maks. obsunięcie" value={`${fmt(metrics.maxDrawdownPct, 2)}%`} sub="od szczytu" color={LOSS} helpHref={helpFor("kpiMaxDd")} mark={KPI_MARKS.kpiMaxDd} />
             <Kpi label="Zysk zrealizowany" value={`${metrics.realizedPnl >= 0 ? "+" : ""}${fmt(metrics.realizedPnl)} ${ccy}`} sub="zamknięte pozycje" color={metrics.realizedPnl >= 0 ? PROFIT : LOSS} helpHref={helpFor("kpiRealized")} mark={KPI_MARKS.kpiRealized} />
             <Kpi label="Wartość portfela" value={fmt(snapshot.totalValue)} sub={ccy} mark={{ source: "Wycena", detail: "ostatnia cena × ilość" }} />

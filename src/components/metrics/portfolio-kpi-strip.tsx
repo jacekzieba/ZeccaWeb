@@ -1,5 +1,6 @@
 "use client";
 
+import { annualizedOrNull, mwrDisplay } from "@/domain/metrics/short-history";
 import type { SectionSize } from "@/components/customize/section-customization";
 import type { CashflowSummary, PortfolioMetrics } from "@/domain/models/investor-data";
 import { V2 } from "@/lib/v2-design";
@@ -96,7 +97,10 @@ export type PortfolioKpiInput = {
  * source of truth for the Portfel strip and the per-tile Dashboard sections. */
 export function getKpiTiles(input: PortfolioKpiInput): KpiTile[] {
   const { metrics, cashflows, openPositions, currency, cash } = input;
-  const xirr = metrics.xirrPct;
+  const mwr = mwrDisplay(metrics);
+  const xirr = mwr.value;
+  const cagr = annualizedOrNull(metrics, metrics.cagrPct);
+  const realReturn = annualizedOrNull(metrics, metrics.realReturnPct);
   // Wcześniej każda liczba ≥0 była na zielono — osiem kafelków tym samym
   // odcieniem obok siebie nie różniło się niczym poza treścią etykiety, a sam
   // kolor przestawał cokolwiek wyróżniać (zob. dashboard: sync-status dot był
@@ -111,10 +115,10 @@ export function getKpiTiles(input: PortfolioKpiInput): KpiTile[] {
   // z ostatnich 12 próbek w tle (dlaczego) niosą hierarchię razem.
   const tiles: KpiTile[] = [
     { id: "kpiUnrealized", label: "Zysk niezrealizowany", value: `${fmtSigned(metrics.unrealizedPnl)} ${currencyLabel(currency)}`, sub: unrealizedSub(metrics, currency), color: V2.ink },
-    { id: "kpiXirr", label: "MWR · XIRR", value: xirr == null ? "—" : fmtPct(xirr), sub: "rocznie", color: (xirr ?? 0) >= 0 ? V2.profit : V2.loss, featured: true, sparkline: metrics.xirrHistory },
+    { id: "kpiXirr", label: "MWR · XIRR", value: xirr == null ? "—" : fmtPct(xirr), sub: mwr.sub, color: (xirr ?? 0) >= 0 ? V2.profit : V2.loss, featured: true, sparkline: metrics.xirrHistory },
     { id: "kpiTwr", label: "Zwrot (TWR)", value: fmtPct(metrics.totalReturnPct), sub: "bez wpłat", color: V2.ink },
-    { id: "kpiCagr", label: "CAGR", value: fmtPct(metrics.cagrPct), sub: "rocznie, TWR", color: V2.ink },
-    { id: "kpiRealReturn", label: "Wynik realny", value: fmtPct(metrics.realReturnPct), sub: "rocznie, po inflacji", color: V2.ink },
+    { id: "kpiCagr", label: "CAGR", value: cagr.value == null ? "—" : fmtPct(cagr.value), sub: cagr.shortHistory ? "od 1 roku historii" : "rocznie, TWR", color: V2.ink },
+    { id: "kpiRealReturn", label: "Wynik realny", value: realReturn.value == null ? "—" : fmtPct(realReturn.value), sub: realReturn.shortHistory ? "od 1 roku historii" : "rocznie, po inflacji", color: V2.ink },
     { id: "kpiMaxDd", label: "Maks. obsunięcie", value: `${fmt(metrics.maxDrawdownPct, 2)}%`, sub: "od szczytu", color: V2.loss },
     { id: "kpiRealized", label: "Zysk zrealizowany", value: `${fmtSigned(metrics.realizedPnl)} ${currencyLabel(currency)}`, sub: "zamknięte pozycje", color: V2.ink },
     { id: "kpiInvested", label: "Zainwestowany kapitał", value: `${fmt(metrics.netInvested)} ${currencyLabel(currency)}`, color: V2.ink },

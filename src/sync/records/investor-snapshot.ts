@@ -33,6 +33,8 @@ import {
   computeRealReturnPct,
   computeTotalReturnPct,
   computeXirr,
+  computePeriodReturnPct,
+  historySpanDays,
   type CashflowPoint,
 } from "@/domain/metrics/portfolio-metrics";
 import {
@@ -1084,6 +1086,9 @@ function buildMetrics(
 
   const cashflows = buildXirrCashflows(accountIds, dataset, asOf, totalValue, baseToPln);
   const xirr = computeXirr(cashflows);
+  const externalFlows = totalValue > EPSILON ? cashflows.slice(0, -1) : cashflows;
+  const historyDays = historySpanDays(externalFlows, asOf);
+  const periodReturnPct = computePeriodReturnPct(externalFlows, totalValue, asOf);
   // The sampled series' own last point lands near `asOf` but not exactly on
   // it (valuationSeries's last entry vs. the precise totalValue/asOf pair
   // above can differ by a rounding tick), so it drifts a hair from `xirr`.
@@ -1119,6 +1124,8 @@ function buildMetrics(
     cagrPct,
     realReturnPct,
     xirrPct: xirr == null ? null : xirr * 100,
+    historyDays,
+    periodReturnPct,
     xirrHistory,
     xirrSeries,
     maxDrawdownPct,
