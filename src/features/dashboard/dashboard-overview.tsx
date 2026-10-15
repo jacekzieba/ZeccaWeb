@@ -996,6 +996,7 @@ export function DashboardOverview() {
           lastSyncedAt={lastSyncedAt}
           lastSyncLabel={lastSyncLabel}
           totalValue={totalValue}
+          cash={snapshot.cash}
           displayCurrency={displayCurrency}
           deltaPLN={deltaPLN}
           monthlyChange={monthlyChange}
@@ -1228,6 +1229,7 @@ function SummaryCard({
   lastSyncedAt,
   lastSyncLabel,
   totalValue,
+  cash,
   displayCurrency,
   deltaPLN,
   monthlyChange,
@@ -1243,6 +1245,8 @@ function SummaryCard({
   lastSyncedAt: number | null;
   lastSyncLabel: string;
   totalValue: number;
+  /** Gotówka wchodząca w skład `totalValue`, w walucie prezentacji. */
+  cash: number;
   displayCurrency: string;
   deltaPLN: number;
   monthlyChange: number;
@@ -1332,6 +1336,11 @@ function SummaryCard({
               {currencyLabel(displayCurrency)}
             </span>
           </div>
+          {cash > 0.5 && (
+            <div style={{ marginTop: 6, fontSize: 12, color: PALETTE.muted, fontVariantNumeric: "tabular-nums" }}>
+              w tym gotówka {fmt(cash)} {currencyLabel(displayCurrency)}
+            </div>
+          )}
           <div style={{ marginTop: 12, display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
             <Pnl value={deltaPLN} pct={monthlyChange} size={14.5} />
             <span style={{ fontSize: 12, color: PALETTE.subtle }}>vs 30 dni temu</span>
@@ -1577,13 +1586,26 @@ function ValueVsDepositsCard({
 
 function AllocationCard({ allocation }: { allocation: { id: string; label: string; value: number; color: string }[] }) {
   return (
-    <Card>
+    // Karta bywa rozciągnięta do wysokości sąsiada (Instrumenty) — legenda
+    // rozkłada się na całą wysokość zamiast zostawiać pustkę pod listą.
+    <Card style={{ display: "flex", flexDirection: "column" }}>
       <Eyebrow>Alokacja</Eyebrow>
       <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 500, color: PALETTE.ink, margin: "4px 0 16px" }}>Struktura aktywów</div>
       <V2Alloc data={allocation} />
-      <div style={{ display: "flex", flexDirection: "column", gap: 11, marginTop: 16 }}>
-        {allocation.map((item) => (
-          <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ display: "flex", flexDirection: "column", flex: 1, marginTop: 12 }}>
+        {allocation.map((item, index) => (
+          <div
+            key={item.id}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              flex: 1,
+              minHeight: 32,
+              maxHeight: 64,
+              borderTop: index === 0 ? "none" : `0.5px solid ${PALETTE.line2}`,
+            }}
+          >
             <span style={{ width: 10, height: 10, borderRadius: "var(--r-sm)", background: item.color }} />
             <span style={{ flex: 1, fontFamily: UI, fontSize: 12, color: PALETTE.ink }}>{item.label}</span>
             <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 500, color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>

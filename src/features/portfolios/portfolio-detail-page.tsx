@@ -1,6 +1,8 @@
 "use client";
 
 import { useMedia } from "@/lib/use-media";
+import { pluralPl } from "@/lib/plural-pl";
+import { isStaleValuation, summarizeValuations } from "@/features/portfolios/holdings-quality";
 import { token } from "@/design/tokens";
 import { SURFACES } from "@/lib/design-tokens";
 import { v2Mix } from "@/lib/v2-design";
@@ -73,6 +75,8 @@ const MUTED = token("inkMuted");
 const SUBTLE = token("inkFaint");
 const LINE_SOFT = token("line2");
 const PROFIT = token("up");
+const LOSS = token("down");
+const STALE = token("accent");
 
 // Była kartą "ze szkła" na kremowo-białym tle (rgba(255,253,249,...)) —
 // zupełnie inny, jasny język wizualny niż reszta produktu. Nowy system (patrz
@@ -221,6 +225,18 @@ function HistoryCard({
   );
 }
 
+const HOLDINGS_COLUMNS = "minmax(0,2.2fr) minmax(0,0.7fr) minmax(0,1fr) minmax(0,1.1fr) minmax(0,1fr) minmax(0,0.7fr)";
+
+function holdingPnl(h: HoldingRow): { amount: number; pct: number } | null {
+  if (h.costBasis == null || h.costBasis <= 0.005) return null;
+  const amount = h.marketValue - h.costBasis;
+  return { amount, pct: (amount / h.costBasis) * 100 };
+}
+
+function fmtSigned(n: number, d = 0) {
+  return `${n >= 0 ? "+" : "−"}${fmt(Math.abs(n), d)}`;
+}
+
 function HoldingsCard({
   rows,
   groupedCount,
@@ -237,6 +253,14 @@ function HoldingsCard({
   /** Wąski ekran: układ kartowy zamiast siatki 5 kolumn. */
   compact: boolean;
 }) {
+  // Jakość wyceny mówimy raz nad tabelą; w wierszu zostaje tylko odstępstwo od normy.
+  const now = new Date();
+  const valuation = summarizeValuations(
+    rows.filter((row) => row.family === null).map((row) => row.holding),
+    now,
+  );
+  const sourceNote = (h: HoldingRow) =>
+    valuation.allSame || h.valuationSourceLabel === valuation.dominantLabel ? "" : h.valuationSourceLabel;
   return (
     <div style={{ ...glassCard, padding: 0, height: "100%" }}>
       <div
@@ -248,18 +272,30 @@ function HoldingsCard({
         <div style={{ fontSize: 11, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>
           Pozycje ({groupedCount})
         </div>
+        {valuation.dominantLabel && (
+          <div style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+            Źródło wyceny: {valuation.dominantLabel}
+            {valuation.allSame ? " (wszystkie pozycje)" : " (większość pozycji)"}
+            {valuation.staleCount > 0 && (
+              <span style={{ color: STALE, fontWeight: 600 }}>
+                {" · "}
+                {valuation.staleCount} {pluralPl(valuation.staleCount, "pozycja", "pozycje", "pozycji")} ze starą wyceną (ponad 7 dni)
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Header */}
       <div
         style={{
           display: compact ? "none" : "grid",
-          gridTemplateColumns: "minmax(0,2.5fr) minmax(0,0.8fr) minmax(0,1fr) minmax(0,1.2fr) minmax(0,0.8fr)",
+          gridTemplateColumns: HOLDINGS_COLUMNS,
           padding: "10px 22px",
           background: v2Mix(INK, 0.025),
         }}
       >
-        {["Instrument", "Ilość", "Cena", "Wartość", "Udział"].map((h, i) => (
+        {["Instrument", "Ilość", "Cena", "Wartość", "Zysk / strata", "Udział"].map((h, i) => (
           <div
             key={h}
             style={{
@@ -286,6 +322,10 @@ function HoldingsCard({
         const color = KIND_COLORS[h.kind] ?? SUBTLE;
         const kindLabel = KIND_LABELS[h.kind] ?? h.kind;
         const isGroup = family !== null;
+
+        const pnl = holdingPnl(h);
+        const note = sourceNote(h);
+        const stale = isStaleValuation(h.lastPriceDate, now);
 
         if (compact) {
           const pct = h.portfolioPercent.toLocaleString("pl-PL", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -325,17 +365,23 @@ function HoldingsCard({
                   <div style={{ fontSize: 14, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
                     {fmt(h.marketValue)} <span style={{ fontSize: 11, opacity: 0.5 }}>{currencyLabel(displayCurrency)}</span>
                   </div>
-                  <div style={{ fontSize: 11, color: MUTED, fontVariantNumeric: "tabular-nums" }}>{pct}%</div>
+                  {pnl ? (
+                    <div style={{ fontSize: 11, color: pnl.amount >= 0 ? PROFIT : LOSS, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+                      {fmtSigned(pnl.amount)} ({fmtSigned(pnl.pct, 1)}%)
+                    </div>
+                  ) : null}
                 </div>
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "2px 12px", fontSize: 11, color: SUBTLE, fontVariantNumeric: "tabular-nums" }}>
                 <span>
-                  {fmtQty(h.quantity)} × {h.lastPrice > 0 ? fmt(h.lastPrice, 2) : "—"} {h.currency}
+                  {fmtQty(h.quantity)} × {h.lastPrice > 0 ? fmt(h.lastPrice, 2) : "—"} {h.currency} · {pct}%
                 </span>
-                <span>
-                  {h.valuationSourceLabel}
-                  {h.lastPriceDate ? ` · wycena ${fmtPriceDate(h.lastPriceDate)}` : ""}
-                </span>
+                {(note || stale) && (
+                  <span style={stale ? { color: STALE, fontWeight: 600 } : undefined}>
+                    {note}
+                    {stale && h.lastPriceDate ? `${note ? " · " : ""}wycena ${fmtPriceDate(h.lastPriceDate)}` : ""}
+                  </span>
+                )}
               </div>
             </div>
           );
@@ -356,7 +402,7 @@ function HoldingsCard({
             aria-expanded={isGroup ? expandedFamilies.has(family!) : undefined}
             style={{
               display: "grid",
-              gridTemplateColumns: "minmax(0,2.5fr) minmax(0,0.8fr) minmax(0,1fr) minmax(0,1.2fr) minmax(0,0.8fr)",
+              gridTemplateColumns: HOLDINGS_COLUMNS,
               padding: `14px 22px 14px ${depth ? 42 : 22}px`,
               borderTop: `0.5px solid ${LINE_SOFT}`,
               alignItems: "center",
@@ -407,8 +453,11 @@ function HoldingsCard({
                 {h.lastPrice > 0 ? fmt(h.lastPrice, 2) : "—"}
               </div>
               <div style={{ fontSize: 11, color: SUBTLE }}>
-                {h.currency} · {h.valuationSourceLabel}
-                {h.lastPriceDate ? ` · ${fmtPriceDate(h.lastPriceDate)}` : ""}
+                {h.currency}
+                {note ? ` · ${note}` : ""}
+                {stale && h.lastPriceDate ? (
+                  <span style={{ color: STALE, fontWeight: 600 }}>{` · wycena ${fmtPriceDate(h.lastPriceDate)}`}</span>
+                ) : null}
               </div>
             </div>
 
@@ -418,6 +467,23 @@ function HoldingsCard({
                 {fmt(h.marketValue)}{" "}
                 <span style={{ fontSize: 11, opacity: 0.5 }}>{currencyLabel(displayCurrency)}</span>
               </div>
+            </div>
+
+            {/* Profit / loss */}
+            <div style={{ textAlign: "right" }}>
+              {pnl ? (
+                <>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: pnl.amount >= 0 ? PROFIT : LOSS, fontVariantNumeric: "tabular-nums" }}>
+                    {fmtSigned(pnl.amount)}{" "}
+                    <span style={{ fontSize: 11, opacity: 0.6 }}>{currencyLabel(displayCurrency)}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: pnl.amount >= 0 ? PROFIT : LOSS, fontVariantNumeric: "tabular-nums" }}>
+                    {fmtSigned(pnl.pct, 1)}%
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontSize: 13, color: SUBTLE }}>—</div>
+              )}
             </div>
 
             {/* Portfolio % + bar */}
@@ -592,6 +658,9 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
       valuationSourceLabel: `${entry.items.length} ${entry.items.length === 1 ? "seria" : "serie"}`,
       marketValue: entry.items.reduce((sum, item) => sum + item.marketValue, 0),
       portfolioPercent: entry.items.reduce((sum, item) => sum + item.portfolioPercent, 0),
+      costBasis: entry.items.every((item) => item.costBasis != null)
+        ? entry.items.reduce((sum, item) => sum + (item.costBasis ?? 0), 0)
+        : undefined,
     };
     const parent = { holding, family: entry.family, depth: 0 };
     return expandedFamilies.has(entry.family)
@@ -629,6 +698,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
             detail: "ostatnia cena × ilość",
             label: "Wartość portfela",
             value: `${fmt(detail.totalValue)} ${currencyLabel(displayCurrency)}`,
+            sub: detail.cashValue > 0.5 ? `w tym gotówka ${fmt(detail.cashValue)} ${currencyLabel(displayCurrency)}` : undefined,
           }]}
         />
       );
@@ -659,6 +729,8 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
             sub: kpi.sub,
             color: kpi.color,
             helpHref: kpi.helpHref,
+            featured: kpi.featured,
+            sparkline: kpi.sparkline,
           }]}
         />
       );
