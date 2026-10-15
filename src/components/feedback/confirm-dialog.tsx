@@ -18,6 +18,8 @@ export function ConfirmDialog({
   body,
   confirmLabel = "Usuń",
   cancelLabel = "Anuluj",
+  alternateLabel,
+  onAlternate,
   onConfirm,
   onCancel,
 }: {
@@ -26,6 +28,9 @@ export function ConfirmDialog({
   body?: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  /** Węższa wersja akcji (np. „Tylko zakup”), obok pełnej `confirmLabel`. */
+  alternateLabel?: string;
+  onAlternate?(): void;
   onConfirm(): void;
   onCancel(): void;
 }) {
@@ -135,6 +140,15 @@ export function ConfirmDialog({
           >
             {cancelLabel}
           </button>
+          {alternateLabel && onAlternate && (
+            <button
+              type="button"
+              onClick={onAlternate}
+              style={{ ...przycisk, border: `1px solid ${token("down")}`, background: "transparent", color: token("down") }}
+            >
+              {alternateLabel}
+            </button>
+          )}
           <button
             type="button"
             onClick={onConfirm}
