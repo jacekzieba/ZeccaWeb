@@ -3,8 +3,9 @@
 import { useRef, useState, useEffect } from "react";
 import { COLORS, TYPOGRAPHY } from "@/lib/design-tokens";
 import { formatAxisValue } from "@/lib/money";
+import { axisLabeler } from "./axis-label";
 
-type Point = { label: string; value: number };
+type Point = { label: string; value: number; date?: string };
 const MIN_CHART_WIDTH = 240;
 
 export function AreaChart({
@@ -48,6 +49,7 @@ export function AreaChart({
   const tx = (i: number) => pl + (i / (data.length - 1)) * W;
   const ty = (v: number) => pt + H - ((v - mn) / rng) * H;
   const pts = data.map((d, i) => `${tx(i)},${ty(d.value)}`).join(" ");
+  const axisLabel = axisLabeler(data);
   const gradId = `ag-${lineColor.replace(/[^a-z0-9]/gi, "")}`;
 
   const yTicks = [0, 0.25, 0.5, 0.75, 1].map((f) => mn + f * rng);
@@ -131,7 +133,7 @@ export function AreaChart({
                 fill={COLORS.subtle}
                 fontFamily={TYPOGRAPHY.system}
               >
-                {d.label}
+                {axisLabel(d)}
               </text>
             );
           })}
@@ -186,7 +188,7 @@ export function AreaChart({
             {data[hover].label}
           </div>
           <div style={{ fontWeight: 700 }}>
-            {data[hover].value.toLocaleString("pl-PL", { maximumFractionDigits: 0 })} PLN
+            {data[hover].value.toLocaleString("pl-PL", { maximumFractionDigits: 0, useGrouping: true })} PLN
           </div>
         </div>
       )}

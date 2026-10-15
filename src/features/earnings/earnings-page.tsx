@@ -113,7 +113,7 @@ function buildIncomeListsFromEmpty() {
 }
 
 function fmt(n: number, d = 0) {
-  return n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d });
+  return n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: true });
 }
 
 function parsePositiveNumber(value: string) {

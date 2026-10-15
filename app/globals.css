@@ -410,9 +410,11 @@ body {
    „każda liczba ma źródło" zostaje, zmienia się nośnik. */
 .metric-tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(232px, 1fr));
   gap: var(--space-3);
 }
+
+.metric-tiles--fill { height: 100%; }
 
 .metric-tile {
   display: flex;
@@ -510,7 +512,10 @@ body {
 .metric-tile-help:hover { color: var(--accent); border-color: var(--accent); }
 
 @media (max-width: 720px) {
-  .metric-tiles { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+  .metric-tiles { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+  /* Węższy kafelek: mniejsza liczba, żeby duże kwoty nie ginęły pod wielokropkiem. */
+  .metric-tile-value { font-size: 18px; }
+  .metric-tile--featured .metric-tile-value { font-size: 26px; }
 }
 
 /* ── Odsyłacz do treści ──────────────────────────────────────────────────────
@@ -689,3 +694,34 @@ body:has([data-testid="demo-badge"], [data-demo-badge]) .analytics-consent {
   font-weight: 600;
 }
 .consent-reset--button:hover { border-color: var(--ink); }
+
+/* Plakietka demo: na desktopie przypięta w rogu, na telefonie w przepływie nad
+   treścią — przypięta zasłaniała osie wykresów i podpisy. */
+.demo-badge {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 902;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 11px;
+  border-radius: var(--r-pill);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+@media (max-width: 720px) {
+  .demo-badge {
+    position: static;
+    display: inline-block;
+    margin: 0 0 12px;
+  }
+}
+
+/* Niskie okno: karta wartości w pasku bocznym zabierała miejsce menu i ucinała
+   ostatnie pozycje („Ustawienia”). Wartość jest i tak na górze dashboardu. */
+@media (max-height: 600px) {
+  .sidebar-total { display: none; }
+}

@@ -55,6 +55,7 @@ export function SectionCustomizePanel<Id extends string>({
   eyebrow,
   title,
   subtitle,
+  singleColumn = false,
 }: {
   registry: SectionRegistry<Id>;
   config: SectionConfig<Id>;
@@ -68,6 +69,8 @@ export function SectionCustomizePanel<Id extends string>({
   eyebrow: string;
   title: string;
   subtitle: string;
+  /** Siatka ma jedną kolumnę (wąski ekran) — presety szerokości nic nie zmieniają. */
+  singleColumn?: boolean;
 }) {
   const categoryPanelId = useId();
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
@@ -208,7 +211,7 @@ export function SectionCustomizePanel<Id extends string>({
                               <div style={{ fontFamily: theme.fontUi, fontSize: 13, fontWeight: 700, color: theme.ink }}>{section.label}</div>
                               <div style={{ fontFamily: theme.fontUi, fontSize: 11, color: theme.muted, marginTop: 2, lineHeight: 1.35 }}>{section.desc}</div>
                             </div>
-                            <div role="radiogroup" aria-label={`Szerokość sekcji ${section.label}`} style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
+                            <div role="radiogroup" aria-label={`Szerokość sekcji ${section.label}`} title={singleColumn ? "Na wąskim ekranie sekcje zajmują całą szerokość" : undefined} style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10, opacity: singleColumn ? 0.45 : 1 }}>
                               {section.sizePresets.map((preset) => {
                                 const selected = currentSize.width === preset.width;
                                 return (
@@ -217,8 +220,9 @@ export function SectionCustomizePanel<Id extends string>({
                                     type="button"
                                     role="radio"
                                     aria-checked={selected}
+                                    disabled={singleColumn}
                                     onClick={() => onResize(sectionId, preset)}
-                                    style={{ border: `0.5px solid ${selected ? mixHex(theme.brand, 0.48) : theme.line}`, borderRadius: "var(--r-lg)", background: selected ? mixHex(theme.brand, 0.1) : theme.card, color: selected ? theme.brand : theme.muted, cursor: "pointer", fontFamily: theme.fontMono, fontSize: 11, fontWeight: 700, padding: "5px 8px" }}
+                                    style={{ border: `0.5px solid ${selected ? mixHex(theme.brand, 0.48) : theme.line}`, borderRadius: "var(--r-lg)", background: selected ? mixHex(theme.brand, 0.1) : theme.card, color: selected ? theme.brand : theme.muted, cursor: singleColumn ? "not-allowed" : "pointer", fontFamily: theme.fontMono, fontSize: 11, fontWeight: 700, padding: "5px 8px" }}
                                   >
                                     {widthLabel(preset.width)}
                                   </button>

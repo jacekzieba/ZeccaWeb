@@ -39,7 +39,7 @@ const card: CSSProperties = {
 };
 
 function fmt(n: number, d = 0) {
-  return n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d });
+  return n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: true });
 }
 function fmtPct(n: number, d = 2) {
   return `${n >= 0 ? "+" : ""}${n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d })}%`;

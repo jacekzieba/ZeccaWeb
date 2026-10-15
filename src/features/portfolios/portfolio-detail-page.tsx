@@ -81,12 +81,12 @@ const PROFIT = token("up");
 const glassCard: CSSProperties = SURFACES.glassCard;
 
 function fmt(n: number, d = 0) {
-  return n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d });
+  return n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: true });
 }
 
 function fmtQty(n: number) {
   if (Number.isInteger(n)) return fmt(n);
-  return n.toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+  return n.toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 6, useGrouping: true });
 }
 
 function fmtPriceDate(value: string) {
@@ -495,7 +495,7 @@ function CashCard({ balances }: { balances: CashBalance[] }) {
             <div style={{ fontSize: 13, fontWeight: 600, color: INK }}>{cb.currency}</div>
           </div>
           <div style={{ fontSize: 15, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
-            {fmt(cb.amount, 2)}
+            {fmt(cb.amount, 2)} {currencyLabel(cb.currency)}
           </div>
         </div>
       ))}
@@ -621,6 +621,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
     if (id === "kpiValue")
       return (
         <MetricTiles
+          fill
           rows={[{
             key: id,
             source: "Wycena",
@@ -633,6 +634,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
     if (id === "kpiCash")
       return (
         <MetricTiles
+          fill
           rows={[{
             key: id,
             source: "Portfel",
@@ -646,6 +648,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
     if (kpi)
       return (
         <MetricTiles
+          fill
           rows={[{
             key: id,
             source: KPI_MARKS[id as KpiTileId].source,
@@ -734,6 +737,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
         isMobile={isMobile}
         isTablet={isTablet}
         testIdPrefix="portfolio-detail"
+        pairWidthOne
       />
     </div>
   );

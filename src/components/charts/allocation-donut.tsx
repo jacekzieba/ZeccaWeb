@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { COLORS, TYPOGRAPHY } from "@/lib/design-tokens";
 import { formatShare } from "@/lib/money";
+import { pluralPl } from "@/lib/plural-pl";
 
 type Slice = { label: string; percent: number };
 
@@ -22,7 +23,17 @@ function clampLabel(label: string, max = 16) {
   return label.length > max ? `${label.slice(0, max - 1)}…` : label;
 }
 
-export function AllocationDonut({ slices }: { slices: Slice[] }) {
+export function AllocationDonut({
+  slices,
+  centerLabel = "ALOKACJA",
+  unit = ["klasa", "klasy", "klas"],
+}: {
+  slices: Slice[];
+  /** Podpis nad liczbą w środku koła. */
+  centerLabel?: string;
+  /** Formy rzeczownika pod liczbą: 1 / 2–4 / 5+. */
+  unit?: [string, string, string];
+}) {
   // The slice currently hovered (segment or legend row). `null` → default summary.
   const [active, setActive] = useState<number | null>(null);
 
@@ -86,13 +97,13 @@ export function AllocationDonut({ slices }: { slices: Slice[] }) {
             }}
           >
             <text x={cx} y={cy - 6} textAnchor="middle" fontSize="10" fill={COLORS.subtle} fontWeight="600" letterSpacing="0.06em" fontFamily={TYPOGRAPHY.system}>
-              ALOKACJA
+              {centerLabel}
             </text>
             <text x={cx} y={cy + 12} textAnchor="middle" fontSize="18" fill={COLORS.text} fontWeight="700" fontFamily={TYPOGRAPHY.system}>
               {slices.length}
             </text>
             <text x={cx} y={cy + 26} textAnchor="middle" fontSize="10" fill={COLORS.subtle} fontFamily={TYPOGRAPHY.system}>
-              klas
+              {pluralPl(slices.length, ...unit)}
             </text>
           </g>
 

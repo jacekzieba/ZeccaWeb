@@ -3,6 +3,7 @@ export function formatCurrency(value: number, currency: string) {
     style: "currency",
     currency,
     maximumFractionDigits: 0,
+    useGrouping: true,
   }).format(value);
 }
 

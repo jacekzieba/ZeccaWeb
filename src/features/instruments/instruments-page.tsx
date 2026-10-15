@@ -74,13 +74,13 @@ const KIND_COLORS: Record<string, string> = {
 const KIND_ALL = "all";
 
 function fmt(n: number, d = 0) {
-  return n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d });
+  return n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: true });
 }
 
 function fmtQty(n: number) {
   if (n === 0) return "—";
   if (Number.isInteger(n)) return fmt(n);
-  return n.toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+  return n.toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 6, useGrouping: true });
 }
 
 function fmtDate(iso: string) {
