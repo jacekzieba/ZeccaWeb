@@ -84,3 +84,26 @@ describe("metryki snapshotu przy krótkiej historii", () => {
     expect(snapshot.metrics.periodReturnPct).toBeCloseTo(0, 6);
   });
 });
+
+describe("portfel zamknięty po kilku dniach", () => {
+  it("nie „starzeje się” do rocznego XIRR, gdy leży pusty", () => {
+    const A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const tx = (id: string, date: string, type: string, amount: number) =>
+      record("transaction", id, {
+        recordType: "transaction", id, date, portfolioID: A, instrumentID: null,
+        transactionType: type, grossAmount: amount, currency: "PLN", fees: 0, taxes: 0,
+      });
+    const records = [
+      record("account", A, { recordType: "account", id: A, name: "Główny", baseCurrency: "PLN" }),
+      tx("cccccccc-cccc-4ccc-8ccc-cccccccccccc", "2025-10-01T10:00:00.000Z", "cashDeposit", 1000),
+      tx("dddddddd-dddd-4ddd-8ddd-dddddddddddd", "2025-10-31T10:00:00.000Z", "cashWithdrawal", 1000),
+    ];
+    const snapshot = buildInvestorDataSnapshot(records, {
+      asOf: new Date("2026-10-15T12:00:00Z"),
+      historyGranularity: "daily",
+      useLatestTransactionFxRate: true,
+      useMarketQuotes: true,
+    });
+    expect(snapshot.metrics.historyDays).toBe(30);
+  });
+});
