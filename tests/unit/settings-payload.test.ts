@@ -78,4 +78,15 @@ describe("makeSettingsPayload", () => {
       updatedAt: 300,
     });
   });
+
+  it("zapisuje showBelkaTax bez ruszania pozostałych pól natywnych", () => {
+    const payload = makeSettingsPayload({
+      id: "settings-1",
+      existing: { id: "settings-1", recordType: "settings", showBelkaTax: true, useFIFO: false, appLanguage: "pl" },
+      showBelkaTax: false,
+      updatedAt: 300,
+    });
+
+    expect(payload).toMatchObject({ showBelkaTax: false, useFIFO: false, appLanguage: "pl", updatedAt: 300 });
+  });
 });

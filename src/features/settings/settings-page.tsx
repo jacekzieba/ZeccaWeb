@@ -35,7 +35,7 @@ import { useAnalyticsConsent } from "@/features/telemetry/use-analytics-consent"
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { clearCachedUserDataKey } from "@/sync/encryption/key-cache";
 import { clearPendingSyncOperations } from "@/sync/records/record-writer";
-import { saveRecord } from "@/sync/records/record-writer";
+import { refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
 import { makeSettingsPayload } from "@/sync/records/macos-payloads";
 import { isFakeSyncEnabled } from "@/lib/env";
 import { languageName, setAppLanguage, useAppLanguage, type AppLanguage } from "@/features/i18n/language-store";
@@ -201,6 +201,9 @@ function zapiszProfil(patch: Parameters<typeof updateProfile>[0], opis?: string)
   announce(opis ? `Zapisano: ${opis}.` : "Ustawienie zapisane.");
 }
 
+// Stałe ID rekordu `settings` używane przez klienty natywne (SyncModels.settingsRecordID).
+const NATIVE_SETTINGS_RECORD_ID = "b2aa7bd4-a95d-4d80-90f9-787b8a1ec401";
+
 export function SettingsPage() {
   const profile = useProfile();
   const displayCurrencyState = useDisplayCurrency();
@@ -257,6 +260,53 @@ export function SettingsPage() {
     });
   }
 
+  const settingsRecord = records?.find((record) => record.envelope.type === "settings");
+  // Jak w aplikacjach natywnych: ustawienie jest w zaszyfrowanym rekordzie
+  // `settings` (showBelkaTax, domyślnie włączone), więc synchronizuje się z iOS/macOS.
+  const belkaOn =
+    (settingsRecord?.envelope.payload as { showBelkaTax?: boolean } | undefined)?.showBelkaTax ?? true;
+
+  async function changeBelka(next: boolean) {
+    const id = settingsRecord?.id ?? NATIVE_SETTINGS_RECORD_ID;
+    const existing = (settingsRecord?.envelope.payload ?? null) as Record<string, unknown> | null;
+    const payload = makeSettingsPayload({ id, existing, showBelkaTax: next });
+    const opis = `podatek Belki ${next ? "włączony" : "wyłączony"}`;
+
+    // Tryb demo i fake-sync: rekordy żyją tylko w pamięci.
+    if (!records || publicDemo || isFakeSyncEnabled()) {
+      if (!records) return;
+      const now = new Date().toISOString();
+      const nextRecord = {
+        id,
+        deviceId: "web-local",
+        updatedAt: now,
+        deletedAt: null,
+        envelope: { type: "settings" as const, payloadVersion: 1, schemaVersion: 1, payload },
+      };
+      useSyncStore.setState({
+        records: settingsRecord
+          ? records.map((record) => (record.id === id ? nextRecord : record))
+          : [...records, nextRecord],
+      });
+      announce(`Zapisano: ${opis}.`);
+      return;
+    }
+    if (!userDataKey || !supabase) return;
+
+    try {
+      const result = await saveRecord(supabase, userDataKey, "settings", payload, {
+        baseUpdatedAt: settingsRecord?.updatedAt ?? null,
+      });
+      if (!result.queued) {
+        const refreshed = await refreshSyncStore(supabase, userDataKey);
+        useSyncStore.getState().setSync(refreshed.records, refreshed.snapshot);
+      }
+      announce(`Zapisano: ${opis}.`);
+    } catch (error) {
+      announce(error instanceof Error ? error.message : "Nie udało się zapisać ustawienia.");
+    }
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: V2_TYPE.ui, color: V2.ink }}>
       <V2ScreenHead eyebrow="System" title="Ustawienia" sub="Profil, podatki, alokacja, źródła danych i powiadomienia" />
@@ -269,7 +319,7 @@ export function SettingsPage() {
       </Section>
 
       <Section eyebrow="Podatki" title="Rozliczenia podatkowe">
-        <Row label="Rezydencja podatkowa · Polska" desc="Podatek Belki 19% od zysków kapitałowych" control={<Switch on={profile.taxResidencePL} onChange={(v) => zapiszProfil({ taxResidencePL: v }, `rezydencja podatkowa Polska ${v ? "włączona" : "wyłączona"}`)} label="Rezydencja podatkowa Polska" />} />
+        <Row label="Podatek Belki (19%)" desc="Pokazuj podatek Belki od zysków kapitałowych. Ustawienie synchronizuje się z aplikacjami Zecca." control={<Switch on={belkaOn} onChange={(v) => void changeBelka(v)} label="Podatek Belki" />} />
         {ikeIkzeUsage.length > 0 ? (
           ikeIkzeUsage.map((usage, index) => (
             <Row

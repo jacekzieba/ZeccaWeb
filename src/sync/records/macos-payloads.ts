@@ -19,6 +19,7 @@ export function makeSettingsPayload(input: {
   telemetryEnabled?: boolean;
   hasAcknowledgedPrivacyDisclosure?: boolean;
   appLanguage?: "pl" | "en";
+  showBelkaTax?: boolean;
   updatedAt?: number | string;
 }) {
   return {
@@ -32,6 +33,7 @@ export function makeSettingsPayload(input: {
       ? { hasAcknowledgedPrivacyDisclosure: input.hasAcknowledgedPrivacyDisclosure }
       : {}),
     ...(input.appLanguage !== undefined ? { appLanguage: input.appLanguage } : {}),
+    ...(input.showBelkaTax !== undefined ? { showBelkaTax: input.showBelkaTax } : {}),
     updatedAt: input.updatedAt ?? nowSwiftReferenceSeconds(),
   };
 }
