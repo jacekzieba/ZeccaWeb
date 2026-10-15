@@ -189,13 +189,14 @@ function HistoryCard({
   return (
     <div style={{ ...glassCard, padding: "22px 22px 18px", height: "100%" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>
           Historia wartości · {period === "MAX" ? "maksimum" : period}
         </div>
         <div style={{ display: "inline-flex", background: v2Mix(INK, 0.06), borderRadius: "var(--r-xl)", padding: 3 }}>
           {PERIOD_OPTIONS.map((option) => (
             <button
               key={option}
+              className="hit-44"
               onClick={() => onPeriodChange(option)}
               style={{
                 padding: "5px 12px",
@@ -244,7 +245,7 @@ function HoldingsCard({
           borderBottom: `0.5px solid ${LINE_SOFT}`,
         }}
       >
-        <div style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>
           Pozycje ({groupedCount})
         </div>
       </div>
@@ -262,7 +263,7 @@ function HoldingsCard({
           <div
             key={h}
             style={{
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: 700,
               color: SUBTLE,
               textTransform: "uppercase",
@@ -322,7 +323,7 @@ function HoldingsCard({
                 </div>
                 <div style={{ textAlign: "right", flexShrink: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
-                    {fmt(h.marketValue)} <span style={{ fontSize: 10, opacity: 0.5 }}>{currencyLabel(displayCurrency)}</span>
+                    {fmt(h.marketValue)} <span style={{ fontSize: 11, opacity: 0.5 }}>{currencyLabel(displayCurrency)}</span>
                   </div>
                   <div style={{ fontSize: 11, color: MUTED, fontVariantNumeric: "tabular-nums" }}>{pct}%</div>
                 </div>
@@ -405,7 +406,7 @@ function HoldingsCard({
               <div style={{ fontSize: 13, color: INK, fontVariantNumeric: "tabular-nums" }}>
                 {h.lastPrice > 0 ? fmt(h.lastPrice, 2) : "—"}
               </div>
-              <div style={{ fontSize: 10, color: SUBTLE }}>
+              <div style={{ fontSize: 11, color: SUBTLE }}>
                 {h.currency} · {h.valuationSourceLabel}
                 {h.lastPriceDate ? ` · ${fmtPriceDate(h.lastPriceDate)}` : ""}
               </div>
@@ -415,7 +416,7 @@ function HoldingsCard({
             <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
                 {fmt(h.marketValue)}{" "}
-                <span style={{ fontSize: 10, opacity: 0.5 }}>{currencyLabel(displayCurrency)}</span>
+                <span style={{ fontSize: 11, opacity: 0.5 }}>{currencyLabel(displayCurrency)}</span>
               </div>
             </div>
 
@@ -459,7 +460,7 @@ function CashCard({ balances }: { balances: CashBalance[] }) {
           borderBottom: `0.5px solid ${LINE_SOFT}`,
         }}
       >
-        <div style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em" }}>
           Środki pieniężne
         </div>
       </div>
@@ -671,7 +672,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
     );
     if (id === "valueVsDeposits") return (
       <div style={{ ...glassCard, padding: "22px 22px 18px", height: "100%" }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 14 }}>Wartość konta na tle wpłat</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 14 }}>Wartość konta na tle wpłat</div>
         <ValueVsDepositsChart value={detail.valuationSeries} deposits={detail.netInvestedSeries} currency={displayCurrency} height={210} />
       </div>
     );
@@ -697,6 +698,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
           type="button"
           onClick={() => setShowCustomize((v) => !v)}
           aria-expanded={showCustomize}
+          className="hit-44"
           style={{
             border: `0.5px solid ${PD_THEME.line}`,
             borderRadius: "var(--r-xl)",

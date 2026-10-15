@@ -96,13 +96,13 @@ export function AllocationDonut({
               pointerEvents: "none",
             }}
           >
-            <text x={cx} y={cy - 6} textAnchor="middle" fontSize="10" fill={COLORS.subtle} fontWeight="600" letterSpacing="0.06em" fontFamily={TYPOGRAPHY.system}>
+            <text x={cx} y={cy - 6} textAnchor="middle" fontSize="11" fill={COLORS.subtle} fontWeight="600" letterSpacing="0.06em" fontFamily={TYPOGRAPHY.system}>
               {centerLabel}
             </text>
             <text x={cx} y={cy + 12} textAnchor="middle" fontSize="18" fill={COLORS.text} fontWeight="700" fontFamily={TYPOGRAPHY.system}>
               {slices.length}
             </text>
-            <text x={cx} y={cy + 26} textAnchor="middle" fontSize="10" fill={COLORS.subtle} fontFamily={TYPOGRAPHY.system}>
+            <text x={cx} y={cy + 26} textAnchor="middle" fontSize="11" fill={COLORS.subtle} fontFamily={TYPOGRAPHY.system}>
               {pluralPl(slices.length, ...unit)}
             </text>
           </g>

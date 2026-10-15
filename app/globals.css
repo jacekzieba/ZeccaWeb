@@ -447,7 +447,7 @@ body {
 /* Cecha źródła — mono, bo to dane techniczne, nie proza. */
 .metric-tile-mark {
   font-family: var(--font-code);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.5;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -724,4 +724,21 @@ body:has([data-testid="demo-badge"], [data-demo-badge]) .analytics-consent {
    ostatnie pozycje („Ustawienia”). Wartość jest i tak na górze dashboardu. */
 @media (max-height: 600px) {
   .sidebar-total { display: none; }
+}
+
+/* Cel dotykowy >= 44 px bez zmiany układu: powiększamy tylko pole trafienia.
+   Mały przycisk zostaje wizualnie taki sam, a niewidoczny ::after łapie
+   dotyk w okolicy (WCAG 2.5.5). */
+.hit-44,
+.metric-tile-help {
+  position: relative;
+}
+.hit-44::after,
+.metric-tile-help::after {
+  content: "";
+  position: absolute;
+  inset: -10px -6px;
+}
+.metric-tile-help::after {
+  inset: -16px;
 }

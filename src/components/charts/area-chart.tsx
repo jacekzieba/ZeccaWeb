@@ -93,7 +93,7 @@ export function AreaChart({
             />
             <text
               x={pl - 8} y={ty(v) + 4}
-              textAnchor="end" fontSize="10"
+              textAnchor="end" fontSize="11"
               fill={COLORS.subtle}
               fontFamily={TYPOGRAPHY.mono}
             >
@@ -129,7 +129,7 @@ export function AreaChart({
                 x={tx(idx)}
                 y={pt + H + 22}
                 textAnchor="middle"
-                fontSize="10"
+                fontSize="11"
                 fill={COLORS.subtle}
                 fontFamily={TYPOGRAPHY.system}
               >
@@ -184,7 +184,7 @@ export function AreaChart({
             minWidth: 110,
           }}
         >
-          <div style={{ color: COLORS.textMuted, fontSize: 10, letterSpacing: ".04em" }}>
+          <div style={{ color: COLORS.textMuted, fontSize: 11, letterSpacing: ".04em" }}>
             {data[hover].label}
           </div>
           <div style={{ fontWeight: 700 }}>

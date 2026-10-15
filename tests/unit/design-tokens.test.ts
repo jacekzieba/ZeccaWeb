@@ -16,7 +16,7 @@ describe("tokeny", () => {
       line2: "rgba(26,23,18,0.07)",
       ink: "#1A1712",
       inkMuted: "#5E574C",
-      inkFaint: "#8C857A",
+      inkFaint: "#736C61",
       accent: "#A9682A",
       onAccent: "#FFF8EF",
       rail: "rgba(26,23,18,0.22)",
@@ -72,6 +72,29 @@ describe("tokeny", () => {
 
 import { readFileSync } from "node:fs";
 import { cssVarName } from "@/design/tokens";
+
+function luminance(hex: string) {
+  const [r, g, b] = [1, 3, 5].map((i) => {
+    const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+function contrast(a: string, b: string) {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+describe("kontrast --ink-faint (tekst informacyjny, WCAG AA 4,5:1)", () => {
+  it.each([
+    ["jasny", LIGHT],
+    ["ciemny", DARK],
+  ] as const)("motyw %s: na ground, surface i surface2", (_name, theme) => {
+    for (const bg of [theme.ground, theme.surface, theme.surface2]) {
+      expect(contrast(theme.inkFaint, bg)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+});
 
 describe("tokens.css", () => {
   const css = readFileSync("src/design/tokens.css", "utf8");

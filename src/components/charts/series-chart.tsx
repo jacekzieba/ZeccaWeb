@@ -88,7 +88,7 @@ export function SeriesLineChart({
         {ticks.map((v, i) => (
           <g key={i}>
             <line x1={PAD.left} x2={PAD.left + W} y1={ty(v)} y2={ty(v)} stroke={COLORS.lineSoft} strokeWidth="1" strokeDasharray="3 4" />
-            <text x={PAD.left - 8} y={ty(v) + 4} textAnchor="end" fontSize="10" fill={COLORS.subtle} fontFamily={TYPOGRAPHY.mono}>
+            <text x={PAD.left - 8} y={ty(v) + 4} textAnchor="end" fontSize="11" fill={COLORS.subtle} fontFamily={TYPOGRAPHY.mono}>
               {formatAxisValue(v, hi - lo)}
             </text>
           </g>
@@ -110,7 +110,7 @@ export function SeriesLineChart({
           .map((p, i) => ({ p, i }))
           .filter(({ i }) => i % Math.max(1, Math.ceil(first.length / 6)) === 0)
           .map(({ p, i }) => (
-            <text key={i} x={tx(i, first.length)} y={height - 10} textAnchor="middle" fontSize="10" fill={COLORS.subtle} fontFamily={TYPOGRAPHY.mono}>
+            <text key={i} x={tx(i, first.length)} y={height - 10} textAnchor="middle" fontSize="11" fill={COLORS.subtle} fontFamily={TYPOGRAPHY.mono}>
               {p.label}
             </text>
           ))}
@@ -181,7 +181,7 @@ export function BarSeriesChart({
         {ticks.map((v, i) => (
           <g key={i}>
             <line x1={PAD.left} x2={PAD.left + W} y1={ty(v)} y2={ty(v)} stroke={COLORS.lineSoft} strokeWidth="1" strokeDasharray="3 4" />
-            <text x={PAD.left - 8} y={ty(v) + 4} textAnchor="end" fontSize="10" fill={COLORS.subtle} fontFamily={TYPOGRAPHY.mono}>
+            <text x={PAD.left - 8} y={ty(v) + 4} textAnchor="end" fontSize="11" fill={COLORS.subtle} fontFamily={TYPOGRAPHY.mono}>
               {formatAxisValue(v, hi - lo)}
             </text>
           </g>
@@ -209,7 +209,7 @@ export function BarSeriesChart({
                 </text>
               )}
               {(data.length <= 12 || i % Math.ceil(data.length / 12) === 0) && (
-                <text x={x + barW / 2} y={height - 10} textAnchor="middle" fontSize="10" fill={COLORS.subtle} fontFamily={TYPOGRAPHY.mono}>
+                <text x={x + barW / 2} y={height - 10} textAnchor="middle" fontSize="11" fill={COLORS.subtle} fontFamily={TYPOGRAPHY.mono}>
                   {d.label}
                 </text>
               )}
@@ -247,7 +247,7 @@ export function StackedShareChart({
         {[0, 50, 100].map((v) => (
           <g key={v}>
             <line x1={PAD.left} x2={PAD.left + W} y1={ty(v)} y2={ty(v)} stroke={COLORS.lineSoft} strokeWidth="1" strokeDasharray="3 4" />
-            <text x={PAD.left - 8} y={ty(v) + 4} textAnchor="end" fontSize="10" fill={COLORS.subtle} fontFamily={TYPOGRAPHY.mono}>
+            <text x={PAD.left - 8} y={ty(v) + 4} textAnchor="end" fontSize="11" fill={COLORS.subtle} fontFamily={TYPOGRAPHY.mono}>
               {v}%
             </text>
           </g>
@@ -268,7 +268,7 @@ export function StackedShareChart({
                 );
               })}
               {(data.length <= 12 || i % Math.ceil(data.length / 12) === 0) && (
-                <text x={x + barW / 2} y={height - 10} textAnchor="middle" fontSize="10" fill={COLORS.subtle} fontFamily={TYPOGRAPHY.mono}>
+                <text x={x + barW / 2} y={height - 10} textAnchor="middle" fontSize="11" fill={COLORS.subtle} fontFamily={TYPOGRAPHY.mono}>
                   {column.label}
                 </text>
               )}

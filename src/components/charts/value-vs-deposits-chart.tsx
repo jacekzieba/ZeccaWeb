@@ -120,6 +120,7 @@ export function ValueVsDepositsChart({
             {PERIOD_OPTIONS.map((option) => (
               <button
                 key={option}
+                className="hit-44"
                 type="button"
                 role="radio"
                 aria-checked={period === option}
@@ -165,7 +166,7 @@ export function ValueVsDepositsChart({
             />
             <text
               x={pl - 8} y={ty(v) + 4}
-              textAnchor="end" fontSize="10"
+              textAnchor="end" fontSize="11"
               fill={COLORS.subtle}
               fontFamily={TYPOGRAPHY.mono}
             >
@@ -193,7 +194,7 @@ export function ValueVsDepositsChart({
                   x={tx(safeIdx)}
                   y={pt + H + 22}
                   textAnchor="middle"
-                  fontSize="10"
+                  fontSize="11"
                   fill={COLORS.subtle}
                   fontFamily={TYPOGRAPHY.system}
                 >
@@ -231,7 +232,7 @@ export function ValueVsDepositsChart({
             minWidth: 138,
           }}
         >
-          <div style={{ color: COLORS.textMuted, fontSize: 10, letterSpacing: ".04em", marginBottom: 2 }}>
+          <div style={{ color: COLORS.textMuted, fontSize: 11, letterSpacing: ".04em", marginBottom: 2 }}>
             {value[hover].label}
           </div>
           <Row color={VALUE_COLOR} label="Wartość" value={`${fmt(valueVals[hover])} ${currencyLabel(currency)}`} />
