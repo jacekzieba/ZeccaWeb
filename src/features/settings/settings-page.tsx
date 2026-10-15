@@ -270,7 +270,6 @@ export function SettingsPage() {
 
       <Section eyebrow="Podatki" title="Rozliczenia podatkowe">
         <Row label="Rezydencja podatkowa · Polska" desc="Podatek Belki 19% od zysków kapitałowych" control={<Switch on={profile.taxResidencePL} onChange={(v) => zapiszProfil({ taxResidencePL: v }, `rezydencja podatkowa Polska ${v ? "włączona" : "wyłączona"}`)} label="Rezydencja podatkowa Polska" />} />
-        <Row label="Automatyczne naliczanie podatku" desc="Szacuj należny podatek przy każdej sprzedaży" control={<Switch on={profile.autoTax} onChange={(v) => zapiszProfil({ autoTax: v }, `automatyczne naliczanie podatku ${v ? "włączone" : "wyłączone"}`)} label="Automatyczne naliczanie podatku" />} />
         {ikeIkzeUsage.length > 0 ? (
           ikeIkzeUsage.map((usage, index) => (
             <Row

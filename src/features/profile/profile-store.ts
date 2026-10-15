@@ -27,7 +27,6 @@ export type Profile = {
   /** Polish tax residency (Belka tax preference). Stored as a presentation
    * preference; detailed tax computation is not yet wired. */
   taxResidencePL: boolean;
-  autoTax: boolean;
 };
 
 const STORAGE_KEY = "investor-web-profile";
@@ -38,7 +37,6 @@ const DEFAULT_PROFILE: Profile = {
   notifications: { price: true, income: true, weekly: false, pit: false },
   displayCurrency: "PLN",
   taxResidencePL: true,
-  autoTax: true,
 };
 
 let current: Profile = DEFAULT_PROFILE;
