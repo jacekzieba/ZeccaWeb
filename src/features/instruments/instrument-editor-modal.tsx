@@ -21,10 +21,11 @@ import type { InstrumentCandidate } from "@/market-data/types";
 import { Select } from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 import { announce } from "@/components/feedback/status-announcer";
-import { marketDataIDAfterEdit } from "@/market-data/symbols";
+import { marketDataExchangeForSymbol, marketDataIDAfterEdit } from "@/market-data/symbols";
 import { mismatchedTradeCurrency, retagTradeCurrency } from "./trade-currency";
 
-const SEARCH_DEBOUNCE_MS = 350;
+const SEARCH_DEBOUNCE_MS = 250;
+const SEARCH_MIN_CHARS = 2;
 
 const INK = token("ink");
 const MUTED = token("inkMuted");
@@ -142,6 +143,7 @@ export function InstrumentEditorModal({
   const [category, setCategory] = useState("");
   const [exchange, setExchange] = useState("");
   const [isin, setIsin] = useState("");
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [marketDataID, setMarketDataID] = useState("");
   const [saving, setSaving] = useState(false);
   // Osobny od `saving`: odświeżenie store'u po zapisie instrumentu resetuje
@@ -173,6 +175,7 @@ export function InstrumentEditorModal({
     setCategory(initialValue?.category ?? defaultCategory ?? "");
     setExchange(initialValue?.exchange ?? "");
     setIsin(initialValue?.isin ?? "");
+    setDetailsOpen(Boolean(initialValue));
     setMarketDataID(initialValue?.marketDataID ?? "");
     setSaving(false);
     setError(null);
@@ -212,7 +215,7 @@ export function InstrumentEditorModal({
     }
 
     const query = symbol.trim();
-    if (!query) {
+    if (query.length < SEARCH_MIN_CHARS) {
       setCandidates([]);
       return;
     }
@@ -274,10 +277,6 @@ export function InstrumentEditorModal({
       setError("Symbol i nazwa instrumentu są wymagane.");
       return;
     }
-    if ((kind === "stock" || kind === "etf") && !resolvedMarketDataID) {
-      setError("Dla akcji i ETF wybierz notowanie albo wpisz ticker Yahoo.");
-      return;
-    }
 
     setSaving(true);
     setError(null);
@@ -291,7 +290,9 @@ export function InstrumentEditorModal({
         kind,
         currency,
         category: category.trim() || null,
-        exchange: trimmedExchange || null,
+        exchange:
+          trimmedExchange ||
+          (resolvedMarketDataID ? marketDataExchangeForSymbol(resolvedMarketDataID) : null),
         country: initialValue?.country ?? null,
         isin: trimmedIsin || null,
         marketDataID: resolvedMarketDataID,
@@ -674,52 +675,73 @@ export function InstrumentEditorModal({
           )}
 
           {(kind === "stock" || kind === "etf") && (
-            <>
-              <div style={{ color: MUTED, fontSize: 11, lineHeight: 1.45 }}>
-                Potwierdź tożsamość instrumentu: ticker brokera, walutę rozliczenia i dokładne notowanie Yahoo są zapisywane osobno.
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <Field label="Ticker Yahoo">
+            <details
+              open={detailsOpen}
+              onToggle={(event) => setDetailsOpen(event.currentTarget.open)}
+              style={{ display: "flex", flexDirection: "column", gap: 12 }}
+            >
+              <summary style={{ cursor: "pointer", color: MUTED, fontSize: 12, fontWeight: 600 }}>
+                Szczegóły notowania (opcjonalne)
+                {marketDataID.trim() ? ` · ${marketDataID.trim().toUpperCase()}` : ""}
+              </summary>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 12 }}>
+                <div style={{ color: MUTED, fontSize: 11, lineHeight: 1.45 }}>
+                  Zwykle wystarczy symbol i waluta: notowanie wybieramy automatycznie. Wpisz ticker Yahoo
+                  tylko wtedy, gdy ma być użyta konkretna giełda (np. KGHM.WA albo VWRL.L).
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <Field label="Ticker Yahoo">
+                    <input
+                      type="text"
+                      value={marketDataID}
+                      onChange={(event) => setMarketDataID(event.target.value)}
+                      placeholder="np. VWRL.L"
+                      style={inputStyle}
+                    />
+                  </Field>
+                  <Field label="Giełda / listing">
+                    <input
+                      type="text"
+                      value={exchange}
+                      onChange={(event) => setExchange(event.target.value)}
+                      placeholder="uzupełni się z tickera"
+                      style={inputStyle}
+                    />
+                  </Field>
+                </div>
+                <Field label="ISIN">
                   <input
                     type="text"
-                    value={marketDataID}
-                    onChange={(event) => setMarketDataID(event.target.value)}
-                    placeholder="np. VWRL.L"
+                    value={isin}
+                    onChange={(event) => setIsin(event.target.value)}
+                    placeholder="np. IE00B3RBWM25"
                     style={inputStyle}
-                    required
                   />
                 </Field>
-                <Field label="Giełda / listing">
+                <Field label="Kategoria">
                   <input
                     type="text"
-                    value={exchange}
-                    onChange={(event) => setExchange(event.target.value)}
-                    placeholder="np. LSE"
+                    value={category}
+                    onChange={(event) => setCategory(event.target.value)}
+                    placeholder="opcjonalnie, np. Global equity"
                     style={inputStyle}
                   />
                 </Field>
               </div>
-              <Field label="ISIN">
-                <input
-                  type="text"
-                  value={isin}
-                  onChange={(event) => setIsin(event.target.value)}
-                  placeholder="np. IE00B3RBWM25"
-                  style={inputStyle}
-                />
-              </Field>
-            </>
+            </details>
           )}
 
-          <Field label="Kategoria">
-            <input
-              type="text"
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
-              placeholder="opcjonalnie, np. Global equity"
-              style={inputStyle}
-            />
-          </Field>
+          {kind !== "stock" && kind !== "etf" && (
+            <Field label="Kategoria">
+              <input
+                type="text"
+                value={category}
+                onChange={(event) => setCategory(event.target.value)}
+                placeholder="opcjonalnie, np. Global equity"
+                style={inputStyle}
+              />
+            </Field>
+          )}
 
           {error && (
             <div
