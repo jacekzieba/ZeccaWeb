@@ -295,6 +295,26 @@ export function TransactionsPage() {
     | null
   >(null);
 
+  /** `zWplatami`: usuń zakup razem z jego automatyczną wpłatą (gdy ją znaleziono). */
+  function potwierdzUsuniecie(zWplatami: boolean) {
+    const zadanie = confirmDelete;
+    setConfirmDelete(null);
+    if (!zadanie) return;
+    const wplaty = zWplatami ? zadanie.wplaty : [];
+    if (wplaty.length > 0) {
+      const ids = zadanie.rodzaj === "jedna" ? [zadanie.id] : zadanie.ids;
+      const pojedyncza = zadanie.rodzaj === "jedna" ? zadanie.id : null;
+      if (pojedyncza) setDeletingId(pojedyncza);
+      void handleDeleteSelectedTransactions([...ids, ...wplaty], wplaty).finally(() => {
+        if (pojedyncza) setDeletingId(null);
+      });
+    } else if (zadanie.rodzaj === "jedna") {
+      void handleDeleteTransaction(zadanie.id);
+    } else {
+      void handleDeleteSelectedTransactions();
+    }
+  }
+
   async function handleDeleteTransaction(id: string) {
     if (!userDataKey || !supabase || !records) {
       return;
@@ -411,7 +431,10 @@ export function TransactionsPage() {
     );
   }
 
-  async function handleDeleteSelectedTransactions(explicitIds?: string[]) {
+  async function handleDeleteSelectedTransactions(
+    explicitIds?: string[],
+    depositIds: string[] = [],
+  ) {
     const source = explicitIds ?? [...selectedIds];
     if (!userDataKey || !supabase || !records || source.length === 0) {
       return;
@@ -445,6 +468,7 @@ export function TransactionsPage() {
     const queuedIds: string[] = [];
     const deletedIds: string[] = [];
     const doCofniecia: Array<[string, string, string | undefined]> = [];
+    const failedIds: string[] = [];
     let failure: unknown = null;
 
     try {
@@ -468,6 +492,7 @@ export function TransactionsPage() {
           // Capture the first failure but keep deleting the rest so one bad
           // record doesn't silently abort the whole batch.
           failure ??= error;
+          failedIds.push(id);
         }
       }
 
@@ -496,10 +521,11 @@ export function TransactionsPage() {
 
       if (failure) {
         const remaining = idsToDelete.length - deletedIds.length;
+        const wplataZostala = failedIds.some((id) => depositIds.includes(id));
         setDeleteError(
           `${describeDeleteError(failure)}${
             remaining > 0 ? ` (nie usunięto ${remaining} z ${idsToDelete.length})` : ""
-          }`,
+          }${wplataZostala ? " Wpłata gotówki została na koncie — usuń ją ręcznie w rejestrze." : ""}`,
         );
       }
     } catch (error) {
@@ -1067,23 +1093,9 @@ export function TransactionsPage() {
             : "Tylko zakup"
           : undefined
       }
-      onAlternate={() => {
-        const zadanie = confirmDelete;
-        setConfirmDelete(null);
-        if (zadanie?.rodzaj === "jedna") void handleDeleteTransaction(zadanie.id);
-        else if (zadanie?.rodzaj === "wiele") void handleDeleteSelectedTransactions();
-      }}
+      onAlternate={() => potwierdzUsuniecie(false)}
       onCancel={() => setConfirmDelete(null)}
-      onConfirm={() => {
-        const zadanie = confirmDelete;
-        setConfirmDelete(null);
-        if (!zadanie) return;
-        if (zadanie.wplaty.length > 0) {
-          const ids = zadanie.rodzaj === "jedna" ? [zadanie.id] : zadanie.ids;
-          void handleDeleteSelectedTransactions([...ids, ...zadanie.wplaty]);
-        } else if (zadanie.rodzaj === "jedna") void handleDeleteTransaction(zadanie.id);
-        else void handleDeleteSelectedTransactions();
-      }}
+      onConfirm={() => potwierdzUsuniecie(true)}
     />
 
     </div>

@@ -48,7 +48,7 @@ import {
   showsFXSettlement as showsFXSettlementRule,
   fxRateToBaseForSave,
 } from "./transaction-rules";
-import { fundingDepositForTrade } from "./funding-deposit";
+import { fundingDepositForTrade, fundingDepositNote } from "./funding-deposit";
 import { currencyLabel } from "@/lib/money";
 import { announce } from "@/components/feedback/status-announcer";
 import { Select } from "@/components/ui/select";
@@ -1018,9 +1018,7 @@ export function AddTransactionModal({
               currency: funding.currency,
               fees: 0,
               taxes: 0,
-              notes: fundingSymbol
-                ? `Zasilenie pod zakup ${fundingSymbol}`
-                : "Zasilenie pod zakup",
+              notes: fundingDepositNote(fundingSymbol),
             })
           : null;
 

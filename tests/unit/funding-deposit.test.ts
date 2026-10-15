@@ -5,6 +5,7 @@ import { buildPortfolioDetail } from "@/sync/records/investor-snapshot";
 import {
   fundingDepositForTrade,
   fundingDepositIdsForBuys,
+  fundingDepositNote,
 } from "@/features/transactions/funding-deposit";
 
 const accountID = "11111111-1111-4111-8111-111111111111";
@@ -264,5 +265,61 @@ describe("fundingDepositIdsForBuys", () => {
   it("returns nothing for non-buy transactions", () => {
     const sell = buy(buyID, { transactionType: "sell" });
     expect(fundingDepositIdsForBuys([sell, deposit(depositID)], [buyID])).toEqual([]);
+  });
+
+  it("does not guess when more buys than deposits share the same key", () => {
+    // Dwa identyczne zakupy, tylko jeden z wpłatą: nie wiadomo, który był
+    // sfinansowany, więc nie wolno proponować usunięcia cudzej wpłaty.
+    const records = [buy(buyID), buy(otherBuyID), deposit(depositID)];
+    expect(fundingDepositIdsForBuys(records, [otherBuyID])).toEqual([]);
+    expect(fundingDepositIdsForBuys(records, [buyID, otherBuyID])).toEqual([]);
+  });
+
+  it("still finds the deposit after the buy's amount was edited", () => {
+    const asset = record("asset", instrumentID, {
+      recordType: "asset",
+      id: instrumentID,
+      kind: "etf",
+      symbol: "VWRL.NL",
+      name: "FTSE All-World",
+      currency: "USD",
+    });
+    const records = [
+      asset,
+      buy(buyID, { price: 11, grossAmount: 110 }),
+      deposit(depositID, { notes: fundingDepositNote("VWRL.NL") }),
+    ];
+    expect(fundingDepositIdsForBuys(records, [buyID])).toEqual([depositID]);
+  });
+
+  it("does not use the symbol fallback when the date or symbol differs", () => {
+    const asset = record("asset", instrumentID, {
+      recordType: "asset",
+      id: instrumentID,
+      kind: "etf",
+      symbol: "VWRL.NL",
+      name: "FTSE All-World",
+      currency: "USD",
+    });
+    const edited = buy(buyID, { grossAmount: 110 });
+    expect(
+      fundingDepositIdsForBuys(
+        [asset, edited, deposit(depositID, { notes: fundingDepositNote("XYZ") })],
+        [buyID],
+      ),
+    ).toEqual([]);
+    expect(
+      fundingDepositIdsForBuys(
+        [asset, edited, deposit(depositID, { notes: fundingDepositNote("VWRL.NL"), date: "2026-05-11T10:00:00.000Z" })],
+        [buyID],
+      ),
+    ).toEqual([]);
+  });
+});
+
+describe("fundingDepositNote", () => {
+  it("names the instrument when it is known", () => {
+    expect(fundingDepositNote("VWRL.NL")).toBe("Zasilenie pod zakup VWRL.NL");
+    expect(fundingDepositNote(undefined)).toBe("Zasilenie pod zakup");
   });
 });
