@@ -215,7 +215,7 @@ export function PortfolioListPage() {
           }}
         >
           <div style={{ ...glassCard, padding: "18px 20px" }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 6 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 6 }}>
               Łączna wartość
             </div>
             <div style={{ fontSize: 26, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
@@ -224,7 +224,7 @@ export function PortfolioListPage() {
             </div>
           </div>
           <div style={{ ...glassCard, padding: "18px 20px" }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 6 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 6 }}>
               Portfeli
             </div>
             <div style={{ fontSize: 26, fontWeight: 700, color: INK }}>
@@ -232,7 +232,7 @@ export function PortfolioListPage() {
             </div>
           </div>
           <div style={{ ...glassCard, padding: "18px 20px" }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 6 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: SUBTLE, textTransform: "uppercase", letterSpacing: ".10em", marginBottom: 6 }}>
               Gotówka
             </div>
             <div style={{ fontSize: 26, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums" }}>
@@ -260,7 +260,7 @@ export function PortfolioListPage() {
             <div
               key={h}
               style={{
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: 700,
                 color: SUBTLE,
                 textTransform: "uppercase",
@@ -305,6 +305,7 @@ export function PortfolioListPage() {
                   <div style={{ minWidth: 0 }}>
                     <Link
                       href={`/portfolios/${pf.id}`}
+                      className="hit-44"
                       style={{ fontSize: 14, fontWeight: 700, color: INK, textDecoration: "none", overflowWrap: "anywhere" }}
                     >
                       {pf.name}
@@ -324,6 +325,7 @@ export function PortfolioListPage() {
                 </div>
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                   <button
+                    className="hit-44"
                     onClick={() => {
                       setEditingPortfolioId(pf.id);
                       setEditorOpen(true);
@@ -333,6 +335,7 @@ export function PortfolioListPage() {
                     Edytuj
                   </button>
                   <button
+                    className="hit-44"
                     onClick={() => setConfirmDelete({ id: pf.id, opis: pf.name })}
                     disabled={!userDataKey || deletingId === pf.id}
                     style={{ padding: "6px 10px", borderRadius: "var(--r-lg)", border: `0.5px solid ${v2Mix(LOSS, 0.18)}`, background: deletingId === pf.id ? v2Mix(LOSS, 0.08) : "transparent", color: deletingId === pf.id ? LOSS : AMBER, fontSize: 12, cursor: !userDataKey || deletingId === pf.id ? "not-allowed" : "pointer", fontFamily: "inherit" }}
@@ -380,6 +383,7 @@ export function PortfolioListPage() {
                 <div>
                   <Link
                     href={`/portfolios/${pf.id}`}
+                    className="hit-44"
                     style={{ fontSize: 13, fontWeight: 700, color: INK, textDecoration: "none" }}
                   >
                     {pf.name}
@@ -434,8 +438,11 @@ export function PortfolioListPage() {
                     />
                   </div>
                 </div>
+                {/* Ten sam adres co link z nazwą — ukryty przed czytnikiem i Tabem, żeby nie dublować. */}
                 <Link
                   href={`/portfolios/${pf.id}`}
+                  aria-hidden="true"
+                  tabIndex={-1}
                   style={{ fontSize: 15, color: SUBTLE, marginLeft: 4, textDecoration: "none" }}
                 >
                   ›
@@ -443,6 +450,7 @@ export function PortfolioListPage() {
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                 <button
+                  className="hit-44"
                   onClick={() => {
                     setEditingPortfolioId(pf.id);
                     setEditorOpen(true);
@@ -461,6 +469,7 @@ export function PortfolioListPage() {
                   Edytuj
                 </button>
                 <button
+                  className="hit-44"
                   onClick={() => setConfirmDelete({ id: pf.id, opis: pf.name })}
                   disabled={!userDataKey || deletingId === pf.id}
                   style={{

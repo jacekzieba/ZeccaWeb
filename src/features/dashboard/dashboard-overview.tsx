@@ -379,7 +379,7 @@ function Eyebrow({ children, style }: { children: React.ReactNode; style?: CSSPr
     <div
       style={{
         fontFamily: UI,
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: 700,
         letterSpacing: ".13em",
         textTransform: "uppercase",
@@ -419,7 +419,7 @@ function Badge({ label, color }: { label: string; color: string }) {
         display: "inline-flex",
         alignItems: "center",
         fontFamily: UI,
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: 700,
         letterSpacing: ".04em",
         padding: "3px 7px",
@@ -444,6 +444,7 @@ function PeriodBar({ value, onChange }: { value: Period; onChange: (period: Peri
       {PERIOD_OPTIONS.map((option) => (
         <button
           key={option}
+          className="hit-44"
           onClick={() => onChange(option)}
           role="radio"
           aria-checked={value === option}
@@ -544,7 +545,7 @@ function V2Area({ data, height = 240 }: { data: ValuationPoint[]; height?: numbe
         {yTicks.map((value, index) => (
           <g key={index}>
             <line x1={pl} x2={pl + innerWidth} y1={ty(value)} y2={ty(value)} stroke={PALETTE.line} strokeDasharray="2 5" />
-            <text x={pl - 9} y={ty(value) + 4} textAnchor="end" fontSize="10" fill={PALETTE.subtle} fontFamily={MONO}>
+            <text x={pl - 9} y={ty(value) + 4} textAnchor="end" fontSize="11" fill={PALETTE.subtle} fontFamily={MONO}>
               {formatAxisValue(value, tickStep * 4)}
             </text>
           </g>
@@ -562,7 +563,7 @@ function V2Area({ data, height = 240 }: { data: ValuationPoint[]; height?: numbe
               x={tx(index)}
               y={pt + innerHeight + 20}
               textAnchor={isLast ? "end" : "middle"}
-              fontSize="10"
+              fontSize="11"
               fill={PALETTE.subtle}
               fontFamily={MONO}
             >
@@ -592,7 +593,7 @@ function V2Area({ data, height = 240 }: { data: ValuationPoint[]; height?: numbe
             minWidth: 116,
           }}
         >
-          <div style={{ opacity: 0.6, fontSize: 10, fontFamily: MONO, letterSpacing: ".03em" }}>{data[hover].label}</div>
+          <div style={{ opacity: 0.6, fontSize: 11, fontFamily: MONO, letterSpacing: ".03em" }}>{data[hover].label}</div>
           <div style={{ fontWeight: 500, fontFamily: MONO, fontSize: 15, marginTop: 1, fontVariantNumeric: "tabular-nums", wordSpacing: "-.26em" }}>
             {fmt(data[hover].value)} <span style={{ fontSize: 11, opacity: 0.65 }}>{currencyLabel(displayCurrency)}</span>
           </div>
@@ -751,7 +752,7 @@ function V2HatchBars({ solid = true, height = 150, labels, profit, loss }: { sol
                   {profit[index] > 0 ? `+${fmt(profit[index])}` : `-${fmt(loss[index])}`}
                 </text>
               )}
-              <text x={centerX} y={height - 7} textAnchor="middle" fontSize="10" fill={PALETTE.subtle} fontFamily={MONO}>
+              <text x={centerX} y={height - 7} textAnchor="middle" fontSize="11" fill={PALETTE.subtle} fontFamily={MONO}>
                 {month}
               </text>
             </g>
@@ -1171,6 +1172,7 @@ export function DashboardOverview() {
           type="button"
           onClick={() => setShowCustomize((value) => !value)}
           aria-expanded={showCustomize}
+          className="hit-44"
           style={{
             border: `0.5px solid ${PALETTE.line}`,
             borderRadius: "var(--r-xl)",
@@ -1253,7 +1255,7 @@ function SummaryCard({
 }) {
   const stat = (label: string, value: string, color: string = PALETTE.ink) => (
     <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 14 }}>
-      <span style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, lineHeight: 1.2, letterSpacing: ".1em", textTransform: "uppercase", color: PALETTE.subtle }}>
+      <span style={{ fontFamily: UI, fontSize: 11, fontWeight: 700, lineHeight: 1.2, letterSpacing: ".1em", textTransform: "uppercase", color: PALETTE.subtle }}>
         {label}
       </span>
       <span
@@ -1436,7 +1438,7 @@ function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobil
       {!isMobile && (
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0,2.4fr) minmax(0,1fr) minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,.7fr)", padding: "9px 22px", background: v2Mix(PALETTE.ink, 0.022) }}>
           {["Instrument", "Liczba / Kurs", "Wartość", "Zysk / Strata", "30D"].map((header, index) => (
-            <div key={header} style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, color: PALETTE.subtle, textTransform: "uppercase", letterSpacing: ".07em", textAlign: index === 0 ? "left" : "right" }}>
+            <div key={header} style={{ fontFamily: UI, fontSize: 11, fontWeight: 700, color: PALETTE.subtle, textTransform: "uppercase", letterSpacing: ".07em", textAlign: index === 0 ? "left" : "right" }}>
               {header}
             </div>
           ))}
@@ -1524,13 +1526,13 @@ function HoldingsCard({ holdings, isMobile }: { holdings: HoldingView[]; isMobil
               </div>
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontFamily: MONO, fontSize: 12, color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>{fmtQty(holding.quantity)}</div>
-                <div style={{ fontFamily: MONO, fontSize: 10, color: PALETTE.subtle }}>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: PALETTE.subtle }}>
                   {holding.price > 0 ? `${currencyLabel(holding.currency)} ${fmt(holding.price, 2)}` : "—"}
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontFamily: MONO, fontSize: 15, fontWeight: 500, color: PALETTE.ink, fontVariantNumeric: "tabular-nums" }}>{fmt(holding.valuePLN)}</div>
-                <div style={{ fontFamily: MONO, fontSize: 10, color: PALETTE.subtle }}>{currencyLabel(displayCurrency)}</div>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: PALETTE.subtle }}>{currencyLabel(displayCurrency)}</div>
               </div>
               <div style={{ textAlign: "right" }}>
                 {holding.pnl != null ? (
@@ -1740,6 +1742,33 @@ function MonthlyCard({ valuationSeries }: { valuationSeries: ValuationPoint[] })
       <div style={{ marginTop: 10 }}>
         <V2HatchBars labels={bars.labels} profit={bars.profit} loss={bars.loss} />
       </div>
+      {bars.labels.length > 0 && (
+        // Alternatywa dla wykresu: te same wartości w tabeli, dostępna z klawiatury i czytnika ekranu.
+        <details style={{ marginTop: 8 }}>
+          <summary style={{ fontFamily: UI, fontSize: 12, color: PALETTE.muted, cursor: "pointer" }}>
+            Pokaż wartości w tabeli
+          </summary>
+          <table style={{ width: "100%", marginTop: 8, borderCollapse: "collapse", fontFamily: MONO, fontSize: 12, color: PALETTE.ink }}>
+            <caption style={{ position: "absolute", left: -9999 }}>Miesięczny zysk i strata</caption>
+            <thead>
+              <tr style={{ color: PALETTE.muted, textAlign: "right" }}>
+                <th scope="col" style={{ textAlign: "left", fontWeight: 600, padding: "4px 0" }}>Miesiąc</th>
+                <th scope="col" style={{ fontWeight: 600, padding: "4px 0" }}>Zysk</th>
+                <th scope="col" style={{ fontWeight: 600, padding: "4px 0" }}>Strata</th>
+              </tr>
+            </thead>
+            <tbody>
+              {bars.labels.map((label, index) => (
+                <tr key={`${label}-${index}`} style={{ textAlign: "right", borderTop: `0.5px solid ${PALETTE.line2}` }}>
+                  <th scope="row" style={{ textAlign: "left", fontWeight: 500, padding: "4px 0" }}>{label}</th>
+                  <td style={{ padding: "4px 0" }}>{bars.profit[index] > 0 ? `+${fmt(bars.profit[index])}` : "—"}</td>
+                  <td style={{ padding: "4px 0" }}>{bars.loss[index] > 0 ? `-${fmt(bars.loss[index])}` : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </details>
+      )}
     </Card>
   );
 }
@@ -1779,7 +1808,7 @@ function TransactionsCard({ transactions }: { transactions: TransactionView[] })
                   {transaction.symbol}
                   {transaction.quantity ? <span style={{ color: PALETTE.subtle, fontWeight: 400, marginLeft: 6 }}>· {fmtQty(transaction.quantity)} szt.</span> : null}
                 </div>
-                <div style={{ fontFamily: MONO, fontSize: 10, color: PALETTE.subtle, marginTop: 2 }}>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: PALETTE.subtle, marginTop: 2 }}>
                   {fmtDate(transaction.date)} · {transaction.portfolioName}
                 </div>
               </div>
@@ -1850,7 +1879,7 @@ function PortfoliosCard({
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />
                   <span style={{ fontFamily: UI, fontSize: 13, fontWeight: 700, color: PALETTE.ink }}>{portfolio.name}</span>
-                  <span style={{ fontFamily: MONO, fontSize: 10, color: PALETTE.subtle, textTransform: "uppercase", letterSpacing: ".06em" }}>{currencyLabel(displayCurrency)}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 11, color: PALETTE.subtle, textTransform: "uppercase", letterSpacing: ".06em" }}>{currencyLabel(displayCurrency)}</span>
                 </div>
                 <div style={{ fontFamily: MONO, fontSize: 18, fontWeight: 500, color: PALETTE.ink, marginTop: 4, fontVariantNumeric: "tabular-nums", wordSpacing: "-.26em" }}>
                   {fmt(portfolio.value)}
@@ -1858,12 +1887,12 @@ function PortfoliosCard({
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: PALETTE.subtle, marginBottom: 3 }}>
+                <div style={{ fontFamily: UI, fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: PALETTE.subtle, marginBottom: 3 }}>
                   30 dni
                 </div>
                 <V2Spark data={series} color={trend} />
                 <div style={{ display: "inline-flex", alignItems: "baseline", gap: 5, fontFamily: MONO, fontVariantNumeric: "tabular-nums", fontSize: 12, fontWeight: 700, color: change30d >= 0 ? PALETTE.profit : PALETTE.loss, marginTop: 4 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: PALETTE.subtle, letterSpacing: ".06em" }}>30D</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: PALETTE.subtle, letterSpacing: ".06em" }}>30D</span>
                   <span>{fmtPct(change30d)}</span>
                 </div>
               </div>
@@ -1875,10 +1904,10 @@ function PortfoliosCard({
       <div style={{ display: "flex", gap: 10, marginTop: 14, paddingTop: 14, borderTop: `0.5px solid ${PALETTE.line2}` }}>
         {cashflowRows.map(([label, period, value, color]) => (
           <div key={label} style={{ flex: 1 }}>
-            <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: PALETTE.subtle }}>
+            <div style={{ fontFamily: UI, fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: PALETTE.subtle }}>
               {label}
             </div>
-            <div style={{ fontFamily: UI, fontSize: 10, color: PALETTE.subtle, marginTop: 2 }}>
+            <div style={{ fontFamily: UI, fontSize: 11, color: PALETTE.subtle, marginTop: 2 }}>
               {period}
             </div>
             <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 500, color, marginTop: 3 }}>{value}</div>

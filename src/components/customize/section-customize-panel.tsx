@@ -316,10 +316,10 @@ export function SectionCustomizePanel<Id extends string>({
                     <GripVertical size={16} strokeWidth={2} aria-hidden="true" />
                   </span>
                   <div style={{ display: "flex", gap: 6, flex: "0 0 auto" }}>
-                    <button type="button" onClick={() => onReorder(sectionId, -1)} disabled={isFirst} aria-label={`Przesuń ${section.label} wyżej`} style={smallControlStyle(isFirst, theme)}>
+                    <button type="button" className="hit-44" onClick={() => onReorder(sectionId, -1)} disabled={isFirst} aria-label={`Przesuń ${section.label} wyżej`} style={smallControlStyle(isFirst, theme)}>
                       <ArrowUp size={14} strokeWidth={2.1} aria-hidden="true" />
                     </button>
-                    <button type="button" onClick={() => onReorder(sectionId, 1)} disabled={isLast} aria-label={`Przesuń ${section.label} niżej`} style={smallControlStyle(isLast, theme)}>
+                    <button type="button" className="hit-44" onClick={() => onReorder(sectionId, 1)} disabled={isLast} aria-label={`Przesuń ${section.label} niżej`} style={smallControlStyle(isLast, theme)}>
                       <ArrowDown size={14} strokeWidth={2.1} aria-hidden="true" />
                     </button>
                   </div>

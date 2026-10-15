@@ -19,7 +19,7 @@ export const LIGHT: ThemeTokens = {
   line2: "rgba(26,23,18,0.07)",
   ink: "#1A1712",
   inkMuted: "#5E574C",
-  inkFaint: "#8C857A",
+  inkFaint: "#736C61",
   accent: "#A9682A",
   onAccent: "#FFF8EF",
   rail: "rgba(26,23,18,0.22)",
