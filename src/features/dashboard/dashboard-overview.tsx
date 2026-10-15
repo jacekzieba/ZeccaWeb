@@ -63,6 +63,7 @@ import { KpiRegister, KPI_TILE_META, getKpiTiles } from "@/components/metrics/po
 import { ValueVsDepositsChart } from "@/components/charts/value-vs-deposits-chart";
 import { BarSeriesChart, SeriesLineChart, StackedShareChart } from "@/components/charts/series-chart";
 import { AllocationDonut } from "@/components/charts/allocation-donut";
+import { axisLabeler } from "@/components/charts/axis-label";
 import { AllocationGapCard } from "@/features/reports/allocation-gap-card";
 import {
   MODEL_BENCHMARKS,
@@ -268,9 +269,11 @@ function computeMonthlyBars(series: ValuationPoint[]): { labels: string[]; profi
   const profit: number[] = [];
   const loss: number[] = [];
 
-  for (const [key, values] of months) {
+  for (const [index, [key, values]] of months.entries()) {
     const monthIdx = parseInt(key.slice(5, 7), 10) - 1;
-    labels.push(PL_MONTHS[monthIdx] ?? key.slice(5, 7));
+    const monthName = PL_MONTHS[monthIdx] ?? key.slice(5, 7);
+    // Rok przy pierwszej kolumnie i każdym styczniu — bez niego oś nie mówi, o który rok chodzi.
+    labels.push(index === 0 || monthIdx === 0 ? `${monthName} ’${key.slice(2, 4)}` : monthName);
     const change = values[values.length - 1] - values[0];
     profit.push(change > 0 ? change : 0);
     loss.push(change < 0 ? -change : 0);
@@ -282,12 +285,12 @@ const DASHBOARD_HEAD_PADDING = "22px 2px 0";
 
 
 function fmt(n: number, d = 0) {
-  return n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d });
+  return n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: true });
 }
 
 function fmtQty(n: number) {
   if (Number.isInteger(n)) return fmt(n);
-  return n.toLocaleString("pl-PL", { minimumFractionDigits: n < 1 ? 4 : 2, maximumFractionDigits: 6 });
+  return n.toLocaleString("pl-PL", { minimumFractionDigits: n < 1 ? 4 : 2, maximumFractionDigits: 6, useGrouping: true });
 }
 
 function fmtPct(n: number) {
@@ -508,6 +511,7 @@ function V2Area({ data, height = 240 }: { data: ValuationPoint[]; height?: numbe
   const tickStep = niceAxisStep(range / 4);
   const yTicks: number[] = [];
   for (let value = Math.ceil(min / tickStep) * tickStep; value <= max; value += tickStep) yTicks.push(value);
+  const axisLabel = axisLabeler(data);
   const xStep = Math.max(1, Math.ceil(data.length / Math.min(8, Math.max(3, Math.floor(width / 130)))));
   // Wykres jest liczbą, nie akcentem: zielony gdy okres kończy się wyżej niż zaczął, czerwony gdy niżej.
   const trend = (values.at(-1) ?? 0) >= values[0] ? PALETTE.profit : PALETTE.loss;
@@ -562,7 +566,7 @@ function V2Area({ data, height = 240 }: { data: ValuationPoint[]; height?: numbe
               fill={PALETTE.subtle}
               fontFamily={MONO}
             >
-              {point.label}
+              {axisLabel(point)}
             </text>
           );
         })}
@@ -719,7 +723,9 @@ function V2HatchBars({ solid = true, height = 150, labels, profit, loss }: { sol
                 fill={solid ? PALETTE.profit : `url(#v2hp-${profitPattern})`}
                 stroke={PALETTE.profit}
                 strokeWidth="1"
-              />
+              >
+                <title>{`${month}: zysk ${fmt(profit[index])}`}</title>
+              </rect>
               <rect
                 x={lossX}
                 y={pt + innerHeight - lossHeight}
@@ -730,7 +736,21 @@ function V2HatchBars({ solid = true, height = 150, labels, profit, loss }: { sol
                 stroke={PALETTE.ink}
                 strokeOpacity={solid ? 0.18 : 0.4}
                 strokeWidth="1"
-              />
+              >
+                <title>{`${month}: strata ${fmt(loss[index])}`}</title>
+              </rect>
+              {labels.length === 1 && (
+                <text
+                  x={centerX}
+                  y={pt + innerHeight - Math.max(profitHeight, lossHeight) - 6}
+                  textAnchor="middle"
+                  fontSize="11"
+                  fill={PALETTE.ink}
+                  fontFamily={MONO}
+                >
+                  {profit[index] > 0 ? `+${fmt(profit[index])}` : `-${fmt(loss[index])}`}
+                </text>
+              )}
               <text x={centerX} y={height - 7} textAnchor="middle" fontSize="10" fill={PALETTE.subtle} fontFamily={MONO}>
                 {month}
               </text>
@@ -1119,7 +1139,7 @@ export function DashboardOverview() {
       const slices = currencyBreakdown(instruments);
       return (
         <ChartCard eyebrow="Waluty" title="Podział walut" empty={slices.length === 0 ? "Brak pozycji." : undefined}>
-          <AllocationDonut slices={slices} />
+          <AllocationDonut slices={slices} centerLabel="WALUTY" unit={["waluta", "waluty", "walut"]} />
         </ChartCard>
       );
     }
@@ -1183,6 +1203,7 @@ export function DashboardOverview() {
           eyebrow="Dashboard"
           title="Układ sekcji"
           subtitle="Web zapisuje widoczność, kolejność i preset rozmiaru w tej przeglądarce."
+          singleColumn={isMobile || isTablet}
         />
       )}
 

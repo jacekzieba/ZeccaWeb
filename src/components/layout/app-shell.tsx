@@ -329,8 +329,9 @@ function SidebarContent({ onNav, publicDemo = false }: { onNav?: () => void; pub
       </nav>
       </div>
 
-      {/* Total-value card — fixed below the scrollable menu */}
-      <div style={{ padding: "4px 10px 12px" }}>
+      {/* Total-value card — fixed below the scrollable menu; przy niskim oknie
+          chowana (globals.css), żeby nie zabierała miejsca pozycjom menu. */}
+      <div className="sidebar-total" style={{ padding: "4px 10px 12px" }}>
         <div
           style={{
             padding: "14px", borderRadius: "var(--r-md)",
@@ -793,8 +794,20 @@ export function AppShell({
         <main id="tresc" tabIndex={-1} style={{ flex: 1, minWidth: 0, maxWidth: 1240, marginInline: "auto", width: "100%", paddingBottom: 4 }}>
           {/* Demo nie ma użytkownika, którego polityka dotyczy. */}
           {!publicDemo && <PolicyUpdateNotice />}
+          {publicDemo && (
+            <div
+              data-testid="demo-badge"
+              className="demo-badge"
+              style={{
+                color: V2.brand, background: v2Mix(V2.card2, 0.92),
+                border: `0.5px solid ${v2Mix(V2.brand, 0.34)}`,
+              }}
+            >
+              Dane przykładowe
+            </div>
+          )}
           {children}
-          {/* Odstęp na dole w demo: plakietka „Dane przykładowe" jest przypięta w prawym dolnym rogu. */}
+          {/* Odstęp na dole w demo: na desktopie plakietka „Dane przykładowe" jest przypięta w prawym dolnym rogu. */}
           <p style={{ margin: "32px 0 0", paddingBottom: publicDemo ? 40 : 0, maxWidth: 720, fontSize: 12, lineHeight: 1.5, color: COLORS.textMuted }}>
             {INVESTMENT_DISCLAIMER}
           </p>
@@ -805,23 +818,6 @@ export function AppShell({
       <AddTransactionModal />
       <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
       <OnboardingController publicDemo={publicDemo} />
-      {publicDemo && (
-        <div
-          data-testid="demo-badge"
-          style={{
-            position: "fixed", right: 16, bottom: 16, zIndex: 902,
-            fontSize: 11, fontWeight: 700,
-            letterSpacing: ".08em", textTransform: "uppercase",
-            color: V2.brand, background: v2Mix(V2.card2, 0.92),
-            padding: "6px 11px", borderRadius: "var(--r-pill)",
-            border: `0.5px solid ${v2Mix(V2.brand, 0.34)}`,
-            backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
-            pointerEvents: "none",
-          }}
-        >
-          Dane przykładowe
-        </div>
-      )}
       {paritySnapshot && (
         <script
           id="investor-web-parity-snapshot"

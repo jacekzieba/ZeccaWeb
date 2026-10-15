@@ -71,10 +71,12 @@ function MetricSparkline({ rowKey, values, color }: { rowKey: string; values: nu
   );
 }
 
-export function MetricTiles({ rows }: { rows: MetricRow[] }) {
+/** `fill`: kafelek wypełnia komórkę siatki sekcji, więc kafelki w jednym wierszu
+ * (każdy to osobna sekcja) mają równą wysokość. */
+export function MetricTiles({ rows, fill = false }: { rows: MetricRow[]; fill?: boolean }) {
   if (!rows.length) return null;
   return (
-    <div className="metric-tiles">
+    <div className={fill ? "metric-tiles metric-tiles--fill" : "metric-tiles"}>
       {rows.map((row) => {
         const sub =
           row.sub && row.sub.toLowerCase() !== row.detail.toLowerCase() ? row.sub : "";
@@ -106,6 +108,8 @@ export function MetricTiles({ rows }: { rows: MetricRow[] }) {
             </span>
             <span
               className="metric-tile-value"
+              // Pełna wartość w podpowiedzi — przy ucięciu wielokropkiem.
+              title={row.value}
               style={row.color ? { color: row.color } : undefined}
             >
               {row.value}

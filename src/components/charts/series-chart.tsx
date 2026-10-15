@@ -203,6 +203,11 @@ export function BarSeriesChart({
               >
                 <title>{`${d.label}: ${format(d.value)}`}</title>
               </rect>
+              {data.length === 1 && (
+                <text x={x + barW / 2} y={(d.value < 0 ? bottom + 14 : top - 6)} textAnchor="middle" fontSize="11" fill={COLORS.text} fontFamily={TYPOGRAPHY.mono}>
+                  {format(d.value)}
+                </text>
+              )}
               {(data.length <= 12 || i % Math.ceil(data.length / 12) === 0) && (
                 <text x={x + barW / 2} y={height - 10} textAnchor="middle" fontSize="10" fill={COLORS.subtle} fontFamily={TYPOGRAPHY.mono}>
                   {d.label}

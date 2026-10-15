@@ -36,7 +36,7 @@ const PAPER = token("ground");
 const glassCard: CSSProperties = SURFACES.glassCard;
 
 function fmt(n: number) {
-  return n.toLocaleString("pl-PL", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return n.toLocaleString("pl-PL", { minimumFractionDigits: 0, maximumFractionDigits: 0, useGrouping: true });
 }
 
 function fmtPct(n: number) {

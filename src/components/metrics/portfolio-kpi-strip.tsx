@@ -8,7 +8,7 @@ import { currencyLabel } from "@/lib/money";
 import { MetricTiles } from "@/components/layout/metric-tiles";
 
 function fmt(n: number, d = 0) {
-  return n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d });
+  return n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: true });
 }
 function fmtSigned(n: number, d = 0) {
   return `${n >= 0 ? "+" : ""}${fmt(n, d)}`;

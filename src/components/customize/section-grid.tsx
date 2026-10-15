@@ -11,6 +11,7 @@ export function SectionGrid<Id extends string>({
   isTablet,
   testIdPrefix,
   gap = 14,
+  pairWidthOne = false,
 }: {
   orderedVisibleSections: Id[];
   sizeOf: (id: Id) => SectionSize;
@@ -19,6 +20,8 @@ export function SectionGrid<Id extends string>({
   isTablet: boolean;
   testIdPrefix: string;
   gap?: number;
+  /** Na wąskim ekranie sekcje o szerokości 1 (kafelki KPI) idą parami zamiast pojedynczo. */
+  pairWidthOne?: boolean;
 }) {
   const single = isMobile || isTablet;
   return (
@@ -26,8 +29,11 @@ export function SectionGrid<Id extends string>({
       data-testid={`${testIdPrefix}-grid`}
       style={{
         display: "grid",
-        gridTemplateColumns: single ? "1fr" : "repeat(4, minmax(0, 1fr))",
+        gridTemplateColumns: single ? (pairWidthOne ? "repeat(2, minmax(0, 1fr))" : "1fr") : "repeat(4, minmax(0, 1fr))",
         gridAutoRows: "auto",
+        // Gęste upakowanie: mniejsza sekcja wskakuje w lukę po szerokiej,
+        // zamiast zostawiać dziurę w siatce 4-kolumnowej.
+        gridAutoFlow: "row dense",
         gap,
         alignItems: "stretch",
       }}
@@ -41,7 +47,9 @@ export function SectionGrid<Id extends string>({
             key={id}
             data-testid={`${testIdPrefix}-section-${id}`}
             style={{
-              gridColumn: single ? "1 / -1" : `span ${size.width}`,
+              gridColumn: single
+                ? pairWidthOne && size.width === 1 ? "span 1" : "1 / -1"
+                : `span ${size.width}`,
               height: single ? "auto" : "100%",
               minHeight: 0,
               minWidth: 0,

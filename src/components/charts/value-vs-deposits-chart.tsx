@@ -5,6 +5,7 @@ import { COLORS, TYPOGRAPHY } from "@/lib/design-tokens";
 import { v2Mix } from "@/lib/v2-design";
 import { formatAxisValue, currencyLabel } from "@/lib/money";
 import type { ValuationPoint } from "@/domain/models/investor-data";
+import { axisLabeler } from "./axis-label";
 
 // Wpłaty to linia odniesienia, nie wynik — dlatego neutralny grafit, a nie kolor
 // klasy aktywów. Kolor linii wartości niesie znak: liczy się to, czy portfel jest
@@ -89,6 +90,7 @@ export function ValueVsDepositsChart({
   const valuePts = valueVals.map((v, i) => `${tx(i)},${ty(v)}`).join(" ");
   const depositPts = depositVals.map((v, i) => `${tx(i)},${ty(v)}`).join(" ");
 
+  const axisLabel = axisLabeler(value);
   const yTicks = [0, 0.25, 0.5, 0.75, 1].map((f) => mn + f * rng);
   const xStep = Math.max(
     1,
@@ -102,7 +104,7 @@ export function ValueVsDepositsChart({
     if (idx >= 0 && idx < n) setHover(idx);
   };
 
-  const fmt = (v: number) => v.toLocaleString("pl-PL", { maximumFractionDigits: 0 });
+  const fmt = (v: number) => v.toLocaleString("pl-PL", { maximumFractionDigits: 0, useGrouping: true });
   const tooltipX = hover != null ? Math.min(Math.max(tx(hover) - 70, 8), width - 156) : 0;
   const gain = hover != null ? valueVals[hover] - depositVals[hover] : 0;
 
@@ -195,7 +197,7 @@ export function ValueVsDepositsChart({
                   fill={COLORS.subtle}
                   fontFamily={TYPOGRAPHY.system}
                 >
-                  {d.label}
+                  {axisLabel(d)}
                 </text>
               );
             })}

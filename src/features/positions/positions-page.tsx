@@ -45,12 +45,12 @@ function kindColor(kind: string) {
 }
 
 function fmt(n: number, d = 0) {
-  return n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d });
+  return n.toLocaleString("pl-PL", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: true });
 }
 
 function fmtQty(n: number) {
   if (Number.isInteger(n)) return fmt(n);
-  return n.toLocaleString("pl-PL", { minimumFractionDigits: n < 1 ? 4 : 2, maximumFractionDigits: 6 });
+  return n.toLocaleString("pl-PL", { minimumFractionDigits: n < 1 ? 4 : 2, maximumFractionDigits: 6, useGrouping: true });
 }
 
 function Badge({ label, color }: { label: string; color: string }) {
