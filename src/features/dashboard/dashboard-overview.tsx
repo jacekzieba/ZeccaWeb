@@ -1326,8 +1326,8 @@ function SummaryCard({
             )}
             {stat(
               "Wynik realny",
-              fmtPct(metrics.realReturnPct),
-              metrics.realReturnPct >= 0 ? PALETTE.profit : PALETTE.loss,
+              isShortHistory(metrics) ? "—" : fmtPct(metrics.realReturnPct),
+              isShortHistory(metrics) ? PALETTE.muted : metrics.realReturnPct >= 0 ? PALETTE.profit : PALETTE.loss,
             )}
             {stat("Max DD", `${fmt(metrics.maxDrawdownPct, 2)}%`, PALETTE.loss)}
           </div>

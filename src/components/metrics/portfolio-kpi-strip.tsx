@@ -115,7 +115,7 @@ export function getKpiTiles(input: PortfolioKpiInput): KpiTile[] {
   // z ostatnich 12 próbek w tle (dlaczego) niosą hierarchię razem.
   const tiles: KpiTile[] = [
     { id: "kpiUnrealized", label: "Zysk niezrealizowany", value: `${fmtSigned(metrics.unrealizedPnl)} ${currencyLabel(currency)}`, sub: unrealizedSub(metrics, currency), color: V2.ink },
-    { id: "kpiXirr", label: "MWR · XIRR", value: xirr == null ? "—" : fmtPct(xirr), sub: mwr.sub, color: (xirr ?? 0) >= 0 ? V2.profit : V2.loss, featured: true, sparkline: metrics.xirrHistory },
+    { id: "kpiXirr", label: mwr.period ? "MWR · za okres" : "MWR · XIRR", value: xirr == null ? "—" : fmtPct(xirr), sub: mwr.sub, color: (xirr ?? 0) >= 0 ? V2.profit : V2.loss, featured: true, sparkline: mwr.period ? undefined : metrics.xirrHistory },
     { id: "kpiTwr", label: "Zwrot (TWR)", value: fmtPct(metrics.totalReturnPct), sub: "bez wpłat", color: V2.ink },
     { id: "kpiCagr", label: "CAGR", value: cagr.value == null ? "—" : fmtPct(cagr.value), sub: cagr.shortHistory ? "od 1 roku historii" : "rocznie, TWR", color: V2.ink },
     { id: "kpiRealReturn", label: "Wynik realny", value: realReturn.value == null ? "—" : fmtPct(realReturn.value), sub: realReturn.shortHistory ? "od 1 roku historii" : "rocznie, po inflacji", color: V2.ink },
