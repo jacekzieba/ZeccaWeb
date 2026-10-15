@@ -414,9 +414,6 @@ export function AppShell({
     };
   }, [drawerOpen]);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [accountOnboardingCompleted, setAccountOnboardingCompleted] = useState(
-    initialUser?.onboardingCompleted ?? true,
-  );
   const isDesktop = useIsDesktop();
   const topbarHidden = useHideOnScroll();
   const profile = useProfile();
@@ -532,10 +529,7 @@ export function AppShell({
   if (!records) {
     return (
       <AppLock>
-        <OnboardingDemoGate
-          accountOnboardingCompleted={accountOnboardingCompleted}
-          publicDemo={publicDemo}
-        >
+        <OnboardingDemoGate publicDemo={publicDemo}>
           <SyncUnlockGate initialUser={initialUser} onSyncLoaded={handleSyncLoaded} />
         </OnboardingDemoGate>
       </AppLock>
@@ -809,11 +803,7 @@ export function AppShell({
       {/* Global modal */}
       <AddTransactionModal />
       <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
-      <OnboardingController
-        accountUserId={initialUser?.id}
-        publicDemo={publicDemo}
-        onAccountOnboardingFinished={() => setAccountOnboardingCompleted(true)}
-      />
+      <OnboardingController publicDemo={publicDemo} />
       {publicDemo && (
         <div
           data-testid="demo-badge"

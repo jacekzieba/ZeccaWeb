@@ -1,17 +1,5 @@
 import { create } from "zustand";
 
-export type OnboardingEntry = "demo-start" | "replay" | "none";
-
-export function resolveOnboardingEntry(input: {
-  hasRecords: boolean;
-  completed: boolean;
-  tourParam: boolean;
-}): OnboardingEntry {
-  if (input.tourParam) return "replay";
-  if (!input.hasRecords && !input.completed) return "demo-start";
-  return "none";
-}
-
 export type OnboardingPhase = "idle" | "intro" | "tour" | "finale";
 export type OnboardingMode = "demo" | "public-demo" | "replay";
 

@@ -4,18 +4,13 @@ import { Suspense, useEffect, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import { buildFakeSyncRecords } from "@/sync/dev/fake-sync";
-import { isFakeSyncEnabled } from "@/lib/env";
-import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { V2, V2_TYPE, v2Mix } from "@/lib/v2-design";
 import { endDemoSession, startDemoSession } from "./demo-session";
 import { OnboardingCard } from "./onboarding-card";
 import { TourOverlay } from "./tour-overlay";
 import { FINALE_COPY, INTRO_CARDS, TOUR_STEPS } from "./steps";
-import {
-  resolveOnboardingEntry,
-  useOnboardingStore,
-} from "./onboarding-state";
+import { useOnboardingStore } from "./onboarding-state";
 
 /** Seeds the sync store with the demo dataset (same builder as fake-sync). */
 function seedDemoRecords(publicDemo: boolean) {
@@ -31,18 +26,16 @@ function seedDemoRecords(publicDemo: boolean) {
 }
 
 /**
- * Sits in AppShell's `!records` branch. A brand-new account gets demo data
- * seeded and the onboarding started; a public demo visitor gets the same
- * in-memory dataset. Everyone else falls through to the regular
- * SyncUnlockGate.
+ * Sits in AppShell's `!records` branch. Only a public demo visitor gets the
+ * in-memory demo dataset; a signed-in account never sees it implicitly (before
+ * unlock there are no records yet, so seeding here would flash demo data over
+ * real accounts). The tour stays reachable via ?tour=1.
  */
 export function OnboardingDemoGate({
   children,
-  accountOnboardingCompleted,
   publicDemo,
 }: {
   children: React.ReactNode;
-  accountOnboardingCompleted: boolean;
   publicDemo: boolean;
 }) {
   const start = useOnboardingStore((s) => s.start);
@@ -50,28 +43,12 @@ export function OnboardingDemoGate({
   const pathname = usePathname();
   const startedRef = useRef(false);
 
-  // Fake-sync seeds records asynchronously — this branch renders briefly even
-  // though data is on the way, so never auto-start the demo there (the tour is
-  // still reachable via ?tour=1, which is what the e2e suite exercises).
-  const entry = publicDemo
-    ? "demo-start"
-    : isFakeSyncEnabled()
-    ? "none"
-    : resolveOnboardingEntry({
-        hasRecords: false,
-        completed: accountOnboardingCompleted,
-        tourParam: false,
-      });
+  const entry = publicDemo ? "demo-start" : "none";
 
   useEffect(() => {
     if (entry !== "demo-start" || startedRef.current) return;
     startedRef.current = true;
     seedDemoRecords(publicDemo);
-
-    if (!publicDemo) {
-      start("demo");
-      return;
-    }
 
     // Demo records live in memory only, so reloading a page deeper in the app
     // lands here again. Re-seed the data, but replay the tour only from the
@@ -105,15 +82,7 @@ function TourQueryParamListener() {
   return null;
 }
 
-export function OnboardingController({
-  accountUserId,
-  publicDemo,
-  onAccountOnboardingFinished,
-}: {
-  accountUserId?: string;
-  publicDemo: boolean;
-  onAccountOnboardingFinished: () => void;
-}) {
+export function OnboardingController({ publicDemo }: { publicDemo: boolean }) {
   const { phase, stepIndex, mode, setPhase, setStepIndex, finish } = useOnboardingStore();
   const clearSync = useSyncStore((s) => s.clearSync);
   const router = useRouter();
@@ -138,17 +107,6 @@ export function OnboardingController({
 
   const endOnboarding = (destination?: "/login" | "/register") => {
     const endingMode = mode;
-
-    if (endingMode === "demo" && accountUserId) {
-      onAccountOnboardingFinished();
-      const supabase = createBrowserSupabaseClientOrNull();
-      if (supabase) {
-        void supabase
-          .from("profiles")
-          .update({ onboarding_completed_at: new Date().toISOString() } as never)
-          .eq("id", accountUserId);
-      }
-    }
 
     finish();
 
