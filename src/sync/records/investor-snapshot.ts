@@ -33,6 +33,8 @@ import {
   computeRealReturnPct,
   computeTotalReturnPct,
   computeXirr,
+  computePeriodReturnPct,
+  historySpanDays,
   type CashflowPoint,
 } from "@/domain/metrics/portfolio-metrics";
 import {
@@ -1084,6 +1086,14 @@ function buildMetrics(
 
   const cashflows = buildXirrCashflows(accountIds, dataset, asOf, totalValue, baseToPln);
   const xirr = computeXirr(cashflows);
+  const externalFlows = totalValue > EPSILON ? cashflows.slice(0, -1) : cashflows;
+  // Okres inwestowania kończy się na dacie wyceny tylko dopóki w portfelu jest
+  // wartość; po całkowitej wypłacie liczy się do ostatniego przepływu, inaczej
+  // zamknięty po kilku dniach portfel „starzałby się” do rocznego XIRR.
+  const lastFlowTime = externalFlows.reduce((max, flow) => Math.max(max, flow.date.getTime()), 0);
+  const periodEnd = totalValue > EPSILON || lastFlowTime === 0 ? asOf : new Date(lastFlowTime);
+  const historyDays = historySpanDays(externalFlows, periodEnd);
+  const periodReturnPct = computePeriodReturnPct(externalFlows, totalValue, periodEnd);
   // The sampled series' own last point lands near `asOf` but not exactly on
   // it (valuationSeries's last entry vs. the precise totalValue/asOf pair
   // above can differ by a rounding tick), so it drifts a hair from `xirr`.
@@ -1119,6 +1129,8 @@ function buildMetrics(
     cagrPct,
     realReturnPct,
     xirrPct: xirr == null ? null : xirr * 100,
+    historyDays,
+    periodReturnPct,
     xirrHistory,
     xirrSeries,
     maxDrawdownPct,

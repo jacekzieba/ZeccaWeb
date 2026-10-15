@@ -1,5 +1,6 @@
 "use client";
 
+import { dayCountLabel, isShortHistory, mwrDisplay } from "@/domain/metrics/short-history";
 import { v2Mix } from "@/lib/v2-design";
 import { token } from "@/design/tokens";
 import Link from "next/link";
@@ -1081,9 +1082,17 @@ export function DashboardOverview() {
       );
     }
     if (section === "chartXIRROverTime") {
-      const points = metrics.xirrSeries ?? [];
+      // Próbki powstają z annualizowanego XIRR, więc przy historii < 1 roku
+      // dają dokładnie te absurdalne wartości, które ukrywamy w kafelkach.
+      const short = isShortHistory(metrics);
+      const points = short ? [] : metrics.xirrSeries ?? [];
+      const emptyText = short
+        ? "Wykres XIRR pojawi się po roku historii: wcześniej wynik roczny byłby mylący."
+        : points.length < 2
+          ? "Za mało historii na wykres XIRR."
+          : undefined;
       return (
-        <ChartCard eyebrow="Wyniki" title="XIRR w czasie" empty={points.length < 2 ? "Za mało historii na wykres XIRR." : undefined}>
+        <ChartCard eyebrow="Wyniki" title="XIRR w czasie" empty={emptyText}>
           <SeriesLineChart
             ariaLabel="Roczny zwrot ważony kapitałem w czasie"
             series={[{ label: "XIRR", color: PALETTE.brand, points }]}
@@ -1319,14 +1328,14 @@ function SummaryCard({
           <div style={{ height: "0.5px", background: PALETTE.line, margin: isMobile ? "20px 0" : "24px 0" }} />
           <div style={{ display: "grid", gap: 10 }}>
             {stat(
-              "MWR · XIRR",
-              metrics.xirrPct == null ? "—" : fmtPct(metrics.xirrPct),
-              metrics.xirrPct == null ? PALETTE.muted : metrics.xirrPct >= 0 ? PALETTE.profit : PALETTE.loss,
+              isShortHistory(metrics) ? `MWR · za ${dayCountLabel(metrics.historyDays ?? 0)}` : "MWR · XIRR",
+              mwrDisplay(metrics).value == null ? "—" : fmtPct(mwrDisplay(metrics).value as number),
+              mwrDisplay(metrics).value == null ? PALETTE.muted : (mwrDisplay(metrics).value as number) >= 0 ? PALETTE.profit : PALETTE.loss,
             )}
             {stat(
               "Wynik realny",
-              fmtPct(metrics.realReturnPct),
-              metrics.realReturnPct >= 0 ? PALETTE.profit : PALETTE.loss,
+              isShortHistory(metrics) ? "—" : fmtPct(metrics.realReturnPct),
+              isShortHistory(metrics) ? PALETTE.muted : metrics.realReturnPct >= 0 ? PALETTE.profit : PALETTE.loss,
             )}
             {stat("Max DD", `${fmt(metrics.maxDrawdownPct, 2)}%`, PALETTE.loss)}
           </div>

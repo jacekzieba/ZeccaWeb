@@ -59,6 +59,12 @@ export type PortfolioMetrics = {
   realReturnPct: number;
   /** Annualised money-weighted return (XIRR), percent, or null if unsolvable. */
   xirrPct: number | null;
+  /** Dni od pierwszej wpłaty do wyceny. Poniżej 365 UI nie pokazuje wyników
+   * rocznych (XIRR, CAGR), tylko zwrot za okres. Opcjonalne dla danych demo. */
+  historyDays?: number;
+  /** Zwrot za okres ważony kapitałem (zmodyfikowany Dietz), procent, bez
+   * annualizacji. Pokazywany zamiast XIRR przy historii krótszej niż rok. */
+  periodReturnPct?: number | null;
   /** Trailing xirrPct, resampled at up to 12 points across the available
    * valuation history (most recent last) — same definition as xirrPct, not
    * a separate metric. Used for the KPI sparkline; empty when there isn't

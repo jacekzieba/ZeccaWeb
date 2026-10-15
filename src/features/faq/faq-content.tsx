@@ -72,6 +72,7 @@ const metrics: MetricItem[] = [
       "Uwzględnia daty i wielkość wpłat oraz wypłat.",
       "Jest dobry do odpowiedzi: ile zarobiłem na kapitale, który realnie był w portfelu?",
       "Może mocno zależeć od momentu dużych dopłat lub wypłat.",
+      "Poniżej roku historii pokazujemy zwrot za okres bez annualizacji (zmodyfikowana metoda Dietza): z kilku dni po przeliczeniu na rok wychodzą liczby bez sensu, np. +1% w 5 dni to ponad 100% rocznie.",
     ],
     example:
       "Jeśli wpłaciłeś 10 000 PLN, po roku dopłaciłeś 40 000 PLN, a rynek mocno wzrósł dopiero po drugiej wpłacie, XIRR pokaże wynik bliższy temu, co zarobił większy kapitał.",

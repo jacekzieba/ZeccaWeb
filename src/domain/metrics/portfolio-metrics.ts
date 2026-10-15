@@ -127,3 +127,53 @@ export function computeRealReturnPct(
     ((1 + nominalReturnPct / 100) / (1 + inflationPct / 100) - 1) * 100
   );
 }
+
+/** Poniżej tylu dni historii nie annualizujemy wyników (zasada GIPS): mały zysk
+ * z kilku dni po przeliczeniu na rok daje liczby bez sensu. */
+export const ANNUALIZATION_MIN_DAYS = 365;
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/** Liczba dni od pierwszej wpłaty do daty wyceny. */
+export function historySpanDays(flows: CashflowPoint[], asOf: Date): number {
+  const first = flows
+    .filter((flow) => Number.isFinite(flow.amount) && flow.amount !== 0)
+    .reduce<number | null>((min, flow) => {
+      const time = flow.date.getTime();
+      return min == null || time < min ? time : min;
+    }, null);
+  if (first == null) return 0;
+  return Math.max(0, Math.floor((asOf.getTime() - first) / MS_PER_DAY));
+}
+
+/**
+ * Zwrot za okres ważony kapitałem (zmodyfikowana metoda Dietza), w procentach,
+ * bez annualizacji: zysk / kapitał ważony czasem pozostawania w portfelu.
+ * `flows` to wyłącznie przepływy zewnętrzne (wpłata ujemna, wypłata dodatnia,
+ * jak w `CashflowPoint`); wartość końcową podaje `terminalValue`.
+ * Zwraca null, gdy okres ma zero długości albo kapitał ważony nie jest dodatni.
+ */
+export function computePeriodReturnPct(
+  flows: CashflowPoint[],
+  terminalValue: number,
+  asOf: Date,
+): number | null {
+  const external = flows
+    .filter((flow) => Number.isFinite(flow.amount) && flow.amount !== 0)
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+  if (external.length === 0) return null;
+
+  const start = external[0].date.getTime();
+  const span = asOf.getTime() - start;
+  if (span <= 0) return null;
+
+  let contributed = 0;
+  let weighted = 0;
+  for (const flow of external) {
+    const contribution = -flow.amount;
+    contributed += contribution;
+    weighted += contribution * ((asOf.getTime() - flow.date.getTime()) / span);
+  }
+  if (weighted <= 0) return null;
+  return ((terminalValue - contributed) / weighted) * 100;
+}
