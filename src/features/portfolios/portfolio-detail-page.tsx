@@ -1,10 +1,11 @@
 "use client";
 
+import { useMedia } from "@/lib/use-media";
 import { token } from "@/design/tokens";
 import { SURFACES } from "@/lib/design-tokens";
 import { v2Mix } from "@/lib/v2-design";
 import Link from "next/link";
-import { use, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { use, useMemo, useState, type CSSProperties } from "react";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { useDisplayCurrency } from "@/features/sync/use-display-currency";
 import { buildPortfolioDetail } from "@/sync/records/investor-snapshot";
@@ -65,18 +66,6 @@ function filterSeriesByPeriod(series: ValuationPoint[], period: Period) {
   cutoff.setMonth(cutoff.getMonth() - PERIOD_MONTHS[period]);
   const filtered = series.filter((p) => new Date(p.date).getTime() >= cutoff.getTime());
   return filtered.length >= 2 ? filtered : series.slice(-2);
-}
-
-function useMedia(query: string) {
-  const [matches, setMatches] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia(query);
-    setMatches(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, [query]);
-  return matches;
 }
 
 const INK = token("ink");
@@ -237,12 +226,15 @@ function HoldingsCard({
   expandedFamilies,
   toggleFamily,
   displayCurrency,
+  compact,
 }: {
   rows: { holding: HoldingRow; family: GroupedTreasuryBondFamily | null; depth: number }[];
   groupedCount: number;
   expandedFamilies: Set<GroupedTreasuryBondFamily>;
   toggleFamily: (family: GroupedTreasuryBondFamily) => void;
   displayCurrency: string;
+  /** Wąski ekran: układ kartowy zamiast siatki 5 kolumn. */
+  compact: boolean;
 }) {
   return (
     <div style={{ ...glassCard, padding: 0, height: "100%" }}>
@@ -260,7 +252,7 @@ function HoldingsCard({
       {/* Header */}
       <div
         style={{
-          display: "grid",
+          display: compact ? "none" : "grid",
           gridTemplateColumns: "minmax(0,2.5fr) minmax(0,0.8fr) minmax(0,1fr) minmax(0,1.2fr) minmax(0,0.8fr)",
           padding: "10px 22px",
           background: v2Mix(INK, 0.025),
@@ -293,6 +285,60 @@ function HoldingsCard({
         const color = KIND_COLORS[h.kind] ?? SUBTLE;
         const kindLabel = KIND_LABELS[h.kind] ?? h.kind;
         const isGroup = family !== null;
+
+        if (compact) {
+          const pct = h.portfolioPercent.toLocaleString("pl-PL", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+          return (
+            <div
+              key={h.instrumentId}
+              onClick={isGroup ? () => toggleFamily(family!) : undefined}
+              onKeyDown={isGroup ? (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  toggleFamily(family!);
+                }
+              } : undefined}
+              role={isGroup ? "button" : undefined}
+              tabIndex={isGroup ? 0 : undefined}
+              aria-expanded={isGroup ? expandedFamilies.has(family!) : undefined}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                padding: `12px 16px 12px ${depth ? 32 : 16}px`,
+                borderTop: `0.5px solid ${LINE_SOFT}`,
+                cursor: isGroup ? "pointer" : "default",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: INK, overflowWrap: "anywhere" }}>
+                    {isGroup && <span aria-hidden="true" style={{ color, marginRight: 6 }}>{expandedFamilies.has(family!) ? "⌄" : "›"}</span>}
+                    {h.name}
+                  </div>
+                  <div style={{ fontSize: 11, color: SUBTLE }}>
+                    {h.symbol} · <span style={{ color: `${color}CC` }}>{kindLabel}</span>
+                  </div>
+                </div>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+                    {fmt(h.marketValue)} <span style={{ fontSize: 10, opacity: 0.5 }}>{currencyLabel(displayCurrency)}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: MUTED, fontVariantNumeric: "tabular-nums" }}>{pct}%</div>
+                </div>
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "2px 12px", fontSize: 11, color: SUBTLE, fontVariantNumeric: "tabular-nums" }}>
+                <span>
+                  {fmtQty(h.quantity)} × {h.lastPrice > 0 ? fmt(h.lastPrice, 2) : "—"} {h.currency}
+                </span>
+                <span>
+                  {h.valuationSourceLabel}
+                  {h.lastPriceDate ? ` · wycena ${fmtPriceDate(h.lastPriceDate)}` : ""}
+                </span>
+              </div>
+            </div>
+          );
+        }
 
         return (
           <div
@@ -496,6 +542,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
   const [expandedFamilies, setExpandedFamilies] = useState<Set<GroupedTreasuryBondFamily>>(() => new Set());
 
   const isMobile = useMedia("(max-width: 720px)");
+  const isCompact = useMedia("(max-width: 560px)");
   const isTablet = useMedia("(max-width: 1140px)");
   const [showCustomize, setShowCustomize] = useState(false);
   const { config, toggle, reorder, reorderTo, resize, reset } = useSectionCustomization(PD_REGISTRY);
@@ -632,6 +679,7 @@ export function PortfolioDetailPage({ params }: { params: Promise<{ id: string }
         expandedFamilies={expandedFamilies}
         toggleFamily={toggleFamily}
         displayCurrency={displayCurrency}
+        compact={isCompact}
       />
     );
     if (id === "cash") return detail.cashBalances.length > 0 ? <CashCard balances={detail.cashBalances} /> : null;

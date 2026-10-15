@@ -45,7 +45,7 @@ describe("wyświetlanie wyników rocznych", () => {
   it("poniżej roku pokazuje zwrot za okres z wyjaśnieniem", () => {
     const view = mwrDisplay({ xirrPct: 5400, historyDays: 5, periodReturnPct: 1.2 });
     expect(view).toMatchObject({ value: 1.2, period: true });
-    expect(view.sub).toBe("za 5 dni · rocznie od 1 roku");
+    expect(view.sub).toBe("za\u00a05\u00a0dni · rocznie\u00a0od\u00a01\u00a0roku");
     expect(view.explanation).toContain("od roku historii");
     expect(dayCountLabel(1)).toBe("1 dzień");
   });

@@ -489,6 +489,7 @@ body {
   font-family: var(--font-text);
   font-size: 11px;
   color: var(--ink-faint);
+  text-wrap: balance;
 }
 
 .metric-tile-help {
