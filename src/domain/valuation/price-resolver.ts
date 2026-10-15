@@ -234,7 +234,7 @@ export function resolveFxRate(
 function latestBeforeOrOn<TValue extends DatedValue>(values: TValue[]) {
   return values.reduce<TValue | null>(
     (latest, value) =>
-      !latest || value.date.getTime() > latest.date.getTime() ? value : latest,
+      !latest || value.date.getTime() >= latest.date.getTime() ? value : latest,
     null,
   );
 }

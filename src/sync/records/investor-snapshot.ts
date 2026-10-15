@@ -1363,6 +1363,7 @@ function parseDataset(
     });
   };
 
+  const manualValuationSavedAt = new Map<string, string>();
   for (const record of records) {
     if (record.deletedAt) {
       continue;
@@ -1380,6 +1381,7 @@ function parseDataset(
         break;
       case "manualValuation":
         collect(manualValuationPayloadSchema, record, dataset.manualValuations);
+        manualValuationSavedAt.set(record.id, record.updatedAt);
         break;
       case "marketQuote":
         collect(marketQuotePayloadSchema, record, dataset.marketQuotes);
@@ -1397,9 +1399,13 @@ function parseDataset(
     (left, right) =>
       toDate(left.date).getTime() - toDate(right.date).getTime(),
   );
+  // Wycena z tego samego dnia: wygrywa ostatnio zapisana (rozstrzyga resolver,
+  // który przy równej dacie bierze ostatnią na liście).
+  const savedAt = (id: string) => Date.parse(manualValuationSavedAt.get(id) ?? "") || 0;
   dataset.manualValuations.sort(
     (left, right) =>
-      toDate(left.date).getTime() - toDate(right.date).getTime(),
+      toDate(left.date).getTime() - toDate(right.date).getTime() ||
+      savedAt(left.id) - savedAt(right.id),
   );
   dataset.marketQuotes.sort(
     (left, right) =>
