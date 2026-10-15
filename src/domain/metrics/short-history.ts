@@ -34,7 +34,8 @@ export function mwrDisplay(metrics: ShortHistoryInput, annualSub = "rocznie"): M
     const days = metrics.historyDays ?? 0;
     return {
       value: metrics.periodReturnPct ?? null,
-      sub: `za ${dayCountLabel(days)} · rocznie od 1 roku`,
+      // Spacje nierozdzielające: w wąskim kafelku podpis łamie się tylko przy „·”.
+      sub: `za\u00a0${dayCountLabel(days).replace(" ", "\u00a0")} · rocznie\u00a0od\u00a01\u00a0roku`,
       period: true,
       explanation: SHORT_HISTORY_EXPLANATION,
     };

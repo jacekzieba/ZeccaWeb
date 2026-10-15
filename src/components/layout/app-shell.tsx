@@ -30,6 +30,7 @@ import { clearPendingAuthPassword } from "@/features/auth/pending-auth-password"
 import { isFakeSyncEnabled } from "@/lib/env";
 import { INVESTMENT_DISCLAIMER } from "@/lib/investment-disclaimer";
 import { useSyncStore } from "@/sync/store/sync-store";
+import { calculateDeltaPLN } from "@/domain/metrics/valuation-delta";
 import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
 import { AddTransactionModal } from "@/features/transactions/add-transaction-modal";
 import { OnboardingController, OnboardingDemoGate } from "@/features/onboarding/onboarding-controller";
@@ -222,8 +223,8 @@ function SidebarContent({ onNav, publicDemo = false }: { onNav?: () => void; pub
   const totalValue = snapshot?.totalValue ?? null;
   const changePct = snapshot?.monthlyChange ?? null;
   const changePLN =
-    totalValue != null && changePct != null
-      ? Math.round((totalValue * changePct) / 100)
+    snapshot && changePct != null
+      ? Math.round(calculateDeltaPLN(snapshot.valuationSeries))
       : null;
   const changeSign = changePLN != null && changePLN >= 0 ? "+" : "";
 

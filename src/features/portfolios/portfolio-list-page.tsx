@@ -15,6 +15,7 @@ import { useSyncStore } from "@/sync/store/sync-store";
 import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
 import { useDisplayCurrency } from "@/features/sync/use-display-currency";
 import { currencyLabel } from "@/lib/money";
+import { useMedia } from "@/lib/use-media";
 import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 import { announce } from "@/components/feedback/status-announcer";
 import { pluralPl } from "@/lib/plural-pl";
@@ -45,6 +46,7 @@ function fmtPct(n: number) {
 export function PortfolioListPage() {
   const records = useSyncStore((s) => s.records);
   const snapshot = useDisplaySnapshot();
+  const compact = useMedia("(max-width: 560px)");
   const { currency: displayCurrency } = useDisplayCurrency();
   const userDataKey = useSyncStore((s) => s.userDataKey);
   const supabase = useSyncStore((s) => s.supabase);
@@ -246,7 +248,7 @@ export function PortfolioListPage() {
         {/* Table header */}
         <div
           style={{
-            display: "grid",
+            display: compact ? "none" : "grid",
             gridTemplateColumns: "minmax(0,2fr) minmax(0,0.7fr) minmax(0,0.5fr) minmax(0,1.2fr) minmax(0,1fr) 130px",
             padding: "12px 22px",
             background: v2Mix(INK, 0.025),
@@ -292,6 +294,55 @@ export function PortfolioListPage() {
         {snapshot && realPortfolios.map((pf) => {
           const color = portfolioDotColor(pf.colorHex);
           const pct = snapshot.totalValue > 0 ? (pf.value / snapshot.totalValue) * 100 : 0;
+
+          if (compact) {
+            return (
+              <div
+                key={pf.id}
+                style={{ padding: "14px 16px", borderTop: `0.5px solid ${LINE_SOFT}`, display: "flex", flexDirection: "column", gap: 10 }}
+              >
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <Link
+                      href={`/portfolios/${pf.id}`}
+                      style={{ fontSize: 14, fontWeight: 700, color: INK, textDecoration: "none", overflowWrap: "anywhere" }}
+                    >
+                      {pf.name}
+                    </Link>
+                    <div style={{ fontSize: 11, color: SUBTLE }}>
+                      {pf.baseCurrency} · {pf.positions} {pluralPl(pf.positions, "pozycja", "pozycje", "pozycji")} · {pct.toLocaleString("pl-PL", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% udziału
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+                      {fmt(pf.value)} <span style={{ fontSize: 11, opacity: 0.55 }}>{currencyLabel(displayCurrency)}</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: pf.dailyChange >= 0 ? PROFIT : LOSS, fontWeight: 600 }}>
+                      {fmtPct(pf.dailyChange)} dziś
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                  <button
+                    onClick={() => {
+                      setEditingPortfolioId(pf.id);
+                      setEditorOpen(true);
+                    }}
+                    style={{ padding: "6px 10px", borderRadius: "var(--r-lg)", border: `0.5px solid ${token("line")}`, background: v2Mix(PAPER, 0.7), color: MUTED, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}
+                  >
+                    Edytuj
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete({ id: pf.id, opis: pf.name })}
+                    disabled={!userDataKey || deletingId === pf.id}
+                    style={{ padding: "6px 10px", borderRadius: "var(--r-lg)", border: `0.5px solid ${v2Mix(LOSS, 0.18)}`, background: deletingId === pf.id ? v2Mix(LOSS, 0.08) : "transparent", color: deletingId === pf.id ? LOSS : AMBER, fontSize: 12, cursor: !userDataKey || deletingId === pf.id ? "not-allowed" : "pointer", fontFamily: "inherit" }}
+                  >
+                    {deletingId === pf.id ? "Usuwam…" : "Usuń"}
+                  </button>
+                </div>
+              </div>
+            );
+          }
 
           return (
             <div

@@ -40,6 +40,7 @@ import type {
   TransactionRow,
   ValuationPoint,
 } from "@/domain/models/investor-data";
+import { calculateDeltaPLN } from "@/domain/metrics/valuation-delta";
 import { TYPOGRAPHY } from "@/lib/design-tokens";
 import { formatAxisValue, currencyLabel, formatShare } from "@/lib/money";
 import {
@@ -789,19 +790,6 @@ function txColor(type: string) {
 }
 
 // Change over the trailing ~30 days, matching the "vs 30 dni temu" label.
-function calculateDeltaPLN(history: ValuationPoint[]) {
-  if (history.length === 0) return 0;
-  const last = history[history.length - 1];
-  const cutoff = new Date(last.date);
-  cutoff.setMonth(cutoff.getMonth() - 1);
-  let previous = history[0];
-  for (const point of history) {
-    if (new Date(point.date).getTime() <= cutoff.getTime()) previous = point;
-    else break;
-  }
-  return last.value - previous.value;
-}
-
 // Restrict the series to the selected period by DATE (the series is daily, so
 // slicing by element count would be wrong). Falls back to the last two points
 // so short periods on a sparse series still render instead of disappearing.
