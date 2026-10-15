@@ -17,6 +17,7 @@ import {
 import { isFakeSyncEnabled } from "@/lib/env";
 import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 import { pluralPl } from "@/lib/plural-pl";
+import { fundingDepositIdsForBuys } from "@/features/transactions/funding-deposit";
 import { TRANSACTION_LABELS } from "@/lib/transaction-labels";
 import { useDisplayCurrency } from "@/features/sync/use-display-currency";
 import { currencyLabel } from "@/lib/money";
@@ -289,8 +290,30 @@ export function TransactionsPage() {
   // Natywny confirm nie mówił, CO usuwa, wyglądał jak okno systemu i blokował
   // wątek. Potwierdzenie jest teraz oknem aplikacji i nazywa usuwaną pozycję.
   const [confirmDelete, setConfirmDelete] = useState<
-    { rodzaj: "jedna"; id: string; opis: string } | { rodzaj: "wiele"; ids: string[] } | null
+    | { rodzaj: "jedna"; id: string; opis: string; wplaty: string[] }
+    | { rodzaj: "wiele"; ids: string[]; wplaty: string[] }
+    | null
   >(null);
+
+  /** `zWplatami`: usuń zakup razem z jego automatyczną wpłatą (gdy ją znaleziono). */
+  function potwierdzUsuniecie(zWplatami: boolean) {
+    const zadanie = confirmDelete;
+    setConfirmDelete(null);
+    if (!zadanie) return;
+    const wplaty = zWplatami ? zadanie.wplaty : [];
+    if (wplaty.length > 0) {
+      const ids = zadanie.rodzaj === "jedna" ? [zadanie.id] : zadanie.ids;
+      const pojedyncza = zadanie.rodzaj === "jedna" ? zadanie.id : null;
+      if (pojedyncza) setDeletingId(pojedyncza);
+      void handleDeleteSelectedTransactions([...ids, ...wplaty], wplaty).finally(() => {
+        if (pojedyncza) setDeletingId(null);
+      });
+    } else if (zadanie.rodzaj === "jedna") {
+      void handleDeleteTransaction(zadanie.id);
+    } else {
+      void handleDeleteSelectedTransactions();
+    }
+  }
 
   async function handleDeleteTransaction(id: string) {
     if (!userDataKey || !supabase || !records) {
@@ -408,13 +431,17 @@ export function TransactionsPage() {
     );
   }
 
-  async function handleDeleteSelectedTransactions() {
-    if (!userDataKey || !supabase || !records || selectedIds.size === 0) {
+  async function handleDeleteSelectedTransactions(
+    explicitIds?: string[],
+    depositIds: string[] = [],
+  ) {
+    const source = explicitIds ?? [...selectedIds];
+    if (!userDataKey || !supabase || !records || source.length === 0) {
       return;
     }
 
     const liveIds = new Set(allTransactions.map((transaction) => transaction.id));
-    const idsToDelete = [...selectedIds].filter((id) => liveIds.has(id));
+    const idsToDelete = source.filter((id) => liveIds.has(id));
     if (idsToDelete.length === 0) {
       return;
     }
@@ -441,6 +468,7 @@ export function TransactionsPage() {
     const queuedIds: string[] = [];
     const deletedIds: string[] = [];
     const doCofniecia: Array<[string, string, string | undefined]> = [];
+    const failedIds: string[] = [];
     let failure: unknown = null;
 
     try {
@@ -464,6 +492,7 @@ export function TransactionsPage() {
           // Capture the first failure but keep deleting the rest so one bad
           // record doesn't silently abort the whole batch.
           failure ??= error;
+          failedIds.push(id);
         }
       }
 
@@ -492,10 +521,11 @@ export function TransactionsPage() {
 
       if (failure) {
         const remaining = idsToDelete.length - deletedIds.length;
+        const wplataZostala = failedIds.some((id) => depositIds.includes(id));
         setDeleteError(
           `${describeDeleteError(failure)}${
             remaining > 0 ? ` (nie usunięto ${remaining} z ${idsToDelete.length})` : ""
-          }`,
+          }${wplataZostala ? " Wpłata gotówki została na koncie — usuń ją ręcznie w rejestrze." : ""}`,
         );
       }
     } catch (error) {
@@ -697,7 +727,13 @@ export function TransactionsPage() {
               onClick={() => {
                 const liveIds = new Set(allTransactions.map((transaction) => transaction.id));
                 const ids = [...selectedIds].filter((id) => liveIds.has(id));
-                if (ids.length) setConfirmDelete({ rodzaj: "wiele", ids });
+                if (ids.length && records) {
+                  setConfirmDelete({
+                    rodzaj: "wiele",
+                    ids,
+                    wplaty: fundingDepositIdsForBuys(records, ids).filter((id) => !ids.includes(id)),
+                  });
+                }
               }}
               disabled={!userDataKey || bulkDeleting}
               style={{
@@ -982,6 +1018,7 @@ export function TransactionsPage() {
                       rodzaj: "jedna",
                       id: tx.id,
                       opis: `${label} · ${tx.instrumentName ?? tx.portfolioName} · ${fmtDate(tx.date)}`,
+                      wplaty: records ? fundingDepositIdsForBuys(records, [tx.id]) : [],
                     })
                   }
                   disabled={!userDataKey || deletingId === tx.id}
@@ -1029,18 +1066,36 @@ export function TransactionsPage() {
       title={confirmDelete?.rodzaj === "wiele" ? "Usunąć zaznaczone transakcje?" : "Usunąć transakcję?"}
       body={
         confirmDelete?.rodzaj === "wiele"
-          ? `${confirmDelete.ids.length} ${pluralPl(confirmDelete.ids.length, "transakcja", "transakcje", "transakcji")} zniknie z rejestru. Cofniesz to zaraz po usunięciu.`
+          ? `${confirmDelete.ids.length} ${pluralPl(confirmDelete.ids.length, "transakcja", "transakcje", "transakcji")} zniknie z rejestru.${
+              confirmDelete.wplaty.length > 0
+                ? ` Do zakupów dodano automatyczne wpłaty (${confirmDelete.wplaty.length}) — bez ich usunięcia gotówka zostanie na koncie.`
+                : ""
+            } Cofniesz to zaraz po usunięciu.`
           : confirmDelete?.rodzaj === "jedna"
-            ? `${confirmDelete.opis}. Cofniesz to zaraz po usunięciu.`
+            ? `${confirmDelete.opis}.${
+                confirmDelete.wplaty.length > 0
+                  ? " Ten zakup miał automatyczną wpłatę gotówki — bez jej usunięcia gotówka zostanie na koncie."
+                  : ""
+              } Cofniesz to zaraz po usunięciu.`
             : undefined
       }
+      confirmLabel={
+        confirmDelete && confirmDelete.wplaty.length > 0
+          ? confirmDelete.rodzaj === "wiele"
+            ? "Usuń z wpłatami"
+            : "Usuń zakup i wpłatę"
+          : undefined
+      }
+      alternateLabel={
+        confirmDelete && confirmDelete.wplaty.length > 0
+          ? confirmDelete.rodzaj === "wiele"
+            ? "Bez wpłat"
+            : "Tylko zakup"
+          : undefined
+      }
+      onAlternate={() => potwierdzUsuniecie(false)}
       onCancel={() => setConfirmDelete(null)}
-      onConfirm={() => {
-        const zadanie = confirmDelete;
-        setConfirmDelete(null);
-        if (zadanie?.rodzaj === "jedna") void handleDeleteTransaction(zadanie.id);
-        else if (zadanie?.rodzaj === "wiele") void handleDeleteSelectedTransactions();
-      }}
+      onConfirm={() => potwierdzUsuniecie(true)}
     />
 
     </div>
