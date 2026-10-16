@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import { useElementWidth } from "@/lib/use-element-width";
 import { COLORS, TYPOGRAPHY } from "@/lib/design-tokens";
 import { formatAxisValue } from "@/lib/money";
 
@@ -8,17 +9,7 @@ const MIN_CHART_WIDTH = 240;
 const PAD = { left: 58, right: 16, top: 14, bottom: 30 };
 
 function useWidth() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(MIN_CHART_WIDTH);
-  useEffect(() => {
-    if (!ref.current) return;
-    const ro = new ResizeObserver((entries) => {
-      for (const e of entries) setWidth(Math.max(MIN_CHART_WIDTH, e.contentRect.width));
-    });
-    ro.observe(ref.current);
-    return () => ro.disconnect();
-  }, []);
-  return { ref, width };
+  return useElementWidth(MIN_CHART_WIDTH, MIN_CHART_WIDTH);
 }
 
 function niceRange(values: number[], includeZero: boolean) {

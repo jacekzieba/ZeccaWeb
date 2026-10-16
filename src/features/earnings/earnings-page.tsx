@@ -1,6 +1,7 @@
 "use client";
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useElementWidth } from "@/lib/use-element-width";
 import { useModalLayer } from "@/components/feedback/use-modal-layer";
 import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
@@ -334,20 +335,9 @@ function YearlyAverageChart({
 }: {
   data: ReturnType<typeof buildIncomeLists>["yearlyAverages"];
 }) {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(760);
+  const { ref: wrapRef, width } = useElementWidth(760, 300);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const items = [...data].sort((left, right) => left.year - right.year);
-
-  useEffect(() => {
-    const element = wrapRef.current;
-    if (!element) return;
-    const observer = new ResizeObserver(([entry]) => {
-      setWidth(Math.max(300, entry.contentRect.width));
-    });
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
 
   if (items.length === 0) {
     return <div style={{ color: V2.subtle, fontSize: 13, padding: "36px 0" }}>Brak danych</div>;

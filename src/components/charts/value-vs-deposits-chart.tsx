@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import { useElementWidth } from "@/lib/use-element-width";
 import { COLORS, TYPOGRAPHY } from "@/lib/design-tokens";
 import { v2Mix } from "@/lib/v2-design";
 import { formatAxisValue, currencyLabel } from "@/lib/money";
@@ -57,18 +58,8 @@ export function ValueVsDepositsChart({
   const [period, setPeriod] = useState<Period>("MAX");
   const { value, deposits } = cropByPeriod(valueProp, depositsProp, period);
 
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(MIN_CHART_WIDTH);
+  const { ref: wrapRef, width } = useElementWidth(MIN_CHART_WIDTH, MIN_CHART_WIDTH);
   const [hover, setHover] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!wrapRef.current) return;
-    const ro = new ResizeObserver((entries) => {
-      for (const e of entries) setWidth(Math.max(MIN_CHART_WIDTH, e.contentRect.width));
-    });
-    ro.observe(wrapRef.current);
-    return () => ro.disconnect();
-  }, []);
 
   const n = Math.min(value.length, deposits.length);
   if (n < 2) return null;

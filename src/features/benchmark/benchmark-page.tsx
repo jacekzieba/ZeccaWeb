@@ -2,7 +2,8 @@
 
 import { v2Mix } from "@/lib/v2-design";
 import { token } from "@/design/tokens";
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useElementWidth } from "@/lib/use-element-width";
 import { sampleSnapshot, SAMPLE_HISTORY } from "@/features/dashboard/sample-data";
 import { TYPOGRAPHY } from "@/lib/design-tokens";
 import { useSyncStore } from "@/sync/store/sync-store";
@@ -213,18 +214,8 @@ function MultiLineChart({
   series: { label: string; color: string; data: number[]; dash?: string; width?: number }[];
   height?: number;
 }) {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(680);
+  const { ref: wrapRef, width } = useElementWidth(680, 280);
   const [hover, setHover] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!wrapRef.current) return;
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) setWidth(Math.max(280, entry.contentRect.width));
-    });
-    ro.observe(wrapRef.current);
-    return () => ro.disconnect();
-  }, []);
 
   const allValues = series.flatMap((item) => item.data);
   const minRaw = Math.min(...allValues);
