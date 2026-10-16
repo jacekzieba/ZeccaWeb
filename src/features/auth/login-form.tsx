@@ -3,12 +3,11 @@
 import Link from "next/link";
 import { useId, useState } from "react";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
-import { authRedirectBase } from "@/lib/auth-redirect";
 import { COLORS } from "@/lib/design-tokens";
-import { OAuthButtons, type OAuthStatus } from "@/features/auth/oauth-buttons";
+import { OAuthButtons, startOAuth, type OAuthStatus } from "@/features/auth/oauth-buttons";
 import { setPendingAuthPassword } from "@/features/auth/pending-auth-password";
 import { signInWithAccountPassword } from "@/features/auth/auth-secret";
-import { authErrorMessage, isInvalidCredentials } from "@/features/auth/auth-error-message";
+import { authErrorMessage, CONNECTION_ERROR, isInvalidCredentials } from "@/features/auth/auth-error-message";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -36,7 +35,14 @@ export function LoginForm() {
       return;
     }
 
-    const { error } = await signInWithAccountPassword(supabase, email, password);
+    let error: Awaited<ReturnType<typeof signInWithAccountPassword>>["error"];
+    try {
+      ({ error } = await signInWithAccountPassword(supabase, email, password));
+    } catch {
+      setStatus("error");
+      setErrorMessage(CONNECTION_ERROR);
+      return;
+    }
 
     if (error) {
       setStatus("error");
@@ -57,12 +63,15 @@ export function LoginForm() {
 
     setOauthStatus(provider === "google" ? "loading-google" : "loading-apple");
 
-    await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: `${authRedirectBase()}/auth/callback`,
-      },
-    });
+    // Sukces kończy się przekierowaniem do dostawcy, więc blokadę zdejmujemy
+    // tylko wtedy, gdy przekierowanie nie nastąpi.
+    const message = await startOAuth(supabase, provider);
+    if (message) {
+      setOauthStatus("idle");
+      setStatus("error");
+      setInvalidCredentials(false);
+      setErrorMessage(message);
+    }
   }
 
   const inputStyle: React.CSSProperties = {

@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useState } from "react";
+import { useElementWidth } from "@/lib/use-element-width";
 import { COLORS, TYPOGRAPHY } from "@/lib/design-tokens";
 import { formatAxisValue } from "@/lib/money";
 import { axisLabeler } from "./axis-label";
@@ -21,18 +22,8 @@ export function AreaChart({
   color?: string;
   dotColor?: string;
 }) {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(MIN_CHART_WIDTH);
+  const { ref: wrapRef, width } = useElementWidth(MIN_CHART_WIDTH, MIN_CHART_WIDTH);
   const [hover, setHover] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!wrapRef.current) return;
-    const ro = new ResizeObserver((entries) => {
-      for (const e of entries) setWidth(Math.max(MIN_CHART_WIDTH, e.contentRect.width));
-    });
-    ro.observe(wrapRef.current);
-    return () => ro.disconnect();
-  }, []);
 
   if (data.length < 2) return null;
 

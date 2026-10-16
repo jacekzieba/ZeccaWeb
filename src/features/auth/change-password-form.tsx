@@ -5,6 +5,7 @@ import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { V2, V2_TYPE } from "@/lib/v2-design";
 import { MIN_PASSWORD_LENGTH, passwordRequirementError } from "@/features/auth/password-requirements";
 import { deriveAuthSecret, signInWithAccountPassword } from "@/features/auth/auth-secret";
+import { CONNECTION_ERROR } from "@/features/auth/auth-error-message";
 import { rewrapKeyBackup, type EncryptedKeyBackup } from "@/sync/encryption/key-backup";
 import { fetchEncryptedKeyBackup, upsertEncryptedKeyBackup } from "@/sync/records/supabase-sync-store";
 
@@ -62,7 +63,12 @@ export function ChangePasswordForm() {
     setStatus("saving");
     setError(null);
 
-    const { error: signInError } = await signInWithAccountPassword(supabase, account.email, current);
+    let signInError: Awaited<ReturnType<typeof signInWithAccountPassword>>["error"];
+    try {
+      ({ error: signInError } = await signInWithAccountPassword(supabase, account.email, current));
+    } catch {
+      return fail(CONNECTION_ERROR);
+    }
     if (signInError) return fail("Obecne hasło jest nieprawidłowe.");
 
     let previousBackup: EncryptedKeyBackup | null;
@@ -89,15 +95,21 @@ export function ChangePasswordForm() {
 
     // Produkcja wymaga obecnego hasła; po signInWithAccountPassword w Auth jest
     // już sekret obecnego hasła.
-    const { error: updateError } = await supabase.auth.updateUser({
-      password: await deriveAuthSecret(account.email, next),
-      current_password: await deriveAuthSecret(account.email, current),
-    });
-    if (updateError) {
+    let updateFailure: string | null;
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: await deriveAuthSecret(account.email, next),
+        current_password: await deriveAuthSecret(account.email, current),
+      });
+      updateFailure = updateError?.message ?? null;
+    } catch {
+      updateFailure = `${CONNECTION_ERROR} Hasło się nie zmieniło.`;
+    }
+    if (updateFailure) {
       if (rewrapped && previousBackup) {
         await upsertEncryptedKeyBackup(supabase, account.id, previousBackup).catch(() => undefined);
       }
-      return fail(updateError.message);
+      return fail(updateFailure);
     }
 
     setCurrent("");

@@ -7,15 +7,6 @@ export function formatCurrency(value: number, currency: string) {
   }).format(value);
 }
 
-export function formatCurrencyCompact(value: number, currency: string) {
-  return new Intl.NumberFormat("pl-PL", {
-    style: "currency",
-    currency,
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(value);
-}
-
 /**
  * Format a numeric axis tick into a compact "k"/"M" label, choosing just
  * enough decimals that adjacent ticks (spaced ~range/4 apart) stay distinct.

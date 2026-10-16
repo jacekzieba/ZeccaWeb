@@ -505,7 +505,7 @@ function PrivacySection() {
 }
 
 // ── Danger zone: account deletion ─────────────────────────────────
-function DangerZone() {
+export function DangerZone() {
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -572,7 +572,7 @@ function DangerZone() {
               : "Pobierz pełną kopię danych albo trwale usuń konto wraz z danymi w chmurze."}
           </div>
           {error && (
-            <div style={{ fontFamily: V2_TYPE.ui, fontSize: 12, color: V2.loss, marginTop: 4 }}>{error}</div>
+            <div role="alert" style={{ fontFamily: V2_TYPE.ui, fontSize: 12, color: V2.loss, marginTop: 4 }}>{error}</div>
           )}
         </div>
         <div style={{ display: "flex", gap: 10 }}>

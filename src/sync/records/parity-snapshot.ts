@@ -45,6 +45,34 @@ export type ParitySnapshot = {
   transactions: TransactionRow[];
 };
 
+declare global {
+  interface Window {
+    __investorWebExportParitySnapshot?: () => string;
+  }
+}
+
+/** Devtools bridge for `compare:parity` (docs/STAGING_VALIDATION_REPORT.md).
+ * The strict snapshot is built only when the bridge is called: built eagerly it
+ * re-ran the whole engine on every sync and, being strict, threw on any record
+ * the lenient UI merely skips — failing unlock and crashing the app shell. */
+export function exposeParityExport(records: DecryptedRecord[] | null) {
+  if (!records) {
+    delete window.__investorWebExportParitySnapshot;
+    return;
+  }
+  window.__investorWebExportParitySnapshot = () =>
+    JSON.stringify(
+      buildParitySnapshot(records, {
+        asOf: new Date(),
+        historyGranularity: "daily",
+        useLatestTransactionFxRate: true,
+        useMarketQuotes: true,
+      }),
+      null,
+      2,
+    );
+}
+
 export function buildParitySnapshot(
   records: DecryptedRecord[],
   options: SnapshotBuildOptions = {},

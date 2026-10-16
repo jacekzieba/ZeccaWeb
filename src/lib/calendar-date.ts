@@ -13,3 +13,12 @@ export function utcDateOrNull(year: number, month: number, day: number): Date | 
     ? date
     : null;
 }
+
+/** Dzisiejsza (albo podana) data kalendarzowa w strefie użytkownika, `RRRR-MM-DD`.
+ * `toISOString().slice(0, 10)` daje datę UTC — w Polsce między północą a 1:00/2:00
+ * to jeszcze wczorajszy dzień. */
+export function localDateString(date = new Date()): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}

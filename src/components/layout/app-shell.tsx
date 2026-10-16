@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useState, useEffect, useMemo, useRef, type CSSProperties } from "react";
+import { useCallback, useState, useEffect, useRef, type CSSProperties } from "react";
 import type { Route } from "next";
 import {
   ArrowDownUp,
@@ -22,12 +22,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
-import { buildParitySnapshot } from "@/sync/records/parity-snapshot";
-import { buildInvestorDataSnapshot, SYNTHETIC_FALLBACK_ACCOUNT_ID } from "@/sync/records/investor-snapshot";
-import { makeAccountPayload } from "@/sync/records/macos-payloads";
-import { clearPendingSyncOperations, refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
+import { exposeParityExport } from "@/sync/records/parity-snapshot";
+import { SYNTHETIC_FALLBACK_ACCOUNT_ID } from "@/sync/records/investor-snapshot";
+import { clearPendingSyncOperations } from "@/sync/records/record-writer";
 import { clearPendingAuthPassword } from "@/features/auth/pending-auth-password";
-import { isFakeSyncEnabled } from "@/lib/env";
 import { INVESTMENT_DISCLAIMER } from "@/lib/investment-disclaimer";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { calculateDeltaPLN } from "@/domain/metrics/valuation-delta";
@@ -55,13 +53,8 @@ import { PolicyUpdateNotice } from "@/components/layout/policy-update-notice";
 import { useTranslation } from "@/features/i18n/translate";
 import { currencyLabel } from "@/lib/money";
 import { StatusAnnouncer } from "@/components/feedback/status-announcer";
-
-declare global {
-  interface Window {
-    __investorWebParitySnapshot?: ReturnType<typeof buildParitySnapshot>;
-    __investorWebExportParitySnapshot?: () => string;
-  }
-}
+import { useModalLayer } from "@/components/feedback/use-modal-layer";
+import { useEnsureDefaultAccount } from "@/components/layout/use-ensure-default-account";
 
 const glassSurface: CSSProperties = {
   ...SURFACES.glassPanel,
@@ -396,109 +389,21 @@ export function AppShell({
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerRef = useRef<HTMLElement | null>(null);
-  const drawerTriggerRef = useRef<HTMLButtonElement | null>(null);
-
-  // Szuflada jest warstwą modalną, więc zachowuje się jak dialog: Escape zamyka,
-  // ognisko wchodzi do środka i wraca na przycisk, który ją otworzył. Wcześniej
-  // Escape nic nie robił, a Tab wędrował po przyciskach nagłówka za nią.
-  useEffect(() => {
-    if (!drawerOpen) return;
-    drawerRef.current?.focus();
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key !== "Escape") return;
-      event.stopPropagation();
-      setDrawerOpen(false);
-    }
-    document.addEventListener("keydown", onKeyDown, true);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown, true);
-      drawerTriggerRef.current?.focus();
-    };
-  }, [drawerOpen]);
   const [searchOpen, setSearchOpen] = useState(false);
   const isDesktop = useIsDesktop();
+  // Szuflada jest warstwą modalną, więc zachowuje się jak dialog: Escape zamyka,
+  // Tab nie wychodzi pod spód, a ognisko wraca na przycisk, który ją otworzył.
+  useModalLayer(!isDesktop && drawerOpen, drawerRef, () => setDrawerOpen(false), drawerRef);
   const topbarHidden = useHideOnScroll();
   const profile = useProfile();
   const openAddTransaction = useSyncStore((s) => s.openAddTransaction);
   const records = useSyncStore((s) => s.records);
   const setSync = useSyncStore((s) => s.setSync);
   const clearSync = useSyncStore((s) => s.clearSync);
-  const userDataKey = useSyncStore((s) => s.userDataKey);
-  const supabase = useSyncStore((s) => s.supabase);
-  const ensuringDefaultAccountRef = useRef(false);
-
-  // The dashboard/add-transaction pickers only ever list real "account"
-  // records — a user who never explicitly created a portfolio had nothing to
-  // pick, so transactions (and the portfolio itself) couldn't be created at
-  // all. buildInvestorDataSnapshot used to paper over this with a synthetic,
-  // never-persisted "Portfel" placeholder, which is exactly what made both
-  // bugs invisible in the data layer while still blocking the user. Create
-  // one real, persisted account instead, the first time we see there isn't one.
+  useEnsureDefaultAccount();
   useEffect(() => {
-    if (!records || !userDataKey || !supabase || ensuringDefaultAccountRef.current) {
-      return;
-    }
-    const hasRealAccount = records.some(
-      (record) => !record.deletedAt && record.envelope.type === "account",
-    );
-    if (hasRealAccount) return;
-
-    ensuringDefaultAccountRef.current = true;
-    void (async () => {
-      try {
-        const id = crypto.randomUUID();
-        const payload = makeAccountPayload({ id, name: "Główny", baseCurrency: "PLN", accountType: "Własny" });
-        if (isFakeSyncEnabled()) {
-          const now = new Date().toISOString();
-          const nextRecords = [
-            ...records,
-            { id, deviceId: "fake-sync-web", updatedAt: now, deletedAt: null, envelope: { type: "account" as const, payloadVersion: 1, schemaVersion: 1, payload } },
-          ];
-          setSync(nextRecords, buildInvestorDataSnapshot(nextRecords, { asOf: new Date(), historyGranularity: "daily", useLatestTransactionFxRate: true, useMarketQuotes: true }));
-        } else {
-          const result = await saveRecord(supabase, userDataKey, "account", payload);
-          if (!result.queued) {
-            const refreshed = await refreshSyncStore(supabase, userDataKey);
-            setSync(refreshed.records, refreshed.snapshot);
-          } else {
-            // Queued for later (offline) — local `records` still has no
-            // account, so allow this effect to check again (and retry if
-            // still needed) once anything else changes, instead of staying
-            // permanently blocked by the ref for this component's lifetime.
-            ensuringDefaultAccountRef.current = false;
-          }
-        }
-      } catch {
-        // Network hiccup or similar — try again next time this mounts with
-        // no real account rather than leaving the user permanently stuck.
-        ensuringDefaultAccountRef.current = false;
-      }
-    })();
-  }, [records, userDataKey, supabase, setSync]);
-  const paritySnapshot = useMemo(
-    () =>
-      records
-        ? buildParitySnapshot(records, {
-            asOf: new Date(),
-            historyGranularity: "daily",
-            useLatestTransactionFxRate: true,
-            useMarketQuotes: true,
-          })
-        : null,
-    [records],
-  );
-
-  useEffect(() => {
-    if (!paritySnapshot) {
-      delete window.__investorWebParitySnapshot;
-      delete window.__investorWebExportParitySnapshot;
-      return;
-    }
-
-    window.__investorWebParitySnapshot = paritySnapshot;
-    window.__investorWebExportParitySnapshot = () =>
-      JSON.stringify(window.__investorWebParitySnapshot, null, 2);
-  }, [paritySnapshot]);
+    exposeParityExport(records);
+  }, [records]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -579,7 +484,6 @@ export function AppShell({
                 }}
               />
               <button
-                ref={drawerTriggerRef}
                 onClick={() => setDrawerOpen(true)}
                 aria-label="Menu"
                 style={{
@@ -760,6 +664,9 @@ export function AppShell({
             <aside
               ref={drawerRef}
               tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Menu"
               style={{
                 position: "fixed", left: 10, top: 10, bottom: 10,
                 width: 268, zIndex: 90,
@@ -773,6 +680,7 @@ export function AppShell({
             >
               <button
                 onClick={() => setDrawerOpen(false)}
+                aria-label="Zamknij menu"
                 style={{
                   position: "absolute", top: 14, right: 12,
                   width: 26, height: 26, borderRadius: "50%",
@@ -818,15 +726,6 @@ export function AppShell({
       <AddTransactionModal />
       <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
       <OnboardingController publicDemo={publicDemo} />
-      {paritySnapshot && (
-        <script
-          id="investor-web-parity-snapshot"
-          type="application/json"
-          suppressHydrationWarning
-        >
-          {JSON.stringify(paritySnapshot)}
-        </script>
-      )}
     </div>
     </AppLock>
   );

@@ -12,6 +12,7 @@ import { isFakeSyncEnabled } from "@/lib/env";
 const MUTATION_SYNC_DEBOUNCE_MS = 600;
 const PASSIVE_SYNC_INTERVAL_MS = 60_000;
 const RETRY_SYNC_DELAY_MS = 15_000;
+const MAX_RETRY_SYNC_DELAY_MS = 5 * 60_000;
 
 export function BackgroundSyncBootstrap() {
   const supabase = useSyncStore((state) => state.supabase);
@@ -37,6 +38,10 @@ export function BackgroundSyncBootstrap() {
     const activeSupabase = supabase;
     const activeUserDataKey = userDataKey;
     let cancelled = false;
+    // Kolejne nieudane cykle z rzędu. Każdy cykl pobiera i odszyfrowuje cały
+    // zbiór, więc przy trwałym błędzie (np. rekord nie do odszyfrowania) stałe
+    // 15 s oznaczało pełne pobranie kilka razy na minutę, także w tle.
+    let consecutiveFailures = 0;
     let realtimeChannel: ReturnType<BrowserSupabaseClient["channel"]> | null = null;
 
     async function runSync() {
@@ -58,13 +63,17 @@ export function BackgroundSyncBootstrap() {
           activeSupabase,
           activeUserDataKey,
         );
+        consecutiveFailures = 0;
         if (!cancelled) {
           setSync(records, snapshot);
         }
       } catch (error) {
+        consecutiveFailures += 1;
         if (!cancelled) {
           console.warn("Background sync failed", error);
-          scheduleSync(RETRY_SYNC_DELAY_MS);
+          scheduleSync(
+            Math.min(RETRY_SYNC_DELAY_MS * 2 ** (consecutiveFailures - 1), MAX_RETRY_SYNC_DELAY_MS),
+          );
         }
       } finally {
         inFlightRef.current = false;
@@ -94,7 +103,8 @@ export function BackgroundSyncBootstrap() {
     const onMutation = () => scheduleSync(MUTATION_SYNC_DEBOUNCE_MS);
     const onOnline = () => scheduleSync(0);
     const intervalId = window.setInterval(() => {
-      if (document.visibilityState === "visible") {
+      // Po błędzie ponowienie ma już swój termin — pasywny cykl go nie skraca.
+      if (consecutiveFailures === 0 && document.visibilityState === "visible") {
         scheduleSync(0);
       }
     }, PASSIVE_SYNC_INTERVAL_MS);
