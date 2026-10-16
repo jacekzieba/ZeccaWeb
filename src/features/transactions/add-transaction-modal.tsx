@@ -50,6 +50,7 @@ import {
 } from "./transaction-rules";
 import { fundingDepositForTrade, fundingDepositNote } from "./funding-deposit";
 import { currencyLabel } from "@/lib/money";
+import { localDateString } from "@/lib/calendar-date";
 import { announce } from "@/components/feedback/status-announcer";
 import { Select } from "@/components/ui/select";
 
@@ -390,7 +391,7 @@ export function AddTransactionModal({
   const isEditing = Boolean(initialValue);
 
   // Form state
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateString();
   const [txType, setTxType] = useState<TxTypeValue>("buy");
   const [portfolioId, setPortfolioId] = useState("");
   const [instrumentId, setInstrumentId] = useState("");

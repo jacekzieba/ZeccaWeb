@@ -709,3 +709,31 @@ describe("AddTransactionModal — edycja istniejącej transakcji", () => {
   });
 });
 
+describe("AddTransactionModal — domyślna data", () => {
+  const originalTz = process.env.TZ;
+
+  beforeEach(() => {
+    store.state.records = [accountRecord];
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ data: [] }), { status: 200, headers: { "content-type": "application/json" } }),
+    );
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+    process.env.TZ = originalTz;
+    vi.resetAllMocks();
+    vi.restoreAllMocks();
+  });
+
+  it("to dzisiejsza data lokalna, nie UTC (00:30 w Warszawie to już nowy dzień)", () => {
+    process.env.TZ = "Europe/Warsaw";
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-05-10T22:30:00.000Z")); // 11.05, 00:30 czasu letniego
+
+    render(<AddTransactionModal open initialValue={null} onClose={vi.fn()} />);
+
+    expect((screen.getByLabelText("Data") as HTMLInputElement).value).toBe("2026-05-11");
+  });
+});
