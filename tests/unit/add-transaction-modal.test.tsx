@@ -540,3 +540,119 @@ describe("AddTransactionModal sell validation", () => {
     });
   });
 });
+
+describe("AddTransactionModal — edycja istniejącej transakcji", () => {
+  beforeEach(() => {
+    store.state.records = [accountRecord, newAssetRecord];
+    store.state.snapshot = null;
+    store.state.setSync = vi.fn();
+    store.state.closeAddTransaction = vi.fn();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ data: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.mocked(saveRecord).mockResolvedValue({ queued: false });
+    vi.mocked(refreshSyncStore).mockResolvedValue({
+      records: [accountRecord, newAssetRecord],
+      snapshot: null as never,
+      summary: null as never,
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.resetAllMocks();
+    vi.restoreAllMocks();
+  });
+
+  it("zapisuje dywidendę z tym samym instrumentem, gdy użytkownik niczego nie zmienił", async () => {
+    // Zmiana typu (domyślnie „buy”) na typ z edytowanej transakcji czyściła
+    // wybrany instrument — zapis bez zmian odpinał dywidendę od spółki.
+    render(
+      <AddTransactionModal
+        open
+        initialValue={{
+          id: "33333333-3333-4333-8333-333333333333",
+          portfolioId: accountID,
+          instrumentId: newAssetID,
+          date: "2026-05-10",
+          transactionType: "dividend",
+          quantity: null,
+          price: null,
+          grossAmount: 12.5,
+          currency: "PLN",
+          fees: 0,
+          taxes: 0,
+          updatedAt: "2026-05-10T10:00:00.000Z",
+        }}
+        onClose={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz zmiany" }));
+
+    await waitFor(() => expect(vi.mocked(saveRecord)).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(saveRecord).mock.calls[0]?.[3]).toMatchObject({
+      transactionType: "dividend",
+      instrumentID: newAssetID,
+    });
+  });
+
+  it("edycja sprzedaży, która zamknęła pozycję, zachowuje instrument", async () => {
+    // Filtr „tylko posiadane” liczył stan razem z edytowaną sprzedażą: 10 − 10 = 0,
+    // więc instrument wypadał z listy i formularz odrzucał zapis.
+    const sellID = "44444444-4444-4444-8444-444444444444";
+    const tx = (id: string, transactionType: string, date: string) =>
+      record("transaction", id, {
+        recordType: "transaction",
+        id,
+        date,
+        portfolioID: accountID,
+        instrumentID: newAssetID,
+        transactionType,
+        quantity: 10,
+        price: 100,
+        grossAmount: 1000,
+        currency: "PLN",
+        fees: 0,
+        taxes: 0,
+      });
+    store.state.records = [
+      accountRecord,
+      newAssetRecord,
+      tx("55555555-5555-4555-8555-555555555555", "buy", "2026-05-01T00:00:00.000Z"),
+      tx(sellID, "sell", "2026-05-10T00:00:00.000Z"),
+    ];
+
+    render(
+      <AddTransactionModal
+        open
+        initialValue={{
+          id: sellID,
+          portfolioId: accountID,
+          instrumentId: newAssetID,
+          date: "2026-05-10",
+          transactionType: "sell",
+          quantity: 10,
+          price: 100,
+          grossAmount: 1000,
+          currency: "PLN",
+          fees: 0,
+          taxes: 0,
+          updatedAt: "2026-05-10T10:00:00.000Z",
+        }}
+        onClose={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz zmiany" }));
+
+    await waitFor(() => expect(vi.mocked(saveRecord)).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(saveRecord).mock.calls[0]?.[3]).toMatchObject({
+      transactionType: "sell",
+      instrumentID: newAssetID,
+    });
+  });
+});
