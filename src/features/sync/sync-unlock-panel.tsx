@@ -4,6 +4,7 @@ import { token } from "@/design/tokens";
 import { authTitleStyle } from "@/features/auth/auth-brand";
 import { COLORS } from "@/lib/design-tokens";
 import { v2Mix } from "@/lib/v2-design";
+import { withTimeout } from "@/lib/with-timeout";
 import type { Session } from "@supabase/supabase-js";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
@@ -87,17 +88,6 @@ const UNLOCK_STEP_LABELS: Record<UnlockStep, string> = {
   "decrypt-records": "Odszyfrowuję rekordy lokalnie w przeglądarce…",
   "build-snapshot": "Buduję lokalny snapshot portfela…",
 };
-
-function withTimeout<T>(promise: Promise<T>, label: string, timeoutMs = 20_000) {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) => {
-      window.setTimeout(() => {
-        reject(new Error(`${label} przekroczyło limit ${timeoutMs / 1000}s.`));
-      }, timeoutMs);
-    }),
-  ]);
-}
 
 function getUnlockErrorMessage(error: unknown) {
   // Hasło było dobre (klucz odblokowany) — nie wysyłamy użytkownika do poprawiania hasła.
