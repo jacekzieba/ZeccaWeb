@@ -141,6 +141,12 @@ export async function middleware(request: NextRequest) {
     isProtectedPage && request.cookies.get(DEMO_SESSION_COOKIE)?.value === "1";
 
   if (!user && isAppRoute && !fakeSyncEnabled && !demoPage) {
+    // fetch poszedłby za przekierowaniem i dostał HTML strony logowania (200).
+    if (isProtectedApiRoute) {
+      return applyCsp(
+        NextResponse.json({ error: "Sesja wygasła. Zaloguj się ponownie." }, { status: 401 }),
+      );
+    }
     const redirectUrl = new URL("/login", request.url);
     redirectUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
     return applyCsp(NextResponse.redirect(redirectUrl));
