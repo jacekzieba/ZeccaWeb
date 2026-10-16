@@ -204,6 +204,8 @@ export function InstrumentEditorModal({
     setCandidates([]);
   }, []);
 
+  const savedSymbol = initialValue?.symbol.trim() ?? null;
+
   // Yahoo autocomplete: only stocks and ETFs are searchable here. Debounce the
   // symbol input and abort any in-flight request/timer when it changes, when
   // the modal closes, or on unmount. Errors/offline stay silent — this is a
@@ -215,7 +217,9 @@ export function InstrumentEditorModal({
     }
 
     const query = symbol.trim();
-    if (query.length < SEARCH_MIN_CHARS) {
+    // Edycja: zapisany symbol to nie zapytanie. Pojedynczy wynik nakładał się
+    // sam na pola i zapis bez zmian podmieniał walutę, giełdę i ticker.
+    if (query.length < SEARCH_MIN_CHARS || query === savedSymbol) {
       setCandidates([]);
       return;
     }
@@ -246,7 +250,7 @@ export function InstrumentEditorModal({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [symbol, kind, open, applyCandidate]);
+  }, [symbol, kind, open, applyCandidate, savedSymbol]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
