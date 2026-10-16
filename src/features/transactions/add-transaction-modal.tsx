@@ -418,6 +418,8 @@ export function AddTransactionModal({
   const [error, setError] = useState<string | null>(null);
   const [instrumentEditorOpen, setInstrumentEditorOpen] = useState(false);
   const [inlineInstrument, setInlineInstrument] = useState<InstrumentOption | null>(null);
+  // Waluta|data, dla której kurs w polu jest aktualny — patrz efekt pobierający kurs NBP.
+  const fxSignatureRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -439,6 +441,12 @@ export function AddTransactionModal({
     setTargetCurrency(initialValue?.targetCurrency ?? "USD");
     setTargetGrossAmount(initialValue?.targetGrossAmount != null ? String(initialValue.targetGrossAmount) : "");
     setFxRateToBase(initialValue?.fxRateToBase != null ? String(initialValue.fxRateToBase) : "");
+    // Zapisany kurs (np. z wyciągu brokera) jest aktualny dla swojej waluty i daty —
+    // dopiero ich zmiana ma pobrać kurs NBP, nie samo otwarcie edycji.
+    fxSignatureRef.current =
+      initialValue?.fxRateToBase != null
+        ? `${initialValue.currency}|${initialValue.date.slice(0, 10)}`
+        : null;
     // For a foreign buy/sell being edited, PLN settlement is implied by a stored
     // rate; a null rate means it was settled in the foreign currency. New/other
     // transactions default to PLN settlement (native default).
@@ -726,7 +734,6 @@ export function AddTransactionModal({
   // must not overwrite the field). `fxSignatureRef` distinguishes a
   // currency/date change (force overwrite) from merely re-showing the block or
   // toggling settlement (soft — keep a manually entered value).
-  const fxSignatureRef = useRef<string | null>(null);
   useEffect(() => {
     if (!showsFX || !settleInPLN) return;
     const signature = `${currency}|${date}`;

@@ -655,4 +655,57 @@ describe("AddTransactionModal — edycja istniejącej transakcji", () => {
       instrumentID: newAssetID,
     });
   });
+
+  it("edycja zakupu walutowego zachowuje zapisany kurs rozliczenia", async () => {
+    // Pierwsze ustawienie waluty i daty z edytowanej transakcji liczyło się jako
+    // „zmiana”, więc kurs z wyciągu brokera był po cichu zastępowany kursem NBP.
+    const usdAssetID = "66666666-6666-4666-8666-666666666666";
+    store.state.records = [
+      accountRecord,
+      record("asset", usdAssetID, {
+        recordType: "asset",
+        id: usdAssetID,
+        kind: "stock",
+        symbol: "AAPL",
+        name: "Apple USD",
+        currency: "USD",
+      }),
+    ];
+    vi.mocked(globalThis.fetch).mockImplementation(async () =>
+      new Response(JSON.stringify({ data: { rate: 4.1234 } }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    render(
+      <AddTransactionModal
+        open
+        initialValue={{
+          id: "77777777-7777-4777-8777-777777777777",
+          portfolioId: accountID,
+          instrumentId: usdAssetID,
+          date: "2026-05-10",
+          transactionType: "buy",
+          quantity: 2,
+          price: 100,
+          grossAmount: 200,
+          currency: "USD",
+          fees: 0,
+          taxes: 0,
+          fxRateToBase: 3.95,
+          updatedAt: "2026-05-10T10:00:00.000Z",
+        }}
+        onClose={vi.fn()}
+      />,
+    );
+
+    // Dajemy szansę ewentualnemu pobraniu kursu, zanim zapiszemy.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz zmiany" }));
+
+    await waitFor(() => expect(vi.mocked(saveRecord)).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(saveRecord).mock.calls[0]?.[3]).toMatchObject({ fxRateToBase: 3.95 });
+  });
 });
+
