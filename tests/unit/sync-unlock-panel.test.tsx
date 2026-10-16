@@ -26,6 +26,7 @@ const ITERATIONS = 1_000; // szybki KDF; unlock czyta liczbę iteracji z backupu
 const net = vi.hoisted(() => ({
   bootstrap: { keyBackup: null as unknown, encryptedRecords: [] as unknown[] },
   upsert: vi.fn(),
+  insert: vi.fn(),
   cachedKey: null as CryptoKey | null,
 }));
 
@@ -47,6 +48,7 @@ vi.mock("@/sync/records/supabase-sync-store", () => ({
   refreshEncryptedKeyBackup: vi.fn(async () => net.bootstrap.keyBackup),
   registerWebDevice: vi.fn(async () => undefined),
   upsertEncryptedKeyBackup: (...args: unknown[]) => net.upsert(...args),
+  insertEncryptedKeyBackup: (...args: unknown[]) => net.insert(...args),
 }));
 
 const writer = vi.hoisted(() => ({ clearQueue: vi.fn() }));
@@ -107,6 +109,10 @@ beforeEach(() => {
   net.upsert.mockReset();
   net.upsert.mockImplementation(async (_supabase, _userId, backup) => {
     net.bootstrap.keyBackup = backup; // po zapisie serwer zwraca już backup
+  });
+  net.insert.mockReset();
+  net.insert.mockImplementation(async (_supabase, _userId, backup) => {
+    net.bootstrap.keyBackup = backup;
   });
   vi.spyOn(globalThis, "fetch").mockImplementation(
     async () =>
@@ -221,8 +227,10 @@ describe("SyncUnlockPanel — hasło jako klucz", () => {
     const onSyncLoaded = renderPanel();
 
     await waitFor(() => expect(onSyncLoaded).toHaveBeenCalledTimes(1), { timeout: 15_000 });
-    expect(net.upsert).toHaveBeenCalledTimes(1);
-    const [, userId, backup] = net.upsert.mock.calls[0] as [unknown, string, EncryptedKeyBackup];
+    // Pierwszy backup idzie insertem — nigdy nie nadpisuje cudzego.
+    expect(net.upsert).not.toHaveBeenCalled();
+    expect(net.insert).toHaveBeenCalledTimes(1);
+    const [, userId, backup] = net.insert.mock.calls[0] as [unknown, string, EncryptedKeyBackup];
     expect(userId).toBe("user-1");
     // klucz z backupu odblokowuje się dokładnie hasłem konta, a innym nie
     await expect(unlockUserDataKey(backup, "Haslo-Konta1")).resolves.toBeTruthy();
@@ -230,6 +238,25 @@ describe("SyncUnlockPanel — hasło jako klucz", () => {
     // użytkownik nie zobaczył formularza „utwórz backup"
     expect(screen.queryByRole("button", { name: /Utwórz backup klucza/ })).toBeNull();
     expect(sessionStorage.getItem(PENDING_KEY)).toBeNull();
+  }, 20_000);
+
+  it("nie nadpisuje backupu, który inne urządzenie zapisało po pobraniu bootstrapu", async () => {
+    // Bootstrap: brak backupu. Zanim web go utworzy, aplikacja natywna zapisuje własny.
+    const nativeBackup = await backupWrappedWith("Haslo-Konta1");
+    net.insert.mockImplementation(async () => {
+      net.bootstrap.keyBackup = nativeBackup;
+      throw Object.assign(new Error("duplicate key value violates unique constraint"), { code: "23505" });
+    });
+    setPendingAuthPassword("Haslo-Konta1");
+
+    const onSyncLoaded = renderPanel();
+
+    // Nowy klucz nie trafia na serwer — rekordy zaszyfrowane kluczem natywnym zostają czytelne.
+    await waitFor(() => expect(net.insert).toHaveBeenCalledTimes(1), { timeout: 15_000 });
+    expect(net.upsert).not.toHaveBeenCalled();
+    // Panel pobiera backup z serwera i prosi o hasło do niego.
+    await screen.findByLabelText(LABEL, undefined, { timeout: 5_000 });
+    expect(onSyncLoaded).not.toHaveBeenCalled();
   }, 20_000);
 
   it("konto bez backupu i bez hasła: pokazuje ręczne tworzenie backupu jak dotąd (np. konto Google/Apple)", async () => {

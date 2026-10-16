@@ -31,6 +31,7 @@ import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import {
   fetchActiveEncryptedRecords,
   fetchEncryptedKeyBackup,
+  insertEncryptedKeyBackup,
   registerWebDevice,
   refreshEncryptedKeyBackup,
   upsertEncryptedKeyBackup,
@@ -661,7 +662,7 @@ export function SyncUnlockPanel({
         "Tworzenie backupu klucza",
       );
       await withTimeout(
-        upsertEncryptedKeyBackup(supabase, userId, backup),
+        insertEncryptedKeyBackup(supabase, userId, backup),
         "Zapis backupu klucza w Supabase",
       );
 
@@ -674,7 +675,13 @@ export function SyncUnlockPanel({
       setCreateStatus("idle");
     } catch (error) {
       setCreateStatus("error");
-      setCreateError(getUnlockErrorMessage(error));
+      if ((error as { code?: unknown } | null)?.code === "23505") {
+        // Inne urządzenie zapisało backup, zanim zdążyliśmy — odblokowujemy tamten.
+        setCreateError("To konto ma już backup klucza z innego urządzenia. Odblokuj go hasłem.");
+        await keyBackupQuery.refetch();
+      } else {
+        setCreateError(getUnlockErrorMessage(error));
+      }
       throw error;
     }
   }

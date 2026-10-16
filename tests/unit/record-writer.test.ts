@@ -196,10 +196,11 @@ describe("record writer", () => {
     const gate = new Promise<void>((resolve) => {
       release = resolve;
     });
-    const original = client.from.bind(client);
-    const gated = client as unknown as { from: (...args: unknown[]) => unknown };
+    type Builder = { maybeSingle: () => Promise<unknown> };
+    const gated = client as unknown as { from: (...args: unknown[]) => Builder };
+    const original = gated.from.bind(client);
     gated.from = (...args: unknown[]) => {
-      const builder = (original as (...a: unknown[]) => { maybeSingle: () => Promise<unknown> })(...args);
+      const builder = original(...args);
       const maybeSingle = builder.maybeSingle;
       builder.maybeSingle = async () => {
         await gate;
@@ -210,7 +211,7 @@ describe("record writer", () => {
     return {
       startFlush() {
         const flushing = flushPendingSyncOperations(client);
-        gated.from = original as (...args: unknown[]) => unknown;
+        gated.from = original;
         return flushing;
       },
       release: () => release(),

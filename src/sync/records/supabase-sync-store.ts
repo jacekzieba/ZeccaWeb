@@ -106,12 +106,8 @@ export async function refreshEncryptedKeyBackup(
   return data;
 }
 
-export async function upsertEncryptedKeyBackup(
-  supabase: BrowserSupabaseClient,
-  userId: string,
-  backup: EncryptedKeyBackup,
-): Promise<void> {
-  const payload = {
+function keyBackupRow(userId: string, backup: EncryptedKeyBackup) {
+  return {
     user_id: userId,
     encrypted_user_data_key: backup.encrypted_user_data_key,
     salt: backup.salt,
@@ -120,10 +116,33 @@ export async function upsertEncryptedKeyBackup(
     kdf_iterations: backup.kdf_iterations,
     updated_at: new Date().toISOString(),
   };
+}
 
+/** Zamienia backup tego samego klucza (zmiana hasła) albo celowo zastępuje
+ * klucz („zacznij od nowa”). Pierwszy backup konta: `insertEncryptedKeyBackup`. */
+export async function upsertEncryptedKeyBackup(
+  supabase: BrowserSupabaseClient,
+  userId: string,
+  backup: EncryptedKeyBackup,
+): Promise<void> {
   const { error } = await supabase
     .from("encrypted_key_backups")
-    .upsert([payload] as never[], { onConflict: "user_id" });
+    .upsert([keyBackupRow(userId, backup)] as never[], { onConflict: "user_id" });
+
+  if (error) throw error;
+}
+
+/** Pierwszy backup nowo wygenerowanego klucza. Celowo insert, nie upsert: gdy
+ * inne urządzenie zdążyło zapisać własny backup, nadpisanie go nowym kluczem
+ * odcięłoby wszystkie rekordy zaszyfrowane tamtym. Wtedy serwer zwraca 23505. */
+export async function insertEncryptedKeyBackup(
+  supabase: BrowserSupabaseClient,
+  userId: string,
+  backup: EncryptedKeyBackup,
+): Promise<void> {
+  const { error } = await supabase
+    .from("encrypted_key_backups")
+    .insert([keyBackupRow(userId, backup)] as never[]);
 
   if (error) throw error;
 }
