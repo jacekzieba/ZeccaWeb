@@ -188,6 +188,79 @@ describe("record writer", () => {
     expect(store.upserts).toHaveLength(2);
   });
 
+  // Flush trwa przez kilka zapytań sieciowych. Zapis, który w tym czasie
+  // nie dojdzie do serwera, trafia do kolejki — flush nie może go potem
+  // nadpisać swoją migawką kolejki sprzed sieci.
+  function gateFlushOnFirstQuery(client: BrowserSupabaseClient) {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const original = client.from.bind(client);
+    const gated = client as unknown as { from: (...args: unknown[]) => unknown };
+    gated.from = (...args: unknown[]) => {
+      const builder = (original as (...a: unknown[]) => { maybeSingle: () => Promise<unknown> })(...args);
+      const maybeSingle = builder.maybeSingle;
+      builder.maybeSingle = async () => {
+        await gate;
+        return maybeSingle();
+      };
+      return builder;
+    };
+    return {
+      startFlush() {
+        const flushing = flushPendingSyncOperations(client);
+        gated.from = original as (...args: unknown[]) => unknown;
+        return flushing;
+      },
+      release: () => release(),
+    };
+  }
+
+  it("nie gubi zmiany zakolejkowanej w trakcie flusha", async () => {
+    const otherId = "33333333-3333-4333-8333-333333333333";
+    const { client } = createSupabaseStore({ metadata: null, upsertError: new Error("offline") });
+    const key = await testKey();
+    await saveRecord(client, key, "account", { id: recordId, recordType: "account", name: "IKE", baseCurrency: "PLN" });
+
+    const flush = gateFlushOnFirstQuery(client);
+    const flushing = flush.startFlush();
+    await saveRecord(client, key, "account", { id: otherId, recordType: "account", name: "IKZE", baseCurrency: "PLN" });
+    flush.release();
+    await flushing;
+
+    expect(getPendingSyncOperations().map((operation) => operation.id).sort()).toEqual([recordId, otherId]);
+  });
+
+  it("nie wskrzesza zmiany odrzuconej przez użytkownika w trakcie flusha", async () => {
+    const { client } = createSupabaseStore({ metadata: null, upsertError: new Error("offline") });
+    await saveRecord(client, await testKey(), "account", { id: recordId, recordType: "account", name: "IKE", baseCurrency: "PLN" });
+    const [queued] = getPendingSyncOperations();
+
+    const flush = gateFlushOnFirstQuery(client);
+    const flushing = flush.startFlush();
+    removePendingSyncOperation(queued.operationId);
+    flush.release();
+    await flushing;
+
+    expect(getPendingSyncOperations()).toHaveLength(0);
+  });
+
+  it("udany późniejszy zapis tego samego rekordu zastępuje zakolejkowany", async () => {
+    const { client, store } = createSupabaseStore({ metadata: null, upsertError: new Error("offline") });
+    const key = await testKey();
+    await saveRecord(client, key, "account", { id: recordId, recordType: "account", name: "Stara", baseCurrency: "PLN" });
+    expect(getPendingSyncOperations()).toHaveLength(1);
+
+    store.upsertError = null;
+    await expect(
+      saveRecord(client, key, "account", { id: recordId, recordType: "account", name: "Nowa", baseCurrency: "PLN" }),
+    ).resolves.toMatchObject({ queued: false });
+
+    // Stara wersja nie może czekać w kolejce na flush albo „Wymuś” — nadpisałaby nowszą.
+    expect(getPendingSyncOperations()).toHaveLength(0);
+  });
+
   it("throws conflicts without hiding them in the pending queue", async () => {
     const { client } = createSupabaseStore({
       metadata: {

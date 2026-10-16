@@ -123,16 +123,23 @@ function setPendingQueue(queue: PendingSyncOperation[]) {
   window.dispatchEvent(new CustomEvent(PENDING_SYNC_CHANGED_EVENT));
 }
 
+function withoutRecord(queue: PendingSyncOperation[], recordType: string, id: string) {
+  return queue.filter((pending) => !(pending.recordType === recordType && pending.id === id));
+}
+
 function enqueuePendingOperation(operation: PendingSyncOperation) {
-  const queue = getPendingQueue().filter(
-    (pending) =>
-      !(
-        pending.recordType === operation.recordType &&
-        pending.id === operation.id
-      ),
-  );
+  const queue = withoutRecord(getPendingQueue(), operation.recordType, operation.id);
   queue.push(operation);
   setPendingQueue(queue);
+}
+
+/** Nowszy zapis rekordu dotarł na serwer, więc starsza, zakolejkowana wersja
+ * tego rekordu jest nieaktualna — przy flushu dałaby fałszywy konflikt, a jej
+ * wymuszenie nadpisałoby nowszą zmianę. */
+function dropSupersededOperations(recordType: string, id: string) {
+  const queue = getPendingQueue();
+  const kept = withoutRecord(queue, recordType, id);
+  if (kept.length !== queue.length) setPendingQueue(kept);
 }
 
 function dispatchSyncMutation(detail: SyncMutationDetail) {
@@ -300,6 +307,7 @@ export async function saveRecord(
     return { queued: true };
   }
 
+  dropSupersededOperations(recordType, recordId);
   dispatchSyncMutation({
     operation: "upsert",
     recordType,
@@ -368,6 +376,7 @@ export async function deleteRecord(
     return { queued: true, updatedAt: options.baseUpdatedAt ?? undefined, operationId };
   }
 
+  dropSupersededOperations(recordType, id);
   dispatchSyncMutation({
     operation: "delete",
     recordType,
@@ -452,7 +461,18 @@ export async function flushPendingSyncOperations(
     }
   }
 
-  setPendingQueue(remaining);
+  // Kolejka mogła się zmienić w trakcie wysyłki: nieudany zapis dopisał
+  // operację, użytkownik odrzucił inną, druga karta coś wysłała. Przepisujemy
+  // więc tylko to, co ten flush faktycznie próbował wysłać.
+  const attempted = new Set(queue.map((operation) => operation.operationId));
+  const failed = new Map(remaining.map((operation) => [operation.operationId, operation]));
+  setPendingQueue(
+    getPendingQueue().flatMap((operation) => {
+      if (!attempted.has(operation.operationId)) return [operation];
+      const stillPending = failed.get(operation.operationId);
+      return stillPending ? [stillPending] : [];
+    }),
+  );
 
   return {
     attempted: queue.length,
