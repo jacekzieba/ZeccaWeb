@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useMemo, useRef, useState, type CSSProperties } from "react";
 import { buildInstrumentList, buildTransactionList } from "@/sync/records/investor-snapshot";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { useDisplayCurrency } from "@/features/sync/use-display-currency";
 import type { InstrumentRow, TransactionRow } from "@/domain/models/investor-data";
 import { V2, V2Card, V2ScreenHead, V2_TYPE, v2Mix } from "@/lib/v2-design";
 import { currencyLabel, formatShare } from "@/lib/money";
+import { useModalLayer } from "@/components/feedback/use-modal-layer";
 
 const UI = V2_TYPE.ui;
 const MONO = V2_TYPE.mono;
@@ -85,34 +86,8 @@ function TransactionSheet({
   const color = kindColor(instrument.kind);
   const tag = KIND_LABELS[instrument.kind] ?? "INNE";
 
-  useEffect(() => {
-    closeButtonRef.current?.focus();
-  }, []);
-
-  function handleDialogKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      onClose();
-      return;
-    }
-    if (event.key !== "Tab") return;
-    const dialog = event.currentTarget;
-    const focusable = Array.from(
-      dialog.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-      ),
-    ).filter((element) => !element.hasAttribute("disabled"));
-    if (focusable.length === 0) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  }
+  const panelRef = useRef<HTMLDivElement>(null);
+  useModalLayer(true, panelRef, onClose, closeButtonRef);
 
   return (
     <div
@@ -126,7 +101,7 @@ function TransactionSheet({
         role="dialog"
         aria-modal="true"
         aria-labelledby="positions-transaction-sheet-title"
-        onKeyDown={handleDialogKeyDown}
+        ref={panelRef}
         style={{
           background: V2.card, borderRadius: "var(--r-xl) var(--r-xl) 0 0", width: "100%", maxWidth: 720,
           maxHeight: "80vh", overflow: "auto",

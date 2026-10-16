@@ -53,6 +53,7 @@ import { PolicyUpdateNotice } from "@/components/layout/policy-update-notice";
 import { useTranslation } from "@/features/i18n/translate";
 import { currencyLabel } from "@/lib/money";
 import { StatusAnnouncer } from "@/components/feedback/status-announcer";
+import { useModalLayer } from "@/components/feedback/use-modal-layer";
 import { useEnsureDefaultAccount } from "@/components/layout/use-ensure-default-account";
 
 const glassSurface: CSSProperties = {
@@ -388,27 +389,11 @@ export function AppShell({
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerRef = useRef<HTMLElement | null>(null);
-  const drawerTriggerRef = useRef<HTMLButtonElement | null>(null);
-
-  // Szuflada jest warstwą modalną, więc zachowuje się jak dialog: Escape zamyka,
-  // ognisko wchodzi do środka i wraca na przycisk, który ją otworzył. Wcześniej
-  // Escape nic nie robił, a Tab wędrował po przyciskach nagłówka za nią.
-  useEffect(() => {
-    if (!drawerOpen) return;
-    drawerRef.current?.focus();
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key !== "Escape") return;
-      event.stopPropagation();
-      setDrawerOpen(false);
-    }
-    document.addEventListener("keydown", onKeyDown, true);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown, true);
-      drawerTriggerRef.current?.focus();
-    };
-  }, [drawerOpen]);
   const [searchOpen, setSearchOpen] = useState(false);
   const isDesktop = useIsDesktop();
+  // Szuflada jest warstwą modalną, więc zachowuje się jak dialog: Escape zamyka,
+  // Tab nie wychodzi pod spód, a ognisko wraca na przycisk, który ją otworzył.
+  useModalLayer(!isDesktop && drawerOpen, drawerRef, () => setDrawerOpen(false), drawerRef);
   const topbarHidden = useHideOnScroll();
   const profile = useProfile();
   const openAddTransaction = useSyncStore((s) => s.openAddTransaction);
@@ -499,7 +484,6 @@ export function AppShell({
                 }}
               />
               <button
-                ref={drawerTriggerRef}
                 onClick={() => setDrawerOpen(true)}
                 aria-label="Menu"
                 style={{
@@ -680,6 +664,9 @@ export function AppShell({
             <aside
               ref={drawerRef}
               tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Menu"
               style={{
                 position: "fixed", left: 10, top: 10, bottom: 10,
                 width: 268, zIndex: 90,
@@ -693,6 +680,7 @@ export function AppShell({
             >
               <button
                 onClick={() => setDrawerOpen(false)}
+                aria-label="Zamknij menu"
                 style={{
                   position: "absolute", top: 14, right: 12,
                   width: 26, height: 26, borderRadius: "50%",
