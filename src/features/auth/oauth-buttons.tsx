@@ -1,6 +1,9 @@
 "use client";
 
+import { authRedirectBase } from "@/lib/auth-redirect";
 import { COLORS } from "@/lib/design-tokens";
+import { authErrorMessage, CONNECTION_ERROR } from "@/features/auth/auth-error-message";
+import type { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 
 function GoogleIcon() {
   return (
@@ -34,6 +37,25 @@ function AppleIcon() {
 }
 
 export type OAuthStatus = "idle" | "loading-google" | "loading-apple";
+
+/** Sukces przekierowuje stronę do dostawcy; komunikat wraca tylko wtedy, gdy
+ * przekierowanie nie nastąpi i formularz trzeba odblokować. */
+export async function startOAuth(
+  supabase: NonNullable<ReturnType<typeof createBrowserSupabaseClientOrNull>>,
+  provider: "google" | "apple",
+): Promise<string | null> {
+  try {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${authRedirectBase()}/auth/callback`,
+      },
+    });
+    return error ? authErrorMessage(error) : null;
+  } catch {
+    return CONNECTION_ERROR;
+  }
+}
 
 /** Shared "Continue with Google/Apple" buttons + separator, used on both the
  * login and signup screens so the two forms don't drift out of sync. */

@@ -4,7 +4,8 @@ import { useId, useState } from "react";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { authRedirectBase } from "@/lib/auth-redirect";
 import { COLORS } from "@/lib/design-tokens";
-import { OAuthButtons, type OAuthStatus } from "@/features/auth/oauth-buttons";
+import { OAuthButtons, startOAuth, type OAuthStatus } from "@/features/auth/oauth-buttons";
+import { CONNECTION_ERROR } from "@/features/auth/auth-error-message";
 import { setPendingAuthPassword } from "@/features/auth/pending-auth-password";
 import { markPolicyNoticeSeen } from "@/components/layout/policy-update-notice";
 import { deriveAuthSecret, normalizeAuthEmail } from "@/features/auth/auth-secret";
@@ -62,13 +63,21 @@ export function SignupForm() {
 
     // Supabase dostaje wyłącznie sekret wyprowadzony z hasła — samo hasło
     // odblokowuje backup klucza i nie opuszcza urządzenia (auth-secret.ts).
-    const { data, error } = await supabase.auth.signUp({
-      email: normalizeAuthEmail(email),
-      password: await deriveAuthSecret(email, password),
-      options: {
-        emailRedirectTo: `${authRedirectBase()}/auth/callback`,
-      },
-    });
+    let result: Awaited<ReturnType<typeof supabase.auth.signUp>>;
+    try {
+      result = await supabase.auth.signUp({
+        email: normalizeAuthEmail(email),
+        password: await deriveAuthSecret(email, password),
+        options: {
+          emailRedirectTo: `${authRedirectBase()}/auth/callback`,
+        },
+      });
+    } catch {
+      setStatus("error");
+      setErrorMessage(CONNECTION_ERROR);
+      return;
+    }
+    const { data, error } = result;
 
     if (error) {
       setStatus("error");
@@ -100,12 +109,12 @@ export function SignupForm() {
 
     setOauthStatus(provider === "google" ? "loading-google" : "loading-apple");
 
-    await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: `${authRedirectBase()}/auth/callback`,
-      },
-    });
+    const message = await startOAuth(supabase, provider);
+    if (message) {
+      setOauthStatus("idle");
+      setStatus("error");
+      setErrorMessage(message);
+    }
   }
 
   const inputStyle: React.CSSProperties = {
