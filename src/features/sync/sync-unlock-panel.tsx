@@ -33,7 +33,6 @@ import {
   fetchEncryptedKeyBackup,
   insertEncryptedKeyBackup,
   registerWebDevice,
-  refreshEncryptedKeyBackup,
   upsertEncryptedKeyBackup,
 } from "@/sync/records/supabase-sync-store";
 import { clearPendingSyncOperations, flushPendingSyncOperations } from "@/sync/records/record-writer";
@@ -583,7 +582,7 @@ export function SyncUnlockPanel({
     try {
       if (!initialUser) {
         keyBackup = await withTimeout(
-          refreshEncryptedKeyBackup(supabase),
+          fetchEncryptedKeyBackup(supabase),
           "Pobieranie backupu klucza",
         );
       }

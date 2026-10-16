@@ -317,17 +317,6 @@ export async function saveRecord(
   return { queued: false };
 }
 
-export async function encryptAndUpload(
-  supabase: BrowserSupabaseClient,
-  userDataKey: CryptoKey,
-  recordType: string,
-  payload: WriteRecordPayload,
-): Promise<void> {
-  await saveRecord(supabase, userDataKey, recordType, payload, {
-    enqueueOnFailure: false,
-  });
-}
-
 export async function deleteRecord(
   supabase: BrowserSupabaseClient,
   recordType: string,

@@ -30,7 +30,6 @@ vi.mock("@/sync/encryption/key-cache", () => ({
 vi.mock("@/sync/records/supabase-sync-store", () => ({
   fetchActiveEncryptedRecords: vi.fn(async () => []),
   fetchEncryptedKeyBackup: vi.fn(async () => null),
-  refreshEncryptedKeyBackup: vi.fn(async () => null),
   registerWebDevice: vi.fn(async () => undefined),
   upsertEncryptedKeyBackup: vi.fn(async () => undefined),
 }));
