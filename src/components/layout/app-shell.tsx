@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useState, useEffect, useMemo, useRef, type CSSProperties } from "react";
+import { useCallback, useState, useEffect, useRef, type CSSProperties } from "react";
 import type { Route } from "next";
 import {
   ArrowDownUp,
@@ -22,7 +22,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
-import { buildParitySnapshot } from "@/sync/records/parity-snapshot";
+import { exposeParityExport } from "@/sync/records/parity-snapshot";
 import { buildInvestorDataSnapshot, SYNTHETIC_FALLBACK_ACCOUNT_ID } from "@/sync/records/investor-snapshot";
 import { makeAccountPayload } from "@/sync/records/macos-payloads";
 import { clearPendingSyncOperations, refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
@@ -55,13 +55,6 @@ import { PolicyUpdateNotice } from "@/components/layout/policy-update-notice";
 import { useTranslation } from "@/features/i18n/translate";
 import { currencyLabel } from "@/lib/money";
 import { StatusAnnouncer } from "@/components/feedback/status-announcer";
-
-declare global {
-  interface Window {
-    __investorWebParitySnapshot?: ReturnType<typeof buildParitySnapshot>;
-    __investorWebExportParitySnapshot?: () => string;
-  }
-}
 
 const glassSurface: CSSProperties = {
   ...SURFACES.glassPanel,
@@ -475,30 +468,9 @@ export function AppShell({
       }
     })();
   }, [records, userDataKey, supabase, setSync]);
-  const paritySnapshot = useMemo(
-    () =>
-      records
-        ? buildParitySnapshot(records, {
-            asOf: new Date(),
-            historyGranularity: "daily",
-            useLatestTransactionFxRate: true,
-            useMarketQuotes: true,
-          })
-        : null,
-    [records],
-  );
-
   useEffect(() => {
-    if (!paritySnapshot) {
-      delete window.__investorWebParitySnapshot;
-      delete window.__investorWebExportParitySnapshot;
-      return;
-    }
-
-    window.__investorWebParitySnapshot = paritySnapshot;
-    window.__investorWebExportParitySnapshot = () =>
-      JSON.stringify(window.__investorWebParitySnapshot, null, 2);
-  }, [paritySnapshot]);
+    exposeParityExport(records);
+  }, [records]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -818,15 +790,6 @@ export function AppShell({
       <AddTransactionModal />
       <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
       <OnboardingController publicDemo={publicDemo} />
-      {paritySnapshot && (
-        <script
-          id="investor-web-parity-snapshot"
-          type="application/json"
-          suppressHydrationWarning
-        >
-          {JSON.stringify(paritySnapshot)}
-        </script>
-      )}
     </div>
     </AppLock>
   );

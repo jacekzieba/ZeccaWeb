@@ -9,6 +9,8 @@ import {
 } from "@/sync/encryption/key-backup";
 import { SyncUnlockPanel } from "@/features/sync/sync-unlock-panel";
 import { setPendingAuthPassword } from "@/features/auth/pending-auth-password";
+import { encryptJsonPayloadV2 } from "@/sync/encryption/aes-gcm";
+import { recordAdditionalData } from "@/sync/records/encrypted-records";
 
 // Hasło konta jest teraz zarazem passphrase, z której wyprowadzany jest klucz
 // danych (pending-auth-password.ts przenosi je przez przeładowanie strony).
@@ -60,6 +62,31 @@ async function backupWrappedWith(passphrase: string): Promise<EncryptedKeyBackup
     passphrase,
     iterations: ITERATIONS,
   });
+}
+
+const OWNER = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+
+async function encryptedRow(key: CryptoKey, recordType: string, id: string, payload: unknown) {
+  const { encryptedPayload, nonce } = await encryptJsonPayloadV2(
+    key,
+    payload,
+    recordAdditionalData({ userId: OWNER, id, recordType, schemaVersion: 1, deleted: false }),
+  );
+  const at = "2026-06-30T10:00:00.000Z";
+  return {
+    id,
+    logical_id: id,
+    user_id: OWNER,
+    record_type: recordType,
+    encrypted_payload: encryptedPayload,
+    nonce,
+    payload_version: 1,
+    schema_version: 1,
+    device_id: "ios",
+    created_at: at,
+    updated_at: at,
+    deleted_at: null,
+  };
 }
 
 function renderPanel() {
@@ -249,6 +276,28 @@ describe("SyncUnlockPanel — hasło jako klucz", () => {
     respond?.();
     await waitFor(() => expect(onSyncLoaded).toHaveBeenCalledTimes(1));
     expect(screen.queryByText(/Wpisz hasło konta/)).toBeNull();
+  });
+
+  it("jeden rekord o nieznanym kształcie nie blokuje odblokowania (UI jest pobłażliwe, parytet nie)", async () => {
+    net.bootstrap.keyBackup = await backupWrappedWith("Haslo-Konta1");
+    const key = await unlockUserDataKey(net.bootstrap.keyBackup as EncryptedKeyBackup, "Haslo-Konta1");
+    net.cachedKey = key;
+    const account = "11111111-1111-4111-8111-111111111111";
+    net.bootstrap.encryptedRecords = [
+      await encryptedRow(key, "account", account, { recordType: "account", id: account, name: "Core", baseCurrency: "PLN" }),
+      // Brak grossAmount i currency — schemat transakcji go odrzuca.
+      await encryptedRow(key, "transaction", "99999999-9999-4999-8999-999999999999", {
+        recordType: "transaction",
+        id: "99999999-9999-4999-8999-999999999999",
+        portfolioID: account,
+        transactionType: "cashDeposit",
+      }),
+    ];
+
+    const onSyncLoaded = renderPanel();
+
+    await waitFor(() => expect(onSyncLoaded).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText(/Nie udało się/)).toBeNull();
   });
 
   it("gdy potrzebne jest hasło, nagłówek o nie prosi", async () => {

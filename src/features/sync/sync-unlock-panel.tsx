@@ -28,7 +28,6 @@ import {
 import { importAesGcmKey } from "@/sync/encryption/aes-gcm";
 import { decryptEncryptedRecords, RecordDecryptionError } from "@/sync/records/encrypted-records";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
-import { buildParitySnapshot } from "@/sync/records/parity-snapshot";
 import {
   fetchActiveEncryptedRecords,
   fetchEncryptedKeyBackup,
@@ -47,13 +46,6 @@ import type {
   EncryptedRecord,
 } from "@/sync/records/encrypted-records";
 import { useSyncStore } from "@/sync/store/sync-store";
-
-declare global {
-  interface Window {
-    __investorWebParitySnapshot?: ReturnType<typeof buildParitySnapshot>;
-    __investorWebExportParitySnapshot?: () => string;
-  }
-}
 
 // ── Design tokens ────────────────────────────────────────────────
 const INK = token("ink");
@@ -375,17 +367,6 @@ export function SyncUnlockPanel({
       useLatestTransactionFxRate: true,
       useMarketQuotes: true,
     });
-    const paritySnapshot = buildParitySnapshot(decryptedRecords, {
-      asOf: new Date(),
-      historyGranularity: "daily",
-      useLatestTransactionFxRate: true,
-      useMarketQuotes: true,
-    });
-
-    window.__investorWebParitySnapshot = paritySnapshot;
-    window.__investorWebExportParitySnapshot = () =>
-      JSON.stringify(window.__investorWebParitySnapshot, null, 2);
-
     if (options.rememberTrustedKey && userId) {
       try {
         await saveCachedUserDataKey(userId, userDataKey);
