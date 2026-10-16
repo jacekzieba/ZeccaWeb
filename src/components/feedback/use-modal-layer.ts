@@ -2,7 +2,9 @@ import { useEffect, useRef, type RefObject } from "react";
 
 const FOCUSABLE =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-const FIELD = "input:not([disabled]), select:not([disabled]), textarea:not([disabled])";
+// Pierwsze pole formularza; ukryte pole pliku (za przyciskiem „Wybierz plik”) się nie liczy.
+const FIELD =
+  'input:not([disabled]):not([type="hidden"]):not([type="file"]), select:not([disabled]), textarea:not([disabled])';
 
 /** Otwarte warstwy, od najniższej. Edytor instrumentu bywa otwarty nad
  * formularzem transakcji, a nad nim potwierdzenie — klawisze obsługuje tylko

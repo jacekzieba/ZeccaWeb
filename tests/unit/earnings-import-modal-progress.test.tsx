@@ -40,3 +40,16 @@ describe("EarningsImportModal file progress", () => {
     expect(input.disabled).toBe(true);
   });
 });
+
+describe("EarningsImportModal klawiatura", () => {
+  it("Escape zamyka okno, a fokus jest w środku", async () => {
+    const onClose = vi.fn();
+    render(<EarningsImportModal earnings={[]} burdens={[]} onClose={onClose} onCommit={vi.fn()} />);
+
+    const dialog = await screen.findByRole("dialog", { name: "Import zarobków" });
+    await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
