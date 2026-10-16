@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { useSyncStore } from "@/sync/store/sync-store";
+import { useDraftAtOpen } from "@/lib/use-draft-at-open";
 import { refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
 import { makeAccountPayload } from "@/sync/records/macos-payloads";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
@@ -79,13 +80,14 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 export function PortfolioEditorModal({
   open,
-  initialValue,
+  initialValue: liveInitialValue,
   onClose,
 }: {
   open: boolean;
   initialValue: PortfolioDraft | null;
   onClose(): void;
 }) {
+  const initialValue = useDraftAtOpen(open, liveInitialValue);
   const userDataKey = useSyncStore((s) => s.userDataKey);
   const supabase = useSyncStore((s) => s.supabase);
   const records = useSyncStore((s) => s.records);

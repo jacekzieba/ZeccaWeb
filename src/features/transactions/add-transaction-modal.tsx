@@ -51,6 +51,7 @@ import {
 import { fundingDepositForTrade, fundingDepositNote } from "./funding-deposit";
 import { currencyLabel } from "@/lib/money";
 import { localDateString } from "@/lib/calendar-date";
+import { useDraftAtOpen } from "@/lib/use-draft-at-open";
 import { announce } from "@/components/feedback/status-announcer";
 import { Select } from "@/components/ui/select";
 
@@ -370,7 +371,7 @@ type InstrumentOption = {
 
 export function AddTransactionModal({
   open: controlledOpen,
-  initialValue,
+  initialValue: liveInitialValue,
   onClose,
 }: {
   open?: boolean;
@@ -388,6 +389,7 @@ export function AddTransactionModal({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const open = controlledOpen ?? globalOpen;
+  const initialValue = useDraftAtOpen(open, liveInitialValue);
   const isEditing = Boolean(initialValue);
 
   // Form state

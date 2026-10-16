@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import { useSyncStore } from "@/sync/store/sync-store";
+import { useDraftAtOpen } from "@/lib/use-draft-at-open";
 import { refreshSyncStore, saveRecord, type WriteRecordPayload } from "@/sync/records/record-writer";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
 import { makeAssetPayload } from "@/sync/records/macos-payloads";
@@ -117,7 +118,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 export function InstrumentEditorModal({
   open,
-  initialValue,
+  initialValue: liveInitialValue,
   defaultValue,
   onClose,
   onSaved,
@@ -130,6 +131,7 @@ export function InstrumentEditorModal({
   onSaved?: (instrument: SavedInstrumentDraft) => void;
   zIndex?: number;
 }) {
+  const initialValue = useDraftAtOpen(open, liveInitialValue);
   const userDataKey = useSyncStore((s) => s.userDataKey);
   const publicDemo = useSyncStore((s) => s.publicDemo);
   const supabase = useSyncStore((s) => s.supabase);

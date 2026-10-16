@@ -4,6 +4,7 @@ import { token } from "@/design/tokens";
 import { createPortal } from "react-dom";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useSyncStore } from "@/sync/store/sync-store";
+import { useDraftAtOpen } from "@/lib/use-draft-at-open";
 import { refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import { makeAccountPayload } from "@/sync/records/macos-payloads";
@@ -51,13 +52,14 @@ function clamp(value: number): number {
 
 export function AllocationEditorModal({
   open,
-  draft,
+  draft: liveDraft,
   onClose,
 }: {
   open: boolean;
   draft: AllocationDraft | null;
   onClose(): void;
 }) {
+  const draft = useDraftAtOpen(open, liveDraft);
   const userDataKey = useSyncStore((s) => s.userDataKey);
   const supabase = useSyncStore((s) => s.supabase);
   const setSync = useSyncStore((s) => s.setSync);
