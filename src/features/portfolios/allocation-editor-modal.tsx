@@ -2,9 +2,10 @@
 
 import { token } from "@/design/tokens";
 import { createPortal } from "react-dom";
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, useId, useRef } from "react";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { useDraftAtOpen } from "@/lib/use-draft-at-open";
+import { useModalLayer } from "@/components/feedback/use-modal-layer";
 import { refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import { makeAccountPayload } from "@/sync/records/macos-payloads";
@@ -182,6 +183,10 @@ export function AllocationEditorModal({
     }
   }
 
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const titleId = useId();
+  useModalLayer(mounted && open && Boolean(draft), panelRef, onClose);
+
   if (!mounted || !open || !draft) {
     return null;
   }
@@ -210,6 +215,10 @@ export function AllocationEditorModal({
       />
 
       <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         style={{
           position: "relative",
           width: "100%",
@@ -221,7 +230,7 @@ export function AllocationEditorModal({
         }}
       >
         <div style={{ padding: "18px 22px 14px", borderBottom: `0.5px solid ${V2.line2}` }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: V2.ink }}>
+          <div id={titleId} style={{ fontSize: 15, fontWeight: 700, color: V2.ink }}>
             Alokacja docelowa
           </div>
           <div style={{ fontSize: 12, color: V2.muted, marginTop: 2 }}>{draft.name}</div>

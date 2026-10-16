@@ -10,9 +10,12 @@ import {
   type CSSProperties,
   type FormEvent,
   type ReactNode,
+  useId,
+  useRef,
 } from "react";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { useDraftAtOpen } from "@/lib/use-draft-at-open";
+import { useModalLayer } from "@/components/feedback/use-modal-layer";
 import { refreshSyncStore, saveRecord, type WriteRecordPayload } from "@/sync/records/record-writer";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
 import { makeAssetPayload } from "@/sync/records/macos-payloads";
@@ -426,6 +429,11 @@ export function InstrumentEditorModal({
     }
   }
 
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const titleId = useId();
+  // W trakcie przepinania transakcji okno nie daje się zamknąć — także Escape.
+  useModalLayer(mounted && open, panelRef, retagging ? () => undefined : onClose);
+
   if (!mounted || !open) {
     return null;
   }
@@ -454,6 +462,10 @@ export function InstrumentEditorModal({
       />
 
       <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         style={{
           position: "relative",
           width: "100%",
@@ -472,7 +484,7 @@ export function InstrumentEditorModal({
             borderBottom: `0.5px solid ${LINE_SOFT}`,
           }}
         >
-          <div style={{ fontSize: 15, fontWeight: 700, color: INK }}>
+          <div id={titleId} style={{ fontSize: 15, fontWeight: 700, color: INK }}>
             {initialValue ? "Edytuj instrument" : "Dodaj instrument"}
           </div>
           <button

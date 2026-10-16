@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import { token } from "@/design/tokens";
 import { COLORS, TYPOGRAPHY } from "@/lib/design-tokens";
+import { useModalLayer } from "@/components/feedback/use-modal-layer";
 
 /** Potwierdzenie działania nieodwracalnego.
  *
@@ -36,43 +37,9 @@ export function ConfirmDialog({
 }) {
   const cancelRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
-  const returnFocusRef = useRef<HTMLElement | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    returnFocusRef.current = document.activeElement as HTMLElement | null;
-    cancelRef.current?.focus();
-
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.stopPropagation();
-        onCancel();
-        return;
-      }
-      // Dwa przyciski, ale Tab i tak nie ma prawa wyjść poza warstwę modalną.
-      if (event.key !== "Tab") return;
-      const panel = panelRef.current;
-      if (!panel) return;
-      const focusable = panel.querySelectorAll<HTMLElement>("button:not([disabled])");
-      if (!focusable.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      const active = document.activeElement;
-      if (event.shiftKey && active === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && active === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-    document.addEventListener("keydown", onKeyDown, true);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown, true);
-      returnFocusRef.current?.focus?.();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  const bodyId = useId();
+  // Dwa przyciski, ale Tab i tak nie ma prawa wyjść poza warstwę modalną.
+  useModalLayer(open, panelRef, onCancel, cancelRef);
 
   if (!open || typeof document === "undefined") return null;
 
@@ -113,6 +80,7 @@ export function ConfirmDialog({
         role="alertdialog"
         aria-modal="true"
         aria-label={title}
+        aria-describedby={body ? bodyId : undefined}
         style={{
           position: "relative",
           width: "100%",
@@ -127,7 +95,7 @@ export function ConfirmDialog({
           {title}
         </div>
         {body && (
-          <div style={{ fontFamily: TYPOGRAPHY.system, fontSize: 13, color: token("inkMuted"), marginTop: 8, lineHeight: 1.5 }}>
+          <div id={bodyId} style={{ fontFamily: TYPOGRAPHY.system, fontSize: 13, color: token("inkMuted"), marginTop: 8, lineHeight: 1.5 }}>
             {body}
           </div>
         )}

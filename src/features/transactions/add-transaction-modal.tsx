@@ -52,6 +52,7 @@ import { fundingDepositForTrade, fundingDepositNote } from "./funding-deposit";
 import { currencyLabel } from "@/lib/money";
 import { localDateString } from "@/lib/calendar-date";
 import { useDraftAtOpen } from "@/lib/use-draft-at-open";
+import { useModalLayer } from "@/components/feedback/use-modal-layer";
 import { announce } from "@/components/feedback/status-announcer";
 import { Select } from "@/components/ui/select";
 
@@ -1137,6 +1138,10 @@ export function AddTransactionModal({
     }
   }
 
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const titleId = useId();
+  useModalLayer(mounted && open, panelRef, handleClose);
+
   if (!mounted || !open) return null;
 
   const modal = (
@@ -1164,6 +1169,10 @@ export function AddTransactionModal({
       />
 
       <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         className="transaction-modal-panel"
         style={{
           position: "relative",
@@ -1292,7 +1301,7 @@ export function AddTransactionModal({
             <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
               <IconBadge icon={TxIcon} color={txDef.tone} selected />
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 21, fontWeight: 700, color: INK, lineHeight: 1.1 }}>
+                <div id={titleId} style={{ fontSize: 21, fontWeight: 700, color: INK, lineHeight: 1.1 }}>
                   {isEditing ? `Edytuj: ${txDef.label}` : txDef.label}
                 </div>
                 <div style={{ fontSize: 13, color: MUTED, marginTop: 3 }}>

@@ -9,9 +9,12 @@ import {
   type CSSProperties,
   type FormEvent,
   type ReactNode,
+  useId,
+  useRef,
 } from "react";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { useDraftAtOpen } from "@/lib/use-draft-at-open";
+import { useModalLayer } from "@/components/feedback/use-modal-layer";
 import { refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
 import { makeAccountPayload } from "@/sync/records/macos-payloads";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
@@ -164,6 +167,10 @@ export function PortfolioEditorModal({
     }
   }
 
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const titleId = useId();
+  useModalLayer(mounted && open, panelRef, onClose);
+
   if (!mounted || !open) {
     return null;
   }
@@ -192,6 +199,10 @@ export function PortfolioEditorModal({
       />
 
       <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         style={{
           position: "relative",
           width: "100%",
@@ -210,11 +221,13 @@ export function PortfolioEditorModal({
             borderBottom: `0.5px solid ${LINE_SOFT}`,
           }}
         >
-          <div style={{ fontSize: 15, fontWeight: 700, color: INK }}>
+          <div id={titleId} style={{ fontSize: 15, fontWeight: 700, color: INK }}>
             {initialValue ? "Edytuj portfel" : "Dodaj portfel"}
           </div>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Zamknij"
             style={{
               width: 28,
               height: 28,
