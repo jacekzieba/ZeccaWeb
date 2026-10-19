@@ -248,6 +248,40 @@ describe("resolveFxRate", () => {
     });
   });
 
+  // iOS zapisywał przy wymianie walut stosunek kwot jako fxRateToBase — przy
+  // USD→EUR to 0,92 EUR za USD, nie kurs do PLN. Natywny resolver już takie
+  // rekordy pomija (`Transaction.fallbackFXRateToBase`).
+  it("ignores the amount ratio stored on a conversion into a non-PLN currency", () => {
+    const rate = resolveFxRate(
+      "USD",
+      [
+        {
+          transactionType: "buy",
+          currency: "USD",
+          grossAmount: 100,
+          fxRateToBase: 4,
+          date: new Date("2026-04-01T00:00:00.000Z"),
+        },
+        {
+          transactionType: "fxConversion",
+          currency: "USD",
+          grossAmount: 50,
+          fxRateToBase: 0.92,
+          targetCurrency: "EUR",
+          targetGrossAmount: 46,
+          date: new Date("2026-04-02T00:00:00.000Z"),
+        },
+      ],
+      new Date("2026-05-15T00:00:00.000Z"),
+    );
+
+    expect(rate).toEqual({
+      rate: 4,
+      date: new Date("2026-04-01T00:00:00.000Z"),
+      source: "transaction",
+    });
+  });
+
   it("falls back to inverse FX conversion rates", () => {
     const rate = resolveFxRate(
       "USD",

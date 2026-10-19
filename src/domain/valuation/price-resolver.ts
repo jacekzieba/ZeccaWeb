@@ -157,7 +157,8 @@ export function resolveFxRate(
     transactions.filter((transaction) => {
       if (
         transaction.currency !== currency ||
-        (transaction.fxRateToBase ?? 0) <= EPSILON
+        (transaction.fxRateToBase ?? 0) <= EPSILON ||
+        isCrossCurrencyConversion(transaction)
       ) {
         return false;
       }
@@ -229,6 +230,17 @@ export function resolveFxRate(
   }
 
   return { rate: 1, date: null, source: "missing" };
+}
+
+/** Wymiana na walutę inną niż PLN: `fxRateToBase` z iOS to tam stosunek kwot
+ * (np. 0,92 EUR za USD), a nie kurs do PLN — jak `fallbackFXRateToBase`
+ * w aplikacji natywnej. */
+function isCrossCurrencyConversion(transaction: FxTransactionInput) {
+  return (
+    transaction.transactionType === "fxConversion" &&
+    !!transaction.targetCurrency &&
+    transaction.targetCurrency.toUpperCase() !== "PLN"
+  );
 }
 
 function latestBeforeOrOn<TValue extends DatedValue>(values: TValue[]) {
