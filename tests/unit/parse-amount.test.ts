@@ -6,6 +6,17 @@ import {
 } from "@/lib/parse-amount";
 
 describe("parseAmount", () => {
+  // L-20: Number() przyjmuje zapisy szesnastkowy, binarny i ósemkowy, więc
+  // „0x10” w polu kwoty dawało 16. Aplikacja natywna przyjmuje tylko zapis
+  // dziesiętny (z wykładnikiem, jak wcześniej).
+  it("rejects hexadecimal, binary and octal notation", () => {
+    expect(parseAmount("0x10")).toBeNull();
+    expect(parseAmount("0b101")).toBeNull();
+    expect(parseAmount("0o17")).toBeNull();
+    expect(parseAmount("1e3")).toBe(1000);
+    expect(parseAmount(".5")).toBe(0.5);
+  });
+
   it("parses plain decimals", () => {
     expect(parseAmount("123.45")).toBe(123.45);
     expect(parseAmount("0")).toBe(0);

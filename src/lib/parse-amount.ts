@@ -14,6 +14,9 @@
 /** Maximum allowed magnitude for a parsed amount/quantity. Mirrors the native `1e12` cap. */
 export const AMOUNT_MAGNITUDE_CAP = 1e12;
 
+/** Liczba dziesiętna z opcjonalnym znakiem i wykładnikiem — jak natywny `parseNumber`. */
+const DECIMAL_NOTATION = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/;
+
 /**
  * Parse a user-entered amount or quantity string.
  * @returns the finite number, or `null` when the input is invalid / out of range.
@@ -26,6 +29,8 @@ export function parseAmount(value: string | null | undefined): number | null {
   // dropped, so "1 234,56" parses; mixed "1.234,56" stays invalid (NaN).
   const normalized = value.replace(/\s/g, "").replace(/,/g, ".");
   if (!normalized) return null;
+  // Tylko zapis dziesiętny: Number() przyjmuje też „0x10”, „0b101”, „0o17” (L-20).
+  if (!DECIMAL_NOTATION.test(normalized)) return null;
 
   const parsed = Number(normalized);
   if (!Number.isFinite(parsed)) return null;
@@ -66,7 +71,7 @@ export function parseSpreadsheetNumber(value: unknown): number | null {
     return Number.isFinite(value) && Math.abs(value) <= AMOUNT_MAGNITUDE_CAP ? value : null;
   }
   const normalized = String(value ?? "").replace(/\s/g, "").replace(",", ".");
-  if (!/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(normalized)) return null;
+  if (!DECIMAL_NOTATION.test(normalized)) return null;
   const parsed = Number(normalized);
   return Number.isFinite(parsed) && Math.abs(parsed) <= AMOUNT_MAGNITUDE_CAP ? parsed : null;
 }
