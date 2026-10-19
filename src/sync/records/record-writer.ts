@@ -1,8 +1,7 @@
 import { encryptJsonPayloadV2 } from "@/sync/encryption/aes-gcm";
-import { decryptEncryptedRecords, recordAdditionalData } from "@/sync/records/encrypted-records";
+import { recordAdditionalData, type DecryptedRecord } from "@/sync/records/encrypted-records";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
 import {
-  fetchActiveEncryptedRecords,
   fetchEncryptedRecordMetadata,
   softDeleteEncryptedRecord,
   restoreEncryptedRecord,
@@ -13,6 +12,9 @@ import { summarizeDecryptedRecords } from "@/sync/records/sync-summary";
 import { getWebDeviceId } from "@/sync/records/web-device";
 import type { BrowserSupabaseClient } from "@/supabase/client";
 import { assertSyncProtocolSupported } from "./sync-protocol";
+import { pullDecryptedRecords } from "./record-pull";
+import { localDateString } from "@/lib/calendar-date";
+import type { InvestorDataSnapshot } from "@/domain/models/investor-data";
 
 const PENDING_SYNC_KEY = "investor-web-pending-sync-v1";
 export const PENDING_SYNC_CHANGED_EVENT = "investor-web-pending-sync-changed";
@@ -507,14 +509,26 @@ export async function refreshSyncStore(
   userDataKey: CryptoKey,
 ) {
   await assertSyncProtocolSupported(supabase);
-  const encryptedRecords = await fetchActiveEncryptedRecords(supabase);
-  const decryptedRecords = await decryptEncryptedRecords(userDataKey, encryptedRecords);
-  const summary = summarizeDecryptedRecords(decryptedRecords);
-  const snapshot = buildInvestorDataSnapshot(decryptedRecords, {
+  const records = await pullDecryptedRecords(supabase, userDataKey);
+  const summary = summarizeDecryptedRecords(records);
+  return { records, summary, snapshot: snapshotFor(records) };
+}
+
+/** Migawka dla tej samej tablicy rekordów i tego samego dnia jest ta sama —
+ * cykl bez zmian na serwerze nie przelicza silnika. Nowy dzień przelicza
+ * (wycena obligacji i seria wartości są dzienne). */
+const snapshotCache = new WeakMap<DecryptedRecord[], { day: string; snapshot: InvestorDataSnapshot }>();
+
+function snapshotFor(records: DecryptedRecord[]) {
+  const day = localDateString();
+  const cached = snapshotCache.get(records);
+  if (cached?.day === day) return cached.snapshot;
+  const snapshot = buildInvestorDataSnapshot(records, {
     asOf: new Date(),
     historyGranularity: "daily",
     useLatestTransactionFxRate: true,
     useMarketQuotes: true,
   });
-  return { records: decryptedRecords, summary, snapshot };
+  snapshotCache.set(records, { day, snapshot });
+  return snapshot;
 }

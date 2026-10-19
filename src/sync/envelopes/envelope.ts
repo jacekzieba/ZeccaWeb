@@ -31,6 +31,9 @@ export const encryptedRecordSchema = z.object({
   created_at: timestampSchema,
   updated_at: timestampSchema,
   deleted_at: timestampSchema.nullable(),
+  /** Czas serwera z wyzwalacza (migracja 20260928); kursor pobierania
+   * przyrostowego. Brak u wierszy z zapytań, które o niego nie proszą. */
+  server_updated_at: timestampSchema.nullish(),
 });
 
 export const wrappedPayloadEnvelopeSchema = z.object({
