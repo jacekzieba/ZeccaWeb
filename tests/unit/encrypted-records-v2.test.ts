@@ -7,6 +7,7 @@ import {
   RecordDecryptionError,
 } from "@/sync/records/encrypted-records";
 import swiftV2 from "../fixtures/crypto/aes-gcm-swift-v2.transaction.json";
+import swiftV2Tombstone from "../fixtures/crypto/aes-gcm-swift-v2.tombstone.json";
 
 // iOS od lipca zapisuje rekordy jako „v2.<base64>” z AAD wiążącym szyfrogram
 // z właścicielem, ID, typem, schematem i flagą usunięcia (EncryptionService
@@ -76,6 +77,19 @@ describe("rekordy v2 z aplikacji iOS", () => {
     expect(failure.summary.byType).toEqual({ settings: 2, asset: 1 });
     expect(failure.summary.devices.sort()).toEqual(["a47f0468", "b1ad0981"]);
     expect(failure.message).toContain("3 z 4");
+  });
+
+  it("odszyfrowuje tombstone z iOS: flaga usunięcia jest w AAD", async () => {
+    const key = await importAesGcmKey(base64ToBytes(swiftV2Tombstone.keyBase64));
+    const decrypted = await decryptEncryptedRecord(key, swiftV2Tombstone.record);
+    expect(decrypted.deletedAt).toBe(swiftV2Tombstone.record.deleted_at);
+    expect(decrypted.envelope.type).toBe("transaction");
+  });
+
+  it("odrzuca tombstone z iOS pokazany jako żywy rekord (AAD)", async () => {
+    const key = await importAesGcmKey(base64ToBytes(swiftV2Tombstone.keyBase64));
+    const resurrected = { ...swiftV2Tombstone.record, deleted_at: null };
+    await expect(decryptEncryptedRecord(key, resurrected)).rejects.toThrow();
   });
 
   it("odrzuca nieznaną wersję szyfrogramu zamiast dekodować ją jako base64", async () => {
