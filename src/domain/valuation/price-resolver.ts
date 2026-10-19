@@ -25,6 +25,10 @@ export type PriceTransactionInput = DatedValue & {
 };
 
 export type FxTransactionInput = DatedValue & {
+  /** Do rozstrzygania remisu dat (kolejność księgowa jak natywny
+   * `Transaction.ledgerOrder`: data, zapis, id). */
+  id?: string | null;
+  createdAt?: Date | null;
   transactionType: string;
   currency: string;
   grossAmount: number;
@@ -153,7 +157,7 @@ export function resolveFxRate(
     };
   }
 
-  const directRate = latestBeforeOrOn(
+  const directRate = latestTransaction(
     transactions.filter((transaction) => {
       if (
         transaction.currency !== currency ||
@@ -177,7 +181,7 @@ export function resolveFxRate(
     };
   }
 
-  const conversionRate = latestBeforeOrOn(
+  const conversionRate = latestTransaction(
     transactions.filter((transaction) => {
       if (
         transaction.transactionType !== "fxConversion" ||
@@ -203,7 +207,7 @@ export function resolveFxRate(
     };
   }
 
-  const inverseConversionRate = latestBeforeOrOn(
+  const inverseConversionRate = latestTransaction(
     transactions.filter((transaction) => {
       if (
         transaction.transactionType !== "fxConversion" ||
@@ -240,6 +244,23 @@ function isCrossCurrencyConversion(transaction: FxTransactionInput) {
     transaction.transactionType === "fxConversion" &&
     !!transaction.targetCurrency &&
     transaction.targetCurrency.toUpperCase() !== "PLN"
+  );
+}
+
+/** Ostatnia w kolejności księgowej: data, potem czas zapisu (bez niego data,
+ * jak przy dekodowaniu w aplikacji natywnej), potem id — przy remisie dat
+ * wynik nie zależy od kolejności wierszy z serwera. */
+function latestTransaction(values: FxTransactionInput[]) {
+  const savedAt = (value: FxTransactionInput) => (value.createdAt ?? value.date).getTime();
+  const isLater = (value: FxTransactionInput, latest: FxTransactionInput) =>
+    value.date.getTime() !== latest.date.getTime()
+      ? value.date.getTime() > latest.date.getTime()
+      : savedAt(value) !== savedAt(latest)
+        ? savedAt(value) > savedAt(latest)
+        : (value.id ?? "").toLowerCase() > (latest.id ?? "").toLowerCase();
+  return values.reduce<FxTransactionInput | null>(
+    (latest, value) => (!latest || isLater(value, latest) ? value : latest),
+    null,
   );
 }
 

@@ -282,6 +282,39 @@ describe("resolveFxRate", () => {
     });
   });
 
+  // Dwie transakcje z tego samego dnia: wygrywa później zapisana (createdAt,
+  // potem id), niezależnie od kolejności wierszy — tak jak natywny
+  // `Transaction.ledgerOrder`. Wcześniej wygrywała ostatnia na liście.
+  it("breaks a same-day tie by the later saved transaction", () => {
+    const day = new Date("2026-04-02T00:00:00.000Z");
+    const rate = resolveFxRate(
+      "USD",
+      [
+        {
+          id: "bbbbbbbb-0000-4000-8000-000000000002",
+          transactionType: "buy",
+          currency: "USD",
+          grossAmount: 100,
+          fxRateToBase: 4.2,
+          createdAt: new Date("2026-04-02T10:00:00.000Z"),
+          date: day,
+        },
+        {
+          id: "aaaaaaaa-0000-4000-8000-000000000001",
+          transactionType: "buy",
+          currency: "USD",
+          grossAmount: 100,
+          fxRateToBase: 4.0,
+          createdAt: new Date("2026-04-02T09:00:00.000Z"),
+          date: day,
+        },
+      ],
+      new Date("2026-05-15T00:00:00.000Z"),
+    );
+
+    expect(rate.rate).toBe(4.2);
+  });
+
   it("falls back to inverse FX conversion rates", () => {
     const rate = resolveFxRate(
       "USD",

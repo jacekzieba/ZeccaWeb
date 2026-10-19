@@ -95,6 +95,8 @@ function makeBaseToPln(
 
 function fxTransactionInputs(dataset: ParsedDataset): FxTransactionInput[] {
   return dataset.transactions.map((transaction) => ({
+    id: transaction.id,
+    createdAt: transaction.createdAt ? toDate(transaction.createdAt) : null,
     transactionType: transaction.transactionType,
     currency: transaction.currency,
     grossAmount: transaction.grossAmount,
@@ -2085,6 +2087,8 @@ function toPositionValuationDataset(
   >,
 ): PositionValuationDataset {
   const transactions = dataset.transactions.map((transaction) => ({
+    id: transaction.id,
+    createdAt: transaction.createdAt ? toDate(transaction.createdAt) : null,
     instrumentID: transaction.instrumentID,
     price: transaction.price,
     transactionType: transaction.transactionType,
