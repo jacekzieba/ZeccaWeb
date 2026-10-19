@@ -18,6 +18,8 @@ const snapshot = read("src/sync/records/investor-snapshot.ts");
 const writer = read("src/sync/records/record-writer.ts");
 const syncStore = read("src/sync/records/supabase-sync-store.ts");
 const syncUnlockPanel = read("src/features/sync/sync-unlock-panel.tsx");
+const recordPull = read("src/sync/records/record-pull.ts");
+const serverTimeMigration = read("supabase/migrations/20260928120000_sync_server_time_and_retention.sql");
 const migration = read("supabase/migrations/0001_initial_sync.sql");
 const schemaSecurityMigration = read("supabase/migrations/0006_reproduce_sync_schema_security.sql");
 
@@ -74,6 +76,14 @@ const checks = [
   {
     name: "writer has conflict guard based on updated_at",
     ok: writer.includes("assertNoConflict") && writer.includes("baseUpdatedAt"),
+  },
+  {
+    name: "incremental pull follows server time with tombstones and overlap (ADR-0010)",
+    ok:
+      serverTimeMigration.includes("new.server_updated_at := clock_timestamp()") &&
+      recordPull.includes('.gte("server_updated_at"') &&
+      recordPull.includes("CURSOR_OVERLAP_MS = 10 * 60_000") &&
+      recordPull.includes("FULL_PULL_INTERVAL_MS"),
   },
   {
     name: "key backup table is present",

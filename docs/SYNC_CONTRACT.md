@@ -134,6 +134,15 @@ Przyklad logiczny:
 
 Dokladny ksztalt JSON musi byc zgodny z obecnym Swift `Codable`. Obecny Swift `SyncPayloadEnvelope` koduje payload plasko z polem `recordType`; `payload_version` i `schema_version` sa metadanymi tabeli `encrypted_records`, a nie polami payloadu. Pierwszym zadaniem implementacyjnym powinien byc eksport kilku testowych payloadow ze Swift i ich odczyt w TypeScript.
 
+## Pobieranie (ADR-0010)
+
+Serwer stempluje kazdy zapis wlasnym czasem w `server_updated_at` (wyzwalacz z migracji `20260928120000_sync_server_time_and_retention.sql`). Klienci nie ufaja tu `updated_at`, bo pochodzi z zegara urzadzenia.
+
+- Natywny (`SyncPullPolicy.swift`): kursor w `UserDefaults`, pobieranie `server_updated_at >= kursor - 10 min` z tombstone'ami, pelne pobranie co 7 dni.
+- Web (`src/sync/records/record-pull.ts`): ten sam filtr i ta sama zakladka 10 min, kursor tylko w pamieci karty (przeladowanie = pelne pobranie), pelne pobranie kontrolne co 30 min. Web nie ma lokalnej bazy, wiec twarde usuniecie z innego urzadzenia i czystka tombstone'ow (180 dni) wychodza dopiero przy pelnym pobraniu.
+- Odblokowanie (`/api/sync/bootstrap`) jest zawsze pelnym pobraniem zywych rekordow.
+- Serwer bez kolumny `server_updated_at` (blad 42703): web wraca do samych pelnych pobran.
+
 ## Konflikty
 
 Startowy model:
