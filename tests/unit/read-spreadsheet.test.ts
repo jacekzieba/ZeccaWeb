@@ -46,6 +46,7 @@ describe("readSpreadsheet", () => {
       header: 1,
       raw: true,
       blankrows: false,
+      UTC: true,
     });
   });
 

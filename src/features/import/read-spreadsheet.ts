@@ -62,6 +62,9 @@ async function readWithSheetJs(
     header: 1,
     raw: true,
     blankrows: false,
+    // Komórka daty nie ma strefy. Jak read-excel-file i natywny importer:
+    // czas z arkusza jako UTC, a nie w strefie przeglądarki.
+    UTC: true,
   });
 }
 
