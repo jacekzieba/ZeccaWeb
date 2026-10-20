@@ -276,6 +276,46 @@ describe("certification import parity", () => {
     expect(byType.get("cashWithdrawal")![0].grossAmount).toBe(500);
   });
 
+  // Identyfikatory importu jak w natywnym PKOBondsImporter (wartości z jego wyniku
+  // dla pko_cert_scenario.xls). Bez nich ponowny import tego samego pliku, na webie
+  // albo po imporcie w aplikacji, dublował obligacje i wpłaty.
+  it("PKO: import identities match the native importer", () => {
+    const preview = parsePkoBondsXls(PKO_ROWS, PORTFOLIO, { ...references, instruments: [] });
+
+    expect(preview.validRows.map((row) => payloadOf(row).externalImportID)).toEqual([
+      "pko-bonds:fund:pko-bonds:buy:1001",
+      "pko-bonds:buy:1001",
+      "pko-bonds:fund:pko-bonds:buy:1002",
+      "pko-bonds:buy:1002",
+      "pko-bonds:sell:EDO0432:432:2025-09-01:1000.00",
+      "pko-bonds:redint:EDO0432:2025-09-01:95.00",
+      "pko-bonds:wyplata:2025-09-05:500.00:10",
+    ]);
+  });
+
+  it("PKO: re-importing the same file adds nothing", () => {
+    const first = parsePkoBondsXls(PKO_ROWS, PORTFOLIO, { ...references, instruments: [] });
+    const imported = new Set(first.validRows.map((row) => String(payloadOf(row).externalImportID)));
+
+    const again = parsePkoBondsXls(PKO_ROWS, PORTFOLIO, {
+      ...references,
+      instruments: [],
+      existingExternalImportIds: imported,
+    });
+
+    expect(again.validRows).toHaveLength(0);
+  });
+
+  it("PKO: interest identity uses the scheduled payment date, like the native importer", () => {
+    const rows: unknown[][] = [
+      ["DATA DYSPOZYCJI", "RODZAJ DYSPOZYCJI", "KOD OBLIGACJI", "NR ZAPISU", "SERIA", "LICZBA OBLIGACJI", "KWOTA OPERACJI", "STATUS"],
+      ["2024-07-01", "naliczenie odsetek na 2024-07-03", "COI0727", 0, 727, 0, 61.5, "zrealizowana"],
+    ];
+    const preview = parsePkoBondsXls(rows, PORTFOLIO, { ...references, instruments: [] });
+    const interest = preview.validRows.map(payloadOf).find((p) => p.transactionType === "interest");
+    expect(interest?.externalImportID).toBe("pko-bonds:int:COI0727:727:2024-07-03:61.50");
+  });
+
   it("PKO: creates known treasury issues with parameters for formula valuation", () => {
     const rows: unknown[][] = [
       ["DATA DYSPOZYCJI", "RODZAJ DYSPOZYCJI", "KOD OBLIGACJI", "NR ZAPISU", "SERIA", "LICZBA OBLIGACJI", "KWOTA OPERACJI", "STATUS"],

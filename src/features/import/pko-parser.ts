@@ -8,6 +8,7 @@
  */
 
 import type { ImportReferenceData, TransactionImportPreview, TransactionImportRow } from "./import-parser";
+import { warsawCalendarDay } from "@/lib/calendar-date";
 import type { WriteRecordPayload } from "@/sync/records/record-writer";
 import { knownTreasuryBondIssue } from "@/domain/valuation/treasury-bond-issues";
 import { utcDateOrNull } from "@/lib/calendar-date";
@@ -219,6 +220,10 @@ export function parsePkoBondsXls(
 
   const warnings: string[] = [];
   const txRows: TransactionImportRow[] = [];
+  // Identyfikatory importu jak w natywnym PKOBondsImporter: ponowny import tego
+  // samego pliku (na webie albo po imporcie w aplikacji) pomija zapisane wiersze.
+  const alreadyImported = (externalImportID: string) =>
+    references.existingExternalImportIds?.has(externalImportID) ?? false;
 
   // Which buy NR values have a realisation row (to skip disposition duplicates)
   const realisedBuyNr = new Set<number>();
@@ -241,13 +246,19 @@ export function parsePkoBondsXls(
       warnings.push(`Wiersz ${r.sourceIndex}: zakup bez daty/ilości/kwoty — pominięto`);
       return;
     }
+    const externalImportID =
+      r.nrZapisu > 0
+        ? `pko-bonds:buy:${r.nrZapisu}`
+        : `pko-bonds:buy:${r.code}:${r.seria}:${importDay(r.date)}:${importAmount(r.kwota)}`;
+    if (alreadyImported(externalImportID)) return;
+    const depositImportID = `pko-bonds:fund:${externalImportID}`;
     const instrumentId = resolveOrCreateInstrument(r.code);
     const price = r.kwota / r.liczba;
     const depositId = crypto.randomUUID();
     const buyId = crypto.randomUUID();
 
     // Synthetic cash deposit (PKO doesn't list the funding transfer)
-    txRows.push({
+    if (!alreadyImported(depositImportID)) txRows.push({
       rowNumber: r.sourceIndex,
       values: makeValues(r, "cashDeposit"),
       payload: {
@@ -261,6 +272,7 @@ export function parsePkoBondsXls(
         fees: 0,
         taxes: 0,
         note: `Wpłata na zakup obligacji ${r.code}`,
+        externalImportID: depositImportID,
       },
       errors: [],
       warnings: [],
@@ -283,6 +295,7 @@ export function parsePkoBondsXls(
         fees: 0,
         taxes: 0,
         note: r.seria > 0 ? `Seria ${r.seria}` : "",
+        externalImportID,
       },
       errors: [],
       warnings: [],
@@ -311,6 +324,9 @@ export function parsePkoBondsXls(
         warnings.push(`Wiersz ${r.sourceIndex}: wykup bez daty/kwoty — pominięto`);
         continue;
       }
+      const externalImportID =
+        `pko-bonds:sell:${r.code}:${r.seria}:${importDay(r.date)}:${importAmount(r.kwota)}`;
+      if (alreadyImported(externalImportID)) continue;
       const qty = r.liczba > 0 ? r.liczba : r.kwota / 100;
       const instrumentId = resolveOrCreateInstrument(r.code);
       const txIdx = txRows.length;
@@ -332,6 +348,7 @@ export function parsePkoBondsXls(
           fees: 0,
           taxes: 0,
           note: `Przedterminowy wykup, seria ${r.seria}`,
+          externalImportID,
         },
         errors: [],
         warnings: [],
@@ -347,6 +364,9 @@ export function parsePkoBondsXls(
         warnings.push(`Wiersz ${r.sourceIndex}: odsetki przy wykupie bez powiązanej sprzedaży — pominięto`);
         continue;
       }
+      const externalImportID =
+        `pko-bonds:redint:${r.code}:${importDay(parent.date)}:${importAmount(r.kwota)}`;
+      if (alreadyImported(externalImportID)) continue;
       const instrumentId = resolveOrCreateInstrument(r.code);
       const txIdx = txRows.length;
       const id = crypto.randomUUID();
@@ -365,6 +385,7 @@ export function parsePkoBondsXls(
           fees: 0,
           taxes: 0,
           note: "Odsetki przy przedterminowym wykupie",
+          externalImportID,
         },
         errors: [],
         warnings: [],
@@ -389,6 +410,9 @@ export function parsePkoBondsXls(
 
     } else if (typeof kind === "object" && "interestAccrual" in kind) {
       if (r.kwota <= 0) continue;
+      const externalImportID =
+        `pko-bonds:int:${r.code}:${r.seria}:${importDay(kind.interestAccrual)}:${importAmount(r.kwota)}`;
+      if (alreadyImported(externalImportID)) continue;
       const instrumentId = resolveOrCreateInstrument(r.code);
       const txIdx = txRows.length;
       const id = crypto.randomUUID();
@@ -407,6 +431,7 @@ export function parsePkoBondsXls(
           fees: 0,
           taxes: 0,
           note: `Odsetki, seria ${r.seria}`,
+          externalImportID,
         },
         errors: [],
         warnings: [],
@@ -418,6 +443,10 @@ export function parsePkoBondsXls(
 
     } else if (kind === "cashOut") {
       if (!r.date || r.kwota === 0) continue;
+      // Indeks wiersza w arkuszu od zera, z nagłówkiem — jak `sourceIndex` w aplikacji.
+      const externalImportID =
+        `pko-bonds:wyplata:${importDay(r.date)}:${importAmount(Math.abs(r.kwota))}:${r.sourceIndex - 1}`;
+      if (alreadyImported(externalImportID)) continue;
       const id = crypto.randomUUID();
       txRows.push({
         rowNumber: r.sourceIndex,
@@ -433,6 +462,7 @@ export function parsePkoBondsXls(
           fees: 0,
           taxes: 0,
           note: "Wypłata na rachunek bankowy",
+          externalImportID,
         },
         errors: [],
         warnings: [],
@@ -484,6 +514,15 @@ export function parsePkoBondsXls(
     },
     references,
   );
+}
+
+/** Dzień `yyyy-MM-dd` w Polsce, jak `yyyymmdd` w natywnym PKOBondsImporter. */
+function importDay(date: Date): string {
+  return warsawCalendarDay(date).toISOString().slice(0, 10);
+}
+
+function importAmount(amount: number): string {
+  return amount.toFixed(2);
 }
 
 function makeValues(r: ParsedRow, txType: string): Record<string, string> {
