@@ -238,6 +238,91 @@
       "expectedPrice": 100,
       "name": "EDO wyceniana w dniu zakupu",
       "purchaseDate": 754700400
+    },
+    {
+      "asOf": 815137200,
+      "bond": {
+        "capitalization": "brak",
+        "firstPeriodRate": 4.75,
+        "interestPayment": "co miesiąc",
+        "issueDate": 783558000,
+        "marginOverBase": 0,
+        "maturityDate": 815094000,
+        "nominalValue": 100,
+        "subsequentBase": "stopa referencyjna NBP"
+      },
+      "dateEncoding": "app",
+      "expectedPrice": 100,
+      "name": "ROR kupiona 31. dnia, dzień wykupu",
+      "purchaseDate": 783558000
+    },
+    {
+      "asOf": 815137200,
+      "bond": {
+        "capitalization": "brak",
+        "firstPeriodRate": 4.75,
+        "interestPayment": "co miesiąc",
+        "issueDate": 783561600,
+        "marginOverBase": 0,
+        "maturityDate": 815097600,
+        "nominalValue": 100,
+        "subsequentBase": "stopa referencyjna NBP"
+      },
+      "dateEncoding": "web",
+      "expectedPrice": 100,
+      "name": "ROR kupiona 31. dnia, dzień wykupu, data z weba",
+      "purchaseDate": 783561600
+    },
+    {
+      "asOf": 796557600,
+      "bond": {
+        "capitalization": "brak",
+        "firstPeriodRate": 4.75,
+        "interestPayment": "co miesiąc",
+        "issueDate": 783558000,
+        "marginOverBase": 0,
+        "maturityDate": 815094000,
+        "nominalValue": 100,
+        "subsequentBase": "stopa referencyjna NBP"
+      },
+      "dateEncoding": "app",
+      "expectedPrice": 100.33,
+      "name": "ROR kupiona 31. dnia, okres po lutym",
+      "purchaseDate": 783558000
+    },
+    {
+      "asOf": 797940000,
+      "bond": {
+        "capitalization": "brak",
+        "firstPeriodRate": 4.0,
+        "interestPayment": "co miesiąc",
+        "issueDate": 791334000,
+        "marginOverBase": 0,
+        "maturityDate": 822870000,
+        "nominalValue": 100,
+        "subsequentBase": "stopa referencyjna NBP"
+      },
+      "dateEncoding": "app",
+      "expectedPrice": 100.17,
+      "name": "ROR kupiona 29. dnia, okres po lutym",
+      "purchaseDate": 791334000
+    },
+    {
+      "asOf": 857127600,
+      "bond": {
+        "capitalization": "roczna",
+        "firstPeriodRate": 6.5,
+        "interestPayment": "przy wykupie",
+        "issueDate": 730854000,
+        "marginOverBase": 6.5,
+        "maturityDate": 888620400,
+        "nominalValue": 100,
+        "subsequentBase": "stałe"
+      },
+      "dateEncoding": "app",
+      "expectedPrice": 128.65,
+      "name": "Stałe oprocentowanie, okresy roczne, kupiona 29 lutego, rocznica w roku przestępnym",
+      "purchaseDate": 730854000
     }
   ],
   "cpi": [

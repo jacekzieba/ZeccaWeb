@@ -227,14 +227,18 @@ function dirtyTreasuryBondPrice(
   // A lot's purchase date decides whether it is held, but the bond's coupon
   // schedule and capitalization have been running since the issue date. Old
   // payloads without this field retain the legacy purchase-date fallback.
-  let periodStart = params.issueDate ? warsawCalendarDay(params.issueDate) : purchaseDay;
+  const scheduleStart = params.issueDate ? warsawCalendarDay(params.issueDate) : purchaseDay;
+  let periodStart = scheduleStart;
   let periodIndex = 0;
   let principal = params.nominalValue;
   let carriedInterest = 0;
   const periodMonths = params.interestPayment === "co miesiąc" ? 1 : 12;
 
   while (periodStart.getTime() < effectiveAsOf.getTime()) {
-    const periodEnd = addMonths(periodStart, periodMonths);
+    // Period k ends at issue + (k+1) months, clamped to the month end (issue
+    // letter's schedule of interest periods), not a month after the previous
+    // end: after February a purchase on the 31st returns to the 31st.
+    const periodEnd = addMonths(scheduleStart, periodMonths * (periodIndex + 1));
     const annualRate =
       bondPeriodRate(params, periodIndex, periodStart, cpi, referenceRates) / 100;
     const totalDays = Math.max(1, daysBetween(periodStart, periodEnd));
@@ -290,7 +294,8 @@ export function treasuryBondMacroGaps(
     return false;
   }
 
-  let periodStart = params.issueDate ? warsawCalendarDay(params.issueDate) : purchaseDay;
+  const scheduleStart = params.issueDate ? warsawCalendarDay(params.issueDate) : purchaseDay;
+  let periodStart = scheduleStart;
   let periodIndex = 0;
   const periodMonths = params.interestPayment === "co miesiąc" ? 1 : 12;
 
@@ -298,8 +303,8 @@ export function treasuryBondMacroGaps(
     if (!bondPeriodHasMacroData(params, periodIndex, periodStart, cpi, referenceRates)) {
       return true;
     }
-    periodStart = addMonths(periodStart, periodMonths);
     periodIndex += 1;
+    periodStart = addMonths(scheduleStart, periodMonths * periodIndex);
   }
 
   return false;
