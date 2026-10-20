@@ -14,6 +14,7 @@ import type { BrowserSupabaseClient } from "@/supabase/client";
 import { assertSyncProtocolSupported } from "./sync-protocol";
 import { pullDecryptedRecords } from "./record-pull";
 import { localDateString } from "@/lib/calendar-date";
+import { TransactionValidationError, validateTransactionPayload } from "./transaction-validator";
 import type { InvestorDataSnapshot } from "@/domain/models/investor-data";
 
 const PENDING_SYNC_KEY = "investor-web-pending-sync-v1";
@@ -260,6 +261,12 @@ export async function saveRecord(
   payload: WriteRecordPayload,
   options: SaveRecordOptions = {},
 ): Promise<WriteRecordResult> {
+  // Transakcję, której natywny TransactionValidator nie przyjmie, aplikacja
+  // odkłada przy pullu do kwarantanny — na iOS i macOS by jej nie było.
+  if (recordType === "transaction") {
+    const issues = validateTransactionPayload(payload);
+    if (issues.length > 0) throw new TransactionValidationError(issues);
+  }
   const userId = await getCurrentUserId(supabase);
   const recordId = options.recordId ?? payload.id;
   // v2 jak w iOS: rekord raz zapisany w v2 nie może wrócić do formatu bez AAD

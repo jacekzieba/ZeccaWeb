@@ -161,23 +161,21 @@ describe("parseCsvImport manual valuations", () => {
   });
 });
 
-describe("import warning for a price-less instrument transaction", () => {
-  it("says the transaction will not count towards results", () => {
-    const preview = parseTransactionCsvImport(
-      [
-        "date,portfolio,instrument,transactionType,quantity,price,grossAmount,currency,fees,taxes",
-        "2026-05-17,IKE,AAPL,buy,2,,381,USD,0,0",
-      ].join("\n"),
-      references,
-    );
+// Natywny TransactionValidator odrzuca takie wiersze, a aplikacja odkłada je
+// przy pullu do kwarantanny: na webie byłyby w portfelu, na iOS i macOS nie.
+// Formularz weba odrzuca je tak samo. Wspólny sędzia: sync_admission_cases.json.
+describe("import CSV: wiersze, których aplikacja natywna nie przyjmie", () => {
+  const header = "date,portfolio,instrument,transactionType,quantity,price,grossAmount,currency,fees,taxes";
 
-    // Import deliberately accepts this record, but both engines skip it, so the
-    // old wording ("zostanie zapisana") was only half the story — the user had
-    // no way to learn it contributes nothing until the snapshot silently
-    // ignored it. The snapshot now also raises a `transaction-incomplete`
-    // diagnostic; the two messages have to agree.
-    expect(preview.errorRows).toHaveLength(0);
-    expect(preview.validRows).toHaveLength(1);
-    expect(preview.validRows[0].warnings.join(" ")).toContain("nie wliczy się do wyników");
+  it.each([
+    ["zakup bez ceny", "2026-05-17,IKE,AAPL,buy,2,,381,USD,0,0", "Brakuje ceny jednostkowej."],
+    ["sprzedaż bez ceny", "2026-05-17,IKE,AAPL,sell,2,,381,USD,0,0", "Brakuje ceny jednostkowej."],
+    ["waluta „?”", "2026-05-17,IKE,,cashDeposit,,,100,?,0,0", "Brakuje poprawnej waluty transakcji."],
+    ["przewalutowanie bez kursu i kwoty docelowej", "2026-05-17,IKE,,fxConversion,,,100,EUR,0,0", "Stara konwersja FX wymaga dodatniego kursu do PLN."],
+  ])("%s to błąd wiersza", (_name, row, message) => {
+    const preview = parseTransactionCsvImport([header, row].join("\n"), references);
+
+    expect(preview.validRows).toHaveLength(0);
+    expect(preview.errorRows[0].errors).toContain(message);
   });
 });

@@ -163,6 +163,32 @@ describe("record writer", () => {
     expect((decrypted.envelope.payload as { name: string }).name).toBe("Nowa nazwa");
   });
 
+  // Natywny pull odkłada taką transakcję do kwarantanny, więc nie może ani
+  // trafić na serwer, ani czekać w kolejce na ponowienie.
+  it("nie zapisuje transakcji, której aplikacja natywna nie przyjmie", async () => {
+    const { client, store } = createSupabaseStore({ metadata: null, upsertError: new Error("offline") });
+    const buyWithoutPrice = {
+      id: recordId,
+      recordType: "transaction",
+      date: 802224000,
+      portfolioID: userId,
+      instrumentID: userId,
+      transactionType: "buy",
+      quantity: 2,
+      grossAmount: 200,
+      currency: "EUR",
+      fees: 0,
+      taxes: 0,
+    };
+
+    await expect(saveRecord(client, await testKey(), "transaction", buyWithoutPrice)).rejects.toThrow(
+      "Nie zapisano transakcji: Brakuje ceny jednostkowej.",
+    );
+    expect(store.upserts).toHaveLength(0);
+    expect(store.updates).toHaveLength(0);
+    expect(getPendingSyncOperations()).toHaveLength(0);
+  });
+
   it("queues failed writes and flushes them later", async () => {
     const { client, store } = createSupabaseStore({
       metadata: null,

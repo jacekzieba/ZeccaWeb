@@ -7,6 +7,7 @@ import { annotateOversellWarnings } from "./oversell-warnings";
 import { nowSwiftReferenceSeconds } from "@/sync/records/macos-payloads";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
 import type { WriteRecordPayload } from "@/sync/records/record-writer";
+import { validateTransactionPayload } from "@/sync/records/transaction-validator";
 
 const APPLE_REFERENCE_DATE_UNIX_MS = Date.UTC(2001, 0, 1);
 
@@ -407,7 +408,8 @@ function parseTransactionRow(
       errors.push("Kwota brutto musi być dodatnia.");
     }
   }
-  if (price == null && TYPES_USING_QUANTITY.has(transactionType)) {
+  // Zakup i sprzedaż bez ceny odrzuca walidator niżej (natywny TransactionValidator).
+  if (price == null && TYPES_USING_QUANTITY.has(transactionType) && transactionType !== "buy" && transactionType !== "sell") {
     // Both engines skip an instrument transaction with no unit price, so it is
     // stored but contributes nothing until the price is filled in. The snapshot
     // raises a matching `transaction-incomplete` diagnostic.
@@ -416,26 +418,29 @@ function parseTransactionRow(
     );
   }
 
-  const payload =
-    errors.length === 0
-      ? transactionPayloadSchema.parse({
-          id,
-          recordType: "transaction",
-          date,
-          portfolioID,
-          ...(instrumentID ? { instrumentID } : {}),
-          transactionType,
-          ...(quantity != null ? { quantity } : {}),
-          ...(price != null ? { price } : {}),
-          grossAmount,
-          currency,
-          fees,
-          taxes,
-          notes: "",
-          createdAt: nowSwiftReferenceSeconds(),
-          updatedAt: nowSwiftReferenceSeconds(),
-        })
-      : null;
+  const candidate = {
+    id,
+    recordType: "transaction",
+    date,
+    portfolioID,
+    ...(instrumentID ? { instrumentID } : {}),
+    transactionType,
+    ...(quantity != null ? { quantity } : {}),
+    ...(price != null ? { price } : {}),
+    grossAmount,
+    currency,
+    fees,
+    taxes,
+    notes: "",
+    createdAt: nowSwiftReferenceSeconds(),
+    updatedAt: nowSwiftReferenceSeconds(),
+  };
+  // Na koniec reguły natywnego TransactionValidator: wiersza, którego aplikacja
+  // nie przyjmie z synchronizacji (np. zakup bez ceny), nie zapisujemy.
+  if (errors.length === 0) {
+    errors.push(...validateTransactionPayload(candidate).map((issue) => issue.message));
+  }
+  const payload = errors.length === 0 ? transactionPayloadSchema.parse(candidate) : null;
 
   return { rowNumber, values, payload, errors, warnings };
 }

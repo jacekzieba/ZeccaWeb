@@ -269,10 +269,12 @@ describe("import CSV: identyfikatory, typy, odwołania", () => {
     expect(payload(only(line({ currency: "pln" }))).currency).toBe("PLN");
   });
 
-  it("kupno bez ceny jest ostrzeżeniem, nie błędem (zapis bez wpływu na wyniki)", () => {
+  // Natywny TransactionValidator odrzuca zakup bez ceny, a aplikacja odkłada
+  // taki rekord do kwarantanny (audyt 2026-10-20, TXV-001).
+  it("kupno bez ceny to błąd wiersza, jak w aplikacji", () => {
     const row = only(line({ type: "buy", instrument: "CDR", qty: "5", gross: "500" }));
-    expect(row.errors).toEqual([]);
-    expect(row.warnings.join(" ")).toContain("Brak ceny");
+    expect(row.errors).toEqual(["Brakuje ceny jednostkowej."]);
+    expect(row.payload).toBeNull();
   });
 });
 

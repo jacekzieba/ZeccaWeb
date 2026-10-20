@@ -173,6 +173,7 @@ export function TransactionsPage() {
           transferKind: payload.transferKind ?? null,
           contributionTreatment: payload.contributionTreatment ?? null,
           updatedAt: record.updatedAt,
+          originalPayload: record.envelope.payload as Record<string, unknown>,
         } satisfies TransactionEditorDraft;
       });
   }, [records]);

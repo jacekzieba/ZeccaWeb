@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { refreshSyncStore, saveRecord } from "@/sync/records/record-writer";
+import { TransactionValidationError, validateTransactionPayload } from "@/sync/records/transaction-validator";
 import {
   getTelemetryService,
   TelemetryEvent,
@@ -358,7 +359,23 @@ export type TransactionEditorDraft = {
   transferKind?: string | null;
   contributionTreatment?: string | null;
   updatedAt: string;
+  /** Zapisany rekord. Pola, których formularz nie edytuje, zapis przepisuje z niego. */
+  originalPayload?: Record<string, unknown> | null;
 };
+
+// Pola rekordu, których formularz nie pokazuje: zapis edycji ich nie zeruje.
+const PRESERVED_FIELDS = ["bookingDate", "externalImportID", "transferSourceKind", "transferCostBasisMode", "transferLots", "createdAt"];
+// Transfer aktywów między portfelami formularz edytuje jak gotówkowy (bez
+// instrumentu i ilości), więc te pola też zostają z zapisanego rekordu.
+const PRESERVED_ASSET_TRANSFER_FIELDS = ["instrumentID", "quantity", "price"];
+
+function withPreservedFields<T extends Record<string, unknown>>(payload: T, original: Record<string, unknown> | null | undefined): T {
+  if (!original) return payload;
+  const keys = payload.transactionType === "accountTransferIn" && payload.transferKind === "asset"
+    ? [...PRESERVED_FIELDS, ...PRESERVED_ASSET_TRANSFER_FIELDS]
+    : PRESERVED_FIELDS;
+  return { ...payload, ...Object.fromEntries(keys.filter((key) => key in original).map((key) => [key, original[key]])) };
+}
 
 type InstrumentOption = {
   id: string;
@@ -991,7 +1008,7 @@ export function AddTransactionModal({
       const id = initialValue?.id ?? crypto.randomUUID();
       const dateSeconds = swiftReferenceSeconds(new Date(date));
 
-      const payload = makeTransactionPayload({
+      const payload = withPreservedFields(makeTransactionPayload({
         id,
         date: dateSeconds,
         portfolioID: portfolioId,
@@ -1015,7 +1032,11 @@ export function AddTransactionModal({
         instrumentID: txDef.needsInstrument && instrumentId ? instrumentId : null,
         quantity: quantityValue,
         price: priceValue,
-      });
+      }), initialValue?.originalPayload);
+      // Reguły natywnego TransactionValidator: rekordu, którego aplikacja nie
+      // przyjmie z synchronizacji, nie zapisujemy (także w trybie fake sync).
+      const issues = validateTransactionPayload(payload);
+      if (issues.length > 0) throw new TransactionValidationError(issues);
 
       // Built from the FX rate the trade actually saved with, so the deposit
       // cancels the ledger's drain exactly rather than to the nearest grosz.

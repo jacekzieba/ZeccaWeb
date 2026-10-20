@@ -737,3 +737,127 @@ describe("AddTransactionModal — domyślna data", () => {
     expect((screen.getByLabelText("Data") as HTMLInputElement).value).toBe("2026-05-11");
   });
 });
+
+/**
+ * Kontrola krzyżowa z natywnym TransactionValidator (audyt 2026-10-20, część 2):
+ * transakcję, której on nie przyjmie, aplikacja przy pullu odkłada do
+ * kwarantanny. Formularz sprawdzał tylko zakup i sprzedaż, więc np. wpłatę
+ * na 0 zł albo ujemną prowizję zapisywał, a na iOS i macOS ich nie było.
+ */
+describe("AddTransactionModal — reguły natywnego TransactionValidator", () => {
+  beforeEach(() => {
+    store.state.records = [accountRecord, newAssetRecord];
+    store.state.snapshot = null;
+    store.state.setSync = vi.fn();
+    store.state.closeAddTransaction = vi.fn();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ data: [] }), { status: 200, headers: { "content-type": "application/json" } }),
+    );
+    vi.mocked(saveRecord).mockResolvedValue({ queued: false });
+    vi.mocked(refreshSyncStore).mockResolvedValue({
+      records: [accountRecord, newAssetRecord],
+      snapshot: null as never,
+      summary: null as never,
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.resetAllMocks();
+    vi.restoreAllMocks();
+  });
+
+  const draft = (overrides: Record<string, unknown>) => ({
+    id: "88888888-8888-4888-8888-888888888888",
+    portfolioId: accountID,
+    instrumentId: null,
+    date: "2026-05-10",
+    transactionType: "cashDeposit",
+    quantity: null,
+    price: null,
+    grossAmount: 100,
+    currency: "PLN",
+    fees: 0,
+    taxes: 0,
+    updatedAt: "2026-05-10T10:00:00.000Z",
+    ...overrides,
+  });
+
+  it.each([
+    ["wpłata na 0 zł", draft({ grossAmount: 0 }), "Kwota transakcji musi być dodatnia."],
+    ["wypłata z ujemną kwotą", draft({ transactionType: "cashWithdrawal", grossAmount: -5 }), "Kwota transakcji musi być dodatnia."],
+    ["ujemna prowizja", draft({ fees: -1 }), "Prowizja nie może być ujemna."],
+    ["dywidenda bez instrumentu", draft({ transactionType: "dividend" }), "Brakuje instrumentu dla transakcji."],
+  ])("nie zapisuje: %s", async (_name, initialValue, message) => {
+    render(<AddTransactionModal open initialValue={initialValue as never} onClose={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz zmiany" }));
+
+    await waitFor(() => expect(screen.getByText(new RegExp(message.replace(".", "\\.")))).toBeTruthy());
+    expect(saveRecord).not.toHaveBeenCalled();
+  });
+
+  it("edycja transferu aktywów z aplikacji zachowuje instrument, loty i identyfikator importu", async () => {
+    // Formularz nie pokazuje tych pól, a zapis budował rekord od zera: znikały
+    // instrument, ilość i loty (aplikacja odkładała rekord do kwarantanny),
+    // a także data księgowania i externalImportID (ponowny import dublował).
+    const original = {
+      recordType: "transaction",
+      id: "99999999-9999-4999-8999-999999999999",
+      date: 800000000,
+      bookingDate: 800086400,
+      portfolioID: accountID,
+      instrumentID: newAssetID,
+      transactionType: "accountTransferIn",
+      quantity: 3,
+      price: 100,
+      grossAmount: 300,
+      currency: "PLN",
+      fees: 0,
+      taxes: 0,
+      notes: "",
+      externalImportID: "xtb:123",
+      sourcePortfolioID: "12121212-1212-4121-8121-121212121212",
+      transferKind: "asset",
+      transferSourceKind: "brokerAccount",
+      transferCostBasisMode: "carryOver",
+      transferLots: [{ acquisitionDate: 790000000, quantity: 3, unitCost: 100, currency: "PLN" }],
+      createdAt: 800000000,
+      updatedAt: 800000000,
+    };
+    render(
+      <AddTransactionModal
+        open
+        initialValue={draft({
+          id: original.id,
+          transactionType: "accountTransferIn",
+          instrumentId: newAssetID,
+          quantity: 3,
+          price: 100,
+          grossAmount: 300,
+          sourcePortfolioId: original.sourcePortfolioID,
+          transferKind: "asset",
+          notes: "",
+          originalPayload: original,
+        }) as never}
+        onClose={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz zmiany" }));
+
+    await waitFor(() => expect(vi.mocked(saveRecord)).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(saveRecord).mock.calls[0]?.[3]).toMatchObject({
+      instrumentID: newAssetID,
+      quantity: 3,
+      price: 100,
+      bookingDate: 800086400,
+      externalImportID: "xtb:123",
+      transferKind: "asset",
+      transferSourceKind: "brokerAccount",
+      transferCostBasisMode: "carryOver",
+      transferLots: original.transferLots,
+      createdAt: 800000000,
+    });
+  });
+});

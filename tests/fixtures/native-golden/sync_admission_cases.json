@@ -1,0 +1,1421 @@
+[
+  {
+    "expectedIssues" : [
+
+    ],
+    "name" : "buy: pełny",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "EUR",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000001",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "price" : 50,
+      "quantity" : 2,
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "buy",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "price",
+        "message" : "Brakuje ceny jednostkowej."
+      }
+    ],
+    "name" : "buy: bez ceny",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "EUR",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000002",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "quantity" : 2,
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "buy",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "price",
+        "message" : "Brakuje ceny jednostkowej."
+      }
+    ],
+    "name" : "buy: cena 0",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "EUR",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000003",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "price" : 0,
+      "quantity" : 2,
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "buy",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "price",
+        "message" : "Brakuje ceny jednostkowej."
+      }
+    ],
+    "name" : "buy: cena ujemna",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "EUR",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000004",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "price" : -1,
+      "quantity" : 2,
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "buy",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "quantity",
+        "message" : "Brakuje liczby jednostek."
+      }
+    ],
+    "name" : "buy: bez ilości",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "EUR",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000005",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "price" : 50,
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "buy",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "quantity",
+        "message" : "Brakuje liczby jednostek."
+      }
+    ],
+    "name" : "buy: ilość 0",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "EUR",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000006",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "price" : 50,
+      "quantity" : 0,
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "buy",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "instrumentID",
+        "message" : "Brakuje instrumentu dla transakcji."
+      }
+    ],
+    "name" : "buy: bez instrumentu",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "EUR",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000007",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "price" : 50,
+      "quantity" : 2,
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "buy",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "instrumentID",
+        "message" : "Brakuje instrumentu dla transakcji."
+      }
+    ],
+    "name" : "buy: instrument null",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "EUR",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000008",
+      "instrumentID" : null,
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "price" : 50,
+      "quantity" : 2,
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "buy",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "grossAmount",
+        "message" : "Kwota transakcji musi być dodatnia."
+      }
+    ],
+    "name" : "buy: kwota 0",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "EUR",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 0,
+      "id" : "00000000-0000-4000-8000-000000000009",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "price" : 50,
+      "quantity" : 2,
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "buy",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "grossAmount",
+        "message" : "Kwota transakcji musi być dodatnia."
+      }
+    ],
+    "name" : "buy: kwota ujemna",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "EUR",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : -1,
+      "id" : "00000000-0000-4000-8000-000000000010",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "price" : 50,
+      "quantity" : 2,
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "buy",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "currency",
+        "message" : "Brakuje poprawnej waluty transakcji."
+      }
+    ],
+    "name" : "buy: waluta ?",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "?",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000011",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "price" : 50,
+      "quantity" : 2,
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "buy",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "currency",
+        "message" : "Brakuje poprawnej waluty transakcji."
+      }
+    ],
+    "name" : "buy: waluta pusta",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : " ",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000012",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "price" : 50,
+      "quantity" : 2,
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "buy",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+
+    ],
+    "name" : "buy: waluta małymi",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "eur",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000013",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "price" : 50,
+      "quantity" : 2,
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "buy",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+
+    ],
+    "name" : "buy: waluta EURO",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "EURO",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000014",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "price" : 50,
+      "quantity" : 2,
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "buy",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "fees",
+        "message" : "Prowizja nie może być ujemna."
+      }
+    ],
+    "name" : "buy: prowizja ujemna",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "EUR",
+      "date" : 802224000,
+      "fees" : -1,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000015",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "price" : 50,
+      "quantity" : 2,
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "buy",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "taxes",
+        "message" : "Podatek nie może być ujemny."
+      }
+    ],
+    "name" : "buy: podatek ujemny",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "EUR",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000016",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "price" : 50,
+      "quantity" : 2,
+      "recordType" : "transaction",
+      "taxes" : -0.01,
+      "transactionType" : "buy",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+
+    ],
+    "name" : "buy: bez pól fees i taxes",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "EUR",
+      "date" : 802224000,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000017",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "price" : 50,
+      "quantity" : 2,
+      "recordType" : "transaction",
+      "transactionType" : "buy",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "currency",
+        "message" : "Brakuje poprawnej waluty transakcji."
+      },
+      {
+        "field" : "fees",
+        "message" : "Prowizja nie może być ujemna."
+      },
+      {
+        "field" : "taxes",
+        "message" : "Podatek nie może być ujemny."
+      },
+      {
+        "field" : "instrumentID",
+        "message" : "Brakuje instrumentu dla transakcji."
+      },
+      {
+        "field" : "quantity",
+        "message" : "Brakuje liczby jednostek."
+      },
+      {
+        "field" : "price",
+        "message" : "Brakuje ceny jednostkowej."
+      },
+      {
+        "field" : "grossAmount",
+        "message" : "Kwota transakcji musi być dodatnia."
+      }
+    ],
+    "name" : "buy: wszystko złe naraz",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "?",
+      "date" : 802224000,
+      "fees" : -1,
+      "grossAmount" : 0,
+      "id" : "00000000-0000-4000-8000-000000000018",
+      "instrumentID" : null,
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "price" : 0,
+      "quantity" : 0,
+      "recordType" : "transaction",
+      "taxes" : -1,
+      "transactionType" : "buy",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "price",
+        "message" : "Brakuje ceny jednostkowej."
+      }
+    ],
+    "name" : "sell: bez ceny",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "EUR",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000019",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "quantity" : 2,
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "sell",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+
+    ],
+    "name" : "dividend: z instrumentem",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000020",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "dividend",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "instrumentID",
+        "message" : "Brakuje instrumentu dla transakcji."
+      }
+    ],
+    "name" : "dividend: bez instrumentu",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000021",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "dividend",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "grossAmount",
+        "message" : "Kwota transakcji musi być dodatnia."
+      }
+    ],
+    "name" : "dividend: kwota 0",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 0,
+      "id" : "00000000-0000-4000-8000-000000000022",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "dividend",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "instrumentID",
+        "message" : "Brakuje instrumentu dla transakcji."
+      }
+    ],
+    "name" : "bondCoupon: bez instrumentu",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000023",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "bondCoupon",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "quantity",
+        "message" : "Brakuje liczby wykupionych jednostek."
+      }
+    ],
+    "name" : "bondRedemption: bez ilości",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000024",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "bondRedemption",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+
+    ],
+    "name" : "bondRedemption: z ilością",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000025",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "quantity" : 1,
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "bondRedemption",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "instrumentID",
+        "message" : "Brakuje instrumentu dla transakcji."
+      }
+    ],
+    "name" : "depositOpen: bez instrumentu",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000026",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "depositOpen",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "instrumentID",
+        "message" : "Brakuje instrumentu dla transakcji."
+      }
+    ],
+    "name" : "depositClose: bez instrumentu",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000027",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "depositClose",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+
+    ],
+    "name" : "depositClose: z instrumentem",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000028",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "depositClose",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+
+    ],
+    "name" : "cashDeposit: zwykła",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000029",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "cashDeposit",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "grossAmount",
+        "message" : "Kwota transakcji musi być dodatnia."
+      }
+    ],
+    "name" : "cashDeposit: kwota 0",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 0,
+      "id" : "00000000-0000-4000-8000-000000000030",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "cashDeposit",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "grossAmount",
+        "message" : "Kwota transakcji musi być dodatnia."
+      }
+    ],
+    "name" : "cashWithdrawal: kwota ujemna",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : -5,
+      "id" : "00000000-0000-4000-8000-000000000031",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "cashWithdrawal",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+
+    ],
+    "name" : "fee: zwykła",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000032",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "fee",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+
+    ],
+    "name" : "tax: zwykły",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000033",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "tax",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "grossAmount",
+        "message" : "Kwota transakcji musi być dodatnia."
+      }
+    ],
+    "name" : "interest: kwota 0",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 0,
+      "id" : "00000000-0000-4000-8000-000000000034",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "interest",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+
+    ],
+    "name" : "transferIn: bez instrumentu",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000035",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "transferIn",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+
+    ],
+    "name" : "transferOut: gotówka",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000036",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "transferOut",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "instrumentID",
+        "message" : "Brakuje instrumentu dla transakcji."
+      },
+      {
+        "field" : "quantity",
+        "message" : "Transfer aktywów wymaga liczby jednostek."
+      }
+    ],
+    "name" : "transferOut: aktywo bez instrumentu i ilości",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000037",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "transferOut",
+      "transferKind" : "asset",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+
+    ],
+    "name" : "transferOut: aktywo z lotami",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000038",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "transferOut",
+      "transferKind" : "asset",
+      "transferLots" : [
+        {
+          "acquisitionDate" : 802224000,
+          "currency" : "EUR",
+          "quantity" : 1,
+          "unitCost" : 100
+        }
+      ],
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+
+    ],
+    "name" : "accountTransferIn: gotówka",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000039",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "sourcePortfolioID" : "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      "taxes" : 0,
+      "transactionType" : "accountTransferIn",
+      "transferKind" : "cash",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "grossAmount",
+        "message" : "Kwota transakcji musi być dodatnia."
+      }
+    ],
+    "name" : "accountTransferIn: bez rodzaju, kwota 0",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 0,
+      "id" : "00000000-0000-4000-8000-000000000040",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "accountTransferIn",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+
+    ],
+    "name" : "accountTransferIn: nieznany rodzaj",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000041",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "accountTransferIn",
+      "transferKind" : "bogus",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+
+    ],
+    "name" : "accountTransferIn: aktywo pełne",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000042",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "price" : 100,
+      "quantity" : 1,
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "accountTransferIn",
+      "transferKind" : "asset",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "instrumentID",
+        "message" : "Brakuje instrumentu dla transakcji."
+      },
+      {
+        "field" : "quantity",
+        "message" : "Transfer aktywów wymaga liczby jednostek."
+      },
+      {
+        "field" : "price",
+        "message" : "Transfer aktywów wymaga ceny lub kosztu nabycia."
+      }
+    ],
+    "name" : "accountTransferIn: aktywo bez instrumentu, ilości i ceny",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000043",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "accountTransferIn",
+      "transferKind" : "asset",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+
+    ],
+    "name" : "accountTransferIn: aktywo z lotami",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000044",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "accountTransferIn",
+      "transferKind" : "asset",
+      "transferLots" : [
+        {
+          "acquisitionDate" : 802224000,
+          "currency" : "EUR",
+          "quantity" : 1,
+          "unitCost" : 100
+        }
+      ],
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "transferLots[0].quantity",
+        "message" : "Lot transferu aktywów ma niepoprawną liczbę jednostek."
+      },
+      {
+        "field" : "transferLots[0].unitCost",
+        "message" : "Lot transferu aktywów ma niepoprawny koszt jednostkowy."
+      },
+      {
+        "field" : "transferLots[0].currency",
+        "message" : "Lot transferu aktywów ma niepoprawną walutę."
+      },
+      {
+        "field" : "transferLots[1].currency",
+        "message" : "Lot transferu aktywów ma niepoprawną walutę."
+      }
+    ],
+    "name" : "accountTransferIn: aktywo, złe loty",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000045",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "accountTransferIn",
+      "transferKind" : "asset",
+      "transferLots" : [
+        {
+          "acquisitionDate" : 802224000,
+          "currency" : "?",
+          "quantity" : 0,
+          "unitCost" : -1
+        },
+        {
+          "acquisitionDate" : 802224000,
+          "currency" : " ",
+          "quantity" : 1,
+          "unitCost" : 100
+        }
+      ],
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "quantity",
+        "message" : "Transfer aktywów wymaga liczby jednostek."
+      },
+      {
+        "field" : "price",
+        "message" : "Transfer aktywów wymaga ceny lub kosztu nabycia."
+      }
+    ],
+    "name" : "accountTransferIn: aktywo, pusta lista lotów",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000046",
+      "instrumentID" : "11111111-1111-4111-8111-111111111111",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "accountTransferIn",
+      "transferKind" : "asset",
+      "transferLots" : [
+
+      ],
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+
+    ],
+    "name" : "fxConversion: z celem",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "EUR",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000047",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "targetCurrency" : "PLN",
+      "targetGrossAmount" : 430,
+      "taxes" : 0,
+      "transactionType" : "fxConversion",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "targetCurrency",
+        "message" : "Waluta źródłowa i docelowa konwersji FX muszą być różne."
+      }
+    ],
+    "name" : "fxConversion: ta sama waluta",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "EUR",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000048",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "targetCurrency" : "eur",
+      "targetGrossAmount" : 100,
+      "taxes" : 0,
+      "transactionType" : "fxConversion",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "targetGrossAmount",
+        "message" : "Brakuje kwoty docelowej konwersji FX."
+      }
+    ],
+    "name" : "fxConversion: cel 0",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "EUR",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000049",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "targetCurrency" : "PLN",
+      "targetGrossAmount" : 0,
+      "taxes" : 0,
+      "transactionType" : "fxConversion",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "targetCurrency",
+        "message" : "Brakuje waluty docelowej konwersji FX."
+      }
+    ],
+    "name" : "fxConversion: kwota celu bez waluty",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "EUR",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000050",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "targetGrossAmount" : 430,
+      "taxes" : 0,
+      "transactionType" : "fxConversion",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+
+    ],
+    "name" : "fxConversion: stara z kursem",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "EUR",
+      "date" : 802224000,
+      "fees" : 0,
+      "fxRateToBase" : 4.2999999999999998,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000051",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "fxConversion",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "fxRateToBase",
+        "message" : "Stara konwersja FX wymaga dodatniego kursu do PLN."
+      }
+    ],
+    "name" : "fxConversion: stara bez kursu",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "EUR",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000052",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "fxConversion",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "fxRateToBase",
+        "message" : "Stara konwersja FX wymaga dodatniego kursu do PLN."
+      }
+    ],
+    "name" : "fxConversion: stara z kursem 0",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "EUR",
+      "date" : 802224000,
+      "fees" : 0,
+      "fxRateToBase" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000053",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "fxConversion",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+
+    ],
+    "name" : "correction: ujemna",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : -5,
+      "id" : "00000000-0000-4000-8000-000000000054",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "correction",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "grossAmount",
+        "message" : "Korekta musi mieć niezerową kwotę."
+      }
+    ],
+    "name" : "correction: zero",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 0,
+      "id" : "00000000-0000-4000-8000-000000000055",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "correction",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "grossAmount",
+        "message" : "Korekta musi mieć niezerową kwotę."
+      }
+    ],
+    "name" : "correction: 1e-8",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 1e-08,
+      "id" : "00000000-0000-4000-8000-000000000056",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "correction",
+      "updatedAt" : 802224000
+    }
+  },
+  {
+    "expectedIssues" : [
+      {
+        "field" : "transactionType",
+        "message" : "Nieznany typ transakcji."
+      }
+    ],
+    "name" : "nieznany typ",
+    "payload" : {
+      "createdAt" : 802224000,
+      "currency" : "PLN",
+      "date" : 802224000,
+      "fees" : 0,
+      "grossAmount" : 100,
+      "id" : "00000000-0000-4000-8000-000000000057",
+      "notes" : "",
+      "portfolioID" : "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "recordType" : "transaction",
+      "taxes" : 0,
+      "transactionType" : "split",
+      "updatedAt" : 802224000
+    }
+  }
+]
