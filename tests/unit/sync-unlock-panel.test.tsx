@@ -9,6 +9,8 @@ import {
 } from "@/sync/encryption/key-backup";
 import { SyncUnlockPanel } from "@/features/sync/sync-unlock-panel";
 import { setPendingAuthPassword } from "@/features/auth/pending-auth-password";
+import { encryptJsonPayloadV2 } from "@/sync/encryption/aes-gcm";
+import { recordAdditionalData } from "@/sync/records/encrypted-records";
 
 // Hasło konta jest teraz zarazem passphrase, z której wyprowadzany jest klucz
 // danych (pending-auth-password.ts przenosi je przez przeładowanie strony).
@@ -24,6 +26,7 @@ const ITERATIONS = 1_000; // szybki KDF; unlock czyta liczbę iteracji z backupu
 const net = vi.hoisted(() => ({
   bootstrap: { keyBackup: null as unknown, encryptedRecords: [] as unknown[] },
   upsert: vi.fn(),
+  insert: vi.fn(),
   cachedKey: null as CryptoKey | null,
 }));
 
@@ -42,9 +45,9 @@ vi.mock("@/sync/encryption/key-cache", () => ({
 vi.mock("@/sync/records/supabase-sync-store", () => ({
   fetchActiveEncryptedRecords: vi.fn(async () => []),
   fetchEncryptedKeyBackup: vi.fn(async () => net.bootstrap.keyBackup),
-  refreshEncryptedKeyBackup: vi.fn(async () => net.bootstrap.keyBackup),
   registerWebDevice: vi.fn(async () => undefined),
   upsertEncryptedKeyBackup: (...args: unknown[]) => net.upsert(...args),
+  insertEncryptedKeyBackup: (...args: unknown[]) => net.insert(...args),
 }));
 
 const writer = vi.hoisted(() => ({ clearQueue: vi.fn() }));
@@ -60,6 +63,31 @@ async function backupWrappedWith(passphrase: string): Promise<EncryptedKeyBackup
     passphrase,
     iterations: ITERATIONS,
   });
+}
+
+const OWNER = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+
+async function encryptedRow(key: CryptoKey, recordType: string, id: string, payload: unknown) {
+  const { encryptedPayload, nonce } = await encryptJsonPayloadV2(
+    key,
+    payload,
+    recordAdditionalData({ userId: OWNER, id, recordType, schemaVersion: 1, deleted: false }),
+  );
+  const at = "2026-06-30T10:00:00.000Z";
+  return {
+    id,
+    logical_id: id,
+    user_id: OWNER,
+    record_type: recordType,
+    encrypted_payload: encryptedPayload,
+    nonce,
+    payload_version: 1,
+    schema_version: 1,
+    device_id: "ios",
+    created_at: at,
+    updated_at: at,
+    deleted_at: null,
+  };
 }
 
 function renderPanel() {
@@ -80,6 +108,10 @@ beforeEach(() => {
   net.upsert.mockReset();
   net.upsert.mockImplementation(async (_supabase, _userId, backup) => {
     net.bootstrap.keyBackup = backup; // po zapisie serwer zwraca już backup
+  });
+  net.insert.mockReset();
+  net.insert.mockImplementation(async (_supabase, _userId, backup) => {
+    net.bootstrap.keyBackup = backup;
   });
   vi.spyOn(globalThis, "fetch").mockImplementation(
     async () =>
@@ -194,8 +226,10 @@ describe("SyncUnlockPanel — hasło jako klucz", () => {
     const onSyncLoaded = renderPanel();
 
     await waitFor(() => expect(onSyncLoaded).toHaveBeenCalledTimes(1), { timeout: 15_000 });
-    expect(net.upsert).toHaveBeenCalledTimes(1);
-    const [, userId, backup] = net.upsert.mock.calls[0] as [unknown, string, EncryptedKeyBackup];
+    // Pierwszy backup idzie insertem — nigdy nie nadpisuje cudzego.
+    expect(net.upsert).not.toHaveBeenCalled();
+    expect(net.insert).toHaveBeenCalledTimes(1);
+    const [, userId, backup] = net.insert.mock.calls[0] as [unknown, string, EncryptedKeyBackup];
     expect(userId).toBe("user-1");
     // klucz z backupu odblokowuje się dokładnie hasłem konta, a innym nie
     await expect(unlockUserDataKey(backup, "Haslo-Konta1")).resolves.toBeTruthy();
@@ -203,6 +237,25 @@ describe("SyncUnlockPanel — hasło jako klucz", () => {
     // użytkownik nie zobaczył formularza „utwórz backup"
     expect(screen.queryByRole("button", { name: /Utwórz backup klucza/ })).toBeNull();
     expect(sessionStorage.getItem(PENDING_KEY)).toBeNull();
+  }, 20_000);
+
+  it("nie nadpisuje backupu, który inne urządzenie zapisało po pobraniu bootstrapu", async () => {
+    // Bootstrap: brak backupu. Zanim web go utworzy, aplikacja natywna zapisuje własny.
+    const nativeBackup = await backupWrappedWith("Haslo-Konta1");
+    net.insert.mockImplementation(async () => {
+      net.bootstrap.keyBackup = nativeBackup;
+      throw Object.assign(new Error("duplicate key value violates unique constraint"), { code: "23505" });
+    });
+    setPendingAuthPassword("Haslo-Konta1");
+
+    const onSyncLoaded = renderPanel();
+
+    // Nowy klucz nie trafia na serwer — rekordy zaszyfrowane kluczem natywnym zostają czytelne.
+    await waitFor(() => expect(net.insert).toHaveBeenCalledTimes(1), { timeout: 15_000 });
+    expect(net.upsert).not.toHaveBeenCalled();
+    // Panel pobiera backup z serwera i prosi o hasło do niego.
+    await screen.findByLabelText(LABEL, undefined, { timeout: 5_000 });
+    expect(onSyncLoaded).not.toHaveBeenCalled();
   }, 20_000);
 
   it("konto bez backupu i bez hasła: pokazuje ręczne tworzenie backupu jak dotąd (np. konto Google/Apple)", async () => {
@@ -249,6 +302,28 @@ describe("SyncUnlockPanel — hasło jako klucz", () => {
     respond?.();
     await waitFor(() => expect(onSyncLoaded).toHaveBeenCalledTimes(1));
     expect(screen.queryByText(/Wpisz hasło konta/)).toBeNull();
+  });
+
+  it("jeden rekord o nieznanym kształcie nie blokuje odblokowania (UI jest pobłażliwe, parytet nie)", async () => {
+    net.bootstrap.keyBackup = await backupWrappedWith("Haslo-Konta1");
+    const key = await unlockUserDataKey(net.bootstrap.keyBackup as EncryptedKeyBackup, "Haslo-Konta1");
+    net.cachedKey = key;
+    const account = "11111111-1111-4111-8111-111111111111";
+    net.bootstrap.encryptedRecords = [
+      await encryptedRow(key, "account", account, { recordType: "account", id: account, name: "Core", baseCurrency: "PLN" }),
+      // Brak grossAmount i currency — schemat transakcji go odrzuca.
+      await encryptedRow(key, "transaction", "99999999-9999-4999-8999-999999999999", {
+        recordType: "transaction",
+        id: "99999999-9999-4999-8999-999999999999",
+        portfolioID: account,
+        transactionType: "cashDeposit",
+      }),
+    ];
+
+    const onSyncLoaded = renderPanel();
+
+    await waitFor(() => expect(onSyncLoaded).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText(/Nie udało się/)).toBeNull();
   });
 
   it("gdy potrzebne jest hasło, nagłówek o nie prosi", async () => {

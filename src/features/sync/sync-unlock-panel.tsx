@@ -4,6 +4,7 @@ import { token } from "@/design/tokens";
 import { authTitleStyle } from "@/features/auth/auth-brand";
 import { COLORS } from "@/lib/design-tokens";
 import { v2Mix } from "@/lib/v2-design";
+import { withTimeout } from "@/lib/with-timeout";
 import type { Session } from "@supabase/supabase-js";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
@@ -28,12 +29,11 @@ import {
 import { importAesGcmKey } from "@/sync/encryption/aes-gcm";
 import { decryptEncryptedRecords, RecordDecryptionError } from "@/sync/records/encrypted-records";
 import { buildInvestorDataSnapshot } from "@/sync/records/investor-snapshot";
-import { buildParitySnapshot } from "@/sync/records/parity-snapshot";
 import {
   fetchActiveEncryptedRecords,
   fetchEncryptedKeyBackup,
+  insertEncryptedKeyBackup,
   registerWebDevice,
-  refreshEncryptedKeyBackup,
   upsertEncryptedKeyBackup,
 } from "@/sync/records/supabase-sync-store";
 import { clearPendingSyncOperations, flushPendingSyncOperations } from "@/sync/records/record-writer";
@@ -47,13 +47,6 @@ import type {
   EncryptedRecord,
 } from "@/sync/records/encrypted-records";
 import { useSyncStore } from "@/sync/store/sync-store";
-
-declare global {
-  interface Window {
-    __investorWebParitySnapshot?: ReturnType<typeof buildParitySnapshot>;
-    __investorWebExportParitySnapshot?: () => string;
-  }
-}
 
 // ── Design tokens ────────────────────────────────────────────────
 const INK = token("ink");
@@ -95,17 +88,6 @@ const UNLOCK_STEP_LABELS: Record<UnlockStep, string> = {
   "decrypt-records": "Odszyfrowuję rekordy lokalnie w przeglądarce…",
   "build-snapshot": "Buduję lokalny snapshot portfela…",
 };
-
-function withTimeout<T>(promise: Promise<T>, label: string, timeoutMs = 20_000) {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) => {
-      window.setTimeout(() => {
-        reject(new Error(`${label} przekroczyło limit ${timeoutMs / 1000}s.`));
-      }, timeoutMs);
-    }),
-  ]);
-}
 
 function getUnlockErrorMessage(error: unknown) {
   // Hasło było dobre (klucz odblokowany) — nie wysyłamy użytkownika do poprawiania hasła.
@@ -375,17 +357,6 @@ export function SyncUnlockPanel({
       useLatestTransactionFxRate: true,
       useMarketQuotes: true,
     });
-    const paritySnapshot = buildParitySnapshot(decryptedRecords, {
-      asOf: new Date(),
-      historyGranularity: "daily",
-      useLatestTransactionFxRate: true,
-      useMarketQuotes: true,
-    });
-
-    window.__investorWebParitySnapshot = paritySnapshot;
-    window.__investorWebExportParitySnapshot = () =>
-      JSON.stringify(window.__investorWebParitySnapshot, null, 2);
-
     if (options.rememberTrustedKey && userId) {
       try {
         await saveCachedUserDataKey(userId, userDataKey);
@@ -601,7 +572,7 @@ export function SyncUnlockPanel({
     try {
       if (!initialUser) {
         keyBackup = await withTimeout(
-          refreshEncryptedKeyBackup(supabase),
+          fetchEncryptedKeyBackup(supabase),
           "Pobieranie backupu klucza",
         );
       }
@@ -680,7 +651,7 @@ export function SyncUnlockPanel({
         "Tworzenie backupu klucza",
       );
       await withTimeout(
-        upsertEncryptedKeyBackup(supabase, userId, backup),
+        insertEncryptedKeyBackup(supabase, userId, backup),
         "Zapis backupu klucza w Supabase",
       );
 
@@ -693,7 +664,13 @@ export function SyncUnlockPanel({
       setCreateStatus("idle");
     } catch (error) {
       setCreateStatus("error");
-      setCreateError(getUnlockErrorMessage(error));
+      if ((error as { code?: unknown } | null)?.code === "23505") {
+        // Inne urządzenie zapisało backup, zanim zdążyliśmy — odblokowujemy tamten.
+        setCreateError("To konto ma już backup klucza z innego urządzenia. Odblokuj go hasłem.");
+        await keyBackupQuery.refetch();
+      } else {
+        setCreateError(getUnlockErrorMessage(error));
+      }
       throw error;
     }
   }

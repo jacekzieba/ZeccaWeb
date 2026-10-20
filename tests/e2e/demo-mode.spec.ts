@@ -85,8 +85,8 @@ test("demo cookie does not open protected API routes", async ({ page }) => {
     maxRedirects: 0,
   });
 
-  expect(response.status()).toBe(307);
-  expect(response.headers()["location"]).toContain("/login");
+  expect(response.status()).toBe(401);
+  expect(response.headers()["location"]).toBeUndefined();
 });
 
 test("leaving the demo restores the auth gate", async ({ page }) => {

@@ -30,3 +30,6 @@ export function authErrorMessage(error: AuthErrorLike): string {
   }
   return error.message;
 }
+
+/** Wyjątek zamiast odpowiedzi (sieć, WebCrypto) — formularz musi się odblokować. */
+export const CONNECTION_ERROR = "Nie udało się połączyć z serwerem. Sprawdź połączenie i spróbuj ponownie.";

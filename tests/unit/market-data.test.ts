@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   clearMarketDataCache,
   getCachedMarketData,
+  MARKET_DATA_CACHE_MAX_ENTRIES,
   setCachedMarketData,
 } from "@/market-data/cache";
 import {
@@ -35,6 +36,32 @@ describe("market data cache", () => {
 
     vi.setSystemTime(new Date("2026-05-17T10:01:01.000Z"));
     expect(getCachedMarketData("fx:USD")).toBeNull();
+  });
+
+  // Klucze pochodzą z zapytań (każdy znak w wyszukiwarce, dowolne zakresy dat),
+  // a instancja serwera żyje długo — cache nie może rosnąć bez końca.
+  it("ma górny limit wpisów i najpierw usuwa najstarsze", () => {
+    for (let i = 0; i <= MARKET_DATA_CACHE_MAX_ENTRIES; i += 1) {
+      setCachedMarketData(`search:${i}`, i, 60_000);
+    }
+
+    expect(getCachedMarketData("search:0")).toBeNull();
+    expect(getCachedMarketData(`search:${MARKET_DATA_CACHE_MAX_ENTRIES}`)?.value).toBe(MARKET_DATA_CACHE_MAX_ENTRIES);
+  });
+
+  it("przy zapełnieniu najpierw wyrzuca wygasłe wpisy, nie żywe", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-17T10:00:00.000Z"));
+    setCachedMarketData("cpi:long", "keep", 6 * 60 * 60_000);
+    for (let i = 1; i < MARKET_DATA_CACHE_MAX_ENTRIES; i += 1) {
+      setCachedMarketData(`search:${i}`, i, 60_000);
+    }
+
+    vi.setSystemTime(new Date("2026-05-17T10:05:00.000Z"));
+    setCachedMarketData("search:new", "new", 60_000);
+
+    expect(getCachedMarketData("cpi:long")?.value).toBe("keep");
+    expect(getCachedMarketData("search:new")?.value).toBe("new");
   });
 });
 

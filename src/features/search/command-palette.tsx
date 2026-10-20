@@ -8,6 +8,7 @@ import { useSyncStore } from "@/sync/store/sync-store";
 import { TYPOGRAPHY } from "@/lib/design-tokens";
 import { V2, v2Mix } from "@/lib/v2-design";
 import { transactionLabel } from "@/lib/transaction-labels";
+import { useModalLayer } from "@/components/feedback/use-modal-layer";
 
 const UI = TYPOGRAPHY.system;
 const MONO = TYPOGRAPHY.mono;
@@ -128,22 +129,17 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     setActive(0);
   }, [query]);
 
-  const returnFocusRef = useRef<HTMLElement | null>(null);
-
   useEffect(() => {
     if (open) {
-      returnFocusRef.current = document.activeElement as HTMLElement | null;
       setQuery("");
       setActive(0);
-      const id = window.setTimeout(() => inputRef.current?.focus(), 30);
-      // Po zamknięciu ognisko wracało na <body>, więc klawiatura lądowała na
-      // początku dokumentu zamiast tam, skąd paleta została otwarta.
-      return () => {
-        window.clearTimeout(id);
-        returnFocusRef.current?.focus?.();
-      };
     }
   }, [open]);
+
+  // Fokus w polu wyszukiwania, Tab nie wychodzi pod spód, Escape zamyka,
+  // a po zamknięciu fokus wraca tam, skąd paletę otwarto.
+  const panelRef = useRef<HTMLDivElement>(null);
+  useModalLayer(open, panelRef, onClose, inputRef);
 
   if (!open) return null;
 
@@ -170,6 +166,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       }}
     >
       <div
+        ref={panelRef}
         onMouseDown={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -204,8 +201,6 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
               } else if (e.key === "Enter") {
                 e.preventDefault();
                 go(results[active]);
-              } else if (e.key === "Escape") {
-                onClose();
               }
             }}
             placeholder="Szukaj instrumentu, transakcji, portfela…"

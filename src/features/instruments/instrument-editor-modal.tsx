@@ -10,8 +10,12 @@ import {
   type CSSProperties,
   type FormEvent,
   type ReactNode,
+  useId,
+  useRef,
 } from "react";
 import { useSyncStore } from "@/sync/store/sync-store";
+import { useDraftAtOpen } from "@/lib/use-draft-at-open";
+import { useModalLayer } from "@/components/feedback/use-modal-layer";
 import { refreshSyncStore, saveRecord, type WriteRecordPayload } from "@/sync/records/record-writer";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
 import { makeAssetPayload } from "@/sync/records/macos-payloads";
@@ -117,7 +121,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 export function InstrumentEditorModal({
   open,
-  initialValue,
+  initialValue: liveInitialValue,
   defaultValue,
   onClose,
   onSaved,
@@ -130,6 +134,7 @@ export function InstrumentEditorModal({
   onSaved?: (instrument: SavedInstrumentDraft) => void;
   zIndex?: number;
 }) {
+  const initialValue = useDraftAtOpen(open, liveInitialValue);
   const userDataKey = useSyncStore((s) => s.userDataKey);
   const publicDemo = useSyncStore((s) => s.publicDemo);
   const supabase = useSyncStore((s) => s.supabase);
@@ -204,6 +209,8 @@ export function InstrumentEditorModal({
     setCandidates([]);
   }, []);
 
+  const savedSymbol = initialValue?.symbol.trim() ?? null;
+
   // Yahoo autocomplete: only stocks and ETFs are searchable here. Debounce the
   // symbol input and abort any in-flight request/timer when it changes, when
   // the modal closes, or on unmount. Errors/offline stay silent — this is a
@@ -215,7 +222,9 @@ export function InstrumentEditorModal({
     }
 
     const query = symbol.trim();
-    if (query.length < SEARCH_MIN_CHARS) {
+    // Edycja: zapisany symbol to nie zapytanie. Pojedynczy wynik nakładał się
+    // sam na pola i zapis bez zmian podmieniał walutę, giełdę i ticker.
+    if (query.length < SEARCH_MIN_CHARS || query === savedSymbol) {
       setCandidates([]);
       return;
     }
@@ -246,7 +255,7 @@ export function InstrumentEditorModal({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [symbol, kind, open, applyCandidate]);
+  }, [symbol, kind, open, applyCandidate, savedSymbol]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -420,6 +429,11 @@ export function InstrumentEditorModal({
     }
   }
 
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const titleId = useId();
+  // W trakcie przepinania transakcji okno nie daje się zamknąć — także Escape.
+  useModalLayer(mounted && open, panelRef, retagging ? () => undefined : onClose);
+
   if (!mounted || !open) {
     return null;
   }
@@ -448,6 +462,10 @@ export function InstrumentEditorModal({
       />
 
       <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         style={{
           position: "relative",
           width: "100%",
@@ -466,7 +484,7 @@ export function InstrumentEditorModal({
             borderBottom: `0.5px solid ${LINE_SOFT}`,
           }}
         >
-          <div style={{ fontSize: 15, fontWeight: 700, color: INK }}>
+          <div id={titleId} style={{ fontSize: 15, fontWeight: 700, color: INK }}>
             {initialValue ? "Edytuj instrument" : "Dodaj instrument"}
           </div>
           <button

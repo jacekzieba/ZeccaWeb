@@ -125,6 +125,27 @@ describe("InstrumentEditorModal currency change", () => {
     vi.restoreAllMocks();
   });
 
+  it("samo otwarcie edycji nie podmienia waluty, giełdy ani tickera wynikiem wyszukiwarki", async () => {
+    // Wyszukiwarka ruszała dla zapisanego symbolu; przy jednym wyniku
+    // automatycznie nakładała go na pola, a zapis bez zmian zmieniał instrument.
+    vi.mocked(globalThis.fetch).mockImplementation(async () =>
+      new Response(
+        JSON.stringify({
+          data: [{ provider: "yahoo", symbol: "VWRL.NL", name: "Vanguard", exchange: "AMS", currency: "EUR", kind: "etf" }],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    );
+    const onClose = vi.fn();
+    render(<InstrumentEditorModal open initialValue={vwrlDraft} onClose={onClose} />);
+
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz zmiany" }));
+
+    await waitFor(() => expect(savedPayloads("asset")).toHaveLength(1));
+    expect(savedPayloads("asset")[0]!.payload).toMatchObject({ currency: "USD", marketDataID: "VWRL" });
+  });
+
   it("re-derives the untouched Yahoo symbol for the new currency", async () => {
     const onClose = vi.fn();
     render(<InstrumentEditorModal open initialValue={vwrlDraft} onClose={onClose} />);

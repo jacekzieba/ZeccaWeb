@@ -4,7 +4,8 @@ import { dayCountLabel, isShortHistory, mwrDisplay } from "@/domain/metrics/shor
 import { v2Mix } from "@/lib/v2-design";
 import { token } from "@/design/tokens";
 import Link from "next/link";
-import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useId, useMemo, useState, type CSSProperties } from "react";
+import { useElementWidth } from "@/lib/use-element-width";
 import {
   BadgeDollarSign,
   BadgePercent,
@@ -48,7 +49,6 @@ import {
   buildInstrumentList,
   buildTransactionList,
 } from "@/sync/records/investor-snapshot";
-import { summarizeDecryptedRecords } from "@/sync/records/sync-summary";
 import { useSyncStore } from "@/sync/store/sync-store";
 import { useDisplaySnapshot } from "@/features/sync/use-display-snapshot";
 import { DataQualityBanner } from "@/features/sync/data-quality-banner";
@@ -323,6 +323,16 @@ function formatLastSync(ts: number | null): string {
   return `Synchronizacja ${date}, ${time}`;
 }
 
+/** Własny tick co 30 s odświeża tylko etykietę, nie cały dashboard. */
+export function LastSyncLabel({ lastSyncedAt }: { lastSyncedAt: number | null }) {
+  const [, bumpSyncTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => bumpSyncTick((t) => t + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  return <>{formatLastSync(lastSyncedAt)}</>;
+}
+
 function useMedia(query: string) {
   const [matches, setMatches] = useState(false);
 
@@ -479,20 +489,10 @@ function niceAxisStep(raw: number) {
 }
 
 function V2Area({ data, height = 240 }: { data: ValuationPoint[]; height?: number }) {
-  const wrapRef = useRef<HTMLDivElement>(null);
   const { currency: displayCurrency } = useDisplayCurrency();
-  const [width, setWidth] = useState(820);
+  const { ref: wrapRef, width } = useElementWidth(820, 320);
   const [hover, setHover] = useState<number | null>(null);
   const gradId = useId().replace(/:/g, "");
-
-  useEffect(() => {
-    if (!wrapRef.current) return;
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) setWidth(Math.max(320, entry.contentRect.width));
-    });
-    ro.observe(wrapRef.current);
-    return () => ro.disconnect();
-  }, []);
 
   if (data.length < 2) return null;
 
@@ -651,19 +651,9 @@ function V2Spark({ data, color, width = 92, height = 30 }: { data: number[]; col
 }
 
 function V2HatchBars({ solid = true, height = 150, labels, profit, loss }: { solid?: boolean; height?: number; labels: string[]; profit: number[]; loss: number[] }) {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(380);
+  const { ref: wrapRef, width } = useElementWidth(380, 240);
   const profitPattern = useId().replace(/:/g, "");
   const lossPattern = useId().replace(/:/g, "");
-
-  useEffect(() => {
-    if (!wrapRef.current) return;
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) setWidth(Math.max(240, entry.contentRect.width));
-    });
-    ro.observe(wrapRef.current);
-    return () => ro.disconnect();
-  }, []);
 
   const pl = 26;
   const pr = 6;
@@ -905,14 +895,6 @@ export function DashboardOverview() {
   const isMobile = useMedia("(max-width: 720px)");
   const isTablet = useMedia("(max-width: 1140px)");
 
-  const syncSummary = records ? summarizeDecryptedRecords(records) : null;
-  // Re-render every 30s so the relative "last sync" label stays fresh.
-  const [, bumpSyncTick] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => bumpSyncTick((t) => t + 1), 30_000);
-    return () => clearInterval(id);
-  }, []);
-  const lastSyncLabel = formatLastSync(lastSyncedAt);
   const dateText = new Date(snapshot?.asOf ?? Date.now()).toLocaleDateString("pl-PL", {
     day: "numeric",
     month: "long",
@@ -994,7 +976,6 @@ export function DashboardOverview() {
           isMobile={isMobile}
           isTablet={isTablet}
           lastSyncedAt={lastSyncedAt}
-          lastSyncLabel={lastSyncLabel}
           totalValue={totalValue}
           cash={snapshot.cash}
           displayCurrency={displayCurrency}
@@ -1166,7 +1147,7 @@ export function DashboardOverview() {
             Dzień dobry, <span style={{ fontStyle: "italic", color: PALETTE.brand }}>{firstName(profile.name)}</span>
           </h1>
           <div style={{ fontFamily: UI, fontSize: 13, color: PALETTE.muted, marginTop: 3 }}>
-            {dateText} · {syncSummary ? "wszystkie dane zsynchronizowane" : "dane z lokalnego snapshotu"}.
+            {dateText} · {records ? "wszystkie dane zsynchronizowane" : "dane z lokalnego snapshotu"}.
           </div>
         </div>
         <button
@@ -1227,7 +1208,6 @@ function SummaryCard({
   isMobile,
   isTablet,
   lastSyncedAt,
-  lastSyncLabel,
   totalValue,
   cash,
   displayCurrency,
@@ -1243,7 +1223,6 @@ function SummaryCard({
   isMobile: boolean;
   isTablet: boolean;
   lastSyncedAt: number | null;
-  lastSyncLabel: string;
   totalValue: number;
   /** Gotówka wchodząca w skład `totalValue`, w walucie prezentacji. */
   cash: number;
@@ -1315,7 +1294,7 @@ function SummaryCard({
                 data-testid="sync-status-dot"
                 style={{ width: 6, height: 6, flex: "0 0 6px", borderRadius: "50%", background: PALETTE.subtle }}
               />
-              {lastSyncLabel}
+              <LastSyncLabel lastSyncedAt={lastSyncedAt} />
             </span>
           </div>
           <div

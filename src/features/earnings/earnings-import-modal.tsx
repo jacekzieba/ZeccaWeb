@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { createPortal } from "react-dom";
 import { Check, Clipboard, Download, FileSpreadsheet, Loader2, Upload, X } from "lucide-react";
 import type { EarningBurdenRow, EarningRow } from "@/domain/models/earnings";
@@ -20,6 +20,7 @@ import {
 } from "@/features/import/import-progress";
 import { readSpreadsheet } from "@/features/import/read-spreadsheet";
 import { V2, V2Button, V2_TYPE, v2Mix } from "@/lib/v2-design";
+import { useModalLayer } from "@/components/feedback/use-modal-layer";
 
 type Props = {
   earnings: EarningRow[];
@@ -38,6 +39,8 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
   const [progress, setProgress] = useState<ImportProgressState | null>(null);
 
   useEffect(() => setMounted(true), []);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  useModalLayer(mounted, panelRef, onClose);
 
   const displayItems = preview?.itemsToImport.slice(0, 12) ?? [];
 
@@ -121,6 +124,7 @@ export function EarningsImportModal({ earnings, burdens, onClose, onCommit }: Pr
         style={{ position: "absolute", inset: 0, border: "none", background: v2Mix(V2.page, 0.36) }}
       />
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label="Import zarobków"

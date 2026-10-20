@@ -112,6 +112,27 @@ describe("ChangePasswordForm", () => {
     expect(backend.upsert.mock.calls[1]?.[2]).toEqual(backend.backup);
   }, 15_000);
 
+  it("wyjątek przy zmianie w Auth (np. zerwana sieć) też przywraca stary backup", async () => {
+    backend.updateUser.mockRejectedValue(new TypeError("Failed to fetch"));
+    render(<ChangePasswordForm />);
+    await fill();
+
+    await screen.findByText(/Hasło się nie zmieniło/, undefined, { timeout: 10_000 });
+    expect(backend.calls).toEqual(["upsert", "updateUser", "upsert"]);
+    expect(backend.upsert.mock.calls[1]?.[2]).toEqual(backend.backup);
+    expect(screen.getByRole("button", { name: /Zmień hasło/ }).hasAttribute("disabled")).toBe(false);
+  }, 15_000);
+
+  it("wyjątek przy sprawdzaniu obecnego hasła odblokowuje formularz", async () => {
+    backend.signIn.mockRejectedValue(new TypeError("Failed to fetch"));
+    render(<ChangePasswordForm />);
+    await fill();
+
+    await screen.findByText(/Nie udało się połączyć/, undefined, { timeout: 10_000 });
+    expect(backend.calls).toEqual([]);
+    expect(screen.getByRole("button", { name: /Zmień hasło/ }).hasAttribute("disabled")).toBe(false);
+  }, 15_000);
+
   it("konto z osobną frazą sync: zmienia tylko hasło, backupu nie rusza", async () => {
     backend.backup = await createEncryptedKeyBackup({
       rawUserDataKey: generateUserDataKeyBytes(),

@@ -50,6 +50,9 @@ import {
 } from "./transaction-rules";
 import { fundingDepositForTrade, fundingDepositNote } from "./funding-deposit";
 import { currencyLabel } from "@/lib/money";
+import { localDateString } from "@/lib/calendar-date";
+import { useDraftAtOpen } from "@/lib/use-draft-at-open";
+import { useModalLayer } from "@/components/feedback/use-modal-layer";
 import { announce } from "@/components/feedback/status-announcer";
 import { Select } from "@/components/ui/select";
 
@@ -369,7 +372,7 @@ type InstrumentOption = {
 
 export function AddTransactionModal({
   open: controlledOpen,
-  initialValue,
+  initialValue: liveInitialValue,
   onClose,
 }: {
   open?: boolean;
@@ -387,10 +390,11 @@ export function AddTransactionModal({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const open = controlledOpen ?? globalOpen;
+  const initialValue = useDraftAtOpen(open, liveInitialValue);
   const isEditing = Boolean(initialValue);
 
   // Form state
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateString();
   const [txType, setTxType] = useState<TxTypeValue>("buy");
   const [portfolioId, setPortfolioId] = useState("");
   const [instrumentId, setInstrumentId] = useState("");
@@ -418,6 +422,8 @@ export function AddTransactionModal({
   const [error, setError] = useState<string | null>(null);
   const [instrumentEditorOpen, setInstrumentEditorOpen] = useState(false);
   const [inlineInstrument, setInlineInstrument] = useState<InstrumentOption | null>(null);
+  // Waluta|data, dla której kurs w polu jest aktualny — patrz efekt pobierający kurs NBP.
+  const fxSignatureRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -439,6 +445,12 @@ export function AddTransactionModal({
     setTargetCurrency(initialValue?.targetCurrency ?? "USD");
     setTargetGrossAmount(initialValue?.targetGrossAmount != null ? String(initialValue.targetGrossAmount) : "");
     setFxRateToBase(initialValue?.fxRateToBase != null ? String(initialValue.fxRateToBase) : "");
+    // Zapisany kurs (np. z wyciągu brokera) jest aktualny dla swojej waluty i daty —
+    // dopiero ich zmiana ma pobrać kurs NBP, nie samo otwarcie edycji.
+    fxSignatureRef.current =
+      initialValue?.fxRateToBase != null
+        ? `${initialValue.currency}|${initialValue.date.slice(0, 10)}`
+        : null;
     // For a foreign buy/sell being edited, PLN settlement is implied by a stored
     // rate; a null rate means it was settled in the foreign currency. New/other
     // transactions default to PLN settlement (native default).
@@ -554,22 +566,33 @@ export function AddTransactionModal({
     [currency, newInstrumentDefaultKind],
   );
 
-  useEffect(() => {
+  // Zmiana typu przez użytkownika zeruje filtr i wybór instrumentu. Celowo nie
+  // efekt na `txType`: ten odpalał też po otwarciu edycji (typ „buy” → typ
+  // edytowanej transakcji) i kasował jej instrument.
+  function chooseTxType(next: TxTypeValue) {
+    if (next === txType) return;
+    setTxType(next);
     setAssetClass("all");
     setInstrumentId("");
-  }, [txType]);
+  }
 
   // Instruments currently held in the selected portfolio (for sell / redemption
   // / deposit-close, where you can only act on something you actually hold).
+  // Bez edytowanej transakcji: sprzedaż, która zamknęła pozycję, inaczej zeruje
+  // stan i jej własny instrument wypada z listy.
+  const editedTransactionId = initialValue?.id ?? null;
   const heldInstrumentIds = useMemo(() => {
     if (!records || !portfolioId) return new Set<string>();
-    const detail = buildPortfolioDetail(records, portfolioId, {
+    const ledger = editedTransactionId
+      ? records.filter((r) => !(r.envelope.type === "transaction" && r.id === editedTransactionId))
+      : records;
+    const detail = buildPortfolioDetail(ledger, portfolioId, {
       asOf: new Date(),
       useLatestTransactionFxRate: true,
       useMarketQuotes: true,
     });
     return new Set((detail?.holdings ?? []).filter((h) => h.quantity > 0).map((h) => h.instrumentId));
-  }, [records, portfolioId]);
+  }, [records, portfolioId, editedTransactionId]);
 
   // The instrument picker, narrowed to what makes sense for the chosen type.
   const availableInstruments = useMemo<InstrumentOption[]>(() => {
@@ -715,7 +738,6 @@ export function AddTransactionModal({
   // must not overwrite the field). `fxSignatureRef` distinguishes a
   // currency/date change (force overwrite) from merely re-showing the block or
   // toggling settlement (soft — keep a manually entered value).
-  const fxSignatureRef = useRef<string | null>(null);
   useEffect(() => {
     if (!showsFX || !settleInPLN) return;
     const signature = `${currency}|${date}`;
@@ -1116,6 +1138,10 @@ export function AddTransactionModal({
     }
   }
 
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const titleId = useId();
+  useModalLayer(mounted && open, panelRef, handleClose);
+
   if (!mounted || !open) return null;
 
   const modal = (
@@ -1143,6 +1169,10 @@ export function AddTransactionModal({
       />
 
       <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         className="transaction-modal-panel"
         style={{
           position: "relative",
@@ -1175,7 +1205,7 @@ export function AddTransactionModal({
                   <button
                     key={`${recent.label}-${index}`}
                     type="button"
-                    onClick={() => recent.type && setTxType(recent.type)}
+                    onClick={() => recent.type && chooseTxType(recent.type)}
                     style={{
                       border: "none",
                       background: "transparent",
@@ -1215,7 +1245,7 @@ export function AddTransactionModal({
                     <button
                       key={type.value}
                       type="button"
-                      onClick={() => setTxType(type.value)}
+                      onClick={() => chooseTxType(type.value)}
                       style={{
                         position: "relative",
                         border: "none",
@@ -1271,7 +1301,7 @@ export function AddTransactionModal({
             <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
               <IconBadge icon={TxIcon} color={txDef.tone} selected />
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 21, fontWeight: 700, color: INK, lineHeight: 1.1 }}>
+                <div id={titleId} style={{ fontSize: 21, fontWeight: 700, color: INK, lineHeight: 1.1 }}>
                   {isEditing ? `Edytuj: ${txDef.label}` : txDef.label}
                 </div>
                 <div style={{ fontSize: 13, color: MUTED, marginTop: 3 }}>
