@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import allTypes from "../fixtures/native-golden/all_transaction_types.json";
 import diversified from "../fixtures/native-golden/diversified_portfolio.json";
-import { buildGoldenRecords, type GoldenScenario } from "./helpers/native-golden";
+import {
+  buildGoldenRecords,
+  type GoldenDateEncoding,
+  type GoldenScenario,
+} from "./helpers/native-golden";
 import {
   buildInvestorDataSnapshot,
   buildPortfolioDetail,
@@ -11,10 +15,14 @@ import {
 // Silniki (Swift i TS) są dwiema niezależnymi implementacjami — ten plik jest
 // jedynym miejscem, w którym ktoś porównuje ich wyniki metryk wydajności.
 // Rozjazd to błąd parytetu do zgłoszenia, nie liczba do „poprawienia” tutaj.
+//
+// Każdy scenariusz idzie dwa razy: z datami jak z weba (północ UTC) i jak z
+// aplikacji (północ w Warszawie, dzień wcześniej w UTC). Web czytał drugie
+// kodowanie jako poprzedni dzień przy obligacjach (zob. native-golden-bond-calendar).
 
-function evaluate(fixture: unknown) {
+function evaluate(fixture: unknown, dateEncoding: GoldenDateEncoding) {
   const scenario = fixture as GoldenScenario;
-  const built = buildGoldenRecords(scenario);
+  const built = buildGoldenRecords(scenario, dateEncoding);
   const options = {
     asOf: built.asOf,
     fxRates: built.fxRates,
@@ -31,8 +39,10 @@ function evaluate(fixture: unknown) {
 const holdingValue = (detail: ReturnType<typeof evaluate>["detail"], symbol: string) =>
   detail.holdings.find((h) => h.symbol === symbol);
 
-describe("złoty scenariusz: wszystkie typy transakcji (natywny all_transaction_types)", () => {
-  const { snapshot, detail, expected } = evaluate(allTypes);
+const encodings: GoldenDateEncoding[] = ["utc", "app"];
+
+describe.each(encodings)("złoty scenariusz: wszystkie typy transakcji (natywny all_transaction_types, daty %s)", (encoding) => {
+  const { snapshot, detail, expected } = evaluate(allTypes, encoding);
 
   it("wartość portfela i gotówka", () => {
     expect(snapshot.totalValue).toBeCloseTo(expected.totalValue, 2);
@@ -108,8 +118,8 @@ describe("złoty scenariusz: wszystkie typy transakcji (natywny all_transaction_
   });
 });
 
-describe("złoty scenariusz: portfel wielowalutowy (natywny diversified_portfolio)", () => {
-  const { snapshot, detail, expected } = evaluate(diversified);
+describe.each(encodings)("złoty scenariusz: portfel wielowalutowy (natywny diversified_portfolio, daty %s)", (encoding) => {
+  const { snapshot, detail, expected } = evaluate(diversified, encoding);
 
   it("wartość portfela, pozycje i gotówka po kursach z dnia wyceny", () => {
     expect(snapshot.totalValue).toBeCloseTo(expected.totalValue, 2);

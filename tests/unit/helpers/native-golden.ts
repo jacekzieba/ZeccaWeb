@@ -53,7 +53,22 @@ export type GoldenScenario = {
 const PORTFOLIO_ID = "11111111-1111-4111-8111-111111111111";
 const uuid = (prefix: string, n: number) =>
   `${prefix}0000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
-const iso = (day: string) => `${day}T00:00:00.000Z`;
+/** Jak platforma zapisuje dzień: `utc` — północ UTC (ZeccaWeb), `app` — północ
+ * w Warszawie, czyli 22:00/23:00 UTC dnia poprzedniego (aplikacja natywna). */
+export type GoldenDateEncoding = "utc" | "app";
+
+const warsawHour = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Europe/Warsaw",
+  hour: "2-digit",
+  hourCycle: "h23",
+});
+
+function dayInstant(day: string, encoding: GoldenDateEncoding) {
+  const utcMidnight = new Date(`${day}T00:00:00.000Z`);
+  if (encoding === "utc") return utcMidnight.toISOString();
+  const offsetHours = Number(warsawHour.format(utcMidnight));
+  return new Date(utcMidnight.getTime() - offsetHours * 3_600_000).toISOString();
+}
 
 export type BuiltGolden = {
   records: DecryptedRecord[];
@@ -65,7 +80,11 @@ export type BuiltGolden = {
 };
 
 /** `withQuotes: false` pomija notowania — wtedy wycena opiera się na cenach transakcji. */
-export function buildGoldenRecords(scenario: GoldenScenario): BuiltGolden {
+export function buildGoldenRecords(
+  scenario: GoldenScenario,
+  dateEncoding: GoldenDateEncoding = "utc",
+): BuiltGolden {
+  const iso = (day: string) => dayInstant(day, dateEncoding);
   const instrumentIds = Object.fromEntries(
     scenario.instruments.map((item, i) => [item.symbol, uuid("2", i + 1)]),
   );
