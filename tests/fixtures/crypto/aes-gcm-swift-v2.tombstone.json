@@ -1,0 +1,17 @@
+{
+  "description": "Tombstone v2 zaszyfrowany natywnym EncryptionService (Swift, 2026-10-18): AAD z deleted=1. Klucz testowy, nie produkcyjny.",
+  "keyBase64": "AAcOFRwjKjE4P0ZNVFtiaXB3foWMk5qhqK+2vcTL0tk=",
+  "record": {
+    "id": "0f1e2d3c-4b5a-4978-8695-a4b3c2d1e0f9",
+    "user_id": "6e1d2c3b-4a59-4f68-9c7b-8a9d0e1f2a3b",
+    "record_type": "transaction",
+    "encrypted_payload": "v2.Eef8Nb/52eBdgPOBsqjCOj9Yysgw/ZY424z3fW9PwU8GX2+QHQuMgdkXfqJt7e+xjLumozUzL2r1su1ywjhiEy9CpL/r4XhDPG3BhhTEzdfik3gR47IS6JHQe5/baepI3siCs/6+NaGkDWCTXeztVR2p9JulVB96NklvU9hXIFCEMZLvz0nySqCaZ5jt++oQWIyInKLZ8MTJQWiiilhSH2r7uUDxtGZpHUqwYrWu2eUJHgeip0yjEBprYGDBEbdJWxA61peyqkcowAsCJVJud3iK9aHMrJMhIb+R7f5rEKmycmn6Bm1GE/om5icaVUSevn+/IT3/bgq+uYpzg22VU5SZZNlkRznIamMAdrGMVA5epN8aBLP65n4luvFp49Pq20/0kHOiiJdNqrIdc8dKqwXRR/zS8XOqQayoPfxNKkOlbEnW2fwxS/7bh19sd8OT6fuEwc5T",
+    "nonce": "n/ZmEPNJV7EjdN9n",
+    "payload_version": 1,
+    "schema_version": 1,
+    "device_id": "swift-encryption-service",
+    "created_at": "2026-10-18T00:00:00.000Z",
+    "updated_at": "2026-10-18T00:00:00.000Z",
+    "deleted_at": "2026-10-18T00:00:00.000Z"
+  }
+}

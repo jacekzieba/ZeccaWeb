@@ -16,7 +16,6 @@ import {
 
 export type { FxRateInput } from "@/domain/valuation/price-resolver";
 
-const EPSILON = 0.000001;
 
 export type BondParamsInput = {
   /** Coupon periods are defined by the issue, never by a later lot purchase. */
@@ -142,7 +141,7 @@ export function valueInstrumentPosition(input: {
           ),
       0,
     );
-    const price = quantity > EPSILON ? marketValue / quantity : 0;
+    const price = quantity > 0 ? marketValue / quantity : 0;
 
     return {
       price,

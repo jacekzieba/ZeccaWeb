@@ -95,6 +95,8 @@ function makeBaseToPln(
 
 function fxTransactionInputs(dataset: ParsedDataset): FxTransactionInput[] {
   return dataset.transactions.map((transaction) => ({
+    id: transaction.id,
+    createdAt: transaction.createdAt ? toDate(transaction.createdAt) : null,
     transactionType: transaction.transactionType,
     currency: transaction.currency,
     grossAmount: transaction.grossAmount,
@@ -133,6 +135,11 @@ export function hasDisplayCurrencyRate(
 
 const APPLE_REFERENCE_DATE_UNIX_MS = Date.UTC(2001, 0, 1);
 const EPSILON = 0.000001;
+/** Resztka partii albo pozycji po sprzedaży, nie większa niż ta część
+ * sprzedanej ilości, jest błędem arytmetyki (0,1 + 0,2 − 0,3), a nie
+ * posiadaniem. Próg względny jak w natywnym LedgerEngine: 1 satoshi
+ * (1e-8 BTC) zostaje, a stałe EPSILON je ukrywało. */
+const DUST_TOLERANCE = 1e-9;
 
 // A date must actually parse: an unparseable value would otherwise crash the
 // snapshot build (Invalid time value) or stall the incremental series cursor.
@@ -561,7 +568,7 @@ function collectDiagnostics(
     );
 
     for (const [instrumentID, quantity] of ledger.positions) {
-      if (quantity <= EPSILON) continue;
+      if (quantity <= 0) continue;
       const asset = assetsByID.get(instrumentID);
       const assetInput = toPositionAssetInput(asset);
       const lots = ledger.openLots.get(instrumentID) ?? [];
@@ -1180,7 +1187,7 @@ function buildRealizedPnl(
     // nets out fees/taxes from proceeds.
     extraCostBase = 0,
   ) => {
-    if (!instrumentID || quantity <= EPSILON) return;
+    if (!instrumentID || quantity <= 0) return;
     const lots = lotsByInstrument.get(instrumentID) ?? [];
     lots.push({
       quantity,
@@ -1193,11 +1200,11 @@ function buildRealizedPnl(
     instrumentID: string | null | undefined,
     quantity: number,
   ): { costBase: number; quantity: number } => {
-    if (!instrumentID || quantity <= EPSILON) return { costBase: 0, quantity: 0 };
+    if (!instrumentID || quantity <= 0) return { costBase: 0, quantity: 0 };
     const lots = lotsByInstrument.get(instrumentID) ?? [];
     let remaining = quantity;
     let costBase = 0;
-    while (remaining > EPSILON && lots.length > 0) {
+    while (remaining > 0 && lots.length > 0) {
       const lot = lots[0];
       const consumed = Math.min(lot.quantity, remaining);
       const unitCost = lot.quantity > EPSILON ? lot.costBasisBase / lot.quantity : 0;
@@ -1205,7 +1212,7 @@ function buildRealizedPnl(
       lot.quantity -= consumed;
       lot.costBasisBase -= unitCost * consumed;
       remaining -= consumed;
-      if (lot.quantity <= EPSILON) lots.shift();
+      if (lot.quantity <= quantity * DUST_TOLERANCE) lots.shift();
     }
     lotsByInstrument.set(instrumentID, lots);
     return { costBase, quantity: quantity - remaining };
@@ -1249,7 +1256,7 @@ function buildRealizedPnl(
           } else {
             const costPerUnit =
               transaction.price ??
-              (quantity > EPSILON ? transaction.grossAmount / quantity : 0);
+              (quantity > 0 ? transaction.grossAmount / quantity : 0);
             pushLot(transaction.instrumentID, quantity, costPerUnit * fx);
           }
         }
@@ -1269,7 +1276,7 @@ function buildRealizedPnl(
         // units that were never acquired. A consistent dataset always has full
         // coverage, so this is a no-op there and parity with native holds.
         const coverage =
-          quantity > EPSILON ? consumed.quantity / quantity : 1;
+          quantity > 0 ? consumed.quantity / quantity : 1;
         const proceedsBase = transaction.grossAmount * fx * coverage;
         realizedBase += proceedsBase - consumed.costBase;
         break;
@@ -1851,20 +1858,21 @@ function addPosition(
   instrumentID: string | null | undefined,
   quantity: number,
 ) {
-  if (!instrumentID || Math.abs(quantity) <= EPSILON) {
+  if (!instrumentID || quantity === 0) {
     return;
   }
 
+  const next = (ledger.positions.get(instrumentID) ?? 0) + quantity;
   ledger.positions.set(
     instrumentID,
-    (ledger.positions.get(instrumentID) ?? 0) + quantity,
+    Math.abs(next) <= Math.abs(quantity) * DUST_TOLERANCE ? 0 : next,
   );
 }
 
 function addLot(ledger: Ledger, transaction: TransactionPayload) {
   const instrumentID = transaction.instrumentID;
   const quantity = transaction.quantity ?? 0;
-  if (!instrumentID || quantity <= EPSILON) {
+  if (!instrumentID || quantity <= 0) {
     return;
   }
 
@@ -1895,7 +1903,7 @@ function lotCoverage(
   quantity: number,
   consumed: number,
 ) {
-  return instrumentID && quantity > EPSILON ? consumed / quantity : 1;
+  return instrumentID && quantity > 0 ? consumed / quantity : 1;
 }
 
 /** Consumes FIFO lots and returns the quantity actually covered by them. */
@@ -1904,19 +1912,19 @@ function consumeLots(
   instrumentID: string | null | undefined,
   quantity: number,
 ): number {
-  if (!instrumentID || quantity <= EPSILON) {
+  if (!instrumentID || quantity <= 0) {
     return 0;
   }
 
   const lots = ledger.openLots.get(instrumentID) ?? [];
   let remaining = quantity;
 
-  while (remaining > EPSILON && lots.length > 0) {
+  while (remaining > 0 && lots.length > 0) {
     const lot = lots[0];
     const consumed = Math.min(lot.quantity, remaining);
     lot.quantity -= consumed;
     remaining -= consumed;
-    if (lot.quantity <= EPSILON) {
+    if (lot.quantity <= quantity * DUST_TOLERANCE) {
       lots.shift();
     }
   }
@@ -1970,7 +1978,7 @@ function valuePortfolio(
   };
 
   for (const [instrumentID, quantity] of ledger.positions) {
-    if (quantity <= EPSILON) {
+    if (quantity <= 0) {
       continue;
     }
 
@@ -2079,6 +2087,8 @@ function toPositionValuationDataset(
   >,
 ): PositionValuationDataset {
   const transactions = dataset.transactions.map((transaction) => ({
+    id: transaction.id,
+    createdAt: transaction.createdAt ? toDate(transaction.createdAt) : null,
     instrumentID: transaction.instrumentID,
     price: transaction.price,
     transactionType: transaction.transactionType,
@@ -2446,7 +2456,7 @@ export function buildPortfolioDetail(
   let holdingsValue = 0;
 
   for (const [instrumentId, quantity] of ledger.positions) {
-    if (quantity <= EPSILON) continue;
+    if (quantity <= 0) continue;
 
     const asset = assetsByID.get(instrumentId);
     const valuation = valueInstrumentPosition(

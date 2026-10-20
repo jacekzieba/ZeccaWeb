@@ -2319,3 +2319,72 @@ describe("sell transactions missing instrument, quantity or price", () => {
     expect(detail?.holdings[0]?.quantity).toBe(4);
   });
 });
+
+describe("fractional-sale dust (parity with the native LedgerEngine)", () => {
+  const dustAccountID = "21212121-2121-4212-8212-212121212121";
+  const btcID = "23232323-2323-4232-8232-232323232323";
+  let sequence = 0;
+  const trade = (type: "buy" | "sell", quantity: number, day: number) => {
+    sequence += 1;
+    const id = `24242424-2424-4242-8242-${String(sequence).padStart(12, "0")}`;
+    return record("transaction", id, {
+      recordType: "transaction",
+      id,
+      date: `2026-05-${String(day).padStart(2, "0")}T10:00:00.000Z`,
+      portfolioID: dustAccountID,
+      instrumentID: btcID,
+      transactionType: type,
+      quantity,
+      price: 400_000,
+      grossAmount: quantity * 400_000,
+      currency: "PLN",
+      fees: 0,
+      taxes: 0,
+    });
+  };
+  const records = (...trades: ReturnType<typeof trade>[]) => [
+    record("account", dustAccountID, {
+      recordType: "account",
+      id: dustAccountID,
+      name: "Krypto",
+      baseCurrency: "PLN",
+    }),
+    record("asset", btcID, {
+      recordType: "asset",
+      id: btcID,
+      kind: "crypto",
+      symbol: "BTC",
+      name: "Bitcoin",
+      currency: "PLN",
+    }),
+    ...trades,
+  ];
+
+  it("drops the floating-point remainder of 0.1 + 0.2 − 0.3", () => {
+    const detail = buildPortfolioDetail(
+      records(trade("buy", 0.1, 1), trade("buy", 0.2, 2), trade("sell", 0.3, 3)),
+      dustAccountID,
+    );
+
+    expect(detail?.holdings ?? []).toHaveLength(0);
+  });
+
+  it("keeps a real one-satoshi remainder as a holding", () => {
+    const detail = buildPortfolioDetail(
+      records(trade("buy", 0.3, 1), trade("sell", 0.29999999, 2)),
+      dustAccountID,
+    );
+
+    expect(detail?.holdings[0]?.quantity ?? 0).toBeCloseTo(0.00000001, 14);
+  });
+
+  it("consumes the lot for a one-satoshi sale", () => {
+    const detail = buildPortfolioDetail(
+      records(trade("buy", 1, 1), trade("sell", 0.00000001, 2)),
+      dustAccountID,
+    );
+
+    expect(detail?.holdings[0]?.quantity ?? 0).toBeCloseTo(0.99999999, 14);
+    expect(detail?.holdings[0]?.costBasis ?? 0).toBeCloseTo(399_999.996, 6);
+  });
+});
