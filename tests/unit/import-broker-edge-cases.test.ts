@@ -90,6 +90,16 @@ describe("XTB .xlsx: przypadki brzegowe", () => {
     expect(swiftDate(fromSerial.validRows[0].payload)).toBe(swiftDate(fromDate.validRows[0].payload));
   });
 
+  // Czytnik arkusza daje gotowy Date z milisekundami. Serial zapisany jako
+  // 09:59:59,9999 (10:00 po zaokrągleniu) przez `new Date(String(date))`
+  // tracił ułamek sekundy i wychodził sekundę wcześniej niż w aplikacji.
+  it("komórka Date zachowuje milisekundy, jak natywny importer", () => {
+    const time = new Date(Date.UTC(2026, 0, 10, 9, 59, 59, 999));
+    const preview = parse([HEADER, deposit(1, time, 1000)]);
+    const seconds = (preview.validRows[0].payload as unknown as { date: number }).date;
+    expect(Date.UTC(2001, 0, 1) + seconds * 1000).toBeCloseTo(time.getTime(), 3);
+  });
+
   it("nieczytelna data → ostrzeżenie i pominięcie wiersza (nie zapis z bieżącą datą)", () => {
     const preview = parse([HEADER, deposit(1, "nie data", 1000), deposit(2, new Date("2026-05-17T10:00:00Z"), 500)]);
     expect(preview.validRows).toHaveLength(1);

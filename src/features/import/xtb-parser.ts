@@ -178,6 +178,9 @@ export function parseXtbXlsx(
     let date: Date;
     if (typeof timeRaw === "number") {
       date = excelSerialToDate(timeRaw);
+    } else if (timeRaw instanceof Date) {
+      // Bez `String(date)`: tekst daty nie ma milisekund.
+      date = new Date(timeRaw.getTime());
     } else {
       date = new Date(String(timeRaw ?? ""));
     }
