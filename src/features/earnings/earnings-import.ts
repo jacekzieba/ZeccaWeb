@@ -4,6 +4,7 @@ import type {
   EarningRow,
   EmploymentType,
 } from "@/domain/models/earnings";
+import { AMOUNT_MAGNITUDE_CAP, parseAmount } from "@/lib/parse-amount";
 
 export const EARNINGS_IMPORT_COLUMNS = [
   "period",
@@ -514,13 +515,15 @@ function parseBurdenCategory(value: unknown): EarningBurdenCategory | null {
 }
 
 function parsePeriod(value: unknown): { year: number; month: number } | null {
+  // Komórka daty nie ma strefy: oba czytniki arkusza dają czas z arkusza jako
+  // UTC (IMPORT-002), więc miesiąc też bierzemy w UTC, nie w strefie przeglądarki.
   if (value instanceof Date && !Number.isNaN(value.valueOf())) {
-    return { year: value.getFullYear(), month: value.getMonth() + 1 };
+    return validPeriod(value.getUTCFullYear(), value.getUTCMonth() + 1);
   }
   const number = typeof value === "number" ? value : Number(stringValue(value));
   if (Number.isFinite(number) && number > 1000) {
     const date = new Date(Date.UTC(1899, 11, 30) + number * 86400000);
-    return { year: date.getUTCFullYear(), month: date.getUTCMonth() + 1 };
+    return validPeriod(date.getUTCFullYear(), date.getUTCMonth() + 1);
   }
   const text = stringValue(value).trim();
   let match = /^(\d{4})-(\d{2})(?:-\d{2})?$/.exec(text);
@@ -531,6 +534,10 @@ function parsePeriod(value: unknown): { year: number; month: number } | null {
     month = match ? Number(match[1]) : 0;
     year = match ? Number(match[2]) : 0;
   }
+  return validPeriod(year, month);
+}
+
+function validPeriod(year: number, month: number) {
   return year >= 2000 && year <= 2100 && month >= 1 && month <= 12 ? { year, month } : null;
 }
 
@@ -539,15 +546,12 @@ function parsePositiveNumber(value: unknown) {
   return parsed !== null && parsed > 0 ? parsed : null;
 }
 
+// Ten sam zapis liczby co w formularzach i natywnym `parseNumber` (L-20).
 function parseNumber(value: unknown): number | null {
-  if (typeof value === "number") return Number.isFinite(value) ? value : null;
-  const normalized = stringValue(value)
-    .replace(/\u00a0/g, "")
-    .replace(/\s/g, "")
-    .replace(",", ".");
-  if (!normalized) return null;
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : null;
+  if (typeof value === "number") {
+    return Number.isFinite(value) && Math.abs(value) <= AMOUNT_MAGNITUDE_CAP ? value : null;
+  }
+  return parseAmount(stringValue(value));
 }
 
 function makeTable(matrix: unknown[][]) {
@@ -580,6 +584,8 @@ function normalizeHeader(value: string) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
+    // „ł” nie rozkłada się w NFD, a aliasy są bez niego (jak w aplikacji).
+    .replace(/ł/g, "l")
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
 }
