@@ -203,6 +203,15 @@ export type TransactionRow = {
   currency: string;
   fees: number;
   taxes: number;
+  /** Pola wspólnego formatu wymiany CSV z aplikacją natywną (eksport transakcji). */
+  bookingDate?: string | null;
+  fxRateToBase?: number | null;
+  notes?: string;
+  externalImportID?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  targetCurrency?: string | null;
+  targetGrossAmount?: number | null;
 };
 
 export type InstrumentRow = {

@@ -25,14 +25,34 @@ export function exportDay(isoDate: string) {
 
 const INCOME_TYPES = new Set(["dividend", "interest", "bondCoupon"]);
 
+/**
+ * Wspólny format wymiany transakcji z aplikacją natywną: ten sam nagłówek co
+ * `CSVExportBuilder.transactionColumns` w Zecca. Plik czytają oba importy
+ * (`parseCsvImport` tutaj, `TransactionCSVImporter` w aplikacji); sędzią jest
+ * fixtura `transactions_exchange.csv`. Nowe kolumny dopisuj na końcu, po obu stronach.
+ */
+export const TRANSACTION_EXCHANGE_COLUMNS = [
+  "transaction_id", "date", "booking_date", "portfolio_id", "portfolio_name",
+  "instrument_id", "instrument_symbol", "instrument_name", "type",
+  "quantity", "price", "gross_amount", "currency",
+  "fees", "taxes", "fx_rate_to_base", "notes",
+  "external_import_id", "created_at", "updated_at",
+  "target_currency", "target_gross_amount",
+];
+
 export function transactionsCsvLines(transactions: TransactionRow[]) {
   return [
-    "date,portfolio,instrument,transactionType,quantity,price,grossAmount,currency,fees,taxes",
+    TRANSACTION_EXCHANGE_COLUMNS.join(","),
     ...transactions.map((t) =>
       [
+        t.id,
         exportDay(t.date),
+        t.bookingDate ? exportDay(t.bookingDate) : "",
+        t.portfolioId,
         t.portfolioName,
-        t.instrumentSymbol ?? t.instrumentName ?? "",
+        t.instrumentId ?? "",
+        t.instrumentSymbol ?? "",
+        t.instrumentName ?? "",
         t.transactionType,
         t.quantity ?? "",
         t.price ?? "",
@@ -40,6 +60,13 @@ export function transactionsCsvLines(transactions: TransactionRow[]) {
         t.currency,
         t.fees,
         t.taxes,
+        t.fxRateToBase ?? "",
+        t.notes ?? "",
+        t.externalImportID ?? "",
+        t.createdAt ?? "",
+        t.updatedAt ?? "",
+        t.targetCurrency ?? "",
+        t.targetGrossAmount ?? "",
       ].map(csvCell).join(","),
     ),
   ];

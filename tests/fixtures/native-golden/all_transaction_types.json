@@ -19,7 +19,7 @@
     "accountTransferIn",
     "correction"
   ],
-  "certifiedBrokers": ["xtb", "pkoBonds"],
+  "certifiedBrokers": ["xtb", "pkoBonds", "transactionsCSV"],
   "portfolio": {
     "name": "Certyfikacja transakcji",
     "type": "custom"

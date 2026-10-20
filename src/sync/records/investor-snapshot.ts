@@ -2580,6 +2580,14 @@ export function buildTransactionList(
         currency: tx.currency,
         fees: tx.fees,
         taxes: tx.taxes,
+        bookingDate: tx.bookingDate != null ? toDate(tx.bookingDate).toISOString() : null,
+        fxRateToBase: tx.fxRateToBase ?? null,
+        notes: tx.notes ?? "",
+        externalImportID: tx.externalImportID ?? null,
+        createdAt: tx.createdAt != null ? toDate(tx.createdAt).toISOString() : null,
+        updatedAt: tx.updatedAt != null ? toDate(tx.updatedAt).toISOString() : null,
+        targetCurrency: tx.targetCurrency ?? null,
+        targetGrossAmount: tx.targetGrossAmount ?? null,
       } satisfies TransactionRow;
     })
     .sort((a, b) => b.date.localeCompare(a.date));

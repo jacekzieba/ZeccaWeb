@@ -38,10 +38,12 @@ describe("eksport CSV: parytet z aplikacją natywną", () => {
     const fromApp = row("2026-05-31T22:00:00.000Z");
     const fromWeb = row("2026-07-01T00:00:00.000Z");
 
-    expect(transactionsCsvLines([fromApp, fromWeb]).slice(1)).toEqual([
-      "2026-06-01,'=Portfel,VWCE,dividend,,,10,EUR,0,0",
-      "2026-07-01,'=Portfel,VWCE,dividend,,,10,EUR,0,0",
-    ]);
+    const lines = transactionsCsvLines([fromApp, fromWeb]);
+    const header = lines[0].split(",");
+    const column = (line: string, name: string) => line.split(",")[header.indexOf(name)];
+    expect(lines.slice(1).map((line) => column(line, "date"))).toEqual(["2026-06-01", "2026-07-01"]);
+    expect(lines.slice(1).map((line) => column(line, "portfolio_name"))).toEqual(["'=Portfel", "'=Portfel"]);
+    expect(lines.slice(1).map((line) => column(line, "instrument_symbol"))).toEqual(["VWCE", "VWCE"]);
     expect(incomeCsvLines([fromApp, row("2026-05-31T22:00:00.000Z", "buy")]).slice(1)).toEqual([
       "2026-06-01,'=Portfel,VWCE,dividend,10,EUR,0,0",
     ]);

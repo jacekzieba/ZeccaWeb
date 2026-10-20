@@ -1,0 +1,17 @@
+{
+  "_opis": "Wspólny format wymiany transakcji Zecca ↔ ZeccaWeb (kolumny eksportu CSVExportBuilder.transactionColumns i transactionsCsvLines). Plik transactions_exchange.csv czytają TransactionCSVImporterTests (Swift) i tests/unit/transactions-exchange.test.ts (ZeccaWeb). Portfel 'Główny' i instrumenty VWCE.DE (EUR, 11111111-…) oraz CSPX.UK (USD, 22222222-…) istnieją przed importem. Wiersz 6 ma instrument_id spoza bazy, więc instrument jest dopasowany po symbolu. Wiersz 10 to przeniesienie między portfelami: format nie niesie jego rodzaju ani partii, więc oba importy go odrzucają. Daty porównywane jako dzień.",
+  "knownInstruments": [
+    { "id": "11111111-1111-4111-8111-111111111111", "symbol": "VWCE.DE", "name": "Vanguard FTSE All-World", "currency": "EUR" },
+    { "id": "22222222-2222-4222-8222-222222222222", "symbol": "CSPX.UK", "name": "iShares Core S&P 500", "currency": "USD" }
+  ],
+  "portfolio": { "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "name": "Główny" },
+  "accepted": [
+    { "id": "0e5b2f1a-0001-4000-8000-000000000001", "date": "2026-03-02", "bookingDate": null, "type": "buy", "instrumentID": "11111111-1111-4111-8111-111111111111", "quantity": 2, "price": 100.5, "grossAmount": 201, "currency": "EUR", "fees": 1, "taxes": 0, "fxRateToBase": 4.31, "targetCurrency": null, "targetGrossAmount": null, "notes": "Zakup, \"pierwszy\"", "externalImportID": null },
+    { "id": "0e5b2f1a-0001-4000-8000-000000000002", "date": "2026-03-01", "bookingDate": null, "type": "cashDeposit", "instrumentID": null, "quantity": null, "price": null, "grossAmount": 1000, "currency": "PLN", "fees": 0, "taxes": 0, "fxRateToBase": null, "targetCurrency": null, "targetGrossAmount": null, "notes": "", "externalImportID": null },
+    { "id": "0e5b2f1a-0001-4000-8000-000000000003", "date": "2026-04-15", "bookingDate": null, "type": "dividend", "instrumentID": "11111111-1111-4111-8111-111111111111", "quantity": null, "price": null, "grossAmount": 3.2, "currency": "EUR", "fees": 0, "taxes": 0.61, "fxRateToBase": 4.29, "targetCurrency": null, "targetGrossAmount": null, "notes": "", "externalImportID": null },
+    { "id": "0e5b2f1a-0001-4000-8000-000000000004", "date": "2026-03-01", "bookingDate": null, "type": "fxConversion", "instrumentID": null, "quantity": null, "price": null, "grossAmount": 430, "currency": "PLN", "fees": 0, "taxes": 0, "fxRateToBase": null, "targetCurrency": "EUR", "targetGrossAmount": 100, "notes": "Wymiana na EUR", "externalImportID": null },
+    { "id": "0e5b2f1a-0001-4000-8000-000000000005", "date": "2026-02-03", "bookingDate": null, "type": "buy", "instrumentID": "22222222-2222-4222-8222-222222222222", "quantity": 1, "price": 500, "grossAmount": 500, "currency": "USD", "fees": 0, "taxes": 0, "fxRateToBase": 4, "targetCurrency": null, "targetGrossAmount": null, "notes": "", "externalImportID": "xtb:123" },
+    { "id": "0e5b2f1a-0001-4000-8000-000000000008", "date": "2026-03-02", "bookingDate": "2026-03-04", "type": "sell", "instrumentID": "11111111-1111-4111-8111-111111111111", "quantity": 1, "price": 110, "grossAmount": 110, "currency": "EUR", "fees": 0.5, "taxes": 0, "fxRateToBase": 4.4, "targetCurrency": null, "targetGrossAmount": null, "notes": "", "externalImportID": null }
+  ],
+  "rejectedRows": [7, 8, 10]
+}

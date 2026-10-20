@@ -150,6 +150,12 @@ const transactionPayloadSchema = z.object({
   currency: z.string().min(1),
   fees: z.number(),
   taxes: z.number(),
+  // Pola wspólnego formatu wymiany z aplikacją (eksport transakcji).
+  bookingDate: z.number().optional(),
+  fxRateToBase: z.number().optional(),
+  targetCurrency: z.string().min(1).optional(),
+  targetGrossAmount: z.number().optional(),
+  externalImportID: z.string().min(1).optional(),
   // Pola wymagane przez natywny TransactionPayload (iOS/macOS): ich brak
   // wywala tam dekodowanie całego pulla. Zawsze zapisujemy komplet.
   notes: z.string(),
@@ -347,11 +353,27 @@ function parseTransactionRow(
   );
   const errors: string[] = [];
   const warnings: string[] = [];
-  const id = values.id || crypto.randomUUID();
-  const transactionType = values.transactiontype ?? "";
+  // Wspólny format wymiany z aplikacją (`transaction_id`, `type`, `portfolio_name`,
+  // `instrument_symbol`, …) albo szablon importu weba. ID portfela i instrumentu
+  // spoza bazy nie przekreśla wiersza: wtedy liczy się nazwa portfela i symbol.
+  const importedId = values.id || values.transactionid || "";
+  const id = importedId || crypto.randomUUID();
+  const transactionType = values.transactiontype || values.type || "";
   const date = parseDateToSwiftSeconds(values.date ?? "");
-  const portfolioID = resolvePortfolio(values.portfolio ?? "", references);
-  const instrumentID = resolveInstrument(values.instrument ?? "", references);
+  const portfolioText = values.portfolio || values.portfolioname || "";
+  const portfolioID =
+    resolvePortfolio(values.portfolio ?? "", references) ??
+    resolvePortfolio(values.portfolioname ?? "", references);
+  const instrumentText = values.instrument || values.instrumentsymbol || "";
+  const instrumentID =
+    resolveInstrument(values.instrument ?? "", references) ??
+    resolveInstrument(values.instrumentsymbol ?? "", references);
+  const bookingDate = values.bookingdate ? parseDateToSwiftSeconds(values.bookingdate) : null;
+  const fxRateToBase = parseOptionalNumber(values.fxratetobase ?? "");
+  const targetGrossAmount = parseOptionalNumber(values.targetgrossamount ?? "");
+  const targetCurrency = (values.targetcurrency ?? "").toUpperCase();
+  const notes = values.notes || values.note || "";
+  const externalImportID = values.externalimportid || "";
   const quantity = parseOptionalNumber(values.quantity ?? "");
   const price = parseOptionalNumber(values.price ?? "");
   const grossAmount = parseRequiredNumber(values.grossamount ?? "");
@@ -362,27 +384,35 @@ function parseTransactionRow(
   const currency = (values.currency ?? "").toUpperCase();
 
   if (!values.date || date == null) errors.push("Nieprawidłowa data.");
-  if (!values.portfolio || !portfolioID) errors.push("Nie znaleziono portfela.");
+  if (!portfolioText || !portfolioID) errors.push("Nie znaleziono portfela.");
   if (!TRANSACTION_TYPES.has(transactionType)) errors.push("Nieznany typ transakcji.");
+  // Jak w natywnym TransactionCSVImporter: plik nie niesie rodzaju przeniesienia,
+  // sposobu liczenia wpłaty ani partii, więc transakcja wróciłaby z innym znaczeniem.
+  if (transactionType === "accountTransferIn") {
+    errors.push("Przeniesienia między portfelami nie da się zaimportować z CSV (brak rodzaju przeniesienia i partii).");
+  }
   if (grossAmount == null) errors.push("Brak poprawnej kwoty brutto.");
   if (!currency) errors.push("Brak waluty.");
   // Bez tej walidacji nie-UUID w kolumnie `id` przechodzi do schema.parse
   // poniżej i wyjątek zrywa import całego pliku zamiast oznaczyć wiersz.
-  if (values.id && !isUuid(values.id)) {
+  if (importedId && !isUuid(importedId)) {
     errors.push("Nieprawidłowe ID — wymagany format UUID.");
   }
-  if (values.id && references.existingTransactionIds.has(values.id)) {
+  if (importedId && references.existingTransactionIds.has(importedId)) {
     errors.push("Transakcja o tym ID już istnieje.");
   }
-  if (values.id && seenImportedIds.has(values.id)) {
+  if (importedId && seenImportedIds.has(importedId)) {
     errors.push("Duplikat ID w importowanym pliku.");
   }
-  if (values.id) {
-    seenImportedIds.add(values.id);
+  if (importedId) {
+    seenImportedIds.add(importedId);
   }
-  if (values.instrument && !instrumentID) {
+  if (instrumentText && !instrumentID) {
     errors.push("Nie znaleziono instrumentu.");
   }
+  if (values.bookingdate && bookingDate == null) errors.push("Nieprawidłowa data księgowania.");
+  if (values.fxratetobase && fxRateToBase == null) errors.push("Nieprawidłowy kurs.");
+  if (values.targetgrossamount && targetGrossAmount == null) errors.push("Nieprawidłowa kwota docelowa.");
   if (TYPES_REQUIRING_INSTRUMENT.has(transactionType) && !instrumentID) {
     errors.push("Ten typ transakcji wymaga instrumentu.");
   }
@@ -431,7 +461,12 @@ function parseTransactionRow(
     currency,
     fees,
     taxes,
-    notes: "",
+    ...(bookingDate != null ? { bookingDate } : {}),
+    ...(fxRateToBase != null ? { fxRateToBase } : {}),
+    ...(targetCurrency ? { targetCurrency } : {}),
+    ...(targetGrossAmount != null ? { targetGrossAmount } : {}),
+    ...(externalImportID ? { externalImportID } : {}),
+    notes,
     createdAt: nowSwiftReferenceSeconds(),
     updatedAt: nowSwiftReferenceSeconds(),
   };
