@@ -8,3 +8,4 @@ transaction_id,date,booking_date,portfolio_id,portfolio_name,instrument_id,instr
 0e5b2f1a-0001-4000-8000-000000000007,2026-02-05,,aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa,Główny,,,,swap,,,10,PLN,0,0,,,,2026-02-05T10:00:00Z,2026-02-05T10:00:00Z,,
 0e5b2f1a-0001-4000-8000-000000000008,2026-03-02,2026-03-04,aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa,Główny,11111111-1111-4111-8111-111111111111,VWCE.DE,Vanguard FTSE All-World,sell,1,110,110,EUR,0.5,0,4.4,,,2026-03-02T11:00:00Z,2026-03-02T11:00:00Z,,
 0e5b2f1a-0001-4000-8000-000000000009,2026-03-05,,aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa,Główny,,,,accountTransferIn,,,400,PLN,0,0,,,,2026-03-05T10:00:00Z,2026-03-05T10:00:00Z,,
+0e5b2f1a-0001-4000-8000-000000000010,2026-03-06,,aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa,Główny,11111111-1111-4111-8111-111111111111,VWCE.DE,Vanguard FTSE All-World,transferOut,1,100,100,EUR,0,0,4.3,,,2026-03-06T10:00:00Z,2026-03-06T10:00:00Z,,

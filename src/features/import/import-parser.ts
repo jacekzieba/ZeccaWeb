@@ -391,6 +391,11 @@ function parseTransactionRow(
   if (transactionType === "accountTransferIn") {
     errors.push("Przeniesienia między portfelami nie da się zaimportować z CSV (brak rodzaju przeniesienia i partii).");
   }
+  // Transfer z instrumentem to w eksporcie przeniesienie aktywów (zdejmuje partie).
+  // Bez `transferKind` wróciłby jako transfer gotówki: pozycja by została.
+  if (transactionType === "transferOut" && instrumentText) {
+    errors.push("Przeniesienia aktywów nie da się zaimportować z CSV (brak rodzaju przeniesienia i partii).");
+  }
   if (grossAmount == null) errors.push("Brak poprawnej kwoty brutto.");
   if (!currency) errors.push("Brak waluty.");
   // Bez tej walidacji nie-UUID w kolumnie `id` przechodzi do schema.parse
