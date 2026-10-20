@@ -84,6 +84,27 @@ describe("import zarobków: parytet z aplikacją natywną", () => {
     expect(preview.issues.map((issue) => issue.rowNumber)).toEqual([2]);
   });
 
+  it("te same komunikaty i kolejność co w aplikacji: błędy wierszy, potem duplikaty wg wierszy", () => {
+    const preview = parseEarningsImportCsv(
+      [
+        HEADER,
+        "2026-06,earning,business,1000,PLN,1,1000,Klient",
+        "2026-06,burden,zus,500,PLN,1,500,ZUS",
+        "2026-06,burden,zus,600,PLN,1,600,ZUS",
+        "2026-06,earning,business,2000,PLN,1,2000,Klient",
+        "2026-06,earning,business,100,EURO,4,400,Klient UE",
+      ].join("\n"),
+      empty,
+    );
+
+    expect(preview.issues.map((issue) => issue.rowNumber)).toEqual([6, 4, 5]);
+    expect(preview.issues.map((issue) => issue.message)).toEqual([
+      "currency musi być trzyliterowym kodem waluty, np. PLN lub EUR",
+      "powtórzone obciążenie (pierwszy wiersz: 3); zmień source, jeśli to osobny wpis",
+      "powtórzony zarobek (pierwszy wiersz: 2); zmień source, jeśli to osobny wpis",
+    ]);
+  });
+
   it("rozpoznaje aliasy zapisane po polsku", () => {
     const preview = parseEarningsImportCsv([HEADER, "2026-06,Zarobek,Działalność,100,PLN,1,100,Firma"].join("\n"), empty);
 

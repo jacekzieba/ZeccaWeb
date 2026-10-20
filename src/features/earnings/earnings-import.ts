@@ -352,7 +352,7 @@ function reconcile(parsed: ParsedRows, existing: ExistingIncome): EarningsImport
       issues.push({
         rowNumber: item.rowNumber,
         severity: "error",
-        message: `powtórzony wpis (pierwszy wiersz: ${firstRow}); zmień source, jeśli to osobny wpis`,
+        message: `${item.payload.entryKind === "earning" ? "powtórzony zarobek" : "powtórzone obciążenie"} (pierwszy wiersz: ${firstRow}); zmień source, jeśli to osobny wpis`,
       });
       continue;
     }
