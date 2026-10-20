@@ -1,0 +1,551 @@
+{
+  "_opis": "Wycena obligacji detalicznych po dniach kalendarzowych w Polsce (Europe/Warsaw). Daty to sekundy od 2001-01-01 (format synchronizacji); dateEncoding=app: północ czasu warszawskiego (tak zapisuje aplikacja), web: północ UTC (tak zapisuje ZeccaWeb). Stopy NBP jak w ZeccaWeb (północ UTC). expectedPrice to wartość jednej obligacji na koniec dnia asOf, sprawdzona ręcznie. Ten sam plik czytają TreasuryBondCalendarDayTests (Swift) i tests/unit/native-golden-bond-calendar.test.ts (ZeccaWeb).",
+  "cases": [
+    {
+      "asOf": 762478200,
+      "bond": {
+        "capitalization": "roczna",
+        "firstPeriodRate": 6.8,
+        "interestPayment": "przy wykupie",
+        "issueDate": 667782000,
+        "marginOverBase": 1.5,
+        "maturityDate": 983401200,
+        "nominalValue": 100,
+        "subsequentBase": "inflacja"
+      },
+      "dateEncoding": "app",
+      "expectedPrice": 132.94,
+      "name": "EDO kupiona 1. dnia miesiąca, rocznica, 00:30",
+      "purchaseDate": 667782000
+    },
+    {
+      "asOf": 762519600,
+      "bond": {
+        "capitalization": "roczna",
+        "firstPeriodRate": 6.8,
+        "interestPayment": "przy wykupie",
+        "issueDate": 667782000,
+        "marginOverBase": 1.5,
+        "maturityDate": 983401200,
+        "nominalValue": 100,
+        "subsequentBase": "inflacja"
+      },
+      "dateEncoding": "app",
+      "expectedPrice": 132.94,
+      "name": "EDO kupiona 1. dnia miesiąca, rocznica, 12:00",
+      "purchaseDate": 667782000
+    },
+    {
+      "asOf": 762561000,
+      "bond": {
+        "capitalization": "roczna",
+        "firstPeriodRate": 6.8,
+        "interestPayment": "przy wykupie",
+        "issueDate": 667782000,
+        "marginOverBase": 1.5,
+        "maturityDate": 983401200,
+        "nominalValue": 100,
+        "subsequentBase": "inflacja"
+      },
+      "dateEncoding": "app",
+      "expectedPrice": 132.94,
+      "name": "EDO kupiona 1. dnia miesiąca, rocznica, 23:30",
+      "purchaseDate": 667782000
+    },
+    {
+      "asOf": 741510000,
+      "bond": {
+        "capitalization": "roczna",
+        "firstPeriodRate": 6.8,
+        "interestPayment": "przy wykupie",
+        "issueDate": 667782000,
+        "marginOverBase": 1.5,
+        "maturityDate": 983401200,
+        "nominalValue": 100,
+        "subsequentBase": "inflacja"
+      },
+      "dateEncoding": "app",
+      "expectedPrice": 128.41,
+      "name": "EDO kupiona 1. dnia miesiąca, w trakcie okresu",
+      "purchaseDate": 667782000
+    },
+    {
+      "asOf": 762519600,
+      "bond": {
+        "capitalization": "roczna",
+        "firstPeriodRate": 6.8,
+        "interestPayment": "przy wykupie",
+        "issueDate": 667785600,
+        "marginOverBase": 1.5,
+        "maturityDate": 983404800,
+        "nominalValue": 100,
+        "subsequentBase": "inflacja"
+      },
+      "dateEncoding": "web",
+      "expectedPrice": 132.94,
+      "name": "EDO kupiona 1. dnia miesiąca, data z weba",
+      "purchaseDate": 667785600
+    },
+    {
+      "asOf": 783169200,
+      "bond": {
+        "capitalization": "roczna",
+        "firstPeriodRate": 7.2,
+        "interestPayment": "przy wykupie",
+        "issueDate": 667782000,
+        "marginOverBase": 1.5,
+        "maturityDate": 857170800,
+        "nominalValue": 100,
+        "subsequentBase": "inflacja"
+      },
+      "dateEncoding": "app",
+      "expectedPrice": 139.38,
+      "name": "ROS kupiona 1. dnia miesiąca, dzień zmiany czasu",
+      "purchaseDate": 667782000
+    },
+    {
+      "asOf": 741510000,
+      "bond": {
+        "capitalization": "brak",
+        "firstPeriodRate": 6.5,
+        "interestPayment": "co rok",
+        "issueDate": 667782000,
+        "marginOverBase": 1.25,
+        "maturityDate": 794012400,
+        "nominalValue": 100,
+        "subsequentBase": "inflacja"
+      },
+      "dateEncoding": "app",
+      "expectedPrice": 101.72,
+      "name": "COI kupiona 1. dnia miesiąca, w trakcie okresu",
+      "purchaseDate": 667782000
+    },
+    {
+      "asOf": 783169200,
+      "bond": {
+        "capitalization": "brak",
+        "firstPeriodRate": 6.5,
+        "interestPayment": "co rok",
+        "issueDate": 667782000,
+        "marginOverBase": 1.25,
+        "maturityDate": 794012400,
+        "nominalValue": 100,
+        "subsequentBase": "inflacja"
+      },
+      "dateEncoding": "app",
+      "expectedPrice": 104.29,
+      "name": "COI kupiona 1. dnia miesiąca, dzień zmiany czasu",
+      "purchaseDate": 667782000
+    },
+    {
+      "asOf": 762519600,
+      "bond": {
+        "capitalization": "brak",
+        "firstPeriodRate": 6.5,
+        "interestPayment": "co rok",
+        "issueDate": 687477600,
+        "marginOverBase": 1.25,
+        "maturityDate": 813708000,
+        "nominalValue": 100,
+        "subsequentBase": "inflacja"
+      },
+      "dateEncoding": "app",
+      "expectedPrice": 102.08,
+      "name": "COI kupiona w połowie miesiąca",
+      "purchaseDate": 687477600
+    },
+    {
+      "asOf": 762519600,
+      "bond": {
+        "capitalization": "brak",
+        "firstPeriodRate": 6,
+        "interestPayment": "co miesiąc",
+        "issueDate": 754700400,
+        "marginOverBase": 0,
+        "maturityDate": 786236400,
+        "nominalValue": 100,
+        "subsequentBase": "stopa referencyjna NBP"
+      },
+      "dateEncoding": "app",
+      "expectedPrice": 100,
+      "name": "ROR kupiona 1. dnia miesiąca",
+      "purchaseDate": 754700400
+    },
+    {
+      "asOf": 785329200,
+      "bond": {
+        "capitalization": "brak",
+        "firstPeriodRate": 6.1,
+        "interestPayment": "co miesiąc",
+        "issueDate": 757810800,
+        "marginOverBase": 0.1,
+        "maturityDate": 820882800,
+        "nominalValue": 100,
+        "subsequentBase": "stopa referencyjna NBP"
+      },
+      "dateEncoding": "app",
+      "expectedPrice": 100.17,
+      "name": "DOR: stopa NBP zmieniona w dniu startu okresu",
+      "purchaseDate": 757810800
+    },
+    {
+      "asOf": 785329200,
+      "bond": {
+        "capitalization": "brak",
+        "firstPeriodRate": 6.1,
+        "interestPayment": "co miesiąc",
+        "issueDate": 757814400,
+        "marginOverBase": 0.1,
+        "maturityDate": 820886400,
+        "nominalValue": 100,
+        "subsequentBase": "stopa referencyjna NBP"
+      },
+      "dateEncoding": "web",
+      "expectedPrice": 100.17,
+      "name": "DOR: stopa NBP zmieniona w dniu startu okresu, data z weba",
+      "purchaseDate": 757814400
+    },
+    {
+      "asOf": 762519600,
+      "bond": {
+        "capitalization": "roczna",
+        "firstPeriodRate": 6.6,
+        "interestPayment": "przy wykupie",
+        "issueDate": 695430000,
+        "marginOverBase": 6.6,
+        "maturityDate": 790124400,
+        "nominalValue": 100,
+        "subsequentBase": "stałe"
+      },
+      "dateEncoding": "app",
+      "expectedPrice": 114.56,
+      "name": "TOS kupiona w połowie miesiąca",
+      "purchaseDate": 695430000
+    },
+    {
+      "asOf": 754765200,
+      "bond": {
+        "capitalization": "roczna",
+        "firstPeriodRate": 6.8,
+        "interestPayment": "przy wykupie",
+        "issueDate": 754700400,
+        "marginOverBase": 1.5,
+        "maturityDate": 1070233200,
+        "nominalValue": 100,
+        "subsequentBase": "inflacja"
+      },
+      "dateEncoding": "app",
+      "expectedPrice": 100,
+      "name": "EDO wyceniana w dniu zakupu",
+      "purchaseDate": 754700400
+    }
+  ],
+  "cpi": [
+    {
+      "month": "2021-01",
+      "yoy": 2.6
+    },
+    {
+      "month": "2021-02",
+      "yoy": 2.4
+    },
+    {
+      "month": "2021-03",
+      "yoy": 3.2
+    },
+    {
+      "month": "2021-04",
+      "yoy": 4.3
+    },
+    {
+      "month": "2021-05",
+      "yoy": 4.7
+    },
+    {
+      "month": "2021-06",
+      "yoy": 4.4
+    },
+    {
+      "month": "2021-07",
+      "yoy": 5
+    },
+    {
+      "month": "2021-08",
+      "yoy": 5.5
+    },
+    {
+      "month": "2021-09",
+      "yoy": 5.9
+    },
+    {
+      "month": "2021-10",
+      "yoy": 6.8
+    },
+    {
+      "month": "2021-11",
+      "yoy": 7.8
+    },
+    {
+      "month": "2021-12",
+      "yoy": 8.6
+    },
+    {
+      "month": "2022-01",
+      "yoy": 9.4
+    },
+    {
+      "month": "2022-02",
+      "yoy": 8.5
+    },
+    {
+      "month": "2022-03",
+      "yoy": 11
+    },
+    {
+      "month": "2022-04",
+      "yoy": 12.4
+    },
+    {
+      "month": "2022-05",
+      "yoy": 13.9
+    },
+    {
+      "month": "2022-06",
+      "yoy": 15.5
+    },
+    {
+      "month": "2022-07",
+      "yoy": 15.6
+    },
+    {
+      "month": "2022-08",
+      "yoy": 16.1
+    },
+    {
+      "month": "2022-09",
+      "yoy": 17.2
+    },
+    {
+      "month": "2022-10",
+      "yoy": 17.9
+    },
+    {
+      "month": "2022-11",
+      "yoy": 17.5
+    },
+    {
+      "month": "2022-12",
+      "yoy": 16.6
+    },
+    {
+      "month": "2023-01",
+      "yoy": 16.6
+    },
+    {
+      "month": "2023-02",
+      "yoy": 18.4
+    },
+    {
+      "month": "2023-03",
+      "yoy": 16.1
+    },
+    {
+      "month": "2023-04",
+      "yoy": 14.7
+    },
+    {
+      "month": "2023-05",
+      "yoy": 13
+    },
+    {
+      "month": "2023-06",
+      "yoy": 11.5
+    },
+    {
+      "month": "2023-07",
+      "yoy": 10.8
+    },
+    {
+      "month": "2023-08",
+      "yoy": 10.1
+    },
+    {
+      "month": "2023-09",
+      "yoy": 8.2
+    },
+    {
+      "month": "2023-10",
+      "yoy": 6.6
+    },
+    {
+      "month": "2023-11",
+      "yoy": 6.6
+    },
+    {
+      "month": "2023-12",
+      "yoy": 6.2
+    },
+    {
+      "month": "2024-01",
+      "yoy": 3.9
+    },
+    {
+      "month": "2024-02",
+      "yoy": 2.8
+    },
+    {
+      "month": "2024-03",
+      "yoy": 2
+    },
+    {
+      "month": "2024-04",
+      "yoy": 2.4
+    },
+    {
+      "month": "2024-05",
+      "yoy": 2.5
+    },
+    {
+      "month": "2024-06",
+      "yoy": 2.6
+    },
+    {
+      "month": "2024-07",
+      "yoy": 4.2
+    },
+    {
+      "month": "2024-08",
+      "yoy": 4.3
+    },
+    {
+      "month": "2024-09",
+      "yoy": 4.9
+    },
+    {
+      "month": "2024-10",
+      "yoy": 5
+    },
+    {
+      "month": "2024-11",
+      "yoy": 4.7
+    },
+    {
+      "month": "2024-12",
+      "yoy": 4.7
+    },
+    {
+      "month": "2025-01",
+      "yoy": 5.3
+    },
+    {
+      "month": "2025-02",
+      "yoy": 4.9
+    },
+    {
+      "month": "2025-03",
+      "yoy": 4.9
+    },
+    {
+      "month": "2025-04",
+      "yoy": 4.3
+    },
+    {
+      "month": "2025-05",
+      "yoy": 4
+    },
+    {
+      "month": "2025-06",
+      "yoy": 4.1
+    },
+    {
+      "month": "2025-07",
+      "yoy": 3.1
+    },
+    {
+      "month": "2025-08",
+      "yoy": 2.9
+    },
+    {
+      "month": "2025-09",
+      "yoy": 2.9
+    },
+    {
+      "month": "2025-10",
+      "yoy": 2.8
+    },
+    {
+      "month": "2025-11",
+      "yoy": 2.4
+    },
+    {
+      "month": "2025-12",
+      "yoy": 2.4
+    },
+    {
+      "month": "2026-01",
+      "yoy": 2.1
+    },
+    {
+      "month": "2026-02",
+      "yoy": 2.1
+    },
+    {
+      "month": "2026-03",
+      "yoy": 3
+    },
+    {
+      "month": "2026-04",
+      "yoy": 3.2
+    },
+    {
+      "month": "2026-05",
+      "yoy": 3.1
+    },
+    {
+      "month": "2026-06",
+      "yoy": 2.5
+    }
+  ],
+  "referenceRates": [
+    {
+      "date": 684288000,
+      "rate": 6.75
+    },
+    {
+      "date": 715737600,
+      "rate": 6
+    },
+    {
+      "date": 718156800,
+      "rate": 5.75
+    },
+    {
+      "date": 768355200,
+      "rate": 5.25
+    },
+    {
+      "date": 773193600,
+      "rate": 5
+    },
+    {
+      "date": 778636800,
+      "rate": 4.75
+    },
+    {
+      "date": 781660800,
+      "rate": 4.5
+    },
+    {
+      "date": 784080000,
+      "rate": 4.25
+    },
+    {
+      "date": 786499200,
+      "rate": 4
+    },
+    {
+      "date": 794361600,
+      "rate": 3.75
+    }
+  ]
+}

@@ -9,6 +9,7 @@ const repo = process.env.NATIVE_REPO ?? join(homedir(), "Desktop", "Zecca");
 const files = [
   ["Tests/Fixtures/TransactionScenarios/all_transaction_types.json", "all_transaction_types.json"],
   ["Tests/Fixtures/ValuationScenarios/diversified_portfolio.json", "diversified_portfolio.json"],
+  ["Tests/Fixtures/BondScenarios/treasury_bond_calendar_days.json", "treasury_bond_calendar_days.json"],
 ];
 const check = process.argv.includes("--check");
 let drift = false;

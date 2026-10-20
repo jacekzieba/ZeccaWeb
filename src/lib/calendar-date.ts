@@ -22,3 +22,33 @@ export function localDateString(date = new Date()): string {
   const day = String(date.getDate()).padStart(2, "0");
   return `${date.getFullYear()}-${month}-${day}`;
 }
+
+const warsawDateParts = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Europe/Warsaw",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+const warsawDayCache = new Map<number, number>();
+
+/** Dzień kalendarzowy chwili `date` w Polsce, jako północ UTC tego dnia.
+ * Aplikacja natywna zapisuje daty jako północ czasu lokalnego (w UTC to
+ * 22:00/23:00 dnia poprzedniego), a web jako północ UTC — w tej strefie obie
+ * wypadają w tym samym dniu. Wynik nadaje się do arytmetyki dni w UTC. */
+export function warsawCalendarDay(date: Date): Date {
+  return new Date(warsawCalendarDayTime(date));
+}
+
+/** {@link warsawCalendarDay} jako znacznik czasu, bez alokacji `Date`. */
+export function warsawCalendarDayTime(date: Date): number {
+  const time = date.getTime();
+  const cached = warsawDayCache.get(time);
+  if (cached !== undefined) return cached;
+  const parts = Object.fromEntries(
+    warsawDateParts.formatToParts(date).map((part) => [part.type, part.value]),
+  );
+  const day = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day));
+  if (warsawDayCache.size >= 10_000) warsawDayCache.clear();
+  warsawDayCache.set(time, day);
+  return day;
+}

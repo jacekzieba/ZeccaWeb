@@ -13,6 +13,7 @@ import {
   type CpiSeries,
   type ReferenceRateSeries,
 } from "@/domain/valuation/bond-rates";
+import { warsawCalendarDay } from "@/lib/calendar-date";
 
 export type { FxRateInput } from "@/domain/valuation/price-resolver";
 
@@ -210,11 +211,13 @@ function dirtyTreasuryBondPrice(
   cpi?: CpiSeries,
   referenceRates?: ReferenceRateSeries,
 ) {
-  // Retail treasury bonds accrue on calendar days. Normalising timestamps keeps
-  // the displayed daily value stable regardless of the import/refresh hour.
-  const purchaseDay = startOfUtcDay(purchaseDate);
-  const maturityDay = startOfUtcDay(params.maturityDate);
-  const valuationDay = startOfUtcDay(asOf);
+  // Retail treasury bonds accrue on calendar days in Poland. Normalising
+  // timestamps keeps the displayed daily value stable regardless of the
+  // import/refresh hour, and reads native dates (local midnight, i.e. the
+  // previous day in UTC) as the day the user entered.
+  const purchaseDay = warsawCalendarDay(purchaseDate);
+  const maturityDay = warsawCalendarDay(params.maturityDate);
+  const valuationDay = warsawCalendarDay(asOf);
   const effectiveAsOf =
     valuationDay.getTime() < maturityDay.getTime() ? valuationDay : maturityDay;
   if (effectiveAsOf.getTime() <= purchaseDay.getTime()) {
@@ -224,7 +227,7 @@ function dirtyTreasuryBondPrice(
   // A lot's purchase date decides whether it is held, but the bond's coupon
   // schedule and capitalization have been running since the issue date. Old
   // payloads without this field retain the legacy purchase-date fallback.
-  let periodStart = startOfUtcDay(params.issueDate ?? purchaseDay);
+  let periodStart = params.issueDate ? warsawCalendarDay(params.issueDate) : purchaseDay;
   let periodIndex = 0;
   let principal = params.nominalValue;
   let carriedInterest = 0;
@@ -278,16 +281,16 @@ export function treasuryBondMacroGaps(
   cpi?: CpiSeries,
   referenceRates?: ReferenceRateSeries,
 ): boolean {
-  const purchaseDay = startOfUtcDay(purchaseDate);
-  const maturityDay = startOfUtcDay(params.maturityDate);
-  const valuationDay = startOfUtcDay(asOf);
+  const purchaseDay = warsawCalendarDay(purchaseDate);
+  const maturityDay = warsawCalendarDay(params.maturityDate);
+  const valuationDay = warsawCalendarDay(asOf);
   const effectiveAsOf =
     valuationDay.getTime() < maturityDay.getTime() ? valuationDay : maturityDay;
   if (effectiveAsOf.getTime() <= purchaseDay.getTime()) {
     return false;
   }
 
-  let periodStart = startOfUtcDay(params.issueDate ?? purchaseDay);
+  let periodStart = params.issueDate ? warsawCalendarDay(params.issueDate) : purchaseDay;
   let periodIndex = 0;
   const periodMonths = params.interestPayment === "co miesiąc" ? 1 : 12;
 
@@ -316,10 +319,6 @@ function addMonths(date: Date, months: number) {
   ).getUTCDate();
   copy.setUTCDate(Math.min(day, lastDay));
   return copy;
-}
-
-function startOfUtcDay(date: Date) {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 }
 
 function daysBetween(start: Date, end: Date) {

@@ -1,3 +1,5 @@
+import { warsawCalendarDayTime } from "@/lib/calendar-date";
+
 /**
  * Oprocentowanie detalicznych obligacji skarbowych indeksowanych inflacją
  * (ROS, ROD, COI, EDO ...).
@@ -163,17 +165,30 @@ export function bondPeriodHasMacroData(
   return inflationReferenceRate(periodStart, cpi) != null;
 }
 
+/** Obserwacje z dniem obowiązywania policzonym raz na serię (seria jest stała). */
+const referenceRateDays = new WeakMap<ReferenceRateSeries, { day: number; rate: number }[]>();
+
 function latestReferenceRate(
   periodStart: Date,
   referenceRates: ReferenceRateSeries,
 ): number | null {
+  // Stopa obowiązuje od swojego dnia kalendarzowego; `periodStart` jest już
+  // dniem z `warsawCalendarDay`, a obserwacje bywają północą UTC albo Warszawy.
+  let days = referenceRateDays.get(referenceRates);
+  if (!days) {
+    days = referenceRates.map((observation) => ({
+      day: warsawCalendarDayTime(observation.date),
+      rate: observation.rate,
+    }));
+    referenceRateDays.set(referenceRates, days);
+  }
+
   let latestTime = Number.NEGATIVE_INFINITY;
   let latestRate: number | null = null;
 
-  for (const observation of referenceRates) {
-    const time = observation.date.getTime();
-    if (time <= periodStart.getTime() && time > latestTime) {
-      latestTime = time;
+  for (const observation of days) {
+    if (observation.day <= periodStart.getTime() && observation.day > latestTime) {
+      latestTime = observation.day;
       latestRate = observation.rate;
     }
   }
