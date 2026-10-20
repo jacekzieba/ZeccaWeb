@@ -1,4 +1,8 @@
 import type { WriteRecordPayload } from "@/sync/records/record-writer";
+import {
+  transactionValidationMessage,
+  validateTransactionPayload,
+} from "@/sync/records/transaction-validator";
 
 export type ImportIdentityError = {
   instrumentId: string;
@@ -120,4 +124,26 @@ export function validateImportBeforeCommit(
     ...validateImportIdentities(payloads),
     ...validateTreasuryBondImports(payloads, transactionPayloads),
   ];
+}
+
+/** Transakcje, których natywny TransactionValidator nie przyjmie. `saveRecord`
+ * odrzuca je dopiero przy zapisie, czyli po nowych instrumentach i wcześniejszych
+ * wierszach; sprawdzenie przed pierwszym zapisem zatrzymuje cały import. */
+export function validateImportTransactions(
+  rows: readonly { rowNumber: number; payload: Record<string, unknown> | null }[],
+): ImportIdentityError[] {
+  return rows.flatMap((row) => {
+    if (!row.payload || row.payload.recordType !== "transaction") return [];
+    const issues = validateTransactionPayload(row.payload);
+    return issues.length === 0
+      ? []
+      : [
+          {
+            instrumentId: typeof row.payload.instrumentID === "string" ? row.payload.instrumentID : "",
+            symbol: `Wiersz ${row.rowNumber}`,
+            fields: issues.map((issue) => issue.field),
+            message: transactionValidationMessage(issues),
+          },
+        ];
+  });
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   validateImportIdentities,
+  validateImportTransactions,
   validateTreasuryBondImports,
 } from "@/features/import/import-identity-validation";
 
@@ -58,5 +59,29 @@ describe("import identity validation", () => {
     );
     expect(errors).toHaveLength(1);
     expect(errors[0]?.fields).toEqual(expect.arrayContaining(["bondParams.issueDate", "purchaseDate"]));
+  });
+
+  // Zapis importu idzie rekord po rekordzie. `saveRecord` odrzuca transakcję,
+  // której aplikacja nie przyjmie, ale dopiero w połowie: po zapisaniu nowych
+  // instrumentów i wcześniejszych wierszy. Sprawdzenie przed pierwszym zapisem
+  // zatrzymuje cały import.
+  it("finds every selected transaction the native validator would reject, before any write", () => {
+    const valid = {
+      id: "tx-ok", recordType: "transaction", transactionType: "cashDeposit", date: 800_000_000,
+      portfolioID: "p", grossAmount: 100, currency: "PLN", fees: 0, taxes: 0,
+    };
+    const buyWithoutPrice = {
+      id: "tx-bad", recordType: "transaction", transactionType: "buy", date: 800_000_000,
+      portfolioID: "p", instrumentID: "asset-vwrl", quantity: 1, grossAmount: 100, currency: "PLN", fees: 0, taxes: 0,
+    };
+
+    const errors = validateImportTransactions([
+      { rowNumber: 2, payload: valid },
+      { rowNumber: 3, payload: buyWithoutPrice },
+      { rowNumber: 4, payload: null },
+    ]);
+
+    expect(errors.map((error) => error.symbol)).toEqual(["Wiersz 3"]);
+    expect(errors[0]?.message).toMatch(/^Nie zapisano transakcji: /);
   });
 });

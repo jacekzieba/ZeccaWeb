@@ -28,6 +28,7 @@ import {
   isImportedMarketInstrument,
   isImportedTreasuryBond,
   validateImportBeforeCommit,
+  validateImportTransactions,
   type ImportIdentityError,
 } from "@/features/import/import-identity-validation";
 import type { RecordType } from "@/domain/models/investor-data";
@@ -375,10 +376,13 @@ export function ImportPage() {
     const provider = brokerProvider(importFormat);
     try {
       const selected = selectedImportPayloads(preview, selectedRowIds);
-      const importIdentityErrors = validateImportBeforeCommit(
-        selected.newInstrumentPayloads,
-        selected.rows.flatMap((row) => (row.payload ? [row.payload] : [])),
-      );
+      const importIdentityErrors = [
+        ...validateImportBeforeCommit(
+          selected.newInstrumentPayloads,
+          selected.rows.flatMap((row) => (row.payload ? [row.payload] : [])),
+        ),
+        ...validateImportTransactions(selected.rows),
+      ];
       const unconfirmed = selected.newInstrumentPayloads.filter(
         (payload) => isImportedMarketInstrument(payload) && !confirmedInstrumentIds.has(payload.id),
       );
