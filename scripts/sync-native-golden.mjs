@@ -10,6 +10,9 @@ const files = [
   ["Tests/Fixtures/TransactionScenarios/all_transaction_types.json", "all_transaction_types.json"],
   ["Tests/Fixtures/ValuationScenarios/diversified_portfolio.json", "diversified_portfolio.json"],
   ["Tests/Fixtures/BondScenarios/treasury_bond_calendar_days.json", "treasury_bond_calendar_days.json"],
+  ["Tests/Fixtures/EarningsImport/earnings_date_cells.xlsx", "earnings_date_cells.xlsx"],
+  ["Tests/Fixtures/TransactionValidation/sync_admission_cases.json", "sync_admission_cases.json"],
+  ["Tests/Fixtures/CSVExport/csv_cell_cases.json", "csv_cell_cases.json"],
 ];
 const check = process.argv.includes("--check");
 let drift = false;

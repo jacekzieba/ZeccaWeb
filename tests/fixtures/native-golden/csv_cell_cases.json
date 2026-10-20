@@ -1,0 +1,138 @@
+[
+  {
+    "input": "zwykły",
+    "expected": "zwykły"
+  },
+  {
+    "input": "=SUMA(A1)",
+    "expected": "'=SUMA(A1)"
+  },
+  {
+    "input": "+48 600",
+    "expected": "'+48 600"
+  },
+  {
+    "input": "-5",
+    "expected": "-5"
+  },
+  {
+    "input": "-5,5",
+    "expected": "\"'-5,5\""
+  },
+  {
+    "input": "-1e3",
+    "expected": "-1e3"
+  },
+  {
+    "input": "@SUM(1)",
+    "expected": "'@SUM(1)"
+  },
+  {
+    "input": "\tTAB",
+    "expected": "'\tTAB"
+  },
+  {
+    "input": "\rCR",
+    "expected": "\"'\rCR\""
+  },
+  {
+    "input": "a,b",
+    "expected": "\"a,b\""
+  },
+  {
+    "input": "a\"b",
+    "expected": "\"a\"\"b\""
+  },
+  {
+    "input": "linia1\nlinia2",
+    "expected": "\"linia1\nlinia2\""
+  },
+  {
+    "input": "linia1\r\nlinia2",
+    "expected": "\"linia1\r\nlinia2\""
+  },
+  {
+    "input": "\r\n=HYPERLINK(\"x\")",
+    "expected": "\"'\r\n=HYPERLINK(\"\"x\"\")\""
+  },
+  {
+    "input": "+inf",
+    "expected": "'+inf"
+  },
+  {
+    "input": "-nan",
+    "expected": "'-nan"
+  },
+  {
+    "input": "+0x1A",
+    "expected": "'+0x1A"
+  },
+  {
+    "input": "=1+1",
+    "expected": "'=1+1"
+  },
+  {
+    "input": "-2+3",
+    "expected": "'-2+3"
+  },
+  {
+    "input": "",
+    "expected": ""
+  },
+  {
+    "input": " =lead space",
+    "expected": " =lead space"
+  },
+  {
+    "input": "ZŁ;średnik",
+    "expected": "ZŁ;średnik"
+  },
+  {
+    "input": "1234.5",
+    "expected": "1234.5"
+  },
+  {
+    "input": "-0.5",
+    "expected": "-0.5"
+  },
+  {
+    "input": ".5",
+    "expected": ".5"
+  },
+  {
+    "input": "+1",
+    "expected": "+1"
+  },
+  {
+    "input": "1e+21",
+    "expected": "1e+21"
+  },
+  {
+    "input": "=",
+    "expected": "'="
+  },
+  {
+    "input": "-",
+    "expected": "'-"
+  },
+  {
+    "input": "+",
+    "expected": "'+"
+  },
+  {
+    "input": "@",
+    "expected": "'@"
+  },
+  {
+    "input": "'już z apostrofem",
+    "expected": "'już z apostrofem"
+  },
+  {
+    "input": "tekst,\r\nz CRLF",
+    "expected": "\"tekst,\r\nz CRLF\""
+  },
+  {
+    "input": "\"=cytat\"",
+    "expected": "\"\"\"=cytat\"\"\""
+  }
+]

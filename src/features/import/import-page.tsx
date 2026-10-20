@@ -9,6 +9,7 @@ import {
   valuationCsvTemplate,
   type CsvImportPreview,
 } from "@/features/import/import-parser";
+import { csvCell, incomeCsvLines, transactionsCsvLines } from "@/features/import/csv-export";
 import { parseXtbXlsx } from "@/features/import/xtb-parser";
 import { loadEtfCatalog } from "@/features/import/etf-catalog";
 import { resolveObservedCurrencies } from "@/features/import/xtb-currency-resolver";
@@ -76,11 +77,6 @@ function downloadBlob(content: string, filename: string, type: string) {
   anchor.download = filename;
   anchor.click();
   URL.revokeObjectURL(url);
-}
-
-function csvCell(value: string | number | null | undefined) {
-  const s = value == null ? "" : String(value);
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
 const SECTION_HEAD: CSSProperties = {
@@ -461,23 +457,8 @@ export function ImportPage() {
 
   function exportTransactionsCsv() {
     if (!records) return;
-    const transactions = buildTransactionList(records);
-    const header = "date,portfolio,instrument,transactionType,quantity,price,grossAmount,currency,fees,taxes";
-    const lines = transactions.map((t) =>
-      [
-        t.date.slice(0, 10),
-        t.portfolioName,
-        t.instrumentSymbol ?? t.instrumentName ?? "",
-        t.transactionType,
-        t.quantity ?? "",
-        t.price ?? "",
-        t.grossAmount,
-        t.currency,
-        t.fees,
-        t.taxes,
-      ].map(csvCell).join(","),
-    );
-    downloadBlob([header, ...lines].join("\n"), `investor-transakcje-${today()}.csv`, "text/csv;charset=utf-8");
+    const lines = transactionsCsvLines(buildTransactionList(records));
+    downloadBlob(lines.join("\n"), `investor-transakcje-${today()}.csv`, "text/csv;charset=utf-8");
   }
 
   function exportSnapshotJson() {
@@ -496,22 +477,8 @@ export function ImportPage() {
 
   function exportIncomeCsv() {
     if (!records) return;
-    const INCOME_TYPES = new Set(["dividend", "interest", "bondCoupon"]);
-    const transactions = buildTransactionList(records).filter((t) => INCOME_TYPES.has(t.transactionType));
-    const header = "date,portfolio,instrument,transactionType,grossAmount,currency,fees,taxes";
-    const lines = transactions.map((t) =>
-      [
-        t.date.slice(0, 10),
-        t.portfolioName,
-        t.instrumentSymbol ?? t.instrumentName ?? "",
-        t.transactionType,
-        t.grossAmount,
-        t.currency,
-        t.fees,
-        t.taxes,
-      ].map(csvCell).join(","),
-    );
-    downloadBlob([header, ...lines].join("\n"), `investor-dochody-${today()}.csv`, "text/csv;charset=utf-8");
+    const lines = incomeCsvLines(buildTransactionList(records));
+    downloadBlob(lines.join("\n"), `investor-dochody-${today()}.csv`, "text/csv;charset=utf-8");
   }
 
   function exportPositionsCsv() {
