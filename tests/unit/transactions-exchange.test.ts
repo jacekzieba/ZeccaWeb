@@ -142,4 +142,22 @@ describe("wymiana transakcji CSV z aplikacją natywną", () => {
       [6, ["Ten typ transakcji wymaga instrumentu."]],
     ]);
   });
+
+  it("kolumna transferKind jest, ale pusta w wierszu: przeniesienie odpada jak w starym pliku", () => {
+    const file = [
+      "date,portfolio,instrument,transactionType,quantity,price,grossAmount,currency,fees,taxes,transferKind",
+      "2026-05-19,Główny,,accountTransferIn,,,400,PLN,0,0,",
+      "2026-05-20,Główny,VWCE.DE,transferOut,1,100,100,EUR,0,0,",
+      "2026-05-21,Główny,,transferOut,,,50,PLN,0,0,",
+    ].join("\n");
+
+    const preview = parseCsvImport(file, references());
+    if (preview.kind !== "transaction") throw new Error("expected a transaction preview");
+
+    expect(preview.validRows.map((row) => row.rowNumber)).toEqual([4]);
+    expect(preview.errorRows.map((row) => row.rowNumber)).toEqual([2, 3]);
+    expect(preview.errorRows[0].errors).toContain(
+      "Przeniesienia między portfelami nie da się zaimportować z CSV (brak rodzaju przeniesienia i partii).",
+    );
+  });
 });

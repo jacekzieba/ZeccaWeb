@@ -384,9 +384,10 @@ function parseTransactionRow(
   const targetCurrency = (values.targetcurrency ?? "").toUpperCase();
   const notes = values.notes || values.note || "";
   const externalImportID = values.externalimportid || "";
-  // Przeniesienie (rodzaj, źródło, sposób liczenia wpłaty i kosztu, partie) —
-  // tylko gdy plik ma te kolumny, jak w natywnym TransactionCSVImporter.
-  const hasTransferColumns = headers.includes("transferkind");
+  // Przeniesienie (rodzaj, źródło, sposób liczenia wpłaty i kosztu, partie), jak w
+  // natywnym TransactionCSVImporter. Bez rodzaju w wierszu (stary eksport, szablon
+  // albo puste pole) przeniesienie wróciłoby z innym znaczeniem.
+  const hasTransferKind = Boolean(values.transferkind);
   const transfer = parseTransferFields(values);
   const quantity = parseOptionalNumber(values.quantity ?? "");
   const price = parseOptionalNumber(values.price ?? "");
@@ -402,12 +403,12 @@ function parseTransactionRow(
   if (!TRANSACTION_TYPES.has(transactionType)) errors.push("Nieznany typ transakcji.");
   // Jak w natywnym TransactionCSVImporter: plik nie niesie rodzaju przeniesienia,
   // sposobu liczenia wpłaty ani partii, więc transakcja wróciłaby z innym znaczeniem.
-  if (!hasTransferColumns && transactionType === "accountTransferIn") {
+  if (!hasTransferKind && transactionType === "accountTransferIn") {
     errors.push("Przeniesienia między portfelami nie da się zaimportować z CSV (brak rodzaju przeniesienia i partii).");
   }
   // Transfer z instrumentem to w eksporcie przeniesienie aktywów (zdejmuje partie).
   // Bez `transferKind` wróciłby jako transfer gotówki: pozycja by została.
-  if (!hasTransferColumns && transactionType === "transferOut" && instrumentText) {
+  if (!hasTransferKind && transactionType === "transferOut" && instrumentText) {
     errors.push("Przeniesienia aktywów nie da się zaimportować z CSV (brak rodzaju przeniesienia i partii).");
   }
   if (grossAmount == null) errors.push("Brak poprawnej kwoty brutto.");
