@@ -41,6 +41,16 @@ test("imports a valid CSV locally, then exports the resulting transaction list",
   for await (const chunk of stream!) {
     csv += chunk.toString();
   }
-  expect(csv).toContain("2026-06-20,Portfel główny,,cashDeposit,,,1234.56,PLN,0,0");
-  expect(csv).not.toContain("2026-06-21,Portfel główny,,cashDeposit,,,999,PLN,0,0");
+  // Wspólny format wymiany z aplikacją natywną: kolumny po nazwie z nagłówka.
+  const [header, ...rows] = csv.trim().split("\n").map((line) => line.split(","));
+  const exported = rows.map((cells) => Object.fromEntries(header.map((name, i) => [name, cells[i]])));
+  expect(exported).toContainEqual(expect.objectContaining({
+    date: "2026-06-20",
+    portfolio_name: "Portfel główny",
+    type: "cashDeposit",
+    gross_amount: "1234.56",
+    currency: "PLN",
+    notes: "E2E import",
+  }));
+  expect(exported.some((row) => row.date === "2026-06-21")).toBe(false);
 });

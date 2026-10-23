@@ -50,6 +50,7 @@ import { useSyncStore } from "@/sync/store/sync-store";
 import { isFakeSyncEnabled } from "@/lib/env";
 import { V2, V2Card, V2ScreenHead, V2_TYPE, v2Mix } from "@/lib/v2-design";
 import { Select } from "@/components/ui/select";
+import { localDateString } from "@/lib/calendar-date";
 
 const UI = V2_TYPE.ui;
 const SERIF = V2_TYPE.serif;
@@ -462,13 +463,13 @@ export function ImportPage() {
   function exportTransactionsCsv() {
     if (!records) return;
     const lines = transactionsCsvLines(buildTransactionList(records));
-    downloadBlob(lines.join("\n"), `investor-transakcje-${today()}.csv`, "text/csv;charset=utf-8");
+    downloadBlob(lines.join("\n"), `investor-transakcje-${localDateString()}.csv`, "text/csv;charset=utf-8");
   }
 
   function exportSnapshotJson() {
     if (!records) return;
     const snap = buildParitySnapshot(records, { asOf: new Date(), historyGranularity: "daily" });
-    downloadBlob(JSON.stringify(snap, null, 2), `investor-portfel-${today()}.json`, "application/json");
+    downloadBlob(JSON.stringify(snap, null, 2), `investor-portfel-${localDateString()}.json`, "application/json");
   }
 
   function exportDailySnapshotsCsv() {
@@ -476,13 +477,13 @@ export function ImportPage() {
     if (!series || series.length === 0) return;
     const header = "date,value";
     const lines = series.map((p) => [csvCell(p.date.slice(0, 10)), csvCell(p.value)].join(","));
-    downloadBlob([header, ...lines].join("\n"), `investor-historia-${today()}.csv`, "text/csv;charset=utf-8");
+    downloadBlob([header, ...lines].join("\n"), `investor-historia-${localDateString()}.csv`, "text/csv;charset=utf-8");
   }
 
   function exportIncomeCsv() {
     if (!records) return;
     const lines = incomeCsvLines(buildTransactionList(records));
-    downloadBlob(lines.join("\n"), `investor-dochody-${today()}.csv`, "text/csv;charset=utf-8");
+    downloadBlob(lines.join("\n"), `investor-dochody-${localDateString()}.csv`, "text/csv;charset=utf-8");
   }
 
   function exportPositionsCsv() {
@@ -509,7 +510,7 @@ export function ImportPage() {
         i.valuationSource,
       ].map(csvCell).join(","),
     );
-    downloadBlob([header, ...lines].join("\n"), `investor-pozycje-${today()}.csv`, "text/csv;charset=utf-8");
+    downloadBlob([header, ...lines].join("\n"), `investor-pozycje-${localDateString()}.csv`, "text/csv;charset=utf-8");
   }
 
   const validCount = preview?.validRows.length ?? 0;
@@ -1017,10 +1018,6 @@ export function ImportPage() {
 
     </div>
   );
-}
-
-function today() {
-  return new Date().toISOString().slice(0, 10);
 }
 
 function upsertLocalRecords(

@@ -600,6 +600,41 @@ describe("AddTransactionModal — edycja istniejącej transakcji", () => {
     });
   });
 
+  // Aplikacja natywna zapisuje transferIn/transferOut jako przelew gotówki między
+  // portfelami (bez instrumentu), a oba silniki księgują je wyłącznie jako gotówkę.
+  // Formularz nie znał transferOut i brał ustawienia zakupu (żądał ilości), a
+  // transferIn opisywał jako transfer instrumentu z ilością, która nic nie robiła.
+  it.each(["transferOut", "transferIn"] as const)("edycja %s z aplikacji zapisuje przelew gotówki bez żądania ilości", async (transactionType) => {
+    render(
+      <AddTransactionModal
+        open
+        initialValue={{
+          id: "55555555-5555-4555-8555-555555555555",
+          portfolioId: accountID,
+          instrumentId: null,
+          date: "2026-05-10",
+          transactionType,
+          quantity: null,
+          price: null,
+          grossAmount: 300,
+          currency: "PLN",
+          fees: 0,
+          taxes: 0,
+          updatedAt: "2026-05-10T10:00:00.000Z",
+        }}
+        onClose={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz zmiany" }));
+
+    await waitFor(() => expect(vi.mocked(saveRecord)).toHaveBeenCalledTimes(1));
+    const payload = vi.mocked(saveRecord).mock.calls[0]?.[3] as Record<string, unknown>;
+    expect(payload).toMatchObject({ transactionType, grossAmount: 300, currency: "PLN" });
+    expect(payload.instrumentID ?? null).toBeNull();
+    expect(payload.quantity ?? null).toBeNull();
+  });
+
   it("edycja sprzedaży, która zamknęła pozycję, zachowuje instrument", async () => {
     // Filtr „tylko posiadane” liczył stan razem z edytowaną sprzedażą: 10 − 10 = 0,
     // więc instrument wypadał z listy i formularz odrzucał zapis.

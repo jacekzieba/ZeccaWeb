@@ -38,6 +38,8 @@ export const TRANSACTION_EXCHANGE_COLUMNS = [
   "fees", "taxes", "fx_rate_to_base", "notes",
   "external_import_id", "created_at", "updated_at",
   "target_currency", "target_gross_amount",
+  "source_portfolio_id", "transfer_kind", "transfer_source_kind",
+  "contribution_treatment", "transfer_cost_basis_mode", "transfer_lots",
 ];
 
 export function transactionsCsvLines(transactions: TransactionRow[]) {
@@ -67,9 +69,30 @@ export function transactionsCsvLines(transactions: TransactionRow[]) {
         t.updatedAt ?? "",
         t.targetCurrency ?? "",
         t.targetGrossAmount ?? "",
+        t.sourcePortfolioID ?? "",
+        t.transferKind ?? "",
+        t.transferSourceKind ?? "",
+        t.contributionTreatment ?? "",
+        t.transferCostBasisMode ?? "",
+        transferLotsCell(t.transferLots),
       ].map(csvCell).join(","),
     ),
   ];
+}
+
+/** Partie przeniesienia jako JSON w jednej komórce, z datą nabycia jako dzień
+ * (klucze posortowane, jak w aplikacji natywnej). */
+function transferLotsCell(lots: TransactionRow["transferLots"]) {
+  if (!lots || lots.length === 0) return "";
+  return JSON.stringify(
+    lots.map((lot) => ({
+      acquisitionDate: exportDay(lot.acquisitionDate),
+      currency: lot.currency,
+      ...(lot.fxRateToBase != null ? { fxRateToBase: lot.fxRateToBase } : {}),
+      quantity: lot.quantity,
+      unitCost: lot.unitCost,
+    })),
+  );
 }
 
 export function incomeCsvLines(transactions: TransactionRow[]) {

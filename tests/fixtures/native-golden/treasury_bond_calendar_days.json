@@ -1,5 +1,5 @@
 {
-  "_opis": "Wycena obligacji detalicznych po dniach kalendarzowych w Polsce (Europe/Warsaw). Daty to sekundy od 2001-01-01 (format synchronizacji); dateEncoding=app: północ czasu warszawskiego (tak zapisuje aplikacja), web: północ UTC (tak zapisuje ZeccaWeb). Stopy NBP jak w ZeccaWeb (północ UTC). expectedPrice to wartość jednej obligacji na koniec dnia asOf, sprawdzona ręcznie. Ten sam plik czytają TreasuryBondCalendarDayTests (Swift) i tests/unit/native-golden-bond-calendar.test.ts (ZeccaWeb).",
+  "_opis": "Wycena obligacji detalicznych po dniach kalendarzowych w Polsce (Europe/Warsaw). Daty to sekundy od 2001-01-01 (format synchronizacji); dateEncoding=app: północ czasu warszawskiego (tak zapisuje aplikacja), web: północ UTC (tak zapisuje ZeccaWeb). Stopy NBP jak w ZeccaWeb (północ UTC). expectedPrice to wartość jednej obligacji na koniec dnia asOf, sprawdzona ręcznie. Okres miesięczny (ROR/DOR) to 1/12 stopy rocznej, jak w wypłatach PKO; okres krótszy niż rok (OTS) to dni/365 — OTS0124 ma oficjalnie 0,76 zł odsetek. Ten sam plik czytają TreasuryBondCalendarDayTests (Swift) i tests/unit/native-golden-bond-calendar.test.ts (ZeccaWeb).",
   "cases": [
     {
       "asOf": 762478200,
@@ -286,7 +286,7 @@
         "subsequentBase": "stopa referencyjna NBP"
       },
       "dateEncoding": "app",
-      "expectedPrice": 100.33,
+      "expectedPrice": 100.32,
       "name": "ROR kupiona 31. dnia, okres po lutym",
       "purchaseDate": 783558000
     },
@@ -323,6 +323,40 @@
       "expectedPrice": 128.65,
       "name": "Stałe oprocentowanie, okresy roczne, kupiona 29 lutego, rocznica w roku przestępnym",
       "purchaseDate": 730854000
+    },
+    {
+      "asOf": 721738800.0,
+      "bond": {
+        "capitalization": "brak",
+        "firstPeriodRate": 3.0,
+        "interestPayment": "przy wykupie",
+        "issueDate": 717804000.0,
+        "marginOverBase": 3.0,
+        "maturityDate": 725756400.0,
+        "nominalValue": 100,
+        "subsequentBase": "stałe"
+      },
+      "dateEncoding": "app",
+      "expectedPrice": 100.37,
+      "name": "OTS0124 w trakcie okresu (dni/365)",
+      "purchaseDate": 717804000.0
+    },
+    {
+      "asOf": 725886000.0,
+      "bond": {
+        "capitalization": "brak",
+        "firstPeriodRate": 3.0,
+        "interestPayment": "przy wykupie",
+        "issueDate": 717804000.0,
+        "marginOverBase": 3.0,
+        "maturityDate": 725756400.0,
+        "nominalValue": 100,
+        "subsequentBase": "stałe"
+      },
+      "dateEncoding": "app",
+      "expectedPrice": 100.76,
+      "name": "OTS0124 po wykupie: oficjalne odsetki 0,76 zł",
+      "purchaseDate": 717804000.0
     }
   ],
   "cpi": [

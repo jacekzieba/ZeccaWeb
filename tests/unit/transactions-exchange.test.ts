@@ -46,6 +46,20 @@ function comparable(payload: Payload) {
     targetGrossAmount: payload.targetGrossAmount ?? null,
     notes: payload.notes ?? "",
     externalImportID: payload.externalImportID ?? null,
+    sourcePortfolioID: payload.sourcePortfolioID ?? null,
+    transferKind: payload.transferKind ?? null,
+    transferSourceKind: payload.transferSourceKind ?? null,
+    contributionTreatment: payload.contributionTreatment ?? null,
+    transferCostBasisMode: payload.transferCostBasisMode ?? null,
+    transferLots: Array.isArray(payload.transferLots)
+      ? (payload.transferLots as Payload[]).map((lot) => ({
+          acquisitionDate: day(lot.acquisitionDate),
+          quantity: lot.quantity,
+          unitCost: lot.unitCost,
+          currency: lot.currency,
+          fxRateToBase: lot.fxRateToBase ?? null,
+        }))
+      : null,
   };
 }
 
@@ -92,5 +106,58 @@ describe("wymiana transakcji CSV z aplikacją natywną", () => {
     if (preview.kind !== "transaction") throw new Error("expected a transaction preview");
 
     expect(preview.validRows).toEqual([]);
+  });
+
+  it("plik bez kolumn przeniesienia odrzuca przeniesienia, których znaczenia nie da się ustalić", () => {
+    const legacy = [
+      "date,portfolio,instrument,transactionType,quantity,price,grossAmount,currency,fees,taxes",
+      "2026-05-19,Główny,,accountTransferIn,,,400,PLN,0,0",
+      "2026-05-20,Główny,VWCE.DE,transferOut,1,100,100,EUR,0,0",
+      "2026-05-21,Główny,,cashDeposit,,,1000,PLN,0,0",
+    ].join("\n");
+
+    const preview = parseCsvImport(legacy, references());
+    if (preview.kind !== "transaction") throw new Error("expected a transaction preview");
+
+    expect(preview.validRows.map((row) => (row.payload as Payload).transactionType)).toEqual(["cashDeposit"]);
+    expect(preview.errorRows.map((row) => row.rowNumber)).toEqual([2, 3]);
+  });
+
+  it("instrumentu wymaga tylko przeniesienie aktywów, jak w natywnym TransactionValidator", () => {
+    const file = [
+      "date,portfolio,instrument,transactionType,quantity,price,grossAmount,currency,fees,taxes,transferKind",
+      "2026-05-19,Główny,,transferIn,,,400,PLN,0,0,",
+      "2026-05-20,Główny,,transferOut,,,150,PLN,0,0,cash",
+      "2026-05-21,Główny,,accountTransferIn,,,300,PLN,0,0,cash",
+      "2026-05-22,Główny,,accountTransferIn,2,90,180,PLN,0,0,asset",
+      "2026-05-23,Główny,,transferOut,1,100,100,PLN,0,0,asset",
+    ].join("\n");
+
+    const preview = parseCsvImport(file, references());
+    if (preview.kind !== "transaction") throw new Error("expected a transaction preview");
+
+    expect(preview.validRows.map((row) => row.rowNumber)).toEqual([2, 3, 4]);
+    expect(preview.errorRows.map((row) => [row.rowNumber, row.errors])).toEqual([
+      [5, ["Ten typ transakcji wymaga instrumentu."]],
+      [6, ["Ten typ transakcji wymaga instrumentu."]],
+    ]);
+  });
+
+  it("kolumna transferKind jest, ale pusta w wierszu: przeniesienie odpada jak w starym pliku", () => {
+    const file = [
+      "date,portfolio,instrument,transactionType,quantity,price,grossAmount,currency,fees,taxes,transferKind",
+      "2026-05-19,Główny,,accountTransferIn,,,400,PLN,0,0,",
+      "2026-05-20,Główny,VWCE.DE,transferOut,1,100,100,EUR,0,0,",
+      "2026-05-21,Główny,,transferOut,,,50,PLN,0,0,",
+    ].join("\n");
+
+    const preview = parseCsvImport(file, references());
+    if (preview.kind !== "transaction") throw new Error("expected a transaction preview");
+
+    expect(preview.validRows.map((row) => row.rowNumber)).toEqual([4]);
+    expect(preview.errorRows.map((row) => row.rowNumber)).toEqual([2, 3]);
+    expect(preview.errorRows[0].errors).toContain(
+      "Przeniesienia między portfelami nie da się zaimportować z CSV (brak rodzaju przeniesienia i partii).",
+    );
   });
 });
