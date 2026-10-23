@@ -2588,6 +2588,20 @@ export function buildTransactionList(
         updatedAt: tx.updatedAt != null ? toDate(tx.updatedAt).toISOString() : null,
         targetCurrency: tx.targetCurrency ?? null,
         targetGrossAmount: tx.targetGrossAmount ?? null,
+        sourcePortfolioID: tx.sourcePortfolioID ?? null,
+        transferKind: tx.transferKind ?? null,
+        transferSourceKind: tx.transferSourceKind ?? null,
+        contributionTreatment: tx.contributionTreatment ?? null,
+        transferCostBasisMode: tx.transferCostBasisMode ?? null,
+        transferLots: tx.transferLots
+          ? tx.transferLots.map((lot) => ({
+              acquisitionDate: toDate(lot.acquisitionDate).toISOString(),
+              quantity: lot.quantity,
+              unitCost: lot.unitCost,
+              currency: lot.currency,
+              fxRateToBase: lot.fxRateToBase ?? null,
+            }))
+          : null,
       } satisfies TransactionRow;
     })
     .sort((a, b) => b.date.localeCompare(a.date));

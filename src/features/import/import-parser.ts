@@ -39,19 +39,13 @@ const TYPES_REQUIRING_INSTRUMENT = new Set([
   "bondRedemption",
   "depositOpen",
   "depositClose",
-  "transferIn",
-  "transferOut",
-  "accountTransferIn",
 ]);
 
-const TYPES_USING_QUANTITY = new Set([
-  "buy",
-  "sell",
-  "bondRedemption",
-  "transferIn",
-  "transferOut",
-  "accountTransferIn",
-]);
+const TYPES_USING_QUANTITY = new Set(["buy", "sell", "bondRedemption"]);
+
+// Jak natywny TransactionValidator: instrumentu i ilości wymaga tylko przeniesienie
+// aktywów (ilość mogą zastąpić partie). Wpłata `transferIn` to zawsze gotówka.
+const ASSET_TRANSFER_TYPES = new Set(["transferOut", "accountTransferIn"]);
 
 const headerAliases: Record<string, string> = {
   account: "portfolio",
@@ -156,6 +150,22 @@ const transactionPayloadSchema = z.object({
   targetCurrency: z.string().min(1).optional(),
   targetGrossAmount: z.number().optional(),
   externalImportID: z.string().min(1).optional(),
+  sourcePortfolioID: z.string().uuid().optional(),
+  transferKind: z.string().min(1).optional(),
+  transferSourceKind: z.string().min(1).optional(),
+  contributionTreatment: z.string().min(1).optional(),
+  transferCostBasisMode: z.string().min(1).optional(),
+  transferLots: z
+    .array(
+      z.object({
+        acquisitionDate: z.number(),
+        quantity: z.number(),
+        unitCost: z.number(),
+        currency: z.string().min(1),
+        fxRateToBase: z.number().optional(),
+      }),
+    )
+    .optional(),
   // Pola wymagane przez natywny TransactionPayload (iOS/macOS): ich brak
   // wywala tam dekodowanie całego pulla. Zawsze zapisujemy komplet.
   notes: z.string(),
@@ -374,6 +384,10 @@ function parseTransactionRow(
   const targetCurrency = (values.targetcurrency ?? "").toUpperCase();
   const notes = values.notes || values.note || "";
   const externalImportID = values.externalimportid || "";
+  // Przeniesienie (rodzaj, źródło, sposób liczenia wpłaty i kosztu, partie) —
+  // tylko gdy plik ma te kolumny, jak w natywnym TransactionCSVImporter.
+  const hasTransferColumns = headers.includes("transferkind");
+  const transfer = parseTransferFields(values);
   const quantity = parseOptionalNumber(values.quantity ?? "");
   const price = parseOptionalNumber(values.price ?? "");
   const grossAmount = parseRequiredNumber(values.grossamount ?? "");
@@ -388,12 +402,12 @@ function parseTransactionRow(
   if (!TRANSACTION_TYPES.has(transactionType)) errors.push("Nieznany typ transakcji.");
   // Jak w natywnym TransactionCSVImporter: plik nie niesie rodzaju przeniesienia,
   // sposobu liczenia wpłaty ani partii, więc transakcja wróciłaby z innym znaczeniem.
-  if (transactionType === "accountTransferIn") {
+  if (!hasTransferColumns && transactionType === "accountTransferIn") {
     errors.push("Przeniesienia między portfelami nie da się zaimportować z CSV (brak rodzaju przeniesienia i partii).");
   }
   // Transfer z instrumentem to w eksporcie przeniesienie aktywów (zdejmuje partie).
   // Bez `transferKind` wróciłby jako transfer gotówki: pozycja by została.
-  if (transactionType === "transferOut" && instrumentText) {
+  if (!hasTransferColumns && transactionType === "transferOut" && instrumentText) {
     errors.push("Przeniesienia aktywów nie da się zaimportować z CSV (brak rodzaju przeniesienia i partii).");
   }
   if (grossAmount == null) errors.push("Brak poprawnej kwoty brutto.");
@@ -418,10 +432,14 @@ function parseTransactionRow(
   if (values.bookingdate && bookingDate == null) errors.push("Nieprawidłowa data księgowania.");
   if (values.fxratetobase && fxRateToBase == null) errors.push("Nieprawidłowy kurs.");
   if (values.targetgrossamount && targetGrossAmount == null) errors.push("Nieprawidłowa kwota docelowa.");
-  if (TYPES_REQUIRING_INSTRUMENT.has(transactionType) && !instrumentID) {
+  errors.push(...transfer.errors);
+  const isAssetTransfer = ASSET_TRANSFER_TYPES.has(transactionType) && transfer.fields.transferKind === "asset";
+  const hasTransferLots = Array.isArray(transfer.fields.transferLots) && transfer.fields.transferLots.length > 0;
+  const usesQuantity = TYPES_USING_QUANTITY.has(transactionType) || (isAssetTransfer && !hasTransferLots);
+  if ((TYPES_REQUIRING_INSTRUMENT.has(transactionType) || isAssetTransfer) && !instrumentID) {
     errors.push("Ten typ transakcji wymaga instrumentu.");
   }
-  if (TYPES_USING_QUANTITY.has(transactionType) && quantity == null) {
+  if (usesQuantity && quantity == null) {
     errors.push("Ten typ transakcji wymaga ilości.");
   }
   if (values.quantity && quantity == null) errors.push("Nieprawidłowa ilość.");
@@ -444,7 +462,7 @@ function parseTransactionRow(
     }
   }
   // Zakup i sprzedaż bez ceny odrzuca walidator niżej (natywny TransactionValidator).
-  if (price == null && TYPES_USING_QUANTITY.has(transactionType) && transactionType !== "buy" && transactionType !== "sell") {
+  if (price == null && usesQuantity && transactionType !== "buy" && transactionType !== "sell") {
     // Both engines skip an instrument transaction with no unit price, so it is
     // stored but contributes nothing until the price is filled in. The snapshot
     // raises a matching `transaction-incomplete` diagnostic.
@@ -471,6 +489,7 @@ function parseTransactionRow(
     ...(targetCurrency ? { targetCurrency } : {}),
     ...(targetGrossAmount != null ? { targetGrossAmount } : {}),
     ...(externalImportID ? { externalImportID } : {}),
+    ...transfer.fields,
     notes,
     createdAt: nowSwiftReferenceSeconds(),
     updatedAt: nowSwiftReferenceSeconds(),
@@ -483,6 +502,70 @@ function parseTransactionRow(
   const payload = errors.length === 0 ? transactionPayloadSchema.parse(candidate) : null;
 
   return { rowNumber, values, payload, errors, warnings };
+}
+
+const TRANSFER_KINDS = new Set(["cash", "asset"]);
+const TRANSFER_SOURCE_KINDS = new Set(["internalPortfolio", "externalEmployer", "externalPPE", "externalBroker", "otherExternal"]);
+const CONTRIBUTION_TREATMENTS = new Set(["countAsContribution", "ignoreForContributions"]);
+const COST_BASIS_MODES = new Set(["carryHistoricalCost", "resetCostBasis"]);
+
+/** Pola przeniesienia ze wspólnego formatu wymiany; partie to JSON
+ * `[{"acquisitionDate":"RRRR-MM-DD","quantity":…,"unitCost":…,"currency":…}]`. */
+function parseTransferFields(values: Record<string, string>) {
+  const errors: string[] = [];
+  const fields: Record<string, unknown> = {};
+  const pick = (key: string, allowed: Set<string>, field: string, message: string) => {
+    const value = values[key];
+    if (!value) return;
+    if (allowed.has(value)) fields[field] = value;
+    else errors.push(message);
+  };
+  if (values.sourceportfolioid) {
+    if (isUuid(values.sourceportfolioid)) fields.sourcePortfolioID = values.sourceportfolioid;
+    else errors.push("Nieprawidłowe ID portfela źródłowego.");
+  }
+  pick("transferkind", TRANSFER_KINDS, "transferKind", "Nieznany rodzaj przeniesienia.");
+  pick("transfersourcekind", TRANSFER_SOURCE_KINDS, "transferSourceKind", "Nieznane źródło przeniesienia.");
+  pick("contributiontreatment", CONTRIBUTION_TREATMENTS, "contributionTreatment", "Nieznany sposób liczenia wpłaty.");
+  pick("transfercostbasismode", COST_BASIS_MODES, "transferCostBasisMode", "Nieznany sposób liczenia kosztu.");
+  if (values.transferlots) {
+    const lots = parseTransferLots(values.transferlots);
+    if (lots) fields.transferLots = lots;
+    else errors.push("Nieprawidłowe partie przeniesienia.");
+  }
+  return { errors, fields };
+}
+
+function parseTransferLots(text: string) {
+  let items: unknown;
+  try {
+    items = JSON.parse(text);
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(items)) return null;
+  const lots = [];
+  for (const item of items as Record<string, unknown>[]) {
+    const acquisitionDate =
+      typeof item?.acquisitionDate === "string" ? parseDateToSwiftSeconds(item.acquisitionDate) : null;
+    const { quantity, unitCost, currency, fxRateToBase } = item ?? {};
+    if (
+      acquisitionDate == null ||
+      typeof quantity !== "number" ||
+      typeof unitCost !== "number" ||
+      typeof currency !== "string"
+    ) {
+      return null;
+    }
+    lots.push({
+      acquisitionDate,
+      quantity,
+      unitCost,
+      currency,
+      ...(typeof fxRateToBase === "number" ? { fxRateToBase } : {}),
+    });
+  }
+  return lots;
 }
 
 function parseManualValuationRow(

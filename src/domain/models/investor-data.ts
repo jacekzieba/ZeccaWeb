@@ -212,6 +212,13 @@ export type TransactionRow = {
   updatedAt?: string | null;
   targetCurrency?: string | null;
   targetGrossAmount?: number | null;
+  sourcePortfolioID?: string | null;
+  transferKind?: string | null;
+  transferSourceKind?: string | null;
+  contributionTreatment?: string | null;
+  transferCostBasisMode?: string | null;
+  /** Partie przeniesienia; `acquisitionDate` w ISO. */
+  transferLots?: { acquisitionDate: string; quantity: number; unitCost: number; currency: string; fxRateToBase?: number | null }[] | null;
 };
 
 export type InstrumentRow = {
