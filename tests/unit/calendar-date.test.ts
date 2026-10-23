@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { utcDateOrNull } from "@/lib/calendar-date";
+import { afterEach, describe, expect, it } from "vitest";
+import { localDateString, utcDateOrNull } from "@/lib/calendar-date";
 
 // `Date.UTC` przelicza nieistniejące daty po cichu (31.02 → 3.03). utcDateOrNull ma zwrócić
 // datę tylko wtedy, gdy wraca z tymi samymi składnikami.
@@ -33,5 +33,19 @@ describe("utcDateOrNull", () => {
 
   it("zwraca północ UTC danego dnia", () => {
     expect(utcDateOrNull(2026, 5, 17)?.toISOString()).toBe("2026-05-17T00:00:00.000Z");
+  });
+});
+
+// Nazwy plików eksportu biorą dzień użytkownika. `toISOString()` dawał dzień w UTC,
+// więc w Polsce między północą a 1:00/2:00 plik miał wczorajszą datę.
+describe("localDateString", () => {
+  const previousTimeZone = process.env.TZ;
+  afterEach(() => {
+    process.env.TZ = previousTimeZone;
+  });
+
+  it("daje dzień w strefie użytkownika tuż po północy", () => {
+    process.env.TZ = "Europe/Warsaw";
+    expect(localDateString(new Date("2026-10-22T22:30:00Z"))).toBe("2026-10-23");
   });
 });
