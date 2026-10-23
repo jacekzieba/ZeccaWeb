@@ -172,9 +172,12 @@ describe("treasury bond monthly coupon valuation", () => {
     ],
   };
 
-  it("accrues the first ROR0127 period with Act/365", () => {
+  // Okres miesięczny to 1/12 stopy rocznej, jak w wypłatach PKO (ROR0623:
+  // 0,44 / 0,50 / 0,54 … zł): 100 × 5,75% / 12 × 10/31 = 0,1546 → 100,15.
+  // Act/365 dawało 100,16.
+  it("accrues the first ROR0127 period as 1/12 of the annual rate", () => {
     expect(unitPrice(params, purchase, new Date("2026-01-25T00:00:00.000Z"), dataset))
-      .toBe(100.16);
+      .toBe(100.15);
   });
 
   it("uses the current NBP rate and drops already-paid monthly coupons", () => {

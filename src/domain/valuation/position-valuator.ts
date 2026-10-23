@@ -238,11 +238,18 @@ function dirtyTreasuryBondPrice(
     // Period k ends at issue + (k+1) months, clamped to the month end (issue
     // letter's schedule of interest periods), not a month after the previous
     // end: after February a purchase on the 31st returns to the 31st.
-    const periodEnd = addMonths(scheduleStart, periodMonths * (periodIndex + 1));
+    // A bond shorter than a year (OTS) has a single period ending at maturity.
+    const scheduledEnd = addMonths(scheduleStart, periodMonths * (periodIndex + 1));
+    const periodEnd =
+      scheduledEnd.getTime() < maturityDay.getTime() ? scheduledEnd : maturityDay;
     const annualRate =
       bondPeriodRate(params, periodIndex, periodStart, cpi, referenceRates) / 100;
     const totalDays = Math.max(1, daysBetween(periodStart, periodEnd));
-    const periodYearFraction = periodMonths === 12 ? 1 : totalDays / 365;
+    const periodYearFraction = bondPeriodYearFraction(
+      periodMonths,
+      totalDays,
+      periodEnd.getTime() < scheduledEnd.getTime(),
+    );
 
     if (effectiveAsOf.getTime() < periodEnd.getTime()) {
       const elapsedDays = Math.max(0, daysBetween(periodStart, effectiveAsOf));
@@ -312,6 +319,20 @@ export function treasuryBondMacroGaps(
 
 function roundToGrosz(value: number) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+/**
+ * Share of the annual rate due for a whole interest period, as PKO pays it
+ * (same rule as native `TreasuryBondValuation.periodYearFraction`):
+ * - monthly period (ROR/DOR): 1/12 regardless of the day count — real ROR0623
+ *   payouts are 0.44 / 0.50 / 0.54 / 0.54 / 0.56 / 0.56 zł at 5.25–6.75%;
+ * - a full annual period: 1;
+ * - a period shorter than a year ending at maturity (OTS): days / 365 —
+ *   OTS0124 (3%, 92 days) officially pays 0.76 zł, not 0.75 zł.
+ */
+function bondPeriodYearFraction(periodMonths: number, periodDays: number, endsEarly: boolean) {
+  if (periodMonths === 1) return 1 / 12;
+  return endsEarly ? periodDays / 365 : 1;
 }
 
 function addMonths(date: Date, months: number) {
