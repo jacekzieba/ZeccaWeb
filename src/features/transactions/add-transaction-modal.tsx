@@ -111,7 +111,11 @@ const TX_TYPES = [
   { value: "cashWithdrawal",    label: "Wypłata gotówki",      group: "transfers",   tone: V2.loss,    icon: Banknote,         needsInstrument: false, needsQty: false, kinds: null, heldOnly: false },
   { value: "fxConversion",      label: "Przewalutowanie",      group: "transfers",   tone: V2.cash,    icon: ArrowLeftRight,   needsInstrument: false, needsQty: false, kinds: null, heldOnly: false },
   { value: "accountTransferIn", label: "Transfer między portfelami", group: "transfers", tone: V2.equity, icon: ArrowLeftRight, needsInstrument: false, needsQty: false, kinds: null, heldOnly: false },
-  { value: "transferIn",        label: "Transfer instrumentu IN", group: "transfers", tone: V2.profit, icon: Briefcase,        needsInstrument: true,  needsQty: true,  kinds: ["stock", "etf", "treasuryBond", "listedBond", "crypto"], heldOnly: false },
+  // transferIn/transferOut: przelew gotówki z innego / do innego portfela, jak w
+  // aplikacji natywnej (oba silniki księgują je jako gotówkę). Instrument przenosi
+  // „Transfer między portfelami” z rodzajem „aktywo”.
+  { value: "transferIn",        label: "Transfer przychodzący", group: "transfers", tone: V2.profit, icon: Banknote,         needsInstrument: false, needsQty: false, kinds: null, heldOnly: false },
+  { value: "transferOut",       label: "Transfer wychodzący",  group: "transfers",   tone: V2.loss,    icon: Banknote,         needsInstrument: false, needsQty: false, kinds: null, heldOnly: false },
   { value: "fee",               label: "Opłata",               group: "other",       tone: V2.loss,    icon: ReceiptText,      needsInstrument: false, needsQty: false, kinds: null, heldOnly: false },
   { value: "tax",               label: "Podatek",              group: "other",       tone: V2.loss,    icon: Percent,          needsInstrument: false, needsQty: false, kinds: null, heldOnly: false },
   { value: "correction",        label: "Korekta gotówki",      group: "other",       tone: V2.subtle,  icon: FilePenLine,      needsInstrument: false, needsQty: false, kinds: null, heldOnly: false },
