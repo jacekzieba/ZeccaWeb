@@ -39,7 +39,7 @@ test("renders the hero headline, CTAs and an interactive demo chart", async ({ p
 
   await expect(page.locator(".product-card")).toHaveCount(2);
   await expect(page.locator("#jak-dziala .steps-row")).toHaveCount(3);
-  await expect(page.getByRole("heading", { name: "Ten sam portfel. Dokładnie tam, gdzie go potrzebujesz." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ten sam portfel na Macu, iPhonie i w przeglądarce." })).toBeVisible();
   await expect(page.locator("[data-platform-panel]")).toHaveCount(3);
   // Zakładki podpina efekt LandingInteractions (ten sam, który dodaje js-reveal).
   await expect(page.locator(".zlanding")).toHaveClass(/js-reveal/);

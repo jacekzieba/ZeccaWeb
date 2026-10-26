@@ -33,7 +33,7 @@ export const landingCopy = {
     betaBanner: "",
     eyebrow: "macOS · iOS · przeglądarka",
     title: "Każda liczba<br>ma źródło.",
-    lede: "Zecca składa Twoje portfele inwestycyjne w jeden obraz — IKE, IKZE, akcje, ETF-y, obligacje skarbowe, lokaty i gotówkę — i odtwarza wartość od pierwszej transakcji. Kursy z NBP, inflacja z GUS, wynik liczony na Twoim urządzeniu.",
+    lede: "Zecca zbiera w jednym miejscu Twoje IKE, IKZE, akcje, ETF-y, obligacje skarbowe, lokaty i gotówkę i odtwarza wartość portfela od pierwszej transakcji. Kursy z NBP, inflacja z GUS, wynik liczony na Twoim urządzeniu.",
     ctaPrimary: "Załóż konto",
     ctaPrimaryHref: "/register",
     ctaDemo: "Zobacz demo",
@@ -55,7 +55,7 @@ export const landingCopy = {
       ],
     },
     proof:
-      "Monitoruj swój główny portfel inwestycyjny oraz konta&nbsp;<b>IKE</b> i <b>IKZE.</b>",
+      "Śledź główny portfel oraz konta&nbsp;<b>IKE</b> i <b>IKZE.</b>",
     storeBadges: [
       { top: "Pobierz w", main: "App Store", soon: "wkrótce" },
       { top: "Pobierz w", main: "Mac App Store", soon: "Wkrótce" },
@@ -64,9 +64,9 @@ export const landingCopy = {
     imageAlt: "Zecca na macOS — raporty i statystyki",
     trust: [
       { title: "Synchronizacja szyfrowana end-to-end", desc: "Włącz ją, gdy chcesz — dane szyfrujesz na swoim urządzeniu, zanim trafią na serwer" },
-      { title: "Wybierz wersję offline lub synchronizację online", desc: "Decyduj, czy i jak synchronizować dane między urządzeniami" },
-      { title: "Aktualne kursy walut, akcji, ETF i obligacji.", desc: "Kursy walut z tabel NBP, także historyczne" },
-      { title: "Inflacja CPI z GUS", desc: "Oficjalne dane o inflacji prosto z GUS, aby policzyć realny wynik inwestycji" },
+      { title: "Tryb offline albo synchronizacja online", desc: "Ty decydujesz, czy i jak synchronizować dane między urządzeniami" },
+      { title: "Aktualne kursy walut, akcji, ETF-ów i obligacji", desc: "Kursy walut z tabel NBP, także historyczne" },
+      { title: "Inflacja CPI z GUS", desc: "Oficjalne dane GUS o inflacji. Na ich podstawie Zecca liczy realny wynik inwestycji" },
     ],
   },
 
@@ -74,24 +74,24 @@ export const landingCopy = {
   howItWorks: {
     eyebrow: "Obraz Twojego majątku",
     title: "Wszystkie Twoje inwestycje —<br>w liczbach i na wykresach.",
-    desc: "Zecca nie próbuje zgadywać Twojego portfela z jednego salda. Buduje go od źródła: transakcji, wpłat, wycen i oficjalnych danych.",
+    desc: "Zecca nie zgaduje portfela na podstawie jednego salda. Odtwarza go z transakcji, wpłat, wycen i oficjalnych danych.",
     steps: [
       {
         label: "01",
-        title: "Wprowadzasz transakcje ręcznie albo importujesz pliki od Twojego brokera&nbsp;",
+        title: "Wpisujesz transakcje ręcznie albo importujesz pliki od brokera",
         desc: "Możesz cofnąć się do pierwszej obligacji, lokaty albo ETF-u.",
         meta: "Transakcje · import · aktywa ręczne",
       },
       {
         label: "02",
-        title: "Zecca przelicza transakcje, kursy, odsetki, dywidendy i wynik realny po inflacji.",
+        title: "Zecca przelicza transakcje po kursach, dolicza odsetki i dywidendy, a potem liczy wynik realny po inflacji.",
         desc: "Kursy z tabel NBP, inflacja z GUS, koszt nabycia liczony metodą FIFO.",
         meta: "NBP · GUS · FIFO · XIRR",
       },
       {
         label: "03",
         title: "Wszystko w jednym miejscu",
-        desc: "Koniec z logowaniem się w kilku miejscach, żeby zobaczyć IKE, IKZE, obligacje i resztę aktywów. Koniec z Excelem.",
+        desc: "Koniec z logowaniem się do kilku serwisów, żeby zobaczyć IKE, IKZE, obligacje i resztę aktywów. Koniec z Excelem.",
         meta: "Portfele · alokacja · historia",
       },
     ],
@@ -101,7 +101,7 @@ export const landingCopy = {
   features: {
     eyebrow: "Funkcje",
     title: "Jeden spokojny widok na cały Twój majątek.",
-    desc: "Od pierwszej obligacji kupionej lata temu po dzisiejszy ETF. Zecca składa to w jedną, odtwarzalną historię wartości.",
+    desc: "Obligacja kupiona lata temu i dzisiejszy ETF trafiają do jednej historii wartości, którą Zecca odtwarza od początku.",
     items: [
       {
         title: "Wiele portfeli i grup",
@@ -125,22 +125,22 @@ export const landingCopy = {
       },
       {
         title: "Moduł Zarobki",
-        desc: "Osobny widok dochodów i obciążeń: wynagrodzenia, UoP/B2B, podsumowania miesięczne, średnie i najlepszy miesiąc. Inwestycje obok prywatnego cashflow.",
+        desc: "Osobny widok dochodów i obciążeń: wynagrodzenia, UoP/B2B, podsumowania miesięczne, średnie i najlepszy miesiąc. Inwestycje widzisz obok prywatnego cashflow.",
         tags: ["CASHFLOW", "UoP / B2B"],
       },
       {
         title: "Import od brokerów",
-        desc: "Wczytaj historię z plików XLS/XLSX. Gotowe importery dla XTB i PKO Obligacje. Podgląd przed zatwierdzeniem, wykrywanie duplikatów i parowanie instrumentów.",
+        desc: "Wczytaj historię z plików XLS/XLSX. Gotowe importery dla XTB i PKO Obligacje. Przed zapisem widzisz podgląd, a Zecca wykrywa duplikaty i dopasowuje instrumenty.",
         tags: ["XLSX", "PKO Obligacje"],
       },
       {
         title: "Eksport i kopie",
-        desc: "Eksportuj do CSV transakcje, historię wartości, przychody i pozycje, całość lub jeden portfel. Plus lokalny backup JSON. Twoje dane należą do Ciebie.",
+        desc: "Eksportuj do CSV transakcje, historię wartości, przychody i pozycje: całość albo jeden portfel. Do tego lokalna kopia zapasowa w JSON.",
         tags: ["CSV", "backup JSON"],
       },
       {
         title: "Konto i synchronizacja",
-        desc: "Działaj bez konta lub włącz synchronizację: iCloud albo prywatną, szyfrowaną sync Zecca. Logowanie e-mailem, przez Apple lub Google, blokada Face&nbsp;ID / Touch&nbsp;ID.",
+        desc: "Korzystaj bez konta albo włącz synchronizację przez iCloud lub prywatną, szyfrowaną Zecca Sync. Logowanie e-mailem, przez Apple lub Google, blokada Face&nbsp;ID / Touch&nbsp;ID.",
         tags: ["E2E", "Zecca Sync", "Face ID"],
       },
     ],
@@ -157,8 +157,8 @@ export const landingCopy = {
   assetClasses: {
     eyebrow: "Klasy aktywów",
     title: "Wszystko, co masz<br>w jednym rejestrze.",
-    desc: "Akcje i ETF-y obok obligacji skarbowych, lokat, gotówki i krypto. Plus to, czego żaden broker Ci nie policzy.",
-    note: "Zecca obsługuje wszystkie powyższe. Portfel demonstracyjny trzyma akurat trzy z nich — i tyle pokazuje pierścień.",
+    desc: "Akcje i ETF-y obok obligacji skarbowych, lokat, gotówki i krypto. Do tego aktywa, których żaden broker Ci nie policzy.",
+    note: "Zecca obsługuje wszystkie te klasy. Portfel demonstracyjny ma akurat trzy z nich, więc tylko je pokazuje pierścień.",
     rows: [
       { name: "Akcje i ETF-y", detail: "wycena po kursie zamknięcia" },
       { name: "Obligacje skarbowe", detail: "ROD · EDO · COI · TOS · ROR · DOR" },
@@ -173,26 +173,26 @@ export const landingCopy = {
   privacy: {
     eyebrow: "Prywatność",
     title: "Wynik liczy się u&nbsp;Ciebie<br>i&nbsp;u Ciebie <em>zostaje.</em>",
-    desc: "Zecca przelicza portfel na Twoim urządzeniu. Jeśli włączysz synchronizację, na serwer trafia wyłącznie szyfrogram, a klucz do niego powstaje z Twojego hasła na Twoim urządzeniu i nigdzie go nie przechowujemy. Nie widzimy Twoich pozycji, wartości ani transakcji.",
+    desc: "Zecca przelicza portfel na Twoim urządzeniu. Jeśli włączysz synchronizację, na serwer trafia tylko szyfrogram. Klucz do niego powstaje z Twojego hasła na Twoim urządzeniu i nigdzie go nie przechowujemy. Nie widzimy Twoich pozycji, wartości ani transakcji.",
     marks: ["Szyfrowanie end-to-end", "Klucz tworzony na urządzeniu", "Na serwerze tylko szyfrogram"],
   },
 
   // ── Showcase platform ─────────────────────────────────────────────────────
   showcase: {
     eyebrow: "Jedno Zecca · trzy platformy",
-    title: "Ten sam portfel. Dokładnie tam, gdzie go potrzebujesz.",
-    desc: "Pracuj głęboko na Macu, otwieraj portfel bez instalacji w przeglądarce i zaglądaj do najważniejszych liczb na iPhonie. Zmieniasz ekran, nie sposób liczenia ani kontekst.",
+    title: "Ten sam portfel na Macu, iPhonie i w przeglądarce.",
+    desc: "Na Macu pracujesz z pełnymi raportami, w przeglądarce otwierasz portfel bez instalacji, a na iPhonie sprawdzasz najważniejsze liczby. Zmienia się tylko ekran. Sposób liczenia i kontekst zostają te same.",
     desktop: [
       {
         id: "web",
         tab: "Web",
         kicker: "Web · bez instalacji",
-        title: "Twój portfel dostępny również w przeglądarce.",
-        desc: "Wersja webowa daje szybki dostęp do tych samych portfeli, raportów i wykresów na dowolnym komputerze — z zachowaniem spójnego modelu danych Zecca.",
+        title: "Twój portfel także w przeglądarce.",
+        desc: "W przeglądarce otworzysz te same portfele, raporty i wykresy na dowolnym komputerze. Dane i przeliczenia są takie same jak w aplikacjach Zecca.",
         points: [
-          "Dostęp z aktualnej przeglądarki na komputerze",
+          "Działa w aktualnej przeglądarce na komputerze",
           "Te same portfele, metryki i historia inwestycji",
-          "Czytelny układ dostosowany do szerokości ekranu",
+          "Układ dopasowuje się do szerokości ekranu",
         ],
         imageAlt: "Zecca w przeglądarce — raporty i alokacja portfela",
       },
@@ -201,7 +201,7 @@ export const landingCopy = {
         tab: "macOS",
         kicker: "macOS · natywna aplikacja",
         title: "Pełny warsztat inwestora na dużym ekranie.",
-        desc: "Raporty, alokacja, wyniki realne i historia portfeli są ułożone tak, aby dało się przejść od ogólnego obrazu do szczegółów bez gubienia kontekstu.",
+        desc: "Raporty, alokację, wyniki realne i historię portfeli ułożyliśmy tak, żeby z ogólnego obrazu dało się przejść do szczegółów bez gubienia kontekstu.",
         points: [
           "Rozbudowane raporty i statystyki w jednym widoku",
           "Wygodna praca z wieloma portfelami i długą historią",
@@ -214,12 +214,12 @@ export const landingCopy = {
       id: "ios",
       tab: "iOS",
       kicker: "iOS · dashboard w kieszeni",
-      title: "Sprawdzasz portfel w chwili, w której tego potrzebujesz.",
-      desc: "Mobilny widok nie próbuje pomieścić całego desktopu. Pokazuje wartość, zmianę, wynik, dywidendy i alokację w kolejności, w jakiej sprawdza się je najczęściej.",
+      title: "Portfel pod ręką, kiedy chcesz go sprawdzić.",
+      desc: "Wersja na iPhone'a nie upycha całego desktopu. Pokazuje wartość, zmianę, wynik, dywidendy i alokację w kolejności, w jakiej najczęściej się je sprawdza.",
       points: [
         "Wartość i historia portfela w zakresach 1M–MAX",
         "Wynik, dywidendy i alokacja na jednym ekranie",
-        "Natywna nawigacja zaprojektowana pod obsługę kciukiem",
+        "Natywna nawigacja wygodna do obsługi kciukiem",
       ],
       imageAlt: "Zecca na iOS — mobilny dashboard portfela",
     },
@@ -229,27 +229,27 @@ export const landingCopy = {
   investor: {
     eyebrow: "Dla polskiego inwestora",
     title: "Zbudowane pod polskie realia.",
-    desc: "Nie kalka zagranicznego trackera. IKE i IKZE, detaliczne obligacje skarbowe, kursy NBP i inflacja GUS są tu obywatelami pierwszej kategorii.",
+    desc: "To nie kalka zagranicznego trackera. IKE i IKZE, detaliczne obligacje skarbowe, kursy NBP i inflacja GUS są tu na pierwszym planie.",
     cells: [
       {
         badge: "IKE / IKZE",
         title: "Konta emerytalne",
-        desc: "IKE i IKZE jako osobne portfele, z widokiem łącznym i podziałem na opodatkowane vs. emerytalne.",
+        desc: "IKE i IKZE jako osobne portfele, z widokiem łącznym i podziałem na konta opodatkowane i emerytalne.",
       },
       {
         badge: "OBLIGACJE",
         title: "Obligacje skarbowe detaliczne",
-        desc: "ROD, EDO, COI, TOS, ROR, DOR. Narastanie odsetek wg serii, inflacji i marży, kapitalizacja oraz wykup.",
+        desc: "ROD, EDO, COI, TOS, ROR, DOR. Odsetki narastają według serii, inflacji i marży. Zecca uwzględnia kapitalizację i wykup.",
       },
       {
         badge: "NBP",
         title: "Kursy walut z NBP",
-        desc: "Oficjalne tabele NBP do wyceny aktywów w walutach obcych i złota, z konkretnego dnia lub ostatniej publikacji.",
+        desc: "Aktywa w walutach obcych i złoto Zecca wycenia po oficjalnych tabelach NBP: z wybranego dnia albo z ostatniej publikacji.",
       },
       {
         badge: "GUS",
         title: "Inflacja z GUS",
-        desc: "Wskaźnik CPI prosto z oficjalnych danych GUS, podstawa wyniku realnego po inflacji.",
+        desc: "Wskaźnik CPI z oficjalnych danych GUS. Na nim opiera się wynik realny po inflacji.",
       },
       {
         badge: "LOKATY",
@@ -259,7 +259,7 @@ export const landingCopy = {
       {
         badge: "PLN / EUR / USD",
         title: "Bazowo w złotówkach",
-        desc: "Waluta bazowa PLN i osobna waluta wyświetlania: PLN, EUR lub USD. Pozycje zagraniczne przeliczane po kursach NBP, także historycznie.",
+        desc: "Waluta bazowa PLN i osobna waluta wyświetlania: PLN, EUR lub USD. Pozycje zagraniczne Zecca przelicza po kursach NBP, także historycznych.",
       },
     ],
   },
@@ -273,7 +273,7 @@ export const landingCopy = {
     items: [
       {
         q: "Czy Zecca jest darmowa?",
-        a: "Tak. W trakcie beta testów korzystanie z aplikacji jest <b>bezpłatne</b>. O ewentualnym modelu cenowym poinformujemy z wyprzedzeniem, zanim beta się zakończy.",
+        a: "Tak. W czasie bety Zecca jest <b>bezpłatna</b>. O ewentualnym cenniku poinformujemy z wyprzedzeniem, zanim beta się zakończy.",
       },
       {
         q: "Na jakich urządzeniach działa?",
@@ -281,7 +281,7 @@ export const landingCopy = {
       },
       {
         q: "To beta. Czy moje dane są bezpieczne?",
-        a: "Domyślnie dane zostają wyłącznie na Twoim urządzeniu. Jeśli włączysz synchronizację, są szyfrowane <b>end-to-end</b> przed wysłaniem — kluczem wyprowadzanym z Twojego hasła na Twoim urządzeniu. Pamiętaj jednak, że to wczesna wersja, mogą zdarzyć się błędy. Zalecamy regularny <b>eksport / kopię</b> danych i ostrożność przy traktowaniu Zecci jako jedynego źródła prawdy.",
+        a: "Domyślnie dane zostają wyłącznie na Twoim urządzeniu. Jeśli włączysz synchronizację, są szyfrowane <b>end-to-end</b> przed wysłaniem, kluczem tworzonym z Twojego hasła na Twoim urządzeniu. Pamiętaj jednak, że to wczesna wersja i mogą zdarzyć się błędy. Regularnie rób <b>eksport / kopię</b> danych i uważaj, zanim uznasz Zeccę za jedyne źródło prawdy.",
       },
       {
         q: "Czy moje dane trafiają na Wasz serwer?",
@@ -297,7 +297,7 @@ export const landingCopy = {
       },
       {
         q: "Jak zgłosić błąd albo pomysł?",
-        a: "Napisz przez <b>formularz feedbacku</b> poniżej albo dołącz do naszego <b>Discorda</b>. W becie każda uwaga realnie wpływa na to, co budujemy dalej.",
+        a: "Napisz przez <b>formularz feedbacku</b> poniżej albo dołącz do naszego <b>Discorda</b>. W becie każda uwaga wpływa na to, co zbudujemy dalej.",
       },
     ],
   },
@@ -315,7 +315,7 @@ export const landingCopy = {
   feedback: {
     eyebrow: "Feedback",
     title: "Pomóż nam dopracować Zeccę.",
-    desc: "Zbieramy feedback od pierwszych użytkowników. Napisz, co działa, co nie i czego brakuje. Czytamy każdą wiadomość i to ona kształtuje kolejne wersje.",
+    desc: "Zbieramy uwagi od pierwszych użytkowników. Napisz, co działa, co nie działa i czego brakuje. Czytamy każdą wiadomość, a Wasze uwagi kształtują kolejne wersje.",
     discordButton: "Dołącz do Discorda",
     discordHref: "https://discord.gg/Y7yJep36bq",
     discordNote: "Społeczność, zapowiedzi i szybki kontakt z autorem.",
