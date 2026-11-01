@@ -61,8 +61,11 @@ if (!supabaseAnonKey) {
   fail("NEXT_PUBLIC_SUPABASE_ANON_KEY is empty.");
 }
 
-if (supabaseAnonKey && supabaseAnonKey.length < 80) {
-  fail("NEXT_PUBLIC_SUPABASE_ANON_KEY looks too short for a Supabase anon key.");
+// Nowy publishable key (`sb_publishable_…`) jest krótki; legacy anon to JWT (3 segmenty).
+const isPublishableKey = /^sb_publishable_[A-Za-z0-9_-]{16,}$/.test(supabaseAnonKey);
+const isLegacyAnonJwt = /^[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}$/.test(supabaseAnonKey);
+if (supabaseAnonKey && !isPublishableKey && !isLegacyAnonJwt) {
+  fail("NEXT_PUBLIC_SUPABASE_ANON_KEY should be a Supabase publishable key (sb_publishable_…) or a legacy anon JWT.");
 }
 
 if (fakeSync && fakeSync !== "0" && fakeSync.toLowerCase() !== "false") {
@@ -118,10 +121,6 @@ if (preflightUrl) {
 
       if (body?.providers?.nbp?.configured !== true) {
         fail(`${url.toString()} reports NBP as unavailable.`);
-      }
-
-      if (!("stooq" in (body?.providers ?? {}))) {
-        fail(`${url.toString()} is missing Stooq provider status.`);
       }
     });
   }

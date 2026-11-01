@@ -1,0 +1,1 @@
+Staging env check failed: NEXT_PUBLIC_SUPABASE_ANON_KEY looks too short for a Supabase anon key.

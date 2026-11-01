@@ -1,0 +1,9 @@
+Running 7 tests using 2 workers
+  ✓  2 [chromium] › tests/e2e/fake-sync-cert/certification.spec.ts:14:5 › portfolios page shows the three scenario portfolios and the stable taxable total (3.3s)
+  ✓  1 [chromium] › tests/e2e/fake-sync-cert/import-upload.spec.ts:20:5 › PKO Obligacje .xls (BIFF8) imports and previews the bonds (4.1s)
+  ✓  3 [chromium] › tests/e2e/fake-sync-cert/certification.spec.ts:29:5 › positions page lists every scenario instrument (1.7s)
+  ✓  4 [chromium] › tests/e2e/fake-sync-cert/import-upload.spec.ts:38:5 › XTB .xlsx imports and previews the trades (2.4s)
+  ✓  5 [chromium] › tests/e2e/fake-sync-cert/certification.spec.ts:40:5 › converts EUR, USD and GBP holdings and the display currency (4.3s)
+  ✓  6 [chromium] › tests/e2e/fake-sync-cert/certification.spec.ts:60:5 › values an inflation-indexed EDO bond through the UI (797ms)
+  ✓  7 [chromium] › tests/e2e/fake-sync-cert/certification.spec.ts:74:5 › keeps the full representative portfolio total stable (1.3s)
+  7 passed (14.4s)

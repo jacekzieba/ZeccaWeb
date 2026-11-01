@@ -179,3 +179,19 @@ describe("import CSV: wiersze, których aplikacja natywna nie przyjmie", () => {
     expect(preview.errorRows[0].errors).toContain(message);
   });
 });
+
+
+describe("W09 external import identity", () => {
+  const header = "date,portfolio,instrument,transactionType,quantity,price,grossAmount,currency,fees,taxes,fx_rate_to_base,external_import_id";
+  const row = "2026-05-17,IKE,AAPL,buy,2,190.5,381,USD,0,0,4,xtb:555";
+  it("rejects a broker transaction already imported under a different record ID", () => {
+    const result = parseTransactionCsvImport(`${header}\n${row}`, { ...references, existingExternalImportIds: new Set(["xtb:555"]) });
+    expect(result.validRows).toHaveLength(0);
+    expect(result.errorRows).toHaveLength(1);
+  });
+  it("admits at most one occurrence of an external ID in the same file", () => {
+    const result = parseTransactionCsvImport(`${header}\n${row}\n${row}`, references);
+    expect(result.validRows).toHaveLength(1);
+    expect(result.errorRows).toHaveLength(1);
+  });
+});

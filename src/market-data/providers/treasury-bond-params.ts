@@ -125,6 +125,7 @@ export function parseBondEmissionLetter(
   const issueDate = isoDate(parts.maturityYear, parts.maturityMonth - 1 - spec.tenorMonths, 1);
 
   return {
+    earlyRedemptionFee: Math.max(0, ...Array.from(body.matchAll(/(\d{1,3}(?:[.,]\d{1,2})?)\s*z[lł]\s*od\s*ka[zż]dej\s*obligacji/gi), (match) => Number(match[1].replace(",", ".")))),
     issueDate: new Date(issueDate),
     maturityDate: new Date(maturityDate),
     nominalValue: 100,

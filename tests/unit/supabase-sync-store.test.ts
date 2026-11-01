@@ -197,11 +197,11 @@ describe("restoreEncryptedRecord", () => {
   const payload = { id: "r1", user_id: "u1", record_type: "transaction", updated_at: "2026-09-24T10:00:00Z" };
 
   it("przechodzi, gdy wiersz został przywrócony", async () => {
-    await expect(restoreEncryptedRecord(restoreClient([{ id: "r1" }]), payload)).resolves.toBeUndefined();
+    await expect(restoreEncryptedRecord(restoreClient([{ id: "r1" }]), payload, "v1")).resolves.toBeUndefined();
   });
 
   it("zgłasza błąd, gdy żaden wiersz się nie zmienił (UI nie może udawać przywrócenia)", async () => {
-    await expect(restoreEncryptedRecord(restoreClient([]), payload)).rejects.toThrow(/Nie udało się przywrócić/);
+    await expect(restoreEncryptedRecord(restoreClient([]), payload, "v1")).rejects.toThrow(/Nie udało się przywrócić/);
   });
 });
 
@@ -259,7 +259,7 @@ describe("tożsamość logiczna rekordów", () => {
 
   it("zapis istniejącego rekordu aktualizuje po logical_id i nie zmienia klucza wiersza", async () => {
     const { calls, client } = recordingClient({ updateRows: [{ id: "hash-id" }] });
-    await upsertEncryptedRecord(client, base);
+    await upsertEncryptedRecord(client, base, "v1");
 
     const update = calls.find((c) => c.op === "update")!;
     expect(update.args[0]).not.toHaveProperty("id");
@@ -269,12 +269,13 @@ describe("tożsamość logiczna rekordów", () => {
     expect(eqs).toContainEqual(["logical_id", base.id]);
     expect(eqs).toContainEqual(["record_type", "transaction"]);
     expect(eqs).toContainEqual(["user_id", base.user_id]);
+    expect(eqs).toContainEqual(["updated_at", "v1"]);
     expect(calls.some((c) => c.op === "insert")).toBe(false);
   });
 
   it("nowy rekord jest wstawiany z id = logical_id (zgodnie ze starymi klientami)", async () => {
-    const { calls, client } = recordingClient({ updateRows: [] });
-    await upsertEncryptedRecord(client, base);
+    const { calls, client } = recordingClient();
+    await upsertEncryptedRecord(client, base, null);
 
     const insert = calls.find((c) => c.op === "insert")!;
     expect((insert.args[0] as unknown[])[0]).toMatchObject({ id: base.id, logical_id: base.id });
@@ -285,8 +286,8 @@ describe("tożsamość logiczna rekordów", () => {
     await fetchEncryptedRecordMetadata(meta.client, "transaction", base.id);
     expect(meta.calls.filter((c) => c.op === "eq").map((c) => c.args)).toContainEqual(["logical_id", base.id]);
 
-    const del = recordingClient();
-    await softDeleteEncryptedRecord(del.client, base);
+    const del = recordingClient({ updateRows: [{ id: "x" }] });
+    await softDeleteEncryptedRecord(del.client, base, "v1");
     expect(del.calls.filter((c) => c.op === "eq").map((c) => c.args)).toContainEqual(["logical_id", base.id]);
     expect(del.calls.filter((c) => c.op === "eq").map((c) => c.args)).not.toContainEqual(["id", base.id]);
   });

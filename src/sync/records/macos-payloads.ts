@@ -1,7 +1,16 @@
+import { knownTreasuryBondIssue } from "@/domain/valuation/treasury-bond-issues";
+
 const APPLE_REFERENCE_DATE_UNIX_MS = Date.UTC(2001, 0, 1);
 
 export function swiftReferenceSeconds(date: Date) {
   return (date.getTime() - APPLE_REFERENCE_DATE_UNIX_MS) / 1000;
+}
+
+function syncDate(value: number | string) {
+  if (typeof value === "number") return value;
+  const seconds = swiftReferenceSeconds(new Date(value));
+  if (!Number.isFinite(seconds)) throw new Error("Nieprawidłowa data synchronizacji.");
+  return seconds;
 }
 
 export function nowSwiftReferenceSeconds() {
@@ -69,8 +78,12 @@ export function makeAssetPayload(input: {
   isin?: string | null;
   marketDataID?: string | null;
   bondParams?: Record<string, unknown> | null;
+  listedBondParams?: Record<string, unknown> | null;
+  depositParams?: Record<string, unknown> | null;
+  existing?: Record<string, unknown> | null;
 }) {
   return {
+    ...(input.existing ?? {}),
     id: input.id,
     recordType: "asset",
     kind: input.kind,
@@ -82,9 +95,18 @@ export function makeAssetPayload(input: {
     isin: input.isin ?? null,
     category: input.category ?? null,
     marketDataID: input.marketDataID ?? null,
-    bondParams: input.bondParams ?? null,
-    listedBondParams: null,
-    depositParams: null,
+    bondParams: input.bondParams === undefined
+      ? input.existing?.bondParams ?? null
+      : input.bondParams === null ? null : {
+          ...input.bondParams,
+          series: input.bondParams.series ?? input.symbol.slice(0, 3).toUpperCase(),
+          fullCode: input.bondParams.fullCode ?? input.symbol.toUpperCase(),
+          earlyRedemptionFee: input.bondParams.earlyRedemptionFee ?? knownTreasuryBondIssue(input.symbol)?.earlyRedemptionFee ?? 0,
+          issueDate: syncDate(input.bondParams.issueDate as number | string),
+          maturityDate: syncDate(input.bondParams.maturityDate as number | string),
+        },
+    listedBondParams: input.listedBondParams === undefined ? input.existing?.listedBondParams ?? null : input.listedBondParams,
+    depositParams: input.depositParams === undefined ? input.existing?.depositParams ?? null : input.depositParams,
   };
 }
 
@@ -119,7 +141,7 @@ export function makeTransactionPayload(input: {
   return {
     id: input.id,
     recordType: "transaction",
-    date: input.date,
+    date: syncDate(input.date),
     bookingDate: null,
     portfolioID: input.portfolioID,
     instrumentID: input.instrumentID ?? null,
@@ -141,8 +163,8 @@ export function makeTransactionPayload(input: {
     contributionTreatment: input.contributionTreatment ?? null,
     transferCostBasisMode: input.transferCostBasisMode ?? null,
     transferLots: input.transferLots ?? null,
-    createdAt: input.createdAt ?? now,
-    updatedAt: input.updatedAt ?? now,
+    createdAt: input.createdAt == null ? now : syncDate(input.createdAt),
+    updatedAt: input.updatedAt == null ? now : syncDate(input.updatedAt),
   };
 }
 
@@ -162,11 +184,11 @@ export function makeManualValuationPayload(input: {
     id: input.id,
     recordType: "manualValuation",
     instrumentID: input.instrumentID,
-    date: input.date,
+    date: syncDate(input.date),
     value: input.value,
     currency: input.currency,
     note: input.note ?? "",
-    createdAt: input.createdAt ?? now,
-    updatedAt: input.updatedAt ?? now,
+    createdAt: input.createdAt == null ? now : syncDate(input.createdAt),
+    updatedAt: input.updatedAt == null ? now : syncDate(input.updatedAt),
   };
 }

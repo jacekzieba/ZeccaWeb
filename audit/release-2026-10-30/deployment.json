@@ -1,0 +1,16 @@
+{
+  "localSHA": "84fafb7eb32c5f4f398581691bdeee1bd801ee03",
+  "productionSHA": "9fbad12654edc00b8d94f0ab7df307d792a25844",
+  "deployment": "dpl_HB88pVLEVNnBNPt6q8ag6n2MoTbg",
+  "state": "READY",
+  "domain": "zecca.pl",
+  "node": "24.x",
+  "region": "fra1",
+  "lockedDependencies": {
+    "next": "15.5.26",
+    "sharp": "0.35.4",
+    "source-map-js": "1.2.1",
+    "zod": "3.25.76"
+  },
+  "firewallRead": "404 Seawall Config not found; unverified"
+}

@@ -408,9 +408,9 @@ describe("record writer", () => {
     });
 
     expect(deleteResult.queued).toBe(false);
-    // [0] = próba aktualizacji przy zapisie (0 wierszy → insert), [1] = soft delete.
-    expect(store.updates).toHaveLength(2);
-    expect(store.updates[1]).toMatchObject({
+    // Nowy rekord idzie samym insertem (bez próby aktualizacji), więc jedyny update to soft delete.
+    expect(store.updates).toHaveLength(1);
+    expect(store.updates[0]).toMatchObject({
       deleted_at: expect.any(String),
       updated_at: expect.any(String),
     });

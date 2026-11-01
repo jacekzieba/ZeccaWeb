@@ -24,7 +24,7 @@ import {
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { exposeParityExport } from "@/sync/records/parity-snapshot";
 import { SYNTHETIC_FALLBACK_ACCOUNT_ID } from "@/sync/records/investor-snapshot";
-import { clearPendingSyncOperations } from "@/sync/records/record-writer";
+import { getPendingSyncOperations } from "@/sync/records/record-writer";
 import { clearPendingAuthPassword } from "@/features/auth/pending-auth-password";
 import { INVESTMENT_DISCLAIMER } from "@/lib/investment-disclaimer";
 import { useSyncStore } from "@/sync/store/sync-store";
@@ -159,6 +159,10 @@ const NAV_GROUPS: NavGroup[] = [
 ];
 
 export async function handleLogout() {
+  if (getPendingSyncOperations().length > 0) {
+    window.alert("Masz niewysłane zmiany. Połącz się z internetem i zsynchronizuj je przed wylogowaniem.");
+    return;
+  }
   const supabase = createBrowserSupabaseClientOrNull();
   if (supabase) {
     try {
@@ -170,7 +174,6 @@ export async function handleLogout() {
       // Sign out even if the local trusted-device cache is unavailable.
     }
 
-    clearPendingSyncOperations();
     clearPendingAuthPassword();
     await supabase.auth.signOut();
   }

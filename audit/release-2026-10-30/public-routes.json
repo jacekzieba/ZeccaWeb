@@ -1,0 +1,26 @@
+[
+  {
+    "path": "/login",
+    "result": "200 https://zecca.pl/login",
+    "error": "",
+    "exit": 0
+  },
+  {
+    "path": "/dashboard",
+    "result": "200 https://zecca.pl/login?next=%2Fdashboard",
+    "error": "",
+    "exit": 0
+  },
+  {
+    "path": "/api/sync/bootstrap",
+    "result": "401 https://zecca.pl/api/sync/bootstrap",
+    "error": "",
+    "exit": 0
+  },
+  {
+    "path": "/api/health",
+    "result": "200 https://zecca.pl/api/health",
+    "error": "",
+    "exit": 0
+  }
+]

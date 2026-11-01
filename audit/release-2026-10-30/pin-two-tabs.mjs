@@ -1,0 +1,23 @@
+import {createRequire} from 'node:module';
+const require=createRequire('/Volumes/T5/ZeccaWeb/package.json');
+const {chromium}=require('playwright');
+const browser=await chromium.launch();
+const context=await browser.newContext();
+await context.addCookies([{name:'zecca-demo',value:'1',url:'http://127.0.0.1:3200'}]);
+const page=await context.newPage();
+await page.goto('http://127.0.0.1:3200/settings');
+await page.evaluate(()=>{
+ localStorage.setItem('investor-app-lock-setup','1');
+ localStorage.setItem('zecca-web-analytics-consent-v1','denied');
+ let h=0;for(const c of '1234')h=(Math.imul(31,h)+c.charCodeAt(0))|0;
+ sessionStorage.setItem('investor-app-lock-pin',h.toString(36));
+ sessionStorage.removeItem('investor-app-lock-verified');
+});
+await page.reload();
+await page.getByText('Podaj PIN, aby odblokować',{exact:true}).waitFor();
+console.log('Existing tab: locked=true');
+const second=await context.newPage();
+await second.goto('http://127.0.0.1:3200/settings');
+await second.getByRole('main').waitFor();
+console.log('New tab:',JSON.stringify(await second.evaluate(()=>({setup:localStorage.getItem('investor-app-lock-setup'),pin:sessionStorage.getItem('investor-app-lock-pin'),locked:document.body.innerText.includes('Podaj PIN, aby odblokować'),mainVisible:!!document.querySelector('main')}))));
+await browser.close();

@@ -6,6 +6,7 @@ import {
   softDeleteEncryptedRecord,
   restoreEncryptedRecord,
   upsertEncryptedRecord,
+  StaleRecordVersionError,
   type UpsertPayload,
 } from "@/sync/records/supabase-sync-store";
 import { summarizeDecryptedRecords } from "@/sync/records/sync-summary";
@@ -187,7 +188,7 @@ async function assertNoConflict(
   // `deleted_at` nie jest konfliktem. Znacznik czasu i tak musi się zgadzać —
   // chodzi tylko o to, żeby nie odrzucać operacji za sam fakt usunięcia.
   { allowDeleted = false }: { allowDeleted?: boolean } = {},
-) {
+): Promise<string | null> {
   const remote = await fetchEncryptedRecordMetadata(supabase, recordType, id);
 
   if (!remote) {
@@ -198,7 +199,7 @@ async function assertNoConflict(
         id,
       );
     }
-    return;
+    return null;
   }
 
   if (!baseUpdatedAt) {
@@ -215,6 +216,22 @@ async function assertNoConflict(
       recordType,
       id,
     );
+  }
+  // Wersja z serwera (dokładny tekst `updated_at`) jest tokenem compare-and-swap:
+  // zapis zmienia wiersz tylko, jeśli nadal ją ma — kontrola wyżej to tylko
+  // szybka odmowa, a okno wyścigu zamyka dopiero warunkowy UPDATE.
+  return remote.updated_at;
+}
+
+/** Warunkowy zapis, który przegraną z innym klientem zgłasza jako konflikt. */
+async function asConflict(recordType: string, id: string, write: () => Promise<void>) {
+  try {
+    await write();
+  } catch (error) {
+    if (error instanceof StaleRecordVersionError) {
+      throw new SyncConflictError(error.message, recordType, id);
+    }
+    throw error;
   }
 }
 
@@ -245,13 +262,15 @@ async function uploadEncryptedRecord(
   encryptedRecord: UpsertPayload,
   baseUpdatedAt: string | null | undefined,
 ) {
-  await assertNoConflict(
+  const version = await assertNoConflict(
     supabase,
     encryptedRecord.record_type,
     encryptedRecord.id,
     baseUpdatedAt,
   );
-  await upsertEncryptedRecord(supabase, encryptedRecord);
+  await asConflict(encryptedRecord.record_type, encryptedRecord.id, () =>
+    upsertEncryptedRecord(supabase, encryptedRecord, version),
+  );
 }
 
 export async function saveRecord(
@@ -336,13 +355,14 @@ export async function deleteRecord(
   const updatedAt = new Date().toISOString();
 
   try {
-    await assertNoConflict(supabase, recordType, id, options.baseUpdatedAt);
-    await softDeleteEncryptedRecord(supabase, {
-      id,
-      user_id: userId,
-      record_type: recordType,
-      updated_at: updatedAt,
-    });
+    const version = await assertNoConflict(supabase, recordType, id, options.baseUpdatedAt);
+    await asConflict(recordType, id, () =>
+      softDeleteEncryptedRecord(
+        supabase,
+        { id, user_id: userId, record_type: recordType, updated_at: updatedAt },
+        version,
+      ),
+    );
   } catch (error) {
     if (error instanceof SyncConflictError || options.enqueueOnFailure === false) {
       throw error;
@@ -403,13 +423,16 @@ export async function restoreRecord(
   const userId = await getCurrentUserId(supabase);
   const updatedAt = new Date().toISOString();
 
-  await assertNoConflict(supabase, recordType, id, options.baseUpdatedAt, { allowDeleted: true });
-  await restoreEncryptedRecord(supabase, {
-    id,
-    user_id: userId,
-    record_type: recordType,
-    updated_at: updatedAt,
+  const version = await assertNoConflict(supabase, recordType, id, options.baseUpdatedAt, {
+    allowDeleted: true,
   });
+  await asConflict(recordType, id, () =>
+    restoreEncryptedRecord(
+      supabase,
+      { id, user_id: userId, record_type: recordType, updated_at: updatedAt },
+      version,
+    ),
+  );
 
   dispatchSyncMutation({
     operation: "upsert",
@@ -435,18 +458,24 @@ export async function flushPendingSyncOperations(
           operation.baseUpdatedAt,
         );
       } else {
-        await assertNoConflict(
+        const version = await assertNoConflict(
           supabase,
           operation.recordType,
           operation.id,
           operation.baseUpdatedAt,
         );
-        await softDeleteEncryptedRecord(supabase, {
-          id: operation.id,
-          user_id: operation.userId,
-          record_type: operation.recordType,
-          updated_at: operation.updatedAt,
-        });
+        await asConflict(operation.recordType, operation.id, () =>
+          softDeleteEncryptedRecord(
+            supabase,
+            {
+              id: operation.id,
+              user_id: operation.userId,
+              record_type: operation.recordType,
+              updated_at: operation.updatedAt,
+            },
+            version,
+          ),
+        );
       }
     } catch (error) {
       remaining.push({
@@ -490,15 +519,31 @@ export async function forcePendingSyncOperation(
     return { forced: false };
   }
 
+  // Świadome nadpisanie: bierzemy aktualną wersję serwera jako token, więc
+  // nadal wygrywa tylko jeden zapis, gdy ktoś zmieni rekord w trakcie.
+  const remote = await fetchEncryptedRecordMetadata(
+    supabase,
+    operation.recordType,
+    operation.id,
+  );
+  const version = remote?.updated_at ?? null;
   if (operation.operation === "upsert") {
-    await upsertEncryptedRecord(supabase, operation.encryptedRecord);
+    await asConflict(operation.recordType, operation.id, () =>
+      upsertEncryptedRecord(supabase, operation.encryptedRecord, version),
+    );
   } else {
-    await softDeleteEncryptedRecord(supabase, {
-      id: operation.id,
-      user_id: operation.userId,
-      record_type: operation.recordType,
-      updated_at: new Date().toISOString(),
-    });
+    await asConflict(operation.recordType, operation.id, () =>
+      softDeleteEncryptedRecord(
+        supabase,
+        {
+          id: operation.id,
+          user_id: operation.userId,
+          record_type: operation.recordType,
+          updated_at: new Date().toISOString(),
+        },
+        version,
+      ),
+    );
   }
 
   removePendingSyncOperation(operationId);

@@ -3,13 +3,14 @@ import type { BondParamsInput } from "@/domain/valuation/position-valuator";
 type KnownTreasuryBondIssue = Omit<BondParamsInput, "issueDate" | "maturityDate"> & {
   issueDate: string;
   maturityDate: string;
+  earlyRedemptionFee: number;
 };
 
 const KNOWN_ISSUES: Record<string, KnownTreasuryBondIssue> = {
-  ROS1228: inflationBond("2022-12-22T00:00:00.000Z", "2028-12-22T00:00:00.000Z", 7.2, 1.5),
-  ROS0229: inflationBond("2023-02-27T00:00:00.000Z", "2029-02-27T00:00:00.000Z", 7.2, 1.5),
-  ROS1129: inflationBond("2023-11-30T00:00:00.000Z", "2029-11-30T00:00:00.000Z", 6.95, 1.75),
-  ROD0338: inflationBond("2026-03-27T00:00:00.000Z", "2038-03-27T00:00:00.000Z", 5.85, 2.5),
+  ROS1228: inflationBond("2022-12-22T00:00:00.000Z", "2028-12-22T00:00:00.000Z", 7.2, 1.5, 0.7),
+  ROS0229: inflationBond("2023-02-27T00:00:00.000Z", "2029-02-27T00:00:00.000Z", 7.2, 1.5, 0.7),
+  ROS1129: inflationBond("2023-11-30T00:00:00.000Z", "2029-11-30T00:00:00.000Z", 6.95, 1.75, 0.7),
+  ROD0338: inflationBond("2026-03-27T00:00:00.000Z", "2038-03-27T00:00:00.000Z", 5.85, 2.5, 3),
 };
 
 /** Full persisted parameters used when PKO imports a known treasury issue. */
@@ -23,6 +24,7 @@ export function knownTreasuryBondValuationParams(code: string): BondParamsInput 
   if (!known) return null;
 
   return {
+    earlyRedemptionFee: known.earlyRedemptionFee,
     issueDate: new Date(known.issueDate),
     maturityDate: new Date(known.maturityDate),
     nominalValue: known.nominalValue,
@@ -46,8 +48,10 @@ function inflationBond(
   maturityDate: string,
   firstPeriodRate: number,
   marginOverBase: number,
+  earlyRedemptionFee: number,
 ): KnownTreasuryBondIssue {
   return {
+    earlyRedemptionFee,
     issueDate,
     maturityDate,
     nominalValue: 100,

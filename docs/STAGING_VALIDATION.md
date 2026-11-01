@@ -23,7 +23,7 @@ Walidacja nie obejmuje migracji produkcyjnej kont uzytkownikow. Do testu uzywac 
 
 ## Przygotowanie
 
-1. Utworzyc albo wskazac staging Supabase z migracja `supabase/migrations/0001_initial_sync.sql`.
+1. Utworzyc albo wskazac staging Supabase z migracja `supabase/migrations` (wszystkie pliki po kolei; zestaw jest kopią z repo natywnego, sprawdzaj `npm run check:migrations`).
 2. Wlaczyc RLS na tabelach:
    - `profiles`
    - `user_devices`

@@ -19,6 +19,7 @@ export type { FxRateInput } from "@/domain/valuation/price-resolver";
 
 
 export type BondParamsInput = {
+  earlyRedemptionFee?: number;
   /** Coupon periods are defined by the issue, never by a later lot purchase. */
   issueDate?: Date;
   maturityDate: Date;

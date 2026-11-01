@@ -1,3 +1,4 @@
+import { makeAssetPayload } from "@/sync/records/macos-payloads";
 /**
  * PKO Obligacje importer — parses the "Historia dyspozycji" XLS export from
  * zakup.obligacjeskarbowe.pl.
@@ -188,9 +189,8 @@ export function parsePkoBondsXls(
     }
     const newId = crypto.randomUUID();
     const issue = knownTreasuryBondIssue(upper);
-    newInstrumentPayloads.push({
+    newInstrumentPayloads.push(makeAssetPayload({
       id: newId,
-      recordType: "asset",
       kind: "treasuryBond",
       symbol: upper,
       name: upper,
@@ -202,6 +202,7 @@ export function parsePkoBondsXls(
       ...(issue
         ? {
             bondParams: {
+              earlyRedemptionFee: issue.earlyRedemptionFee,
               issueDate: issue.issueDate,
               maturityDate: issue.maturityDate,
               nominalValue: issue.nominalValue,
@@ -213,7 +214,7 @@ export function parsePkoBondsXls(
             },
           }
         : {}),
-    });
+    }));
     instrumentCache.set(upper, newId);
     return newId;
   }

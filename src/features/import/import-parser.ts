@@ -276,6 +276,7 @@ export function parseTransactionTable(
 
   const headers = table[0].map((header) => normalizeHeader(String(header ?? "")));
   const seenImportedIds = new Set<string>();
+  const seenExternalImportIds = new Set<string>();
   const rows = table
     .slice(1)
     .map((cells, index) =>
@@ -285,6 +286,7 @@ export function parseTransactionTable(
         index + 2,
         references,
         seenImportedIds,
+        seenExternalImportIds,
       ),
     )
     .filter((row) => Object.values(row.values).some(Boolean));
@@ -357,6 +359,7 @@ function parseTransactionRow(
   rowNumber: number,
   references: ImportReferenceData,
   seenImportedIds: Set<string>,
+  seenExternalImportIds: Set<string>,
 ): TransactionImportRow {
   const values = Object.fromEntries(
     headers.map((header, index) => [header, cells[index]?.trim() ?? ""]),
@@ -384,6 +387,13 @@ function parseTransactionRow(
   const targetCurrency = (values.targetcurrency ?? "").toUpperCase();
   const notes = values.notes || values.note || "";
   const externalImportID = values.externalimportid || "";
+  if (externalImportID && references.existingExternalImportIds?.has(externalImportID)) {
+    errors.push("Transakcja o tym identyfikatorze importu już istnieje.");
+  }
+  if (externalImportID && seenExternalImportIds.has(externalImportID)) {
+    errors.push("Duplikat identyfikatora importu w pliku.");
+  }
+  if (externalImportID) seenExternalImportIds.add(externalImportID);
   // Przeniesienie (rodzaj, źródło, sposób liczenia wpłaty i kosztu, partie), jak w
   // natywnym TransactionCSVImporter. Bez rodzaju w wierszu (stary eksport, szablon
   // albo puste pole) przeniesienie wróciłoby z innym znaczeniem.

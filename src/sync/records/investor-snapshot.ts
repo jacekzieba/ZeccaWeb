@@ -156,7 +156,7 @@ const accountPayloadSchema = z.object({
   accountType: z.string().optional(),
   baseCurrency: z.string().min(1),
   colorHex: z.string().optional(),
-  targetAllocation: z.record(z.number()).optional(),
+  targetAllocation: z.record(z.string(), z.number()).optional(),
 });
 
 const assetPayloadSchema = z.object({
@@ -896,8 +896,8 @@ function withHistoricalFxRate(
   return rate ? { ...transaction, historicalFxRateToBase: rate } : transaction;
 }
 
-function lotBaseCost(lot: OpenLot): number {
-  const rate = lot.currency === "PLN" ? 1 : lot.fxRateToBase && lot.fxRateToBase > 0 ? lot.fxRateToBase : 1;
+function lotBaseCost(lot: OpenLot, currentRate: number): number {
+  const rate = lot.currency === "PLN" ? 1 : lot.fxRateToBase && lot.fxRateToBase > 0 ? lot.fxRateToBase : currentRate;
   return lot.quantity * lot.costPerUnit * rate;
 }
 
@@ -2003,7 +2003,7 @@ function valuePortfolio(
     holdingsValue += marketValue;
     for (const lot of ledger.openLots.get(instrumentID) ?? []) {
       const nativeCost = lot.quantity * lot.costPerUnit;
-      const costBase = lotBaseCost(lot);
+      const costBase = lotBaseCost(lot, currentRate(lot.currency));
       // Efekt kursu: tylko partie z zapisanym kursem zakupu (bez niego nie wiadomo, czy kurs się
       // ruszył — tak samo jak natywnie, gdzie koszt bez kursu zostaje po bieżącym).
       let lotFxEffect = 0;
@@ -2488,7 +2488,7 @@ export function buildPortfolioDetail(
       marketValue,
       portfolioPercent: 0,
       costBasis:
-        (ledger.openLots.get(instrumentId) ?? []).reduce((sum, lot) => sum + lotBaseCost(lot), 0) /
+        (ledger.openLots.get(instrumentId) ?? []).reduce((sum, lot) => sum + lotBaseCost(lot, resolveFxRate(lot.currency, valuationDataset.transactions, asOf, dataset.fxRates, { latestTransactionRate: dataset.useLatestTransactionFxRate }).rate), 0) /
         asOfRate,
     });
   }

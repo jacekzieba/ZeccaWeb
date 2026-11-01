@@ -1,0 +1,8 @@
+{
+  "namedPolicyDefinitions": false,
+  "namedPolicyAlterations": true,
+  "deletePolicies": false,
+  "stagingCheckerRequiresStooq": true,
+  "statusRouteHasStooq": false,
+  "method": "static source checks; not a database replay"
+}

@@ -1,0 +1,5 @@
+A8-1a buy USD bez kursu {"rows":1,"parserOk":1,"parserErrors":[[]],"preCommitErrors":[],"saveRecordGateIssues":[[]],"sample":[{"t":"buy","cur":"USD","fx":null,"ext":null}]}
+A8-1b fxConversion stara (tylko kurs) {"rows":1,"parserOk":1,"parserErrors":[[]],"preCommitErrors":[],"saveRecordGateIssues":[[]],"sample":[{"t":"fxConversion","cur":"EUR","fx":4.3,"ext":null}]}
+A8-1c szablon weba {"rows":2,"parserOk":2,"parserErrors":[[],[]],"preCommitErrors":[],"saveRecordGateIssues":[[],[]],"sample":[{"t":"buy","cur":"USD","fx":null,"ext":null},{"t":"cashDeposit","cur":"PLN","fx":null,"ext":null}]}
+A8-2 external_import_id już w bazie {"rows":1,"parserOk":1,"parserErrors":[[]],"preCommitErrors":[],"saveRecordGateIssues":[[]],"sample":[{"t":"buy","cur":"EUR","fx":4.3,"ext":"xtb:555"}]}
+A8-2b ten sam external_import_id 2x w pliku {"rows":2,"parserOk":2,"parserErrors":[[],[]],"preCommitErrors":[],"saveRecordGateIssues":[[],[]],"sample":[{"t":"buy","cur":"EUR","fx":4.3,"ext":"xtb:777"},{"t":"buy","cur":"EUR","fx":4.3,"ext":"xtb:777"}]}

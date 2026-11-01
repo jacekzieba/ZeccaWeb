@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { clearCachedUserDataKey } from "@/sync/encryption/key-cache";
+import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import { handleLogout } from "@/components/layout/app-shell";
 import { getPendingSyncOperations } from "@/sync/records/record-writer";
 
@@ -53,15 +55,21 @@ describe("app-shell handleLogout", () => {
     vi.restoreAllMocks();
   });
 
-  it("clears the pending-sync queue on logout", async () => {
+  it("W08 preserves an offline operation and refuses logout until it is synchronized", async () => {
     localStorage.setItem(
       PENDING_SYNC_KEY,
       JSON.stringify([{ operationId: "op-1", operation: "upsert" }]),
     );
     expect(getPendingSyncOperations()).toHaveLength(1);
 
+    vi.spyOn(window, "alert").mockImplementation(() => {});
+    const signOut = vi.fn();
+    vi.mocked(createBrowserSupabaseClientOrNull).mockReturnValue({ auth: { getUser: vi.fn(async () => ({ data: { user: { id: "user-1" } } })), signOut } } as never);
     await handleLogout();
 
-    expect(getPendingSyncOperations()).toHaveLength(0);
+    expect(getPendingSyncOperations()).toHaveLength(1);
+    expect(signOut).not.toHaveBeenCalled();
+    expect(clearCachedUserDataKey).not.toHaveBeenCalled();
+    expect(window.location.assign).not.toHaveBeenCalled();
   });
 });

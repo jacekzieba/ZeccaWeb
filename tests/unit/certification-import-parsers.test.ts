@@ -328,8 +328,8 @@ describe("certification import parity", () => {
       recordType: "asset",
       symbol: "ROS0229",
       bondParams: {
-        issueDate: "2023-02-27T00:00:00.000Z",
-        maturityDate: "2029-02-27T00:00:00.000Z",
+        issueDate: 699148800, // Swift seconds since 2001-01-01
+        maturityDate: 888537600,
         firstPeriodRate: 7.2,
         marginOverBase: 1.5,
       },

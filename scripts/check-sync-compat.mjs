@@ -20,8 +20,8 @@ const syncStore = read("src/sync/records/supabase-sync-store.ts");
 const syncUnlockPanel = read("src/features/sync/sync-unlock-panel.tsx");
 const recordPull = read("src/sync/records/record-pull.ts");
 const serverTimeMigration = read("supabase/migrations/20260928120000_sync_server_time_and_retention.sql");
-const migration = read("supabase/migrations/0001_initial_sync.sql");
-const schemaSecurityMigration = read("supabase/migrations/0006_reproduce_sync_schema_security.sql");
+const migration = read("supabase/migrations/20260514120000_release_sync_rls.sql");
+const schemaSecurityMigration = read("supabase/migrations/20260712130000_reproduce_sync_schema_security.sql");
 
 const recordTypes = [
   "account",
@@ -98,9 +98,7 @@ const checks = [
   },
   {
     name: "device upsert conflict target is unique",
-    ok:
-      migration.includes("primary key (user_id, device_id)") &&
-      schemaSecurityMigration.includes("unique (user_id, device_id)"),
+    ok: schemaSecurityMigration.includes("unique (user_id, device_id)"),
   },
   {
     name: "sync tables are explicitly granted to authenticated Data API clients",

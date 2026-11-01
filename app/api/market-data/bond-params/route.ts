@@ -12,6 +12,9 @@ import type { BondParamsInput } from "@/domain/valuation/position-valuator";
 const BOND_PARAMS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 type SerializedBondParams = {
+  series: string;
+  fullCode: string;
+  earlyRedemptionFee: number;
   issueDate: string;
   maturityDate: string;
   nominalValue: number;
@@ -22,8 +25,11 @@ type SerializedBondParams = {
   interestPayment: string;
 };
 
-function serialize(params: BondParamsInput): SerializedBondParams {
+function serialize(params: BondParamsInput, code: string): SerializedBondParams {
   return {
+    series: code.slice(0, 3),
+    fullCode: code,
+    earlyRedemptionFee: params.earlyRedemptionFee ?? 0,
     issueDate: params.issueDate!.toISOString(),
     maturityDate: params.maturityDate.toISOString(),
     nominalValue: params.nominalValue,
@@ -45,7 +51,7 @@ export async function GET(request: NextRequest) {
   // series (verified against obligacjeskarbowe.pl) and needs no network.
   const known = knownTreasuryBondValuationParams(code);
   if (known) {
-    return NextResponse.json({ data: serialize(known), source: "catalog" });
+    return NextResponse.json({ data: serialize(known, code), source: "catalog" });
   }
 
   const cacheKey = `bond-params:${code}`;
@@ -62,7 +68,7 @@ export async function GET(request: NextRequest) {
         { status: 404 },
       );
     }
-    const entry = setCachedMarketData(cacheKey, serialize(params), BOND_PARAMS_CACHE_TTL_MS);
+    const entry = setCachedMarketData(cacheKey, serialize(params, code), BOND_PARAMS_CACHE_TTL_MS);
     return NextResponse.json({ data: entry.value, source: "scrape", cache: { hit: false } });
   } catch (error) {
     return NextResponse.json(

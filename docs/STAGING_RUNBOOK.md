@@ -12,7 +12,7 @@ Ten runbook opisuje prace przygotowawcze do realnej walidacji Etapu 7. Nie zawie
 
 ## Kolejnosc
 
-1. Supabase: zastosowac `supabase/migrations/0001_initial_sync.sql`.
+1. Supabase: zastosowac `supabase/migrations` (wszystkie pliki po kolei; zestaw jest kopią z repo natywnego, sprawdzaj `npm run check:migrations`).
 2. Supabase: utworzyc dwa konta testowe Auth.
 3. Native: zapisac na pierwszym koncie dataset testowy opisany w `docs/STAGING_VALIDATION.md`.
 4. Native: potwierdzic, ze konto ma `encrypted_key_backups` i znana passphrase dziala.

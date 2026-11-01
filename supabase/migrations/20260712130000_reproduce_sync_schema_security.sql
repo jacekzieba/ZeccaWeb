@@ -29,59 +29,51 @@ begin
 end
 $$;
 
--- The primary/unique keys on user_devices and encrypted_key_backups, plus the
--- encrypted_records primary key, index every ownership predicate with user_id
--- as the leading column without adding redundant indexes.
+-- The unique key above indexes user_devices.user_id. The existing unique key
+-- on encrypted_key_backups.user_id and encrypted_records_user_updated_idx
+-- likewise give each ownership predicate an index with user_id first.
 
 grant select, insert, update, delete on table public.profiles to authenticated;
 grant select, insert, update, delete on table public.user_devices to authenticated;
-grant select, insert, update, delete on table public.encrypted_records to authenticated;
 grant select, insert, update, delete on table public.encrypted_key_backups to authenticated;
+grant select, insert, update, delete on table public.encrypted_records to authenticated;
 
-alter policy "Users can read their profile" on public.profiles
+alter policy "profiles_select_own" on public.profiles
   to authenticated
   using ((select auth.uid()) = id);
 
-alter policy "Users can update their profile" on public.profiles
+alter policy "profiles_insert_own" on public.profiles
+  to authenticated
+  with check ((select auth.uid()) = id);
+
+alter policy "profiles_update_own" on public.profiles
   to authenticated
   using ((select auth.uid()) = id)
   with check ((select auth.uid()) = id);
 
-alter policy "Users can read their devices" on public.user_devices
+alter policy "devices_select_own" on public.user_devices
   to authenticated
   using ((select auth.uid()) = user_id);
 
-alter policy "Users can upsert their devices" on public.user_devices
-  to authenticated
-  with check ((select auth.uid()) = user_id);
-
-alter policy "Users can update their devices" on public.user_devices
+alter policy "devices_upsert_own" on public.user_devices
   to authenticated
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
 
-alter policy "Users can read their encrypted records" on public.encrypted_records
+alter policy "key_backups_select_own" on public.encrypted_key_backups
   to authenticated
   using ((select auth.uid()) = user_id);
 
-alter policy "Users can insert their encrypted records" on public.encrypted_records
-  to authenticated
-  with check ((select auth.uid()) = user_id);
-
-alter policy "Users can update their encrypted records" on public.encrypted_records
+alter policy "key_backups_upsert_own" on public.encrypted_key_backups
   to authenticated
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
 
-alter policy "Users can read their key backup" on public.encrypted_key_backups
+alter policy "records_select_own" on public.encrypted_records
   to authenticated
   using ((select auth.uid()) = user_id);
 
-alter policy "Users can insert their key backup" on public.encrypted_key_backups
-  to authenticated
-  with check ((select auth.uid()) = user_id);
-
-alter policy "Users can update their key backup" on public.encrypted_key_backups
+alter policy "records_upsert_own" on public.encrypted_records
   to authenticated
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);

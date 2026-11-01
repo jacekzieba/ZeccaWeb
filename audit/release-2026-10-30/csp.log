@@ -1,0 +1,11 @@
+OK   / -> / [200] hydrated=true scripts=29 bezNonce=0 vercel= violations=0 | script-src 'self' 'nonce-…' 'strict-dynamic'
+OK   /login -> /login [200] hydrated=true scripts=24 bezNonce=0 vercel= violations=0 | script-src 'self' 'nonce-…' 'strict-dynamic'
+OK   /register -> /register [200] hydrated=true scripts=24 bezNonce=0 vercel= violations=0 | script-src 'self' 'nonce-…' 'strict-dynamic'
+OK   /forgot-password -> /forgot-password [200] hydrated=true scripts=24 bezNonce=0 vercel= violations=0 | script-src 'self' 'nonce-…' 'strict-dynamic'
+OK   /reset-password -> /reset-password [200] hydrated=true scripts=18 bezNonce=0 vercel= violations=0 | script-src 'self' 'nonce-…' 'strict-dynamic'
+OK   /faq -> /faq [200] hydrated=true scripts=36 bezNonce=0 vercel= violations=0 | script-src 'self' 'nonce-…' 'strict-dynamic'
+OK   /privacy-policy -> /privacy-policy [200] hydrated=true scripts=37 bezNonce=0 vercel= violations=0 | script-src 'self' 'nonce-…' 'strict-dynamic'
+OK   /demo -> /demo [200] hydrated=true scripts=25 bezNonce=0 vercel= violations=0 | script-src 'self' 'nonce-…' 'strict-dynamic'
+OK   /dashboard -> /login?next=%2Fdashboard [200] hydrated=true scripts=24 bezNonce=0 vercel= violations=0 | script-src 'self' 'nonce-…' 'strict-dynamic'
+OK   /nie-ma-takiej-strony -> /nie-ma-takiej-strony [404] hydrated=true scripts=15 bezNonce=0 vercel= violations=0 | script-src 'self' 'nonce-…' 'strict-dynamic'
+ALL OK

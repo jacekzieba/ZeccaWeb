@@ -169,46 +169,59 @@ export async function fetchEncryptedRecordMetadata(
   return data as EncryptedRecordMetadata | null;
 }
 
+/** Zapis odrzucony, bo wersja rekordu na serwerze nie jest już tą, na której
+ * opierała się zmiana (inny klient zdążył zapisać). Nic nie zostało nadpisane. */
+export class StaleRecordVersionError extends Error {
+  constructor(message = "Rekord zmienił się na innym urządzeniu. Odśwież dane i ponów zmianę.") {
+    super(message);
+    this.name = "StaleRecordVersionError";
+  }
+}
+
 /**
  * Zapis rekordu adresowany tożsamością logiczną (user_id, record_type, logical_id).
  *
  * `upsert … onConflict: "id"` nie wystarcza: wiersz zapisany przez klienta
  * tenant-scoped ma `id` będące hashem, więc zapis pod `id` logicznym albo
- * wstawiłby duplikat, albo przekluczył wiersz. Dlatego najpierw aktualizacja po
- * logical_id (bez ruszania `id`), a dopiero gdy wiersza nie ma — wstawienie z
- * `id = logical_id`, tak jak robią klienci legacy.
+ * wstawiłby duplikat, albo przekluczył wiersz. Dlatego aktualizacja po
+ * logical_id (bez ruszania `id`), a wstawienie z `id = logical_id` — tak jak
+ * robią klienci legacy.
+ *
+ * Zapis jest warunkowy (compare-and-swap): `expectedVersion` to `updated_at`
+ * rekordu, na którym oparto zmianę. Aktualizacja filtruje po nim, więc gdy inny
+ * klient zdążył zapisać, zmienia 0 wierszy i rzucamy `StaleRecordVersionError`
+ * zamiast po cichu nadpisać. `null` oznacza „rekordu jeszcze nie ma" — wtedy
+ * tylko insert, a kolizja 23505 jest konfliktem, nie powodem do aktualizacji.
  */
 export async function upsertEncryptedRecord(
   supabase: BrowserSupabaseClient,
   payload: UpsertPayload,
+  expectedVersion: string | null,
 ): Promise<void> {
   const { id, user_id, record_type, ...changes } = payload;
+
+  if (expectedVersion === null) {
+    const { error } = await supabase
+      .from("encrypted_records")
+      .insert([{ ...payload, logical_id: id }] as never[]);
+    if (!error) return;
+    if ((error as { code?: string }).code === "23505") throw new StaleRecordVersionError();
+    throw error;
+  }
+
   const definedChanges = Object.fromEntries(
     Object.entries(changes).filter(([, value]) => value !== undefined),
   );
-
-  const updateExisting = async () => {
-    const { data, error } = await supabase
-      .from("encrypted_records")
-      .update(definedChanges as never)
-      .eq("user_id", user_id)
-      .eq("record_type", record_type)
-      .eq("logical_id", id)
-      .select("id");
-    if (error) throw error;
-    return Array.isArray(data) && data.length > 0;
-  };
-
-  if (await updateExisting()) return;
-
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("encrypted_records")
-    .insert([{ ...payload, logical_id: id }] as never[]);
-  if (!error) return;
-
-  // 23505: inny klient wstawił ten rekord między aktualizacją a wstawieniem.
-  if ((error as { code?: string }).code === "23505" && (await updateExisting())) return;
-  throw error;
+    .update(definedChanges as never)
+    .eq("user_id", user_id)
+    .eq("record_type", record_type)
+    .eq("logical_id", id)
+    .eq("updated_at", expectedVersion)
+    .select("id");
+  if (error) throw error;
+  if (!Array.isArray(data) || data.length === 0) throw new StaleRecordVersionError();
 }
 
 /** Cofnięcie miękkiego usunięcia — czyści `deleted_at`.
@@ -221,7 +234,11 @@ export async function upsertEncryptedRecord(
 export async function restoreEncryptedRecord(
   supabase: BrowserSupabaseClient,
   payload: Pick<UpsertPayload, "id" | "user_id" | "record_type" | "updated_at">,
+  expectedVersion: string | null,
 ): Promise<void> {
+  if (expectedVersion === null) {
+    throw new StaleRecordVersionError("Nie udało się przywrócić rekordu — nie ma go już na serwerze.");
+  }
   const { data, error } = await supabase
     .from("encrypted_records")
     .update({
@@ -231,21 +248,25 @@ export async function restoreEncryptedRecord(
     .eq("logical_id", payload.id)
     .eq("user_id", payload.user_id)
     .eq("record_type", payload.record_type)
+    .eq("updated_at", expectedVersion)
     .select("id");
 
   if (error) throw error;
-  // Zero wierszy (np. rekord skasowany twardo w międzyczasie) nie jest błędem
-  // PostgREST — bez tej kontroli UI pokazałoby przywrócenie, którego nie było.
+  // Zero wierszy (rekord skasowany twardo albo zmieniony przez inny klient) nie
+  // jest błędem PostgREST — bez tej kontroli UI pokazałoby przywrócenie, którego nie było.
   if (!data || data.length === 0) {
-    throw new Error("Nie udało się przywrócić rekordu — nie ma go już na serwerze.");
+    throw new StaleRecordVersionError("Nie udało się przywrócić rekordu — zmienił się lub nie ma go już na serwerze.");
   }
 }
 
 export async function softDeleteEncryptedRecord(
   supabase: BrowserSupabaseClient,
   payload: Pick<UpsertPayload, "id" | "user_id" | "record_type" | "updated_at">,
+  expectedVersion: string | null,
 ): Promise<void> {
-  const { error } = await supabase
+  // Brak rekordu na serwerze: nie ma czego usuwać, więc nic do zrobienia.
+  if (expectedVersion === null) return;
+  const { data, error } = await supabase
     .from("encrypted_records")
     .update({
       deleted_at: payload.updated_at,
@@ -253,9 +274,12 @@ export async function softDeleteEncryptedRecord(
     } as never)
     .eq("logical_id", payload.id)
     .eq("user_id", payload.user_id)
-    .eq("record_type", payload.record_type);
+    .eq("record_type", payload.record_type)
+    .eq("updated_at", expectedVersion)
+    .select("id");
 
   if (error) throw error;
+  if (!Array.isArray(data) || data.length === 0) throw new StaleRecordVersionError();
 }
 
 /** Twarde usunięcie wszystkich rekordów konta — wyłącznie dla „zacznij od

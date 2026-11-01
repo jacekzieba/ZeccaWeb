@@ -233,7 +233,7 @@ export function resolveFxRate(
     };
   }
 
-  return { rate: 1, date: null, source: "missing" };
+  return { rate: 0, date: null, source: "missing" };
 }
 
 /** Wymiana na walutę inną niż PLN: `fxRateToBase` z iOS to tam stosunek kwot

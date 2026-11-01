@@ -307,7 +307,9 @@ export function InstrumentEditorModal({
         marketDataID: resolvedMarketDataID,
         updatedAt: new Date().toISOString(),
       };
+      const existing = records?.find((record) => record.envelope.type === "asset" && (record.envelope.payload as Record<string, unknown>).id === id)?.envelope.payload as Record<string, unknown> | undefined;
       const payload = makeAssetPayload({
+        existing,
         id: savedInstrument.id,
         kind: savedInstrument.kind,
         symbol: savedInstrument.symbol,
@@ -318,7 +320,7 @@ export function InstrumentEditorModal({
         country: savedInstrument.country,
         isin: savedInstrument.isin,
         marketDataID: savedInstrument.marketDataID,
-        bondParams: kind === "treasuryBond" ? bondParams : null,
+        bondParams: kind === "treasuryBond" ? bondParams ?? undefined : null,
       });
       let latestRecords = records;
       if (isFakeSyncEnabled() && records) {

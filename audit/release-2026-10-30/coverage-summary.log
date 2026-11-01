@@ -1,0 +1,7 @@
+ Test Files  136 passed (136)
+      Tests  1207 passed (1207)
+   Duration  11.46s (transform 3.40s, setup 0ms, import 10.75s, tests 29.00s, environment 29.81s)
+Statements   : 94.21% ( 3238/3437 )
+Branches     : 85.83% ( 2364/2754 )
+Functions    : 95.81% ( 664/693 )
+Lines        : 95.72% ( 2909/3039 )
