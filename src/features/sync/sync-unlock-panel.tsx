@@ -36,6 +36,7 @@ import {
   registerWebDevice,
   upsertEncryptedKeyBackup,
 } from "@/sync/records/supabase-sync-store";
+import { adoptKeyBackup, forgetUnlockedKeyBackup, trackUnlockedKeyBackup } from "@/sync/records/key-epoch";
 import { clearPendingSyncOperations, flushPendingSyncOperations } from "@/sync/records/record-writer";
 import {
   summarizeDecryptedRecords,
@@ -372,6 +373,8 @@ export function SyncUnlockPanel({
       }
     }
 
+    // Dane odszyfrowane tym kluczem — od teraz zapis wymaga, by backup się nie zmienił.
+    await trackUnlockedKeyBackup(supabase).catch(() => forgetUnlockedKeyBackup());
     setCredentials(userDataKey, supabase);
     setLastSummary(summary);
     onSyncLoaded({ records: decryptedRecords, summary, snapshot });
@@ -705,6 +708,7 @@ export function SyncUnlockPanel({
     try {
       const rewrapped = await rewrapKeyBackup(backup, legacyPhrase, accountPassword);
       await upsertEncryptedKeyBackup(supabase, userId, rewrapped);
+      adoptKeyBackup(rewrapped);
       await keyBackupQuery.refetch();
     } catch {
       // zob. wyżej
@@ -719,6 +723,7 @@ export function SyncUnlockPanel({
       setTrustedKeyMessage("Lokalny klucz tej przeglądarki został usunięty.");
     }
     clearPendingSyncOperations();
+    forgetUnlockedKeyBackup();
     clearPendingAuthPassword();
     await supabase.auth.signOut();
     window.location.assign("/login");

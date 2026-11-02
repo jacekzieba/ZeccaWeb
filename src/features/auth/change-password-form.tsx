@@ -7,6 +7,7 @@ import { MIN_PASSWORD_LENGTH, passwordRequirementError } from "@/features/auth/p
 import { deriveAuthSecret, signInWithAccountPassword } from "@/features/auth/auth-secret";
 import { CONNECTION_ERROR } from "@/features/auth/auth-error-message";
 import { rewrapKeyBackup, type EncryptedKeyBackup } from "@/sync/encryption/key-backup";
+import { adoptKeyBackup } from "@/sync/records/key-epoch";
 import { fetchEncryptedKeyBackup, upsertEncryptedKeyBackup } from "@/sync/records/supabase-sync-store";
 
 type Account = { id: string; email: string } | "no-password" | "loading" | "unavailable";
@@ -111,6 +112,7 @@ export function ChangePasswordForm() {
       }
       return fail(updateFailure);
     }
+    if (rewrapped) adoptKeyBackup(rewrapped);
 
     setCurrent("");
     setNext("");

@@ -10,6 +10,7 @@ import {
   saveRecord,
   SyncConflictError,
 } from "@/sync/records/record-writer";
+import { KeyChangedError, forgetUnlockedKeyBackup, trackUnlockedKeyBackup } from "@/sync/records/key-epoch";
 import type { BrowserSupabaseClient } from "@/supabase/client";
 import { decryptEncryptedRecord } from "@/sync/records/encrypted-records";
 
@@ -25,6 +26,7 @@ type StoreOptions = {
   } | null;
   upsertError?: Error | null;
   updateError?: Error | null;
+  keyBackup?: Record<string, unknown> | null;
 };
 
 function createSupabaseStore(options: StoreOptions = {}) {
@@ -34,6 +36,7 @@ function createSupabaseStore(options: StoreOptions = {}) {
     updateError: options.updateError ?? null,
     upserts: [] as unknown[],
     updates: [] as unknown[],
+    keyBackup: options.keyBackup ?? null,
   };
 
   const client = {
@@ -42,7 +45,7 @@ function createSupabaseStore(options: StoreOptions = {}) {
         data: { user: { id: userId } },
       })),
     },
-    from() {
+    from(table?: string) {
       return {
         select() {
           return this;
@@ -51,7 +54,7 @@ function createSupabaseStore(options: StoreOptions = {}) {
           return this;
         },
         maybeSingle: vi.fn(async () => ({
-          data: store.metadata,
+          data: table === "encrypted_key_backups" ? store.keyBackup : store.metadata,
           error: null,
         })),
         upsert: vi.fn(async (payload: unknown) => {
@@ -139,6 +142,53 @@ describe("record writer", () => {
 
     clearPendingSyncOperations();
     localStorage.clear();
+    forgetUnlockedKeyBackup();
+  });
+
+  // W11: inne urządzenie zresetowało klucz. Zapis starym kluczem wylądowałby obok
+  // rekordów nowego klucza i zablokował odblokowanie na stałe.
+  it("nie zapisuje, gdy backup klucza na serwerze zmienił się od odblokowania", async () => {
+    const oldBackup = { encrypted_user_data_key: "old", nonce: "n1", salt: "s", kdf: "pbkdf2-sha256", kdf_iterations: 600000 };
+    const newBackup = { ...oldBackup, encrypted_user_data_key: "new", nonce: "n2" };
+    const { client, store } = createSupabaseStore({ keyBackup: oldBackup });
+    const key = await testKey();
+    await trackUnlockedKeyBackup(client);
+
+    store.keyBackup = newBackup; // reset klucza na drugim urządzeniu
+
+    await expect(
+      saveRecord(client, key, "account", { id: recordId, recordType: "account", name: "X", baseCurrency: "PLN" }),
+    ).rejects.toBeInstanceOf(KeyChangedError);
+    expect(store.upserts).toHaveLength(0);
+  });
+
+  it("nie wysyła z kolejki szyfrogramu sprzed zmiany klucza, nawet po ponownym odblokowaniu", async () => {
+    const oldBackup = { encrypted_user_data_key: "old", nonce: "n1", salt: "s", kdf: "pbkdf2-sha256", kdf_iterations: 600000 };
+    const newBackup = { ...oldBackup, encrypted_user_data_key: "new", nonce: "n2" };
+    const offline = createSupabaseStore({ keyBackup: oldBackup, upsertError: new Error("offline") });
+    const key = await testKey();
+    await trackUnlockedKeyBackup(offline.client);
+    await saveRecord(offline.client, key, "account", { id: recordId, recordType: "account", name: "X", baseCurrency: "PLN" });
+    expect(getPendingSyncOperations()).toHaveLength(1);
+
+    // Drugie urządzenie zresetowało klucz; to odblokowuje się nowym i śledzi nowy backup.
+    const online = createSupabaseStore({ keyBackup: newBackup });
+    await trackUnlockedKeyBackup(online.client);
+    const result = await flushPendingSyncOperations(online.client);
+
+    expect(online.store.upserts).toHaveLength(0);
+    expect(result.remaining).toHaveLength(1);
+    expect(result.remaining[0].error).toMatch(/Klucz szyfrowania/);
+  });
+
+  it("zapisuje, gdy backup klucza jest ten sam", async () => {
+    const backup = { encrypted_user_data_key: "old", nonce: "n1", salt: "s", kdf: "pbkdf2-sha256", kdf_iterations: 600000 };
+    const { client, store } = createSupabaseStore({ keyBackup: backup });
+    const key = await testKey();
+    await trackUnlockedKeyBackup(client);
+
+    await saveRecord(client, key, "account", { id: recordId, recordType: "account", name: "X", baseCurrency: "PLN" });
+    expect(store.upserts).toHaveLength(1);
   });
 
   it("zapisuje portfel przeniesiony pod nowe ID pod faktyczne ID rekordu", async () => {

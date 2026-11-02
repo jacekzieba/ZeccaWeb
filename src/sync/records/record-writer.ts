@@ -12,6 +12,7 @@ import {
 import { summarizeDecryptedRecords } from "@/sync/records/sync-summary";
 import { getWebDeviceId } from "@/sync/records/web-device";
 import type { BrowserSupabaseClient } from "@/supabase/client";
+import { KeyChangedError, assertKeyUnchanged, currentKeyToken } from "./key-epoch";
 import { assertSyncProtocolSupported } from "./sync-protocol";
 import { pullDecryptedRecords } from "./record-pull";
 import { localDateString } from "@/lib/calendar-date";
@@ -47,6 +48,8 @@ type PendingUpsertOperation = {
   baseUpdatedAt: string | null;
   createdAt: string;
   encryptedRecord: UpsertPayload;
+  /** Backup klucza, pod którym zaszyfrowano rekord; brak w starych kolejkach. */
+  keyToken?: string | null;
   error: string | null;
 };
 
@@ -261,7 +264,10 @@ async function uploadEncryptedRecord(
   supabase: BrowserSupabaseClient,
   encryptedRecord: UpsertPayload,
   baseUpdatedAt: string | null | undefined,
+  keyToken: string | null | undefined,
 ) {
+  // Szyfrogram sprzed zmiany klucza nie może trafić na serwer, także z kolejki.
+  await assertKeyUnchanged(supabase, keyToken);
   const version = await assertNoConflict(
     supabase,
     encryptedRecord.record_type,
@@ -309,10 +315,11 @@ export async function saveRecord(
     deleted_at: null,
   };
 
+  const keyToken = currentKeyToken();
   try {
-    await uploadEncryptedRecord(supabase, encryptedRecord, options.baseUpdatedAt);
+    await uploadEncryptedRecord(supabase, encryptedRecord, options.baseUpdatedAt, keyToken);
   } catch (error) {
-    if (error instanceof SyncConflictError || options.enqueueOnFailure === false) {
+    if (error instanceof SyncConflictError || error instanceof KeyChangedError || options.enqueueOnFailure === false) {
       throw error;
     }
 
@@ -324,6 +331,7 @@ export async function saveRecord(
       baseUpdatedAt: options.baseUpdatedAt ?? null,
       createdAt: new Date().toISOString(),
       encryptedRecord,
+      keyToken,
       error: error instanceof Error ? error.message : "Nie udało się wysłać zmiany.",
     });
     dispatchSyncMutation({
@@ -456,6 +464,7 @@ export async function flushPendingSyncOperations(
           supabase,
           operation.encryptedRecord,
           operation.baseUpdatedAt,
+          operation.keyToken,
         );
       } else {
         const version = await assertNoConflict(
@@ -528,6 +537,7 @@ export async function forcePendingSyncOperation(
   );
   const version = remote?.updated_at ?? null;
   if (operation.operation === "upsert") {
+    await assertKeyUnchanged(supabase, operation.keyToken);
     await asConflict(operation.recordType, operation.id, () =>
       upsertEncryptedRecord(supabase, operation.encryptedRecord, version),
     );
