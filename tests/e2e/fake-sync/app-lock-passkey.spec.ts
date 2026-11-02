@@ -40,3 +40,21 @@ test("passkey unlocks the PIN screen lock via a platform authenticator", async (
   await expect(page.getByText("Podaj PIN, aby odblokować")).toBeHidden();
   await expect(page.getByRole("main")).toBeVisible();
 });
+
+test("włączona blokada PIN obowiązuje też w nowej karcie (W10)", async ({ page, context }) => {
+  await page.goto("http://localhost:3101/settings");
+  const main = page.getByRole("main");
+  await main.getByRole("button", { name: "Ustaw blokadę" }).click();
+  await enterPin(page, "1234");
+  await enterPin(page, "1234");
+  await expect(main.getByRole("button", { name: "Usuń PIN" })).toBeVisible();
+
+  const second = await context.newPage();
+  await second.goto("http://localhost:3101/settings");
+  await expect(second.getByText("Podaj PIN, aby odblokować")).toBeVisible();
+
+  await enterPin(second, "9999");
+  await expect(second.getByText("Nieprawidłowy PIN.")).toBeVisible();
+  await enterPin(second, "1234");
+  await expect(second.getByText("Podaj PIN, aby odblokować")).toBeHidden();
+});

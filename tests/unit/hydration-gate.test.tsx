@@ -100,7 +100,7 @@ describe("hydratacja bramki zalogowanego użytkownika", () => {
       ),
       () => {
         localStorage.setItem("investor-app-lock-setup", "1");
-        sessionStorage.setItem("investor-app-lock-pin", "abc");
+        localStorage.setItem("investor-app-lock-verifier", JSON.stringify({ salt: "AAAAAAAAAAAAAAAAAAAAAA==", iterations: 210000, hash: "AAAA" }));
       },
     );
     expect(errors).toEqual([]);
@@ -111,7 +111,7 @@ describe("hydratacja bramki zalogowanego użytkownika", () => {
 
   it("AppLock zamontowany w przeglądarce (bez hydratacji) od razu jest zablokowany", async () => {
     localStorage.setItem("investor-app-lock-setup", "1");
-    sessionStorage.setItem("investor-app-lock-pin", "abc");
+    localStorage.setItem("investor-app-lock-verifier", JSON.stringify({ salt: "AAAAAAAAAAAAAAAAAAAAAA==", iterations: 210000, hash: "AAAA" }));
     const mounted = vi.fn();
     function App() {
       useEffect(() => mounted(), []);

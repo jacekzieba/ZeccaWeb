@@ -9,8 +9,8 @@ import {
   removePasskey,
   verifyPasskey,
 } from "./passkey";
+import { createPinVerifier, hasPinVerifier, removePinVerifier, verifyPin } from "./app-lock-pin";
 
-const SESSION_KEY = "investor-app-lock-pin";
 const VERIFIED_KEY = "investor-app-lock-verified";
 const SETUP_KEY = "investor-app-lock-setup";
 const IDLE_MINUTES_KEY = "investor-app-lock-idle-minutes";
@@ -20,26 +20,8 @@ const UI = V2_TYPE.ui;
 const SERIF = V2_TYPE.serif;
 const MONO = V2_TYPE.mono;
 
-function hashPin(pin: string): string {
-  // Simple deterministic hash for sessionStorage (not a security boundary,
-  // just obscures the PIN from casual glancing at DevTools storage).
-  let h = 0;
-  for (let i = 0; i < pin.length; i++) {
-    h = (Math.imul(31, h) + pin.charCodeAt(i)) | 0;
-  }
-  return h.toString(36);
-}
-
-function getPinHash(): string | null {
-  try { return sessionStorage.getItem(SESSION_KEY); } catch { return null; }
-}
-
-function setPinHash(pin: string) {
-  try { sessionStorage.setItem(SESSION_KEY, hashPin(pin)); } catch { /* */ }
-}
-
-function removePinHash() {
-  try { sessionStorage.removeItem(SESSION_KEY); sessionStorage.removeItem(VERIFIED_KEY); } catch { /* */ }
+function removeVerified() {
+  try { sessionStorage.removeItem(VERIFIED_KEY); } catch { /* */ }
 }
 
 function isVerified(): boolean {
@@ -77,7 +59,7 @@ function PinDots({ filled }: { filled: number }) {
   );
 }
 
-function PinPad({ onPin, label, error }: { onPin: (pin: string) => void; label: string; error?: string | null }) {
+function PinPad({ onPin, label, error }: { onPin: (pin: string) => void | Promise<void>; label: string; error?: string | null }) {
   const [input, setInput] = useState("");
   const maxLen = 6;
 
@@ -158,14 +140,14 @@ export function AppLockSetup({ onDone }: { onDone?: () => void }) {
     setError(null);
   }
 
-  function handleConfirm(pin: string) {
+  async function handleConfirm(pin: string) {
     if (pin !== first) {
       setError("PINy się różnią. Zacznij od nowa.");
       setStep("enter");
       setFirst("");
       return;
     }
-    setPinHash(pin);
+    await createPinVerifier(pin);
     markVerified();
     localStorage.setItem(SETUP_KEY, "1");
     onDone?.();
@@ -188,13 +170,13 @@ export function AppLockSetup({ onDone }: { onDone?: () => void }) {
 export function AppLockRemove({ onDone }: { onDone?: () => void }) {
   const [error, setError] = useState<string | null>(null);
 
-  function verify(pin: string) {
-    const stored = getPinHash();
-    if (!stored || hashPin(pin) !== stored) {
+  async function verify(pin: string) {
+    if (!(await verifyPin(pin))) {
       setError("Nieprawidłowy PIN.");
       return;
     }
-    removePinHash();
+    removePinVerifier();
+    removeVerified();
     removePasskey();
     localStorage.removeItem(SETUP_KEY);
     onDone?.();
@@ -208,7 +190,7 @@ function subscribeNever() {
 }
 
 function shouldLockNow() {
-  return Boolean(isSetupEnabled() && getPinHash() && !isVerified());
+  return Boolean(isSetupEnabled() && hasPinVerifier() && !isVerified());
 }
 
 // ── Main lock overlay ─────────────────────────────────────────────
@@ -228,8 +210,8 @@ export function AppLock({ children }: { children: React.ReactNode }) {
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const lock = useCallback(() => {
-    if (isSetupEnabled() && getPinHash()) {
-      try { sessionStorage.removeItem(VERIFIED_KEY); } catch { /* */ }
+    if (isSetupEnabled() && hasPinVerifier()) {
+      removeVerified();
       setMode("locked");
       setError(null);
     }
@@ -237,7 +219,7 @@ export function AppLock({ children }: { children: React.ReactNode }) {
 
   // Page Visibility API: lock after idle
   useEffect(() => {
-    if (!isSetupEnabled() || !getPinHash()) return;
+    if (!isSetupEnabled() || !hasPinVerifier()) return;
 
     const idleMs = getIdleMinutes() * 60 * 1000;
 
@@ -256,9 +238,8 @@ export function AppLock({ children }: { children: React.ReactNode }) {
     };
   }, [lock]);
 
-  function verify(pin: string) {
-    const stored = getPinHash();
-    if (!stored || hashPin(pin) !== stored) {
+  async function verify(pin: string) {
+    if (!(await verifyPin(pin))) {
       setError("Nieprawidłowy PIN.");
       return;
     }
