@@ -9,6 +9,7 @@ import type { Session } from "@supabase/supabase-js";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+import { signInWithAccountPassword } from "@/features/auth/auth-secret";
 import { createBrowserSupabaseClientOrNull } from "@/supabase/client";
 import {
   clearCachedUserDataKey,
@@ -153,6 +154,8 @@ export type InitialSyncUser = {
   id: string;
   email?: string | null;
   onboardingCompleted?: boolean;
+  /** Konto założone e-mailem i hasłem (nie przez Google/Apple). */
+  hasAccountPassword?: boolean;
 };
 
 function subscribeToNothing() {
@@ -284,6 +287,10 @@ export function SyncUnlockPanel({
 
   const userId = session?.user.id ?? initialUser?.id ?? null;
   const userLabel = session?.user.email ?? initialUser?.email ?? userId;
+  const userEmail = session?.user.email ?? initialUser?.email ?? null;
+  const hasAccountPassword = session
+    ? session.user.app_metadata?.provider === "email"
+    : Boolean(initialUser?.hasAccountPassword);
 
   useEffect(() => {
     attemptedTrustedKeyUserRef.current = null;
@@ -524,14 +531,18 @@ export function SyncUnlockPanel({
           await createBackupAndUnlock(pending!);
         }
       } catch {
-        // Wrong/legacy password, or a transient error — fall through to the
-        // ordinary manual form silently, without surfacing this attempt.
+        // Wrong/legacy password — fall through to the ordinary manual form
+        // silently. Creating a backup is different: a failure there (timeout,
+        // rejected insert) is shown, otherwise the user just sees a form again
+        // with no idea why.
         if (hasBackupNow) accountPasswordForRewrapRef.current = pending;
         if (!cancelled) {
           setUnlockStatus("idle");
           setUnlockError(null);
-          setCreateStatus("idle");
-          setCreateError(null);
+          if (hasBackupNow) {
+            setCreateStatus("idle");
+            setCreateError(null);
+          }
         }
       } finally {
         if (!cancelled) setPendingPasswordAttempt("idle");
@@ -681,6 +692,36 @@ export function SyncUnlockPanel({
   function handleCreateBackup(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     createBackupAndUnlock().catch(() => undefined);
+  }
+
+  // Konto z hasłem, które nie przeszło przez formularz logowania (np. wejście
+  // z linku potwierdzającego e-mail): jedno pole, hasło konta jest passphrase'ą.
+  // Najpierw sprawdzamy je logowaniem, żeby literówka nie zablokowała backupu.
+  async function handleCreateBackupWithAccountPassword(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!supabase || !userEmail || createStatus === "creating") return;
+    const password = createPassphrase;
+    if (password.length < 8) {
+      setCreateStatus("error");
+      setCreateError("Hasło musi mieć co najmniej 8 znaków.");
+      return;
+    }
+
+    setCreateStatus("creating");
+    setCreateError(null);
+    try {
+      const { error } = await signInWithAccountPassword(supabase, userEmail, password);
+      if (error) {
+        setCreateStatus("error");
+        setCreateError("Hasło jest nieprawidłowe.");
+        return;
+      }
+    } catch {
+      setCreateStatus("error");
+      setCreateError("Nie udało się połączyć. Spróbuj ponownie.");
+      return;
+    }
+    await createBackupAndUnlock(password).catch(() => undefined);
   }
 
   function handleUnlock(event: React.FormEvent<HTMLFormElement>) {
@@ -959,17 +1000,21 @@ export function SyncUnlockPanel({
         !passwordAttemptPending && (
         <div style={{ marginTop: 4 }}>
           <div style={{ fontSize: 12, color: AMBER, marginBottom: 10 }}>
-            Konto nie ma jeszcze backupu klucza w <code>encrypted_key_backups</code>.
-            Utwórz go passphrase&apos;ą, żeby uruchomić sync na tym i kolejnych urządzeniach.
+            {hasAccountPassword
+              ? "Wpisz hasło konta, aby włączyć synchronizację na tym i kolejnych urządzeniach."
+              : "To konto nie ma hasła, więc klucz synchronizacji zabezpieczysz osobną frazą. Zapamiętaj ją — bez niej nie odblokujesz danych na nowym urządzeniu."}
           </div>
-          <form onSubmit={handleCreateBackup} style={{ display: "grid", gap: 8 }}>
+          <form
+            onSubmit={hasAccountPassword ? handleCreateBackupWithAccountPassword : handleCreateBackup}
+            style={{ display: "grid", gap: 8 }}
+          >
             <input
               type="password"
               value={createPassphrase}
               onChange={(e) => setCreatePassphrase(e.target.value)}
-              autoComplete="new-password"
+              autoComplete={hasAccountPassword ? "current-password" : "new-password"}
               required
-              placeholder="Nowa passphrase (min. 8 znaków)…"
+              placeholder={hasAccountPassword ? "Hasło konta…" : "Fraza synchronizacji (min. 8 znaków)…"}
               style={{
                 width: "100%",
                 padding: "9px 12px",
@@ -981,14 +1026,15 @@ export function SyncUnlockPanel({
                 outline: "none",
               }}
             />
-            <input
-              type="password"
-              value={createConfirm}
-              onChange={(e) => setCreateConfirm(e.target.value)}
-              autoComplete="new-password"
-              required
-              placeholder="Powtórz passphrase…"
-              style={{
+            {!hasAccountPassword && (
+              <input
+                type="password"
+                value={createConfirm}
+                onChange={(e) => setCreateConfirm(e.target.value)}
+                autoComplete="new-password"
+                required
+                placeholder="Powtórz frazę…"
+                style={{
                 width: "100%",
                 padding: "9px 12px",
                 borderRadius: "var(--r-lg)",
@@ -998,7 +1044,8 @@ export function SyncUnlockPanel({
                 color: INK,
                 outline: "none",
               }}
-            />
+              />
+            )}
             <button
               type="submit"
               disabled={createStatus === "creating"}
@@ -1018,7 +1065,7 @@ export function SyncUnlockPanel({
               }}
             >
               {createStatus === "creating" ? <SpinnerDot /> : "🔐"}
-              {createStatus === "creating" ? "Tworzę backup…" : "Utwórz backup klucza"}
+              {createStatus === "creating" ? "Włączam synchronizację…" : hasAccountPassword ? "Włącz synchronizację" : "Utwórz backup klucza"}
             </button>
           </form>
           {createStatus === "error" && createError && (

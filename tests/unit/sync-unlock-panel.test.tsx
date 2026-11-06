@@ -24,6 +24,7 @@ const LABEL = /Hasło lub passphrase backupu klucza/;
 const ITERATIONS = 1_000; // szybki KDF; unlock czyta liczbę iteracji z backupu
 
 const net = vi.hoisted(() => ({
+  signIn: vi.fn(),
   bootstrap: { keyBackup: null as unknown, encryptedRecords: [] as unknown[] },
   upsert: vi.fn(),
   insert: vi.fn(),
@@ -32,7 +33,10 @@ const net = vi.hoisted(() => ({
 
 vi.mock("@/supabase/client", () => ({
   createBrowserSupabaseClientOrNull: () => ({
-    auth: { signOut: vi.fn(async () => ({ error: null })) },
+    auth: {
+      signOut: vi.fn(async () => ({ error: null })),
+      signInWithPassword: (...args: unknown[]) => net.signIn(...args),
+    },
   }),
 }));
 
@@ -90,12 +94,15 @@ async function encryptedRow(key: CryptoKey, recordType: string, id: string, payl
   };
 }
 
-function renderPanel() {
+function renderPanel(hasAccountPassword = false) {
   const onSyncLoaded = vi.fn();
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={client}>
-      <SyncUnlockPanel initialUser={{ id: "user-1", email: "a@b.pl" }} onSyncLoaded={onSyncLoaded} />
+      <SyncUnlockPanel
+        initialUser={{ id: "user-1", email: "a@b.pl", hasAccountPassword }}
+        onSyncLoaded={onSyncLoaded}
+      />
     </QueryClientProvider>,
   );
   return onSyncLoaded;
@@ -105,6 +112,8 @@ beforeEach(() => {
   sessionStorage.clear();
   net.bootstrap = { keyBackup: null, encryptedRecords: [] };
   net.cachedKey = null;
+  net.signIn.mockReset();
+  net.signIn.mockResolvedValue({ error: null });
   net.upsert.mockReset();
   net.upsert.mockImplementation(async (_supabase, _userId, backup) => {
     net.bootstrap.keyBackup = backup; // po zapisie serwer zwraca już backup
@@ -264,6 +273,32 @@ describe("SyncUnlockPanel — hasło jako klucz", () => {
     await screen.findByRole("button", { name: /Utwórz backup klucza/ });
     expect(net.upsert).not.toHaveBeenCalled();
   });
+
+  it("konto z hasłem wchodzące z linku z maila (bez hasła w storage): jedno pole na hasło konta, bez słowa passphrase", async () => {
+    const onSyncLoaded = renderPanel(true);
+
+    const input = await screen.findByPlaceholderText("Hasło konta…");
+    expect(screen.queryByPlaceholderText(/Powtórz/)).toBeNull();
+    expect(screen.queryByText(/encrypted_key_backups|passphrase/i)).toBeNull();
+    fireEvent.change(input, { target: { value: "Haslo-Konta1" } });
+    fireEvent.click(screen.getByRole("button", { name: /Włącz synchronizację/ }));
+
+    await waitFor(() => expect(onSyncLoaded).toHaveBeenCalledTimes(1), { timeout: 15_000 });
+    expect(net.signIn).toHaveBeenCalledTimes(1);
+    const [, , backup] = net.insert.mock.calls[0] as [unknown, string, EncryptedKeyBackup];
+    await expect(unlockUserDataKey(backup, "Haslo-Konta1")).resolves.toBeTruthy();
+  }, 20_000);
+
+  it("błędne hasło konta nie tworzy backupu", async () => {
+    net.signIn.mockResolvedValue({ error: { message: "Invalid login credentials", status: 400 } });
+    renderPanel(true);
+
+    fireEvent.change(await screen.findByPlaceholderText("Hasło konta…"), { target: { value: "literowka-1" } });
+    fireEvent.click(screen.getByRole("button", { name: /Włącz synchronizację/ }));
+
+    await screen.findByText("Hasło jest nieprawidłowe.", undefined, { timeout: 10_000 });
+    expect(net.insert).not.toHaveBeenCalled();
+  }, 20_000);
 
   it("zaufana przeglądarka odblokowuje kluczem z cache i nie zostawia hasła w sessionStorage", async () => {
     net.bootstrap.keyBackup = await backupWrappedWith("Haslo-Konta1");

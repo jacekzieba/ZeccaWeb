@@ -60,7 +60,12 @@ export default async function AuthenticatedLayout({
   return (
     <Providers>
       <AppShell
-        initialUser={{ id: user.id, email: user.email, onboardingCompleted }}
+        initialUser={{
+          id: user.id,
+          email: user.email,
+          onboardingCompleted,
+          hasAccountPassword: user.app_metadata?.provider === "email",
+        }}
       >
         {children}
       </AppShell>
