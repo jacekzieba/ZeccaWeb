@@ -456,7 +456,7 @@ function parseTransactionRow(
   if (values.quantity && quantity == null) errors.push("Nieprawidłowa ilość.");
   if (values.price && price == null) errors.push("Nieprawidłowa cena.");
   // Reguły znaków jak w natywnym TransactionValidator: prowizja i podatek nie są
-  // ujemne, ilość i cena zakupu/sprzedaży są dodatnie, kwota (poza korektą) też.
+  // ujemne, ilość i cena zakupu/sprzedaży są dodatnie; dywidenda może być korektą.
   if (values.fees && parsedFees == null) errors.push("Nieprawidłowe opłaty.");
   else if (fees < 0) errors.push("Prowizja nie może być ujemna.");
   if (values.taxes && parsedTaxes == null) errors.push("Nieprawidłowy podatek.");
@@ -468,6 +468,8 @@ function parseTransactionRow(
   if (grossAmount != null) {
     if (transactionType === "correction") {
       if (grossAmount === 0) errors.push("Korekta musi mieć niezerową kwotę.");
+    } else if (transactionType === "dividend") {
+      if (grossAmount === 0) errors.push("Kwota dywidendy musi być niezerowa.");
     } else if (grossAmount <= 0) {
       errors.push("Kwota brutto musi być dodatnia.");
     }
@@ -645,7 +647,7 @@ function parseManualValuationRow(
   return { rowNumber, values, payload, errors, warnings };
 }
 
-function parseCsvTable(text: string): string[][] {
+export function parseCsvTable(text: string): string[][] {
   const delimiter = detectDelimiter(text);
   const rows: string[][] = [];
   let row: string[] = [];

@@ -102,6 +102,7 @@ export type PkoImportPreview = TransactionImportPreview & {
   newInstrumentPayloads: WriteRecordPayload[];
   warnings: string[];
   referencedBondCodes?: string[];
+  sourceParents?: Record<number, number>;
 };
 
 export function parsePkoBondsXls(
@@ -222,6 +223,7 @@ export function parsePkoBondsXls(
 
   const warnings: string[] = [];
   const txRows: TransactionImportRow[] = [];
+  const sourceParents: Record<number, number> = {};
   // Identyfikatory importu jak w natywnym PKOBondsImporter: ponowny import tego
   // samego pliku (na webie albo po imporcie w aplikacji) pomija zapisane wiersze.
   const alreadyImported = (externalImportID: string) =>
@@ -312,7 +314,11 @@ export function parsePkoBondsXls(
     const kind = r.kind;
 
     if (kind === "buyDisposition") {
-      if (r.nrZapisu > 0 && realisedBuyNr.has(r.nrZapisu)) continue;
+      if (r.nrZapisu > 0 && realisedBuyNr.has(r.nrZapisu)) {
+        const parent = parsedRows.find(row => row.kind === "buyRealisation" && !row.cancelled && row.nrZapisu === r.nrZapisu);
+        if (parent) sourceParents[r.sourceIndex] = parent.sourceIndex;
+        continue;
+      }
       makeBuy(r);
 
     } else if (kind === "buyRealisation") {
@@ -366,6 +372,7 @@ export function parsePkoBondsXls(
         warnings.push(`Wiersz ${r.sourceIndex}: odsetki przy wykupie bez powiązanej sprzedaży — pominięto`);
         continue;
       }
+      sourceParents[r.sourceIndex] = txRows[parent.txIdx].rowNumber;
       const externalImportID =
         `pko-bonds:redint:${r.code}:${importDay(parent.date)}:${importAmount(r.kwota)}`;
       if (alreadyImported(externalImportID)) continue;
@@ -401,6 +408,7 @@ export function parsePkoBondsXls(
         warnings.push(`Wiersz ${r.sourceIndex}: opłata bez wykupu — pominięto`);
         continue;
       }
+      sourceParents[r.sourceIndex] = txRows[parent.txIdx].rowNumber;
       // Attach fee to the sell tx
       const sellPayload = txRows[parent.txIdx].payload;
       if (sellPayload) {
@@ -495,6 +503,7 @@ export function parsePkoBondsXls(
       }
     }
     if (bestSlotIdx !== null) {
+      sourceParents[r.sourceIndex] = txRows[interestSlots[bestSlotIdx].txIdx].rowNumber;
       const txPayload = txRows[interestSlots[bestSlotIdx].txIdx].payload;
       if (txPayload) {
         (txPayload as Record<string, unknown>).taxes = ((txPayload as Record<string, unknown>).taxes as number ?? 0) + Math.abs(r.kwota);
@@ -519,6 +528,7 @@ export function parsePkoBondsXls(
     {
       kind: "transaction",
       rows: uniqueRows,
+      sourceParents,
       validRows: uniqueRows.filter((row) => row.errors.length === 0 && row.payload !== null),
       errorRows: uniqueRows.filter((row) => row.errors.length > 0),
       newInstrumentPayloads,
@@ -543,7 +553,7 @@ function makeValues(r: ParsedRow, txType: string): Record<string, string> {
     date: r.date ? r.date.toISOString().slice(0, 10) : "",
     transactiontype: txType,
     instrument: r.code,
-    grossamount: String(Math.abs(r.kwota)),
+    grossamount: String(r.kwota),
     currency: "PLN",
   };
 }

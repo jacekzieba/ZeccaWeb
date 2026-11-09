@@ -51,7 +51,7 @@ type ParsedTrade = {
   price: number;
 };
 
-function parseTradeComment(comment: string): ParsedTrade | null {
+export function parseTradeComment(comment: string): ParsedTrade | null {
   const m = /(?:open|close)\s+(?:buy|sell)\s+([\d.]+)(?:\/[\d.]+)?\s*@\s*([\d.]+)/i.exec(comment);
   if (!m) return null;
   const quantity = parseFloat(m[1]);
@@ -96,6 +96,7 @@ export type XtbImportPreview = TransactionImportPreview & {
    * phase (D2) that resolves the settlement currency from NBP rates.
    */
   fxObservations: { symbol: string; fxObserved: number; date: string }[];
+  sourceParents?: Record<number, number>;
 };
 
 export function parseXtbXlsx(
@@ -355,6 +356,7 @@ export function parseXtbXlsx(
   }
 
   const txRows: TransactionImportRow[] = [];
+  const sourceParents: Record<number, number> = {};
 
   for (let i = 0; i < cashRows.length; i++) {
     const r = cashRows[i];
@@ -392,7 +394,7 @@ export function parseXtbXlsx(
           feesInPLN = Math.abs(c.amount);
         }
       }
-      if (bestCommIdx !== null) consumedCommission.add(bestCommIdx);
+      if (bestCommIdx !== null) { consumedCommission.add(bestCommIdx); sourceParents[cashRows[bestCommIdx].rowIndex] = r.rowIndex; }
 
       // The comment gives quantity/price in the instrument's own currency; the
       // Amount column is the PLN cash impact. For a non-PLN instrument the FX
@@ -443,6 +445,7 @@ export function parseXtbXlsx(
         currency: "PLN",
         fees: 0,
         taxes: 0,
+        notes: r.comment,
         ...(r.externalId ? { externalImportID: r.externalId } : {}),
       };
       txRows.push({ rowNumber: r.rowIndex, values: rowValues(r), payload, errors: [], warnings: [] });
@@ -456,6 +459,7 @@ export function parseXtbXlsx(
       if (firstUnconsumed) {
         taxAmount = Math.abs(firstUnconsumed.amount);
         consumedTax.add(firstUnconsumed.idx);
+        sourceParents[cashRows[firstUnconsumed.idx].rowIndex] = r.rowIndex;
       }
       const id = crypto.randomUUID();
       const payload = {
@@ -520,6 +524,7 @@ export function parseXtbXlsx(
     {
       kind: "transaction",
       rows: txRows,
+      sourceParents,
       validRows: txRows.filter((row) => row.errors.length === 0 && row.payload),
       errorRows: txRows.filter((row) => row.errors.length > 0),
       newInstrumentPayloads,
@@ -535,7 +540,7 @@ function rowValues(r: CashRow): Record<string, string> {
     date: r.date.toISOString().slice(0, 10),
     transactiontype: r.type,
     instrument: r.ticker,
-    grossamount: String(Math.abs(r.amount)),
+    grossamount: String(r.amount),
     currency: "PLN",
   };
 }

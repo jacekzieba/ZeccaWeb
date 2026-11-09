@@ -1,3 +1,4 @@
+import { reviewProblemCount, type ImportReviewDraft } from "./import-review";
 import type { CsvImportPreview } from "@/features/import/import-parser";
 import type { WriteRecordPayload } from "@/sync/records/record-writer";
 import type { DecryptedRecord } from "@/sync/records/encrypted-records";
@@ -5,6 +6,7 @@ import type { DecryptedRecord } from "@/sync/records/encrypted-records";
 type SelectableImportPreview = Pick<CsvImportPreview, "validRows"> & {
   newInstrumentPayloads?: WriteRecordPayload[];
   updatedInstrumentPayloads?: WriteRecordPayload[];
+  review?: ImportReviewDraft;
 };
 
 export function importRowId(row: CsvImportPreview["rows"][number]): string | null {
@@ -17,6 +19,7 @@ export function selectedImportPayloads(
   selectedRowIds: ReadonlySet<string>,
   records: readonly DecryptedRecord[] = [],
 ) {
+  if (preview.review && reviewProblemCount(preview.review) > 0) return { rows: [], newInstrumentPayloads: [], updatedInstrumentPayloads: [] };
   const active = records.filter(record => !record.deletedAt);
   const ids = new Set(active.map(record => record.id));
   const externalIDs = new Set(active.filter(record => record.envelope.type === "transaction")

@@ -4,18 +4,19 @@ import { useMemo, useState, type CSSProperties } from "react";
 import {
   buildImportReferenceData,
   parseCsvImport,
+  parseCsvTable,
   parseImportTable,
   transactionCsvTemplate,
   valuationCsvTemplate,
   type CsvImportPreview,
 } from "@/features/import/import-parser";
 import { csvCell, incomeCsvLines, transactionsCsvLines } from "@/features/import/csv-export";
-import { parseXtbXlsx } from "@/features/import/xtb-parser";
-import { loadEtfCatalog } from "@/features/import/etf-catalog";
+import { loadEtfCatalog, type EtfCatalog } from "@/features/import/etf-catalog";
 import { resolveObservedCurrencies } from "@/features/import/xtb-currency-resolver";
 import { enrichTreasuryBondParams, type BondImportPreview } from "@/features/import/treasury-bond-enrichment";
-import { parsePkoBondsXls } from "@/features/import/pko-parser";
 import { readSpreadsheet } from "@/features/import/read-spreadsheet";
+import { createImportReview, evaluateImportReview, changeImportReview, importFileDigest, reviewProblemCount, type ImportReviewDraft } from "@/features/import/import-review";
+import { ImportReviewPanel } from "@/features/import/import-review-panel";
 import {
   ImportProgressIndicator,
   type ImportProgressState,
@@ -124,6 +125,7 @@ function GhostButton({ children, onClick, disabled }: { children: React.ReactNod
 type ExtendedPreview = CsvImportPreview & BondImportPreview & {
   newInstrumentPayloads?: Array<{ id: string; recordType: string; [key: string]: unknown }>;
   parserWarnings?: string[];
+  review?: ImportReviewDraft;
 };
 
 type IdentityField = "symbol" | "name" | "currency" | "exchange" | "isin" | "marketDataID";
@@ -148,10 +150,12 @@ function ImportIdentityReview({
   confirmed,
   onEdit,
   onConfirmationChange,
+  disabled,
 }: {
   payload: WriteRecordPayload;
   invalidFields: readonly string[];
   confirmed: boolean;
+  disabled?: boolean;
   onEdit(field: IdentityField, value: string): void;
   onConfirmationChange(confirmed: boolean): void;
 }) {
@@ -172,6 +176,7 @@ function ImportIdentityReview({
               </span>
               <input
                 aria-label={`${label}: ${symbol}`}
+                disabled={disabled}
                 value={payloadText(payload, field)}
                 placeholder={placeholder}
                 onChange={(event) => onEdit(field, event.target.value)}
@@ -185,7 +190,7 @@ function ImportIdentityReview({
         <input
           type="checkbox"
           checked={confirmed}
-          disabled={!canConfirm}
+          disabled={!canConfirm || disabled}
           onChange={(event) => onConfirmationChange(event.target.checked)}
         />
         Potwierdzam tożsamość instrumentu i źródło jego notowań.
@@ -233,6 +238,8 @@ export function ImportPage() {
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<ImportProgressState | null>(null);
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [reviewCatalog, setReviewCatalog] = useState<EtfCatalog>();
 
   // For XTB/PKO: first portfolio is used as the target; user can change
   const firstPortfolioId = references.portfolios[0]?.id ?? "";
@@ -282,12 +289,13 @@ export function ImportPage() {
         const catalog = await loadEtfCatalog();
         setProgress({ label: "Analizowanie transakcji XTB…", value: 68 });
         await waitForNextPaint();
-        const xtbPreview = parseXtbXlsx(rows, portfolioId, references, { catalog });
+        setReviewCatalog(catalog);
+        const xtbPreview = evaluateImportReview(createImportReview("xtb", rows, await importFileDigest(file)), { portfolioID: portfolioId, references, catalog });
         // D2: resolve any currencies the parser left "?" by inferring them from
         // the observed FX and NBP rates on the trade date.
-        if (xtbPreview.fxObservations.length > 0) {
+        if ((xtbPreview.fxObservations?.length ?? 0) > 0) {
           setProgress({ label: "Rozpoznawanie walut…", value: 84 });
-          await resolveObservedCurrencies(xtbPreview, fetchFxRateViaApi);
+          await resolveObservedCurrencies({ ...xtbPreview, warnings: xtbPreview.warnings ?? [], fxObservations: xtbPreview.fxObservations ?? [] }, fetchFxRateViaApi);
         }
         setProgress({ label: "Tworzenie podglądu…", value: 95 });
         showPreview(xtbPreview as ExtendedPreview);
@@ -303,7 +311,7 @@ export function ImportPage() {
         }
         setProgress({ label: "Analizowanie operacji PKO…", value: 66 });
         await waitForNextPaint();
-        const pkoPreview = parsePkoBondsXls(rows, portfolioId, references) as ExtendedPreview;
+        const pkoPreview = evaluateImportReview(createImportReview("pko", rows, await importFileDigest(file)), { portfolioID: portfolioId, references }) as ExtendedPreview;
         setProgress({ label: "Uzupełnianie danych obligacji…", value: 84 });
         showPreview(
           await enrichTreasuryBondParams(pkoPreview, useSyncStore.getState().records),
@@ -317,13 +325,15 @@ export function ImportPage() {
         const rows = await readSpreadsheet(file);
         setProgress({ label: "Analizowanie danych…", value: 72 });
         await waitForNextPaint();
-        showPreview(parseImportTable(rows, references));
+        const parsed = parseImportTable(rows, references);
+        showPreview(parsed.kind === "transaction" ? evaluateImportReview(createImportReview("generic", rows, await importFileDigest(file)), { portfolioID: portfolioId, references }) : parsed);
       } else {
         setProgress({ label: "Odczytywanie pliku CSV…", value: 25 });
         const text = await file.text();
         setProgress({ label: "Analizowanie danych…", value: 72 });
         await waitForNextPaint();
-        showPreview(parseCsvImport(text, references));
+        const parsed = parseCsvImport(text, references);
+        showPreview(parsed.kind === "transaction" ? evaluateImportReview(createImportReview("generic", parseCsvTable(text), await importFileDigest(file)), { portfolioID: portfolioId, references }) : parsed);
       }
     } catch (parseError) {
       setError(parseError instanceof Error ? parseError.message : "Nie udało się odczytać pliku.");
@@ -338,6 +348,26 @@ export function ImportPage() {
     }
   }
 
+  async function updateReview(rowID: string, values?: Record<string, string>, excluded?: boolean) {
+    if (!preview?.review || reviewBusy) return;
+    setReviewBusy(true);
+    setError(null); setResult(null);
+    try {
+      const changed = changeImportReview(preview.review, rowID, values, excluded);
+      let next: ExtendedPreview = evaluateImportReview(changed, { portfolioID: portfolioId, references: buildImportReferenceData(useSyncStore.getState().records ?? []), catalog: reviewCatalog });
+      if (changed.format === "xtb") {
+        await resolveObservedCurrencies({ ...next, kind: "transaction", rows: next.rows, validRows: next.validRows, errorRows: next.errorRows, newInstrumentPayloads: next.newInstrumentPayloads ?? [], warnings: (next as { warnings?: string[] }).warnings ?? [], fxObservations: (next as { fxObservations?: { symbol: string; fxObserved: number; date: string }[] }).fxObservations ?? [] }, fetchFxRateViaApi);
+      } else if (changed.format === "pko") {
+        next = await enrichTreasuryBondParams(next, useSyncStore.getState().records);
+      }
+      setPreview(next);
+      setSelectedRowIds(new Set(next.validRows.filter(row => selectedRowIds.has(row.payload!.id) || row.rowNumber === Number(rowID)).map(row => row.payload!.id)));
+      setConfirmedInstrumentIds(new Set());
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Nie udało się przeliczyć pozycji. Poprawki pozostają w podglądzie.");
+    } finally { setReviewBusy(false); }
+  }
+
   async function handleImport(action: "check" | "commit") {
     if (!preview || !supabase || !userDataKey) {
       setError("Odblokuj dane w panelu synchronizacji przed importem.");
@@ -347,8 +377,30 @@ export function ImportPage() {
     setError(null);
     setResult(null);
     const provider = brokerProvider(importFormat);
+    let queued = 0;
+    const localPayloads: Array<{ id: string; recordType: string; [key: string]: unknown }> = [];
     try {
-      const selected = selectedImportPayloads(preview, selectedRowIds, useSyncStore.getState().records ?? []);
+      let finalPreview = preview;
+      if (preview.review) {
+        const rebuilt = evaluateImportReview(preview.review, { portfolioID: portfolioId, references: buildImportReferenceData(useSyncStore.getState().records ?? []), catalog: reviewCatalog });
+        if (reviewProblemCount(rebuilt.review) > 0) {
+          setPreview({ ...preview, ...rebuilt });
+          setError("Import wymaga poprawienia lub usunięcia wskazanych pozycji. Nic nie zostało zapisane.");
+          return;
+        }
+        // Keep metadata already reviewed by the user; source values and IDs
+        // were rebuilt above, and final payloads are validated again below.
+        for (const asset of rebuilt.newInstrumentPayloads) {
+          const approved = preview.newInstrumentPayloads?.find(candidate => candidate.id === asset.id);
+          if (approved) Object.assign(asset, approved);
+        }
+        for (const row of rebuilt.validRows) {
+          const previous = preview.validRows.find(candidate => candidate.payload?.id === row.payload?.id)?.payload;
+          if (row.payload && previous && row.payload.currency === "?" && previous.instrumentID === row.payload.instrumentID) row.payload.currency = previous.currency;
+        }
+        finalPreview = { ...preview, ...rebuilt };
+      }
+      const selected = selectedImportPayloads(finalPreview, selectedRowIds, useSyncStore.getState().records ?? []);
       const importIdentityErrors = [
         ...validateImportBeforeCommit(
           selected.newInstrumentPayloads,
@@ -383,9 +435,6 @@ export function ImportPage() {
           return;
         }
       }
-
-      let queued = 0;
-      const localPayloads: Array<{ id: string; recordType: string; [key: string]: unknown }> = [];
 
       // Save new instruments first
       for (const instrPayload of selected.newInstrumentPayloads) {
@@ -427,7 +476,7 @@ export function ImportPage() {
       });
       setSync(nextRecords, nextSnapshot);
       const updateSummary = selected.updatedInstrumentPayloads.length > 0 ? `Zaktualizowano ${selected.updatedInstrumentPayloads.length} emisji. ` : "";
-      setResult(`${updateSummary}Zaimportowano ${selected.rows.length - queued} rekordów${queued > 0 ? `, ${queued} czeka w kolejce sync` : ""}.`);
+      setResult(`${updateSummary}Zaimportowano ${selected.rows.length - queued} rekordów${queued > 0 ? `, ${queued} czeka w kolejce sync` : ""}.${finalPreview.review ? ` Usunięto z importu: ${finalPreview.review.rows.filter(row => row.excluded).length}, duplikaty / powiązane: ${finalPreview.review.rows.filter(row => row.duplicate).length}.` : ""}`);
       if (provider) {
         getTelemetryService().signal(TelemetryEvent.brokerImportSucceeded, {
           provider,
@@ -440,7 +489,12 @@ export function ImportPage() {
       setConfirmedInstrumentIds(new Set());
       setFileName(null);
     } catch (importError) {
-      setError(importError instanceof Error ? importError.message : "Nie udało się zapisać importu.");
+      if (localPayloads.length > 0) {
+        const partialRecords = upsertLocalRecords(useSyncStore.getState().records ?? [], localPayloads);
+        setSync(partialRecords, buildInvestorDataSnapshot(partialRecords, { asOf: new Date(), historyGranularity: "daily", fxRates: marketFxRates, useLatestTransactionFxRate: true, useMarketQuotes: true, cpi: marketCpi }));
+      }
+      const reason = importError instanceof Error ? importError.message : "Nie udało się zapisać importu.";
+      setError(localPayloads.length > 0 ? `${reason} Zapisano lub zakolejkowano ${localPayloads.length} rekordów (w kolejce: ${queued}). Podgląd pozostał otwarty; ponowienie pominie już zapisane pozycje.` : reason);
       if (provider) {
         getTelemetryService().signal(TelemetryEvent.brokerImportFailed, {
           provider,
@@ -536,7 +590,7 @@ export function ImportPage() {
   const unconfirmedMarketInstrumentCount = selectedMarketInstruments.filter(
     (payload) => !confirmedInstrumentIds.has(payload.id),
   ).length;
-  const importReadyToCommit = importIdentityErrors.length === 0 && unconfirmedMarketInstrumentCount === 0;
+  const importReadyToCommit = importIdentityErrors.length === 0 && unconfirmedMarketInstrumentCount === 0 && !reviewBusy && (!preview?.review || reviewProblemCount(preview.review) === 0);
   const selectedCount = selectedImport.rows.length;
   const errorCount = preview?.errorRows.length ?? 0;
   const warningCount = preview?.rows.filter((row) => row.warnings.length > 0).length ?? 0;
@@ -589,12 +643,14 @@ export function ImportPage() {
         payload.id === instrumentId ? { ...payload, [field]: normalized } : payload,
       );
       const rows = current.rows.map((row) => {
-        if (field !== "currency" || row.payload?.instrumentID !== instrumentId) return row;
+        if (field !== "currency" || row.payload?.instrumentID !== instrumentId
+          || (row.payload.transactionType !== "buy" && row.payload.transactionType !== "sell")) return row;
         return { ...row, payload: { ...row.payload, currency: normalized } };
       });
       return {
         ...current,
         newInstrumentPayloads,
+        review: current.review ? { ...current.review, instrumentOverrides: { ...current.review.instrumentOverrides, [instrumentId]: { ...current.review.instrumentOverrides[instrumentId], [field]: normalized } } } : undefined,
         rows,
         validRows: rows.filter((row) => row.errors.length === 0),
         errorRows: rows.filter((row) => row.errors.length > 0),
@@ -675,7 +731,7 @@ export function ImportPage() {
               ).map(([id, label, sub]) => (
                 <button
                   key={id}
-                  disabled={progress !== null}
+                  disabled={progress !== null || reviewBusy || importAction !== null}
                   onClick={() => {
                     setImportFormat(id);
                     setPreview(null);
@@ -699,13 +755,13 @@ export function ImportPage() {
               ))}
             </div>
 
-            {(importFormat === "xtb" || importFormat === "pko") && references.portfolios.length > 0 && (
+            {references.portfolios.length > 0 && (
               <div style={{ marginTop: 14 }}>
-                <div style={{ ...SECTION_HEAD, marginBottom: 6 }}>Portfel docelowy</div>
+                <div style={{ ...SECTION_HEAD, marginBottom: 6 }}>{importFormat === "generic" ? "Domyślny portfel (gdy plik go nie podaje)" : "Portfel docelowy"}</div>
                 <div style={{ width: 260 }}>
                   <Select
                     value={selectedPortfolioId || firstPortfolioId}
-                    disabled={progress !== null}
+                    disabled={progress !== null || reviewBusy || importAction !== null}
                     onChange={setSelectedPortfolioId}
                     style={{
                       fontFamily: UI, fontSize: 13, padding: "8px 12px", borderRadius: "var(--r-lg)",
@@ -742,7 +798,7 @@ export function ImportPage() {
             <input
               accept=".csv,.xls,.xlsx,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               type="file"
-              disabled={progress !== null}
+              disabled={progress !== null || reviewBusy || importAction !== null}
               onChange={(event) => void handleFile(event.target.files?.[0] ?? null)}
               style={{ display: "none" }}
             />
@@ -785,6 +841,7 @@ export function ImportPage() {
             </V2Card>
           )}
 
+          {preview?.review && <ImportReviewPanel draft={preview.review} busy={reviewBusy || importAction !== null} onChange={(rowID, values, excluded) => void updateReview(rowID, values, excluded)} onCancel={() => { setPreview(null); setSelectedRowIds(new Set()); setError(null); setResult(null); }} />}
           {preview && (
             <V2Card pad={0} style={{ overflow: "hidden" }}>
               <div style={{ borderBottom: `0.5px solid ${V2.line}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "15px 20px", flexWrap: "wrap" }}>
@@ -842,6 +899,7 @@ export function ImportPage() {
                         payload={payload}
                         invalidFields={item?.fields ?? []}
                         confirmed={confirmedInstrumentIds.has(payload.id)}
+                        disabled={reviewBusy || importAction !== null}
                         onEdit={(field, value) => updateImportedInstrumentIdentity(payload.id, field, value)}
                         onConfirmationChange={(confirmed) => setInstrumentConfirmed(payload.id, confirmed)}
                       />
@@ -855,7 +913,7 @@ export function ImportPage() {
                       </div>
                     );
                   })}
-                  {!importReadyToCommit && (
+                  {(importIdentityErrors.length > 0 || unconfirmedMarketInstrumentCount > 0) && (
                     <div role="alert" style={{ borderTop: `0.5px solid ${V2.line}`, color: V2.loss, fontSize: 12, fontWeight: 600, padding: "10px 20px" }}>
                       {importIdentityErrors.length > 0
                         ? "Uzupełnij pola oznaczone jako wymagane przed zapisem."

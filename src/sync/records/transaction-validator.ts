@@ -54,7 +54,15 @@ export function validateTransactionPayload(payload: Payload): TransactionValidat
         ...positiveAmount(payload),
       );
       break;
-    case "dividend":
+    case "dividend": {
+      issues.push(...knownInstrument(payload));
+      // Brokers book dividend reversals as negative income.
+      const amount = payload.grossAmount;
+      if (typeof amount !== "number" || !Number.isFinite(amount) || amount === 0) {
+        issues.push(issue("grossAmount", "Kwota dywidendy musi być niezerowa."));
+      }
+      break;
+    }
     case "bondCoupon":
     case "depositOpen":
     case "depositClose":

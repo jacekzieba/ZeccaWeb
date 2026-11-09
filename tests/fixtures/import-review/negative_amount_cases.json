@@ -1,0 +1,566 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "name": "xtb-negative-interest-edit",
+      "broker": "xtb",
+      "table": [
+        [
+          "Type",
+          "Instrument",
+          "Ticker",
+          "Time",
+          "Amount",
+          "ID",
+          "Comment"
+        ],
+        [
+          "Deposit",
+          "",
+          "",
+          "45569",
+          "1000",
+          "deposit",
+          ""
+        ],
+        [
+          "Free funds interest",
+          "",
+          "",
+          "45569",
+          "-10",
+          "interest",
+          ""
+        ]
+      ],
+      "initialProblemRows": [
+        3
+      ],
+      "action": {
+        "rowID": "3",
+        "values": {
+          "amount": "10"
+        }
+      },
+      "finalCashPLN": 1010,
+      "finalIncomePLN": 10,
+      "finalTypes": [
+        "cashDeposit",
+        "interest"
+      ]
+    },
+    {
+      "name": "xtb-negative-sale-edit",
+      "broker": "xtb",
+      "table": [
+        [
+          "Type",
+          "Instrument",
+          "Ticker",
+          "Time",
+          "Amount",
+          "ID",
+          "Comment"
+        ],
+        [
+          "Deposit",
+          "",
+          "",
+          "45569",
+          "1000",
+          "deposit",
+          ""
+        ],
+        [
+          "Stock purchase",
+          "ABC",
+          "ABC.PL",
+          "45569",
+          "-100",
+          "buy",
+          "OPEN BUY 1 @ 100"
+        ],
+        [
+          "Stock sale",
+          "ABC",
+          "ABC.PL",
+          "45570",
+          "-50",
+          "sell",
+          "CLOSE SELL 1 @ 50"
+        ]
+      ],
+      "initialProblemRows": [
+        4
+      ],
+      "action": {
+        "rowID": "4",
+        "values": {
+          "amount": "50"
+        }
+      },
+      "finalCashPLN": 950,
+      "finalIncomePLN": 0,
+      "finalTypes": [
+        "buy",
+        "cashDeposit",
+        "sell"
+      ]
+    },
+    {
+      "name": "xtb-commission-refund-exclude",
+      "broker": "xtb",
+      "table": [
+        [
+          "Type",
+          "Instrument",
+          "Ticker",
+          "Time",
+          "Amount",
+          "ID",
+          "Comment"
+        ],
+        [
+          "Deposit",
+          "",
+          "",
+          "45569",
+          "1000",
+          "deposit",
+          ""
+        ],
+        [
+          "Stock purchase",
+          "ABC",
+          "ABC.PL",
+          "45569",
+          "-100",
+          "buy",
+          "OPEN BUY 1 @ 100"
+        ],
+        [
+          "Commission",
+          "ABC",
+          "ABC.PL",
+          "45569",
+          "5",
+          "fee",
+          "refund"
+        ]
+      ],
+      "initialProblemRows": [
+        4
+      ],
+      "action": {
+        "rowID": "4",
+        "excluded": true
+      },
+      "finalCashPLN": 900,
+      "finalIncomePLN": 0,
+      "finalTypes": [
+        "buy",
+        "cashDeposit"
+      ]
+    },
+    {
+      "name": "xtb-interest-tax-refund-exclude",
+      "broker": "xtb",
+      "table": [
+        [
+          "Type",
+          "Instrument",
+          "Ticker",
+          "Time",
+          "Amount",
+          "ID",
+          "Comment"
+        ],
+        [
+          "Deposit",
+          "",
+          "",
+          "45569",
+          "1000",
+          "deposit",
+          ""
+        ],
+        [
+          "Free funds interest",
+          "",
+          "",
+          "45569",
+          "10",
+          "interest",
+          ""
+        ],
+        [
+          "Free funds interest tax",
+          "",
+          "",
+          "45569",
+          "1.9",
+          "tax",
+          "refund"
+        ]
+      ],
+      "initialProblemRows": [
+        4
+      ],
+      "action": {
+        "rowID": "4",
+        "excluded": true
+      },
+      "finalCashPLN": 1010,
+      "finalIncomePLN": 10,
+      "finalTypes": [
+        "cashDeposit",
+        "interest"
+      ]
+    },
+    {
+      "name": "xtb-unknown-exclude",
+      "broker": "xtb",
+      "table": [
+        [
+          "Type",
+          "Instrument",
+          "Ticker",
+          "Time",
+          "Amount",
+          "ID",
+          "Comment"
+        ],
+        [
+          "Deposit",
+          "",
+          "",
+          "45569",
+          "1000",
+          "deposit",
+          ""
+        ],
+        [
+          "Unknown debit",
+          "",
+          "",
+          "45569",
+          "-10",
+          "unknown",
+          ""
+        ]
+      ],
+      "initialProblemRows": [
+        3
+      ],
+      "action": {
+        "rowID": "3",
+        "excluded": true
+      },
+      "finalCashPLN": 1000,
+      "finalIncomePLN": 0,
+      "finalTypes": [
+        "cashDeposit"
+      ]
+    },
+    {
+      "name": "xtb-zero-deposit-exclude",
+      "broker": "xtb",
+      "table": [
+        [
+          "Type",
+          "Instrument",
+          "Ticker",
+          "Time",
+          "Amount",
+          "ID",
+          "Comment"
+        ],
+        [
+          "Deposit",
+          "",
+          "",
+          "45569",
+          "1000",
+          "deposit",
+          ""
+        ],
+        [
+          "Deposit",
+          "",
+          "",
+          "45569",
+          "0",
+          "zero",
+          ""
+        ]
+      ],
+      "initialProblemRows": [
+        3
+      ],
+      "action": {
+        "rowID": "3",
+        "excluded": true
+      },
+      "finalCashPLN": 1000,
+      "finalIncomePLN": 0,
+      "finalTypes": [
+        "cashDeposit"
+      ]
+    },
+    {
+      "name": "xtb-negative-dividend-valid",
+      "broker": "xtb",
+      "table": [
+        [
+          "Type",
+          "Instrument",
+          "Ticker",
+          "Time",
+          "Amount",
+          "ID",
+          "Comment"
+        ],
+        [
+          "Deposit",
+          "",
+          "",
+          "45569",
+          "1000",
+          "deposit",
+          ""
+        ],
+        [
+          "Dividend",
+          "ABC",
+          "ABC.PL",
+          "45569",
+          "-10",
+          "reversal",
+          "corr ABC.PL PLN 10/ SHR"
+        ]
+      ],
+      "initialProblemRows": [],
+      "action": null,
+      "finalCashPLN": 990,
+      "finalIncomePLN": -10,
+      "finalTypes": [
+        "cashDeposit",
+        "dividend"
+      ]
+    },
+    {
+      "name": "xtb-nonfinite-interest-edit",
+      "broker": "xtb",
+      "table": [
+        [
+          "Type",
+          "Instrument",
+          "Ticker",
+          "Time",
+          "Amount",
+          "ID",
+          "Comment"
+        ],
+        [
+          "Deposit",
+          "",
+          "",
+          "45569",
+          "1000",
+          "deposit",
+          ""
+        ],
+        [
+          "Free funds interest",
+          "",
+          "",
+          "45569",
+          "NaN",
+          "interest",
+          ""
+        ]
+      ],
+      "initialProblemRows": [
+        3
+      ],
+      "action": {
+        "rowID": "3",
+        "values": {
+          "amount": "10"
+        }
+      },
+      "finalCashPLN": 1010,
+      "finalIncomePLN": 10,
+      "finalTypes": [
+        "cashDeposit",
+        "interest"
+      ]
+    },
+    {
+      "name": "xtb-normal-negative-commission-valid",
+      "broker": "xtb",
+      "table": [
+        [
+          "Type",
+          "Instrument",
+          "Ticker",
+          "Time",
+          "Amount",
+          "ID",
+          "Comment"
+        ],
+        [
+          "Deposit",
+          "",
+          "",
+          "45569",
+          "1000",
+          "deposit",
+          ""
+        ],
+        [
+          "Stock purchase",
+          "ABC",
+          "ABC.PL",
+          "45569",
+          "-100",
+          "buy",
+          "OPEN BUY 1 @ 100"
+        ],
+        [
+          "Commission",
+          "ABC",
+          "ABC.PL",
+          "45569",
+          "-5",
+          "fee",
+          ""
+        ]
+      ],
+      "initialProblemRows": [],
+      "action": null,
+      "finalCashPLN": 895,
+      "finalIncomePLN": 0,
+      "finalTypes": [
+        "buy",
+        "cashDeposit"
+      ]
+    },
+    {
+      "name": "csv-negative-interest-edit",
+      "broker": "transactionsCSV",
+      "table": [
+        [
+          "date",
+          "type",
+          "gross_amount",
+          "currency"
+        ],
+        [
+          "2024-10-04",
+          "cashDeposit",
+          "1000",
+          "PLN"
+        ],
+        [
+          "2024-10-04",
+          "interest",
+          "-10",
+          "PLN"
+        ]
+      ],
+      "initialProblemRows": [
+        3
+      ],
+      "action": {
+        "rowID": "3",
+        "values": {
+          "grossamount": "10"
+        }
+      },
+      "finalCashPLN": 1010,
+      "finalIncomePLN": 10,
+      "finalTypes": [
+        "cashDeposit",
+        "interest"
+      ]
+    },
+    {
+      "name": "pko-negative-accrual-exclude",
+      "broker": "pkoBonds",
+      "table": [
+        [
+          "DATA DYSPOZYCJI",
+          "RODZAJ DYSPOZYCJI",
+          "KOD OBLIGACJI",
+          "NR ZAPISU",
+          "SERIA",
+          "LICZBA OBLIGACJI",
+          "KWOTA OPERACJI",
+          "STATUS"
+        ],
+        [
+          "2024-10-04",
+          "naliczenie odsetek na 2024-10-04",
+          "EDO0432",
+          "0",
+          "432",
+          "0",
+          "-10",
+          "zrealizowana"
+        ]
+      ],
+      "initialProblemRows": [
+        2
+      ],
+      "action": {
+        "rowID": "2",
+        "excluded": true
+      },
+      "finalCashPLN": 0,
+      "finalIncomePLN": 0,
+      "finalTypes": []
+    },
+    {
+      "name": "pko-negative-buy-edit",
+      "broker": "pkoBonds",
+      "table": [
+        [
+          "DATA DYSPOZYCJI",
+          "RODZAJ DYSPOZYCJI",
+          "KOD OBLIGACJI",
+          "NR ZAPISU",
+          "SERIA",
+          "LICZBA OBLIGACJI",
+          "KWOTA OPERACJI",
+          "STATUS"
+        ],
+        [
+          "2024-10-04",
+          "zakup papierów",
+          "EDO0432",
+          "0",
+          "432",
+          "2",
+          "-200",
+          "zrealizowana"
+        ]
+      ],
+      "initialProblemRows": [
+        2
+      ],
+      "action": {
+        "rowID": "2",
+        "values": {
+          "kwotaoperacji": "200"
+        }
+      },
+      "finalCashPLN": 0,
+      "finalIncomePLN": 0,
+      "finalTypes": [
+        "buy",
+        "cashDeposit"
+      ]
+    }
+  ]
+}
