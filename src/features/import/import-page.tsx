@@ -13,6 +13,7 @@ import { csvCell, incomeCsvLines, transactionsCsvLines } from "@/features/import
 import { parseXtbXlsx } from "@/features/import/xtb-parser";
 import { loadEtfCatalog } from "@/features/import/etf-catalog";
 import { resolveObservedCurrencies } from "@/features/import/xtb-currency-resolver";
+import { enrichTreasuryBondParams, type BondImportPreview } from "@/features/import/treasury-bond-enrichment";
 import { parsePkoBondsXls } from "@/features/import/pko-parser";
 import { readSpreadsheet } from "@/features/import/read-spreadsheet";
 import {
@@ -120,7 +121,7 @@ function GhostButton({ children, onClick, disabled }: { children: React.ReactNod
 }
 
 // Extended preview type that carries extra payloads (new instruments) from XTB/PKO parsers
-type ExtendedPreview = CsvImportPreview & {
+type ExtendedPreview = CsvImportPreview & BondImportPreview & {
   newInstrumentPayloads?: Array<{ id: string; recordType: string; [key: string]: unknown }>;
   parserWarnings?: string[];
 };
@@ -205,35 +206,6 @@ async function fetchFxRateViaApi(code: string, date: string): Promise<number | n
   } catch {
     return null;
   }
-}
-
-/**
- * Fills in `bondParams` for any imported treasury bond that arrived without them
- * (a series outside the small offline catalog) by resolving each series' own
- * emission letter. Best-effort: a series that can't be resolved keeps no params
- * and is still flagged by the pre-commit validation for manual entry.
- */
-async function enrichTreasuryBondParams(preview: ExtendedPreview): Promise<ExtendedPreview> {
-  const payloads = preview.newInstrumentPayloads;
-  if (!payloads?.length) return preview;
-
-  const enriched = await Promise.all(
-    payloads.map(async (payload) => {
-      if (payload.kind !== "treasuryBond" || payload.bondParams || typeof payload.symbol !== "string") {
-        return payload;
-      }
-      try {
-        const res = await fetch(`/api/market-data/bond-params?code=${encodeURIComponent(payload.symbol)}`);
-        if (!res.ok) return payload;
-        const json = (await res.json()) as { data?: Record<string, unknown> };
-        return json.data ? { ...payload, bondParams: json.data } : payload;
-      } catch {
-        return payload;
-      }
-    }),
-  );
-
-  return { ...preview, newInstrumentPayloads: enriched };
 }
 
 export function ImportPage() {
@@ -334,7 +306,7 @@ export function ImportPage() {
         const pkoPreview = parsePkoBondsXls(rows, portfolioId, references) as ExtendedPreview;
         setProgress({ label: "Uzupełnianie danych obligacji…", value: 84 });
         showPreview(
-          await enrichTreasuryBondParams(pkoPreview),
+          await enrichTreasuryBondParams(pkoPreview, useSyncStore.getState().records),
         );
         return;
       }
@@ -376,7 +348,7 @@ export function ImportPage() {
     setResult(null);
     const provider = brokerProvider(importFormat);
     try {
-      const selected = selectedImportPayloads(preview, selectedRowIds);
+      const selected = selectedImportPayloads(preview, selectedRowIds, useSyncStore.getState().records ?? []);
       const importIdentityErrors = [
         ...validateImportBeforeCommit(
           selected.newInstrumentPayloads,
@@ -404,6 +376,14 @@ export function ImportPage() {
         return;
       }
 
+      for (const payload of selected.updatedInstrumentPayloads) {
+        const current = useSyncStore.getState().records?.find(record => record.id === payload.id && !record.deletedAt);
+        if (!current || preview.bondUpdateBaseVersions?.[payload.id] !== current.updatedAt) {
+          setError("Dane emisji zmieniły się od przygotowania podglądu. Wczytaj plik ponownie i sprawdź aktualizację.");
+          return;
+        }
+      }
+
       let queued = 0;
       const localPayloads: Array<{ id: string; recordType: string; [key: string]: unknown }> = [];
 
@@ -413,6 +393,17 @@ export function ImportPage() {
           await saveRecord(supabase, userDataKey, instrPayload.recordType, instrPayload, { baseUpdatedAt: null });
         }
         localPayloads.push(instrPayload);
+      }
+
+      // Update only the parameters approved in preview, preserving asset UUIDs.
+      for (const payload of selected.updatedInstrumentPayloads) {
+        const current = useSyncStore.getState().records?.find(record => record.id === payload.id && !record.deletedAt);
+        if (!current) continue;
+        const updated = { ...(current.envelope.payload as WriteRecordPayload), bondParams: payload.bondParams };
+        if (!isFakeSyncEnabled()) {
+          await saveRecord(supabase, userDataKey, "asset", updated, { baseUpdatedAt: preview.bondUpdateBaseVersions![payload.id] });
+        }
+        localPayloads.push(updated);
       }
 
       // Save transactions
@@ -425,7 +416,7 @@ export function ImportPage() {
         localPayloads.push(row.payload);
       }
 
-      const nextRecords = upsertLocalRecords(records ?? [], localPayloads);
+      const nextRecords = upsertLocalRecords(useSyncStore.getState().records ?? [], localPayloads);
       const nextSnapshot = buildInvestorDataSnapshot(nextRecords, {
         asOf: new Date(),
         fxRates: marketFxRates,
@@ -435,7 +426,8 @@ export function ImportPage() {
         cpi: marketCpi,
       });
       setSync(nextRecords, nextSnapshot);
-      setResult(`Zaimportowano ${selected.rows.length - queued} rekordów${queued > 0 ? `, ${queued} czeka w kolejce sync` : ""}.`);
+      const updateSummary = selected.updatedInstrumentPayloads.length > 0 ? `Zaktualizowano ${selected.updatedInstrumentPayloads.length} emisji. ` : "";
+      setResult(`${updateSummary}Zaimportowano ${selected.rows.length - queued} rekordów${queued > 0 ? `, ${queued} czeka w kolejce sync` : ""}.`);
       if (provider) {
         getTelemetryService().signal(TelemetryEvent.brokerImportSucceeded, {
           provider,
@@ -517,9 +509,9 @@ export function ImportPage() {
   const selectedImport = useMemo(
     () =>
       preview
-        ? selectedImportPayloads(preview, selectedRowIds)
-        : { rows: [], newInstrumentPayloads: [] },
-    [preview, selectedRowIds],
+        ? selectedImportPayloads(preview, selectedRowIds, records ?? [])
+        : { rows: [], newInstrumentPayloads: [], updatedInstrumentPayloads: [] },
+    [preview, selectedRowIds, records],
   );
   const importIdentityErrors = useMemo(
     () =>
@@ -804,14 +796,36 @@ export function ImportPage() {
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  <GhostButton disabled={selectedCount === 0 || importAction !== null || !userDataKey} onClick={() => void handleImport("check")}>
+                  <GhostButton disabled={(selectedCount === 0 && selectedImport.updatedInstrumentPayloads.length === 0) || importAction !== null || !userDataKey} onClick={() => void handleImport("check")}>
                     {importAction === "check" ? "Sprawdzam…" : "Sprawdź import"}
                   </GhostButton>
-                  <PrimaryButton disabled={selectedCount === 0 || importAction !== null || !userDataKey || !importReadyToCommit} onClick={() => void handleImport("commit")}>
+                  <PrimaryButton disabled={(selectedCount === 0 && selectedImport.updatedInstrumentPayloads.length === 0) || importAction !== null || !userDataKey || !importReadyToCommit} onClick={() => void handleImport("commit")}>
                     {importAction === "commit" ? "Importuję…" : "Importuj wybrane"}
                   </PrimaryButton>
                 </div>
               </div>
+              {preview.bondRefreshFailures && preview.bondRefreshFailures.length > 0 && (
+                <div role="alert" style={{ padding: "12px 20px", color: V2.loss }}>
+                  Nie udało się potwierdzić parametrów emisji: {preview.bondRefreshFailures.join(", ")}.
+                  Dotychczasowe parametry pozostają bez zmian. Spróbuj wczytać plik ponownie lub sprawdź je ręcznie.
+                </div>
+              )}
+              {selectedImport.updatedInstrumentPayloads.length > 0 && (
+                <div style={{ padding: "12px 20px", borderBottom: `0.5px solid ${V2.line}` }}>
+                  <div style={SECTION_HEAD}>Aktualizacja parametrów istniejących emisji po zatwierdzeniu</div>
+                  <p style={{ fontSize: 12 }}>Zapisane transakcje zostaną pominięte jako duplikaty.</p>
+                  {selectedImport.updatedInstrumentPayloads.map(payload => {
+                    const previous = records?.find(record => record.id === payload.id)?.envelope.payload as Record<string, unknown> | undefined;
+                    const oldParams = previous?.bondParams as Record<string, unknown> | undefined;
+                    const next = payload.bondParams as Record<string, unknown>;
+                    return <div key={payload.id} style={{ fontSize: 12, marginTop: 6 }}>
+                      {String(payload.symbol)}: oprocentowanie {String(oldParams?.firstPeriodRate ?? "brak")} → {String(next.firstPeriodRate)}%,
+                      marża {String(oldParams?.marginOverBase ?? "brak")} → {String(next.marginOverBase)}%,
+                      opłata {String(oldParams?.earlyRedemptionFee ?? "brak")} → {String(next.earlyRedemptionFee)} zł
+                    </div>;
+                  })}
+                </div>
+              )}
               {(selectedMarketInstruments.length > 0 || selectedTreasuryBonds.length > 0) && (
                 <div style={{ borderBottom: `0.5px solid ${V2.line}`, background: v2Mix(V2.brand, 0.035) }}>
                   <div style={{ padding: "13px 20px 4px" }}>

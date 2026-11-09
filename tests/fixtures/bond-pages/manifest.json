@@ -1,0 +1,74 @@
+[
+  {
+    "code": "OTS1026",
+    "sourceURL": "https://www.obligacjeskarbowe.pl/oferta-obligacji/obligacje-3-miesieczne-ots/ots1026/",
+    "capturedAt": "2026-11-09",
+    "rawPageSHA256": "f3045f04d7ab97c2ce5a90d393d8301294c308fb057a68e395cb993e4d0408e2",
+    "firstPeriodRate": 2,
+    "marginOverBase": 2,
+    "earlyRedemptionFee": 0
+  },
+  {
+    "code": "ROR0727",
+    "sourceURL": "https://www.obligacjeskarbowe.pl/oferta-obligacji/obligacje-roczne-ror/ror0727/",
+    "capturedAt": "2026-11-09",
+    "rawPageSHA256": "d82900e1fcd7717c4d064747f6733b9c1a3453864ac78bf90f44c4188daae958",
+    "firstPeriodRate": 4,
+    "marginOverBase": 0,
+    "earlyRedemptionFee": 0.5
+  },
+  {
+    "code": "DOR0728",
+    "sourceURL": "https://www.obligacjeskarbowe.pl/oferta-obligacji/obligacje-2-letnie-dor/dor0728/",
+    "capturedAt": "2026-11-09",
+    "rawPageSHA256": "119381818523747df320a0e4a30b742a67efa82202b1acfa0b374a80d177530b",
+    "firstPeriodRate": 4.15,
+    "marginOverBase": 0.15,
+    "earlyRedemptionFee": 0.7
+  },
+  {
+    "code": "TOS0729",
+    "sourceURL": "https://www.obligacjeskarbowe.pl/oferta-obligacji/obligacje-3-letnie-tos/tos0729/",
+    "capturedAt": "2026-11-09",
+    "rawPageSHA256": "55069f56d63c747cb6707a02781ad062220f4862403235676ff0d14ad993992c",
+    "firstPeriodRate": 4.4,
+    "marginOverBase": 4.4,
+    "earlyRedemptionFee": 1
+  },
+  {
+    "code": "COI0730",
+    "sourceURL": "https://www.obligacjeskarbowe.pl/oferta-obligacji/obligacje-4-letnie-coi/coi0730/",
+    "capturedAt": "2026-11-09",
+    "rawPageSHA256": "25d0a95dcb8159eb6b57c0b0344613fcc556c365fd5e5899d8507f843f4f7b5c",
+    "firstPeriodRate": 4.75,
+    "marginOverBase": 1.5,
+    "earlyRedemptionFee": 2
+  },
+  {
+    "code": "ROS0529",
+    "sourceURL": "https://www.obligacjeskarbowe.pl/oferta-obligacji/obligacje-6-letnie-ros/ros0529/",
+    "capturedAt": "2026-11-09",
+    "rawPageSHA256": "beec80dfd8b4e5c1094f5a678677cf286e562a6872e20bd94db10c781ccac59a",
+    "firstPeriodRate": 7.2,
+    "marginOverBase": 1.5,
+    "earlyRedemptionFee": 0.7
+  },
+  {
+    "code": "EDO1233",
+    "sourceURL": "https://www.obligacjeskarbowe.pl/oferta-obligacji/obligacje-10-letnie-edo/edo1233/",
+    "capturedAt": "2026-11-09",
+    "rawPageSHA256": "39a3a13e4ccfb646014ed3b776f36e4b998529bd349301895f897f760bd70958",
+    "firstPeriodRate": 7,
+    "marginOverBase": 1.5,
+    "earlyRedemptionFee": 2
+  },
+  {
+    "code": "ROD0135",
+    "sourceURL": "https://www.obligacjeskarbowe.pl/oferta-obligacji/obligacje-12-letnie-rod/rod0135/",
+    "capturedAt": "2026-11-09",
+    "rawPageSHA256": "8e4b157ee714ff8e418518212252588804baf1aaa628271b2c20ba77119386bb",
+    "firstPeriodRate": 7.5,
+    "marginOverBase": 1.75,
+    "earlyRedemptionFee": 2
+  }
+]

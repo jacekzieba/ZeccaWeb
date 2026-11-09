@@ -74,85 +74,93 @@ function isoDate(year: number, monthIndex0: number, day: number): string {
 }
 
 function stripHtml(html: string): string {
-  return html
-    .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&oacute;/g, "ó")
-    .replace(/&#160;/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return html.replace(/<[^>]+>/g, " ").replace(/&nbsp;|&#160;/g, " ")
+    .replace(/&amp;/g, "&").replace(/&oacute;/g, "ó")
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\s+/g, " ").trim();
 }
 
-function matchPercent(body: string, pattern: RegExp): number | null {
-  const match = pattern.exec(body);
-  if (!match) return null;
-  const value = Number(match[1].replace(",", "."));
-  return Number.isFinite(value) ? value : null;
+function captures(text: string, pattern: RegExp): string[] {
+  return Array.from(text.matchAll(pattern), match => match[1]);
 }
 
-/**
- * Parses a stripped emission letter into bond params. Tuned to the current page
- * copy, verified across all eight families (OTS/ROR/DOR/TOS/COI/ROS/EDO/ROD):
- *
- *   "Oprocentowanie: 5,35% w pierwszym rocznym okresie ... marża 2,00% + inflacja
- *    Kapitalizacja odsetek: roczna  Wypłata odsetek: przy wykupie"
- */
-export function parseBondEmissionLetter(
-  html: string,
-  code: string,
-): BondParamsInput | null {
+function uniqueNumber(text: string, pattern: RegExp): number | null {
+  const values = captures(text, pattern).map(value => Number(value.replace(",", ".")));
+  return values.length > 0 && values.every(Number.isFinite) && new Set(values).size === 1 ? values[0] : null;
+}
+
+export const BOND_PARSER_VERSION = 2;
+
+function uniqueFee(text: string, pattern: RegExp): number | null {
+  const values = captures(text, pattern).map(value => value.trim());
+  if (values.length === 0 || !values.every(value => /^[0-9]{1,3}(?:[.,][0-9]{1,2})?$/.test(value))) return null;
+  const amounts = values.map(value => Number(value.replace(",", ".")));
+  return new Set(amounts).size === 1 ? amounts[0] : null;
+}
+
+function earlyFee(text: string, issueYearMonth: number): number | null {
+  const fee = String.raw`([-+−]?\s*\d[\d\s.,]*)\s*z[lł]\s*od\s*ka[zż]dej\s*obligacji`;
+  if (text.includes("Dla emisji zakupionych do 31 sierpnia 2024") && text.includes("Dla emisji zakupionych od 1 września 2024")) {
+    const condition = issueYearMonth < 202409 ? "do 31 sierpnia" : "od 1 września";
+    return uniqueFee(text, new RegExp(String.raw`Dla emisji zakupionych ${condition} 2024 r\.[^%]{0,120}?${fee}`, "gi"));
+  }
+  if (/bez\s+(?:żadnych\s+)?opłat/i.test(text)) {
+    return captures(text, new RegExp(fee, "gi")).length === 0 ? 0 : null;
+  }
+  return uniqueFee(text, new RegExp(fee, "gi"));
+}
+
+/** Fail closed: the issue, required rates and applicable fee must be explicit.
+ * Marketing and worked examples outside the offer cannot supply these fields. */
+export function parseBondEmissionLetter(html: string, code: string): BondParamsInput | null {
   const parts = decomposeBondCode(code);
   if (!parts) return null;
   const spec = BOND_FAMILIES[parts.family];
-  const body = stripHtml(html);
-
-  // Only two numbers vary between emissions; scrape those, derive the rest from
-  // the family. Headline "Oprocentowanie: X%" is always the first-year (or, for
-  // fixed families, whole-term) rate.
-  const firstPeriodRate = matchPercent(body, /oprocentowanie:\s*(\d{1,2}(?:[.,]\d{1,2})?)\s*%/i);
-  if (firstPeriodRate == null) return null;
-
-  const scrapedMargin = matchPercent(body, /mar[zż]a\s*(\d{1,2}(?:[.,]\d{1,2})?)\s*%/i) ?? 0;
-  // Fixed-coupon bonds carry the whole rate as the "margin" the engine reads for
-  // subsequent periods, matching how `bondPeriodRate` treats "stałe".
-  const marginOverBase = spec.subsequentBase === "stałe" ? firstPeriodRate : scrapedMargin;
-
-  const maturityDate = isoDate(parts.maturityYear, parts.maturityMonth - 1, 1);
-  // Issue date = maturity − tenor. Current retail emissions are dated the 1st of
-  // the month, so the day is exact for modern series.
-  const issueDate = isoDate(parts.maturityYear, parts.maturityMonth - 1 - spec.tenorMonths, 1);
-
+  const clean = html.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, " ");
+  const allOffers = captures(clean, /<ul\b[^>]*class=["'][^"']*\bproduct-details__list\b[^"']*["'][^>]*>([\s\S]*?)<\/ul>/gi);
+  const offers = allOffers.filter(offer => captures(offer, /<li\b[^>]*>([\s\S]*?)<\/li>/gi).map(stripHtml).some(field => /^seria:/i.test(field)));
+  if (offers.length !== 1) return null;
+  const fields = captures(offers[0], /<li\b[^>]*>([\s\S]*?)<\/li>/gi).map(stripHtml);
+  const series = fields.filter(field => /^seria:/i.test(field));
+  if (series.length !== 1 || !new RegExp(`^Seria:\\s*${code.trim().toUpperCase()}(?:\\s|$)`, "i").test(series[0])) return null;
+  const rates = fields.filter(field => /^oprocentowanie:/i.test(field));
+  if (rates.length !== 1) return null;
+  const rateText = rates[0];
+  const head = rateText.split(/w kolejnych/i)[0];
+  const firstPeriodRate = uniqueNumber(head, /^oprocentowanie:\s*(\d{1,2}(?:[.,]\d{1,2})?)\s*%/gi);
+  if (firstPeriodRate == null || uniqueNumber(head, /(\d{1,2}(?:[.,]\d{1,2})?)\s*%/g) !== firstPeriodRate) return null;
+  let marginOverBase: number;
+  if (spec.subsequentBase === "stałe") {
+    marginOverBase = firstPeriodRate;
+  } else if (spec.subsequentBase === "inflacja") {
+    const margin = uniqueNumber(rateText, /mar[zż]a\s*(\d{1,2}(?:[.,]\d{1,2})?)\s*%/gi);
+    if (margin == null) return null;
+    marginOverBase = margin;
+  } else {
+    const margin = uniqueNumber(rateText, /stopa\s+referencyjna\s+NBP\s*\+\s*(\d{1,2}(?:[.,]\d{1,2})?)\s*%/gi);
+    if (margin != null) marginOverBase = margin;
+    else if (/stopa\s+referencyjna\s+NBP\s*[.;]?\s*$/i.test(rateText)) marginOverBase = 0;
+    else return null;
+  }
+  const feeSections = captures(clean, /id=["']wczesniejsze-zakonczenie-oszczedzania["'][^>]*>[\s\S]*?<div\b[^>]*class=["'][^"']*accordions__content-inner[^"']*["'][^>]*>([\s\S]*?<\/p>)/gi);
+  if (feeSections.length !== 1) return null;
+  const maturityDate = new Date(isoDate(parts.maturityYear, parts.maturityMonth - 1, 1));
+  const issueDate = new Date(isoDate(parts.maturityYear, parts.maturityMonth - 1 - spec.tenorMonths, 1));
+  const earlyRedemptionFee = earlyFee(stripHtml(feeSections[0]), issueDate.getUTCFullYear() * 100 + issueDate.getUTCMonth() + 1);
+  if (earlyRedemptionFee == null) return null;
   return {
-    earlyRedemptionFee: Math.max(0, ...Array.from(body.matchAll(/(\d{1,3}(?:[.,]\d{1,2})?)\s*z[lł]\s*od\s*ka[zż]dej\s*obligacji/gi), (match) => Number(match[1].replace(",", ".")))),
-    issueDate: new Date(issueDate),
-    maturityDate: new Date(maturityDate),
-    nominalValue: 100,
-    firstPeriodRate,
-    subsequentBase: spec.subsequentBase,
-    marginOverBase,
-    capitalization: spec.capitalization,
-    interestPayment: spec.interestPayment,
+    earlyRedemptionFee, issueDate, maturityDate, nominalValue: 100, firstPeriodRate,
+    subsequentBase: spec.subsequentBase, marginOverBase, capitalization: spec.capitalization,
+    interestPayment: spec.interestPayment, parserVersion: BOND_PARSER_VERSION, sourceURL: bondCatalogueUrl(code)!,
   };
 }
 
-export async function fetchTreasuryBondParams(
-  code: string,
-): Promise<BondParamsInput | null> {
+export async function fetchTreasuryBondParams(code: string): Promise<BondParamsInput | null> {
   const url = bondCatalogueUrl(code);
   if (!url) return null;
-
   const response = await fetch(url, {
-    headers: {
-      accept: "text/html,application/xhtml+xml",
-      "user-agent": "Mozilla/5.0 (compatible; ZeccaWeb/1.0)",
-    },
+    headers: { accept: "text/html,application/xhtml+xml", "user-agent": "Mozilla/5.0 (compatible; ZeccaWeb/1.0)" },
     next: { revalidate: 24 * 60 * 60 },
   });
-
-  // A non-existent series returns the catalogue's soft-404 page; treat any
-  // non-2xx as "not found" so the caller can fall back to manual entry.
   if (!response.ok) return null;
   return parseBondEmissionLetter(await response.text(), code);
 }

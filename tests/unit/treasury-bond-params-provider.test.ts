@@ -8,7 +8,10 @@ import {
 // Representative emission-letter prose, copied from the live pages (verified
 // 2026-07). Wrapped in tags so the HTML stripper is exercised too.
 function letter(body: string): string {
-  return `<html><body><div class="offer"><p>${body}</p></div></body></html>`;
+  const code = /Seria:\s*([A-Z]{3}\d{4})/.exec(body)?.[1] ?? "";
+  const rate = /Oprocentowanie:\s*([\s\S]*?)(?:Kapitalizacja|$)/.exec(body)?.[1] ?? body;
+  return `<ul class="product-details__list"><li>Seria: ${code}</li><li>Oprocentowanie: ${rate}</li></ul>
+    <div id="wczesniejsze-zakonczenie-oszczedzania"><div class="accordions__content-inner"><p>Opłata wynosi 2,00 zł od każdej obligacji.</p></div></div>`;
 }
 
 const EDO0736 = letter(

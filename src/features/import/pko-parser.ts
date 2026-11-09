@@ -101,6 +101,7 @@ type ParsedRow = {
 export type PkoImportPreview = TransactionImportPreview & {
   newInstrumentPayloads: WriteRecordPayload[];
   warnings: string[];
+  referencedBondCodes?: string[];
 };
 
 export function parsePkoBondsXls(
@@ -504,13 +505,24 @@ export function parsePkoBondsXls(
     }
   }
 
+  const seen = new Set(references.existingExternalImportIds ?? []);
+  const uniqueRows = txRows.filter(row => {
+    const externalID = row.payload?.externalImportID as string | undefined;
+    if (!externalID) return true;
+    if (seen.has(externalID)) return false;
+    seen.add(externalID);
+    return true;
+  });
+  const referencedBondCodes = [...new Set(parsedRows.filter(row => !row.cancelled && row.date && row.liczba > 0 && row.kwota > 0
+    && (row.kind === "buyRealisation" || row.kind === "buyDisposition")).map(row => row.code))];
   return annotateOversellWarnings(
     {
       kind: "transaction",
-      rows: txRows,
-      validRows: txRows.filter((row) => row.errors.length === 0 && row.payload !== null),
-      errorRows: txRows.filter((row) => row.errors.length > 0),
+      rows: uniqueRows,
+      validRows: uniqueRows.filter((row) => row.errors.length === 0 && row.payload !== null),
+      errorRows: uniqueRows.filter((row) => row.errors.length > 0),
       newInstrumentPayloads,
+      referencedBondCodes,
       warnings,
     },
     references,

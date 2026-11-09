@@ -1,0 +1,21 @@
+name: Bond issuer parser check
+on:
+  schedule:
+    - cron: "37 5 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  issuer-pages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx vitest run tests/unit/bond-page-live.test.ts
+        env:
+          ZECCA_BOND_LIVE_CHECK: "1"

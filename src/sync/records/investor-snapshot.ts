@@ -172,6 +172,8 @@ const assetPayloadSchema = z.object({
   category: z.string().nullable().optional(),
   marketDataID: z.string().nullable().optional(),
   bondParams: z.object({
+    parserVersion: z.number().optional(),
+    sourceURL: z.string().optional(),
     issueDate: swiftDateSchema,
     maturityDate: swiftDateSchema,
     nominalValue: z.number(),
@@ -2159,6 +2161,8 @@ function toPositionAssetInput(
     currency: asset.currency,
     bondParams: asset.bondParams
       ? normalizeTreasuryBondParams(asset.symbol, {
+          parserVersion: asset.bondParams.parserVersion,
+          sourceURL: asset.bondParams.sourceURL,
           issueDate: toDate(asset.bondParams.issueDate),
           maturityDate: toDate(asset.bondParams.maturityDate),
           nominalValue: asset.bondParams.nominalValue,

@@ -3,7 +3,7 @@ import {
   getCachedMarketData,
   setCachedMarketData,
 } from "@/market-data/cache";
-import { fetchTreasuryBondParams } from "@/market-data/providers/treasury-bond-params";
+import { BOND_PARSER_VERSION, fetchTreasuryBondParams } from "@/market-data/providers/treasury-bond-params";
 import { knownTreasuryBondValuationParams } from "@/domain/valuation/treasury-bond-issues";
 import type { BondParamsInput } from "@/domain/valuation/position-valuator";
 
@@ -23,10 +23,14 @@ type SerializedBondParams = {
   marginOverBase: number;
   capitalization: string;
   interestPayment: string;
+  parserVersion?: number;
+  sourceURL?: string;
 };
 
 function serialize(params: BondParamsInput, code: string): SerializedBondParams {
   return {
+    parserVersion: params.parserVersion,
+    sourceURL: params.sourceURL,
     series: code.slice(0, 3),
     fullCode: code,
     earlyRedemptionFee: params.earlyRedemptionFee ?? 0,
@@ -54,7 +58,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: serialize(known, code), source: "catalog" });
   }
 
-  const cacheKey = `bond-params:${code}`;
+  const cacheKey = `bond-params:v${BOND_PARSER_VERSION}:${code}`;
   const cached = getCachedMarketData<SerializedBondParams>(cacheKey);
   if (cached) {
     return NextResponse.json({ data: cached.value, source: "scrape", cache: { hit: true } });
