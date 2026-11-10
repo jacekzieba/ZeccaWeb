@@ -439,7 +439,8 @@ export function ImportPage() {
       // Save new instruments first
       for (const instrPayload of selected.newInstrumentPayloads) {
         if (!isFakeSyncEnabled()) {
-          await saveRecord(supabase, userDataKey, instrPayload.recordType, instrPayload, { baseUpdatedAt: null });
+          const saveResult = await saveRecord(supabase, userDataKey, instrPayload.recordType, instrPayload, { baseUpdatedAt: null });
+          if (saveResult.queued) queued += 1;
         }
         localPayloads.push(instrPayload);
       }
@@ -450,7 +451,8 @@ export function ImportPage() {
         if (!current) continue;
         const updated = { ...(current.envelope.payload as WriteRecordPayload), bondParams: payload.bondParams };
         if (!isFakeSyncEnabled()) {
-          await saveRecord(supabase, userDataKey, "asset", updated, { baseUpdatedAt: preview.bondUpdateBaseVersions![payload.id] });
+          const saveResult = await saveRecord(supabase, userDataKey, "asset", updated, { baseUpdatedAt: preview.bondUpdateBaseVersions![payload.id] });
+          if (saveResult.queued) queued += 1;
         }
         localPayloads.push(updated);
       }
@@ -476,7 +478,10 @@ export function ImportPage() {
       });
       setSync(nextRecords, nextSnapshot);
       const updateSummary = selected.updatedInstrumentPayloads.length > 0 ? `Zaktualizowano ${selected.updatedInstrumentPayloads.length} emisji. ` : "";
-      setResult(`${updateSummary}Zaimportowano ${selected.rows.length - queued} rekordów${queued > 0 ? `, ${queued} czeka w kolejce sync` : ""}.${finalPreview.review ? ` Usunięto z importu: ${finalPreview.review.rows.filter(row => row.excluded).length}, duplikaty / powiązane: ${finalPreview.review.rows.filter(row => row.duplicate).length}.` : ""}`);
+      const saveSummary = queued > 0
+        ? `Przyjęto lokalnie ${selected.rows.length} transakcji. Zapisano ${localPayloads.length - queued} rekordów, ${queued} czeka w kolejce sync.`
+        : `Zaimportowano ${selected.rows.length} rekordów.`;
+      setResult(`${updateSummary}${saveSummary}${finalPreview.review ? ` Usunięto z importu: ${finalPreview.review.rows.filter(row => row.excluded).length}, duplikaty / powiązane: ${finalPreview.review.rows.filter(row => row.duplicate).length}.` : ""}`);
       if (provider) {
         getTelemetryService().signal(TelemetryEvent.brokerImportSucceeded, {
           provider,

@@ -141,6 +141,9 @@ export function parseBondEmissionLetter(html: string, code: string): BondParamsI
     else if (/stopa\s+referencyjna\s+NBP\s*[.;]?\s*$/i.test(rateText)) marginOverBase = 0;
     else return null;
   }
+  // Alternatives in the later-period formula may omit a repeated label.
+  const laterPeriods = rateText.slice(head.length);
+  if (captures(laterPeriods, /([0-9]+(?:[.,][0-9]+)?)\s*%/g).some(value => Number(value.replace(",", ".")) !== marginOverBase)) return null;
   const feeSections = captures(clean, /id=["']wczesniejsze-zakonczenie-oszczedzania["'][^>]*>[\s\S]*?<div\b[^>]*class=["'][^"']*accordions__content-inner[^"']*["'][^>]*>([\s\S]*?<\/p>)/gi);
   if (feeSections.length !== 1) return null;
   const maturityDate = new Date(isoDate(parts.maturityYear, parts.maturityMonth - 1, 1));

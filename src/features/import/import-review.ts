@@ -1,6 +1,6 @@
 import { parseXtbXlsx, parseTradeComment } from "./xtb-parser";
 import { parsePkoBondsXls } from "./pko-parser";
-import { parseTransactionTable, type ImportReferenceData, type TransactionImportPreview, type TransactionImportRow } from "./import-parser";
+import { parseTransactionTable, normalizeHeader, type ImportReferenceData, type TransactionImportPreview, type TransactionImportRow } from "./import-parser";
 import type { EtfCatalog } from "./etf-catalog";
 import type { WriteRecordPayload } from "@/sync/records/record-writer";
 import { validateTransactionPayload } from "@/sync/records/transaction-validator";
@@ -67,7 +67,7 @@ export function createImportReview(format: ReviewFormat, table: unknown[][], dig
     return format === "xtb" ? keys.includes("type") && keys.includes("time") : format === "pko" ? keys.includes("rodzajdyspozycji") : cells.some(cell => String(cell ?? "").trim());
   });
   if (index < 0) throw new Error("Brak nagłówka wymaganego przez format importu.");
-  const headers = table[index].map(cell => key(String(cell ?? "")));
+  const headers = table[index].map(cell => format === "generic" ? normalizeHeader(String(cell ?? "")) : key(String(cell ?? "")));
   const typeColumn = headers.indexOf("type"), amountColumn = headers.indexOf("amount");
   const total = format === "xtb" ? table.slice(index + 1).find(row => String(row[typeColumn] ?? "").toLowerCase() === "total") : undefined;
   const reportedTotal = total ? parseSpreadsheetNumber(total[amountColumn]) ?? undefined : undefined;
@@ -94,7 +94,7 @@ export function reviewFields(draft: ImportReviewDraft, row: ReviewRow): { key: s
   } else if (draft.format === "pko") {
     fields = [["datadyspozycji", "Data (RRRR-MM-DD)"], ["kwotaoperacji", "Kwota (PLN)"], ["liczbaobligacji", "Liczba obligacji"], ["kodobligacji", "Kod obligacji"]];
   } else {
-    const labels: Record<string, string> = { date: "Data", bookingdate: "Data księgowania", type: "Typ", transactiontype: "Typ", instrument: "Instrument", instrumentsymbol: "Instrument", quantity: "Ilość", price: "Cena", grossamount: "Kwota", currency: "Waluta", fees: "Prowizja", taxes: "Podatek", fxratetobase: "Kurs do PLN", targetgrossamount: "Kwota docelowa", targetcurrency: "Waluta docelowa", notes: "Opis", transferlots: "Partie transferu (JSON)" };
+    const labels: Record<string, string> = { date: "Data", bookingdate: "Data księgowania", type: "Typ", transactiontype: "Typ", instrument: "Instrument", instrumentsymbol: "Instrument", quantity: "Ilość", price: "Cena", grossamount: "Kwota", currency: "Waluta", fees: "Prowizja", taxes: "Podatek", fxratetobase: "Kurs do PLN", targetgrossamount: "Kwota docelowa", targetcurrency: "Waluta docelowa", notes: "Opis", note: "Opis", transferlots: "Partie transferu (JSON)" };
     fields = Object.keys(labels).sort().filter(field => field in row.values || ["fees", "taxes", "quantity", "price", "fxratetobase"].includes(field)).map(field => [field, labels[field]]);
   }
   return fields.map(([key, label]) => ({ key, label }));
@@ -258,18 +258,32 @@ export function evaluateImportReview(input: ImportReviewDraft, context: Context)
     const number = Number(id.slice(fallbackPrefix.length).split(":")[0]);
     fallbackRows.set(number, (fallbackRows.get(number) ?? 0) + 1);
   }
+  const rowByNumber = new Map(draft.rows.map(row => [row.rowNumber, row]));
+  const originalIDsByRow = new Map<number, string[]>();
+  for (const [role, id] of Object.entries(draft.originalIDs)) {
+    const number = Number(role.split(":")[0]);
+    const ids = originalIDsByRow.get(number) ?? [];
+    ids.push(id); originalIDsByRow.set(number, ids);
+  }
+  const seenSources = new Set<string>();
   for (const row of draft.rows) {
     const original = row.originalValues;
-    const ids = Object.entries(draft.originalIDs).filter(([role]) => role.startsWith(`${row.rowNumber}:`)).map(([, id]) => id);
+    const ids = originalIDsByRow.get(row.rowNumber) ?? [];
     const rawID = draft.format === "xtb" && original.id ? `xtb:${original.id}` : original.externalimportid;
     const uuid = original.transactionid ?? original.id;
+    const sourceID = draft.format === "pko"
+      ? ((parseSpreadsheetNumber(original.nrzapisu) ?? 0) > 0 ? `${parseSpreadsheetNumber(original.nrzapisu)}:${original.rodzajdyspozycji}` : undefined)
+      : draft.format === "xtb" ? original.id : (original.transactionid || original.id || original.externalimportid);
+    const signature = sourceID ? JSON.stringify([sourceID, Object.keys(original).sort().map(key => [key, original[key]])]) : undefined;
+    const repeatedSource = !row.excluded && signature !== undefined && seenSources.has(signature);
+    if (!row.excluded && signature !== undefined) seenSources.add(signature);
     const expectedFallbacks = draft.format === "pko" && ["zakup papierów", "dyspozycja zakupu"].includes(original.rodzajdyspozycji?.toLowerCase()) ? 2 : 1;
-    row.duplicate = (ids.length > 0 && ids.every(id => externalIDs.has(id))) || Boolean(rawID && externalIDs.has(rawID)) || Boolean(uuid && context.references.existingTransactionIds.has(uuid)) || (fallbackRows.get(row.rowNumber) ?? 0) >= expectedFallbacks;
+    row.duplicate = repeatedSource || (ids.length > 0 && ids.every(id => externalIDs.has(id))) || Boolean(rawID && externalIDs.has(rawID)) || Boolean(uuid && context.references.existingTransactionIds.has(uuid)) || (fallbackRows.get(row.rowNumber) ?? 0) >= expectedFallbacks;
   }
-  for (const row of draft.rows) if (row.parent !== undefined && draft.rows.some(parent => parent.rowNumber === row.parent && parent.duplicate)) row.duplicate = true;
+  for (const row of draft.rows) if (row.parent !== undefined && rowByNumber.get(row.parent)?.duplicate) row.duplicate = true;
   for (const row of draft.rows) if (!row.excluded && !row.duplicate) {
     row.issues = rawIssues(draft, row);
-    if (row.parent !== undefined && draft.rows.some(parent => parent.rowNumber === row.parent && parent.excluded)) row.issues.push({ code: "missing_parent", field: "row", message: "Pozycja wymaga przywrócenia powiązanej operacji lub usunięcia z importu." });
+    if (row.parent !== undefined && rowByNumber.get(row.parent)?.excluded) row.issues.push({ code: "missing_parent", field: "row", message: "Pozycja wymaga przywrócenia powiązanej operacji lub usunięcia z importu." });
   }
   const parsed = compile(draft, draft.rows.filter(row => !row.excluded && !row.duplicate && row.issues.length === 0), context);
   const assets = parsed.newInstrumentPayloads ?? [];
@@ -287,7 +301,7 @@ export function evaluateImportReview(input: ImportReviewDraft, context: Context)
   const roles: Record<string, number> = {};
   const rows: TransactionImportRow[] = [];
   for (const row of parsed.rows) {
-    const source = draft.rows.find(source => source.rowNumber === row.rowNumber);
+    const source = rowByNumber.get(row.rowNumber);
     if (!source) continue;
     if (!row.payload) {
       source.issues.push(...row.errors.map(message => ({ code: "invalid_record", field: "row", message })));

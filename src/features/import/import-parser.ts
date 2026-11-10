@@ -703,7 +703,7 @@ function detectDelimiter(text: string) {
     .sort((left, right) => right.count - left.count)[0].delimiter;
 }
 
-function normalizeHeader(header: string) {
+export function normalizeHeader(header: string) {
   const compact = header
     .trim()
     .toLowerCase()
